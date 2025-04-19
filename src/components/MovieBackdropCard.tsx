@@ -33,6 +33,8 @@ import { useMediaQuery } from '@/src/hooks/use-media-query';
 import { Button } from './ui/button';
 import Image from 'next/image';
 import { Skeleton } from './ui/skeleton';
+import { addToFavorites, saveForLater } from '@/src/lib/user-content';
+import { useToast } from '@/src/hooks/use-toast';
 
 const MovieCard = ({ backdropImg, title, voteAverage, releaseDate, dropDown, link }: { dropDown?: any, backdropImg: string, title: string, voteAverage: any, releaseDate: any, link: string }) => {
     return (
@@ -62,7 +64,55 @@ const MovieCard = ({ backdropImg, title, voteAverage, releaseDate, dropDown, lin
     )
 }
 
-const CustomContextMenu = ({ children, title }) => {
+const CustomContextMenu = ({ children, title, id, backdropPath, mediaType }) => {
+    const { toast } = useToast();
+    
+    const handleAddToFavorites = async () => {
+        try {
+            await addToFavorites({
+                id,
+                title,
+                poster_path: backdropPath,
+                media_type: mediaType || 'movie',
+                added_at: new Date()
+            });
+            toast({
+                title: "Added to favorites",
+                description: `${title} has been added to your favorites`
+            });
+        } catch (error) {
+            console.error('Failed to add to favorites:', error);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Failed to add to favorites"
+            });
+        }
+    };
+
+    const handleSaveForLater = async () => {
+        try {
+            await saveForLater({
+                id,
+                title,
+                poster_path: backdropPath,
+                media_type: mediaType || 'movie',
+                added_at: new Date()
+            });
+            toast({
+                title: "Saved for later",
+                description: `${title} has been saved for later`
+            });
+        } catch (error) {
+            console.error('Failed to save for later:', error);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Failed to save for later"
+            });
+        }
+    };
+    
     return (
         <ContextMenu>
             <ContextMenuTrigger>
@@ -71,8 +121,8 @@ const CustomContextMenu = ({ children, title }) => {
             <ContextMenuContent>
                 <ContextMenuLabel className='font-bold text-base'>{title}</ContextMenuLabel>
                 <ContextMenuSeparator />
-                <ContextMenuItem><FaHeart className='mr-2' />Add To Favorites</ContextMenuItem>
-                <ContextMenuItem><FaBookmark className='mr-2' />Add To BookMarks</ContextMenuItem>
+                <ContextMenuItem onClick={handleAddToFavorites}><FaHeart className='mr-2' />Add To Favorites</ContextMenuItem>
+                <ContextMenuItem onClick={handleSaveForLater}><FaBookmark className='mr-2' />Add To BookMarks</ContextMenuItem>
                 <ContextMenuSub>
                     <ContextMenuSubTrigger><FaShareAlt className='mr-2' />Share</ContextMenuSubTrigger>
                     <ContextMenuSubContent>
@@ -89,7 +139,54 @@ const CustomContextMenu = ({ children, title }) => {
     )
 }
 
-const CustomDropDownMenu = ({ title }) => {
+const CustomDropDownMenu = ({ title, id, backdropPath, mediaType }) => {
+    const { toast } = useToast();
+    
+    const handleAddToFavorites = async () => {
+        try {
+            await addToFavorites({
+                id,
+                title,
+                poster_path: backdropPath,
+                media_type: mediaType || 'movie',
+                added_at: new Date()
+            });
+            toast({
+                title: "Added to favorites",
+                description: `${title} has been added to your favorites`
+            });
+        } catch (error) {
+            console.error('Failed to add to favorites:', error);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Failed to add to favorites"
+            });
+        }
+    };
+
+    const handleSaveForLater = async () => {
+        try {
+            await saveForLater({
+                id,
+                title,
+                poster_path: backdropPath,
+                media_type: mediaType || 'movie',
+                added_at: new Date()
+            });
+            toast({
+                title: "Saved for later",
+                description: `${title} has been saved for later`
+            });
+        } catch (error) {
+            console.error('Failed to save for later:', error);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Failed to save for later"
+            });
+        }
+    };
 
     return (
         <DropdownMenu>
@@ -100,10 +197,10 @@ const CustomDropDownMenu = ({ title }) => {
                 <DropdownMenuLabel className='font-bold text-base'>{title}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onSelect={handleAddToFavorites}>
                         <FaHeart className='mr-2' />Add To Favorites
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onSelect={handleSaveForLater}>
                         <FaBookmark className='mr-2' />Add To BookMarks
                     </DropdownMenuItem>
                     <DropdownMenuSub>
@@ -132,19 +229,42 @@ export function SkeletonLoader() {
 }
 
 
-export default function MovieBackdropCard({ backdropImg, title, voteAverage, releaseDate, adult, link }: { backdropImg: string, title: string, voteAverage: any, releaseDate: any, adult?: boolean, link: string }) {
+export default function MovieBackdropCard({ backdropImg, title, voteAverage, releaseDate, adult, link, id }: { backdropImg: string, title: string, voteAverage: any, releaseDate: any, adult?: boolean, link: string, id?: string }) {
     const isDesktop = useMediaQuery("(min-width: 640px)")
+    const { toast } = useToast();
+    
+    // Extract movie ID from link if not provided directly
+    const movieId = id || (link ? link.split('/').pop() : '');
 
     if (isDesktop) {
         return (
-            <CustomContextMenu title={title}>
+            <CustomContextMenu 
+                title={title}
+                id={movieId}
+                backdropPath={backdropImg}
+                mediaType="movie"
+            >
                 <MovieCard backdropImg={backdropImg} title={title} voteAverage={voteAverage} releaseDate={releaseDate} link={link} />
             </CustomContextMenu>
         )
     }
     return (
         <div>
-            <MovieCard backdropImg={backdropImg} dropDown={<CustomDropDownMenu title={title} />} title={title} voteAverage={voteAverage} releaseDate={releaseDate} link={link} />
+            <MovieCard 
+                backdropImg={backdropImg} 
+                dropDown={
+                    <CustomDropDownMenu 
+                        title={title} 
+                        id={movieId} 
+                        backdropPath={backdropImg} 
+                        mediaType="movie" 
+                    />
+                } 
+                title={title} 
+                voteAverage={voteAverage} 
+                releaseDate={releaseDate} 
+                link={link} 
+            />
         </div>
     )
 }

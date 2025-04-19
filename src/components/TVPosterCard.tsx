@@ -36,7 +36,7 @@ import { Skeleton } from './ui/skeleton';
 import { addToFavorites, saveForLater } from '@/src/lib/user-content';
 import { useToast } from '@/src/hooks/use-toast';
 
-export const MovieCard = ({ posterImg, title, voteAverage, releaseDate, dropDown, link, externalImg }: { dropDown?: any, posterImg: string, title: string, voteAverage?: any, releaseDate?: any, link?: string, externalImg?: boolean }) => {
+export const TVShowCard = ({ posterImg, title, voteAverage, releaseDate, dropDown, link, externalImg }: { dropDown?: any, posterImg: string, title: string, voteAverage?: any, releaseDate?: any, link?: string, externalImg?: boolean }) => {
     const displayVoteAverage = voteAverage ? voteAverage.toString().substring(0, 3) : "N/A"; // Fallback value for voteAverage
 
     return (
@@ -69,13 +69,15 @@ export const MovieCard = ({ posterImg, title, voteAverage, releaseDate, dropDown
 
 
 const CustomContextMenu = ({ children, title, id, posterPath, mediaType }) => {
+    const { toast } = useToast();
+    
     const handleAddToFavorites = async () => {
         try {
             await addToFavorites({
                 id,
                 title,
                 poster_path: posterPath,
-                media_type: mediaType || 'movie',
+                media_type: mediaType || 'tv',
                 added_at: new Date()
             });
             toast({
@@ -98,7 +100,7 @@ const CustomContextMenu = ({ children, title, id, posterPath, mediaType }) => {
                 id,
                 title,
                 poster_path: posterPath,
-                media_type: mediaType || 'movie',
+                media_type: mediaType || 'tv',
                 added_at: new Date()
             });
             toast({
@@ -114,7 +116,7 @@ const CustomContextMenu = ({ children, title, id, posterPath, mediaType }) => {
             });
         }
     };
-
+    
     return (
         <ContextMenu>
             <ContextMenuTrigger>
@@ -143,14 +145,15 @@ const CustomContextMenu = ({ children, title, id, posterPath, mediaType }) => {
 
 const CustomDropDownMenu = ({ title, voteAverage, id, posterPath, mediaType }) => {
     const displayVoteAverage = voteAverage ? voteAverage.toString().substring(0, 3) : "N/A"; // Provide a fallback value
-
+    const { toast } = useToast();
+    
     const handleAddToFavorites = async () => {
         try {
             await addToFavorites({
                 id,
                 title,
                 poster_path: posterPath,
-                media_type: mediaType || 'movie',
+                media_type: mediaType || 'tv',
                 added_at: new Date()
             });
             toast({
@@ -173,7 +176,7 @@ const CustomDropDownMenu = ({ title, voteAverage, id, posterPath, mediaType }) =
                 id,
                 title,
                 poster_path: posterPath,
-                media_type: mediaType || 'movie',
+                media_type: mediaType || 'tv',
                 added_at: new Date()
             });
             toast({
@@ -239,36 +242,36 @@ export function SkeletonLoader() {
     )
 }
 
-export default function MoviePosterCard({ posterImg, title, voteAverage, releaseDate, adult, link, externalImg, id }: { dropDown?: any, posterImg: string, title: string, voteAverage?: any, releaseDate?: any, adult?: boolean, link?: string, externalImg?: boolean, id?: string }) {
+export default function TVPosterCard({ posterImg, title, voteAverage, releaseDate, adult, link, externalImg, id }: { dropDown?: any, posterImg: string, title: string, voteAverage?: any, releaseDate?: any, adult?: boolean, link?: string, externalImg?: boolean, id?: string }) {
     const isDesktop = useMediaQuery("(min-width: 640px)")
     const { toast } = useToast();
     
-    // Extract movie ID from link if not provided directly
-    const movieId = id || (link ? link.split('/').pop() : '');
+    // Extract TV show ID from link if not provided directly
+    const tvId = id || (link ? link.split('/').pop() : '');
     
     if (isDesktop) {
         return (
             <CustomContextMenu 
-                title={title} 
-                id={movieId} 
-                posterPath={posterImg} 
-                mediaType="movie"
+                title={title}
+                id={tvId}
+                posterPath={posterImg}
+                mediaType="tv"
             >
-                <MovieCard posterImg={posterImg} title={title} voteAverage={voteAverage} releaseDate={releaseDate} link={link} externalImg={externalImg} />
+                <TVShowCard posterImg={posterImg} title={title} voteAverage={voteAverage} releaseDate={releaseDate} link={link} externalImg={externalImg} />
             </CustomContextMenu>
         )
     }
     return (
         <div>
-            <MovieCard 
+            <TVShowCard 
                 posterImg={posterImg} 
                 dropDown={
                     <CustomDropDownMenu 
                         title={title} 
                         voteAverage={voteAverage} 
-                        id={movieId} 
+                        id={tvId} 
                         posterPath={posterImg} 
-                        mediaType="movie"
+                        mediaType="tv"
                     />
                 } 
                 title={title} 

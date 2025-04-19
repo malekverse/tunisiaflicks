@@ -15,6 +15,9 @@ import { FaBookmark } from "react-icons/fa";
 import { FaShareAlt } from "react-icons/fa";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/src/components/ui/carousel';
 import { HiOutlineArrowsExpand } from "react-icons/hi";
+import { addToFavorites, removeFromFavorites, saveForLater, removeFromSaved, addToWatchHistory, isInUserList } from '@/src/lib/user-content';
+import { useSession } from 'next-auth/react';
+import { toast } from '@/src/hooks/use-toast';
 
 
 
@@ -52,6 +55,23 @@ function Page({ params }: { params: { id: string } }) {
   console.log('episodes:', episodes)
   console.log('epNumber:', epNumber)
   const OPTIONS: EmblaOptionsType = { loop: true }
+  
+  const { data: session } = useSession();
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+
+  // Check if TV show is in favorites or saved list when component mounts
+  useEffect(() => {
+    if (session && data) {
+      const checkLists = async () => {
+        const favoriteStatus = await isInUserList('favorites', params.id);
+        const savedStatus = await isInUserList('saved', params.id);
+        setIsFavorite(favoriteStatus);
+        setIsSaved(savedStatus);
+      };
+      checkLists();
+    }
+  }, [session, data, params.id]);
 
   useEffect(() => {
     async function fetchMovieData() {
@@ -89,19 +109,121 @@ function Page({ params }: { params: { id: string } }) {
 
 
   const handleWatchNow = () => {
-    // Implement watch now functionality
+    if (!session) {
+      toast({
+        title: "Login Required",
+        description: "Please login to watch this TV show",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Add to watch history when user watches the TV show
+    if (data) {
+      addToWatchHistory({
+        id: params.id,
+        title: data.name,
+        poster_path: data.poster_path,
+        media_type: 'tv',
+        added_at: new Date()
+      }).catch(error => {
+        console.error('Failed to add to watch history:', error);
+      });
+    }
+    
+    // Continue with watch functionality
   };
 
   const handleWatchTrailer = () => {
     // Implement watch trailer functionality
   };
 
-  const handleAddToFavorites = () => {
-    // Implement add to favorites functionality
+  const handleAddToFavorites = async () => {
+    if (!session) {
+      toast({
+        title: "Login Required",
+        description: "Please login to add to favorites",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!data) return;
+
+    try {
+      if (isFavorite) {
+        await removeFromFavorites(params.id);
+        setIsFavorite(false);
+        toast({
+          title: "Removed from favorites",
+          description: `${data.name} has been removed from your favorites`
+        });
+      } else {
+        await addToFavorites({
+          id: params.id,
+          title: data.name,
+          poster_path: data.poster_path,
+          media_type: 'tv',
+          added_at: new Date()
+        });
+        setIsFavorite(true);
+        toast({
+          title: "Added to favorites",
+          description: `${data.name} has been added to your favorites`
+        });
+      }
+    } catch (error) {
+      console.error('Failed to update favorites:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update favorites",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleSaveForLater = () => {
-    // Implement save for later functionality
+  const handleSaveForLater = async () => {
+    if (!session) {
+      toast({
+        title: "Login Required",
+        description: "Please login to save for later",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!data) return;
+
+    try {
+      if (isSaved) {
+        await removeFromSaved(params.id);
+        setIsSaved(false);
+        toast({
+          title: "Removed from saved",
+          description: `${data.name} has been removed from your saved list`
+        });
+      } else {
+        await saveForLater({
+          id: params.id,
+          title: data.name,
+          poster_path: data.poster_path,
+          media_type: 'tv',
+          added_at: new Date()
+        });
+        setIsSaved(true);
+        toast({
+          title: "Saved for later",
+          description: `${data.name} has been saved for later`
+        });
+      }
+    } catch (error) {
+      console.error('Failed to update saved list:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update saved list",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleShare = () => {
@@ -187,10 +309,9 @@ function Page({ params }: { params: { id: string } }) {
                           </Button>
                         </div>
                         <div className='flex justify-center items-center gap-3'>
-                          <InteractiveButton clicked={handleAddToFavorites} icon={<FaHeart className='w-5 h-5' />} title="Add to Favories" titleled="Favorited!" />
-                          <div className='mx-2 group cursor-pointer'><FaBookmark className='w-5 h-5 group-hover:scale-110' /></div>
+                          <InteractiveButton clicked={handleAddToFavorites} icon={<FaHeart className='w-5 h-5' />} title="Add to Favorites" titleled="Favorited!" isActive={isFavorite} />
+                          <InteractiveButton clicked={handleSaveForLater} icon={<FaBookmark className='w-5 h-5' />} title="Save for Later" titleled="Saved!" isActive={isSaved} />
                           <div className='group cursor-pointer'><FaShareAlt className='w-5 h-5 group-hover:scale-110' /></div>
-                          {/* <InteractiveButton clicked={handleSaveForLater} icon={<FaBookmark className='w-5 h-5' />} title="Save for Later" titleled="Saved!" /> */}
                           {/* <InteractiveButton clicked={handleShare} icon={<FaShareAlt className='w-5 h-5' />} title="Share" titleled="Shared" /> */}
                         </div>
                       </div>

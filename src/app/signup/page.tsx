@@ -8,6 +8,7 @@ import { Input } from '@/src/components/ui/input';
 import { Label } from '@/src/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/src/components/ui/card';
 import { useSession } from 'next-auth/react';
+import { motion } from 'framer-motion';
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -56,60 +57,81 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
-      <Card className="w-[350px] shadow-lg">
-        <CardHeader>
-          <CardTitle>Sign Up</CardTitle>
-          <CardDescription>Create a new account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit}>
-            <div className="grid w-full items-center gap-4">
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
+    <div className="flex items-center justify-center min-h-[50vh]">
+      <motion.div
+        initial={{ opacity: 0, y: -50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Card className="w-[350px] bg-black border border-gray-600 shadow-lg shadow-gray-600/20">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-red-600">Sign Up</CardTitle>
+            <CardDescription className="text-white/80">
+              Create a new account
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit}>
+              <div className="grid w-full items-center gap-4">
+                <div className="flex flex-col space-y-1.5">
+                  <Label htmlFor="name" className="text-white">
+                    Name
+                  </Label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    className="bg-black border-gray-600 text-white placeholder:text-white/50 focus:border-red-600 focus:ring-red-600"
+                  />
+                </div>
+                <div className="flex flex-col space-y-1.5">
+                  <Label htmlFor="email" className="text-white">
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="bg-black border-gray-600 text-white placeholder:text-white/50 focus:border-red-600 focus:ring-red-600"
+                  />
+                </div>
+                <div className="flex flex-col space-y-1.5">
+                  <Label htmlFor="password" className="text-white">
+                    Password
+                  </Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="bg-black border-gray-600 text-white placeholder:text-white/50 focus:border-red-600 focus:ring-red-600"
+                  />
+                </div>
               </div>
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-            <Button type="submit" className="w-full mt-4" disabled={isLoading}>
-              {isLoading ? 'Signing up...' : 'Sign Up'}
-            </Button>
-          </form>
-        </CardContent>
-        <CardFooter className="flex justify-center">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Already have an account?{' '}
-            <Link href="/login" className="text-blue-500 hover:underline">
-              Login
-            </Link>
-          </p>
-        </CardFooter>
-      </Card>
+              {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
+              <Button
+                type="submit"
+                className="w-full mt-4 bg-red-600 text-white hover:bg-red-700 transition-all duration-300"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Signing up...' : 'Sign Up'}
+              </Button>
+            </form>
+          </CardContent>
+          <CardFooter className="flex justify-center">
+            <p className="text-sm text-white/80">
+              Already have an account?{' '}
+              <Link href="/login" className="text-red-600 hover:underline">
+                Login
+              </Link>
+            </p>
+          </CardFooter>
+        </Card>
+      </motion.div>
     </div>
   );
 }

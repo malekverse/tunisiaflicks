@@ -102,6 +102,7 @@ const SmallSliders = ({ data }: { data: any }) => {
 }
 
 export default function MainPage() {
+  console.log("Slm seehby")
 
   const [data, setData] = useState(null)
   const [loader, setLoader] = useState(true)

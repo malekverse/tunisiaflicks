@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FaCog, FaMoon } from 'react-icons/fa';
 import { MdHome, MdOutlineHome, MdExplore, MdOutlineExplore, MdGroup, MdOutlineGroup, MdAlarm, MdOutlineAlarm, MdAccessTimeFilled, MdAccessTime, MdFavorite, MdFavoriteBorder, MdBookmark, MdBookmarkBorder, MdOutlineStar, MdOutlineStarBorder } from "react-icons/md";
+import { GiTunisia } from "react-icons/gi";
 
 import { useTheme } from 'next-themes'
 import { FiSun, FiMoon } from "react-icons/fi"
@@ -37,6 +38,13 @@ const Sidebar = () => {
                 { title: "movies", path: "/movies" },
                 { title: "tv", path: "/movies" },
             ]
+        },
+        {
+            title: "Tunisian",
+            DefIcon: <GiTunisia className="text-xl" />,
+            OutIcon: <GiTunisia className="text-xl" />,
+            path: "/tunisian",
+            localStorageName: "tunisian",
         },
         {
             title: "Discovery",

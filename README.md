@@ -1,26 +1,36 @@
-# TunisiaFlicks
+This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
-TunisiaFlicks is a free platform that allows users to watch movies and TV shows anytime, anywhere, without any filters. It provides access to the latest movies using the TMDB API and displays detailed movie statistics. The platform is designed with a strong focus on security and user privacy.
+## Getting Started
 
-## Features
+First, run the development server:
 
-- **Free Access**: Watch movies and TV shows for free with no restrictions.
-- **Latest Movies**: The platform pulls the latest movie data from TMDB API.
-- **Detailed Stats**: Get comprehensive statistics for each movie or TV show.
-- **Full Movie Access**: Watch entire movies or episodes without interruptions.
-- **Top-tier Security**: Advanced user authentication and secure algorithms to protect user data and accounts.
-- **Route Protection**: All routes are secured using techniques employed by major tech companies.
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-## Technologies Used
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-- **TMDB API**: To fetch the latest movie and TV show data.
-- **User Authentication**: Secure login and account protection mechanisms.
-- **Security Algorithms**: Industry-standard encryption and security techniques to ensure data privacy.
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-## Installation
+This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
 
-1. Clone the repository:
+## Learn More
 
-   ```bash
-   git clone https://github.com/your-username/tunisiaflicks.git
-   cd tunisiaflicks
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
