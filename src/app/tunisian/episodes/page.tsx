@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import MoviePosterCard from "@/src/components/MoviePosterCard";
 import { Skeleton } from "@/src/components/ui/skeleton";
@@ -11,6 +11,14 @@ type Episode = {
 };
 
 export default function EpisodesPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto p-4"><h1 className="text-2xl font-bold mb-6">Loading episodes...</h1></div>}>
+      <EpisodesContent />
+    </Suspense>
+  );
+}
+
+function EpisodesContent() {
   const searchParams = useSearchParams();
   const link = searchParams.get('link');
   const [episodes, setEpisodes] = useState<Episode[]>([]);
