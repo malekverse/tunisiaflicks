@@ -1,4 +1,8 @@
 "use client";
+
+// This page requires client-side rendering
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import MoviePosterCard from "@/src/components/MoviePosterCard";

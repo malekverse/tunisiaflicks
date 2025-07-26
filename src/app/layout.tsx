@@ -68,11 +68,7 @@ export const metadata: Metadata = {
     creator: '@TunisiaFlicks',
     images: ['https://tunisiaflicks.vercel.app/og-image.png'],
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-  },
+  // viewport property moved to separate viewport export
   verification: {
     google: 'aXq6rN-W2lrmjvTfoy1CJUXSmrurfBgJ0wMOR_fQUOU',
     yandex: 'your-yandex-verification',
