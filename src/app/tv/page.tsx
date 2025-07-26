@@ -122,6 +122,7 @@ export default function TVPage() {
 
   return (
     <div className='flex flex-col items-center justify-center w-full'>
+      <Genres type="tv"/>
       <div className='w-full sm:w-[90%] lg:w-[96%] xl:w-[97%] mt-5'>
         <h1 className='text-3xl sm:text-4xl font-bold mb-5'>TV Shows</h1>
       </div>

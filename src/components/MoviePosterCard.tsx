@@ -34,7 +34,7 @@ import { useMediaQuery } from '@/src/hooks/use-media-query';
 import { Button } from './ui/button';
 import { Skeleton } from './ui/skeleton';
 import { addToFavorites, saveForLater } from '@/src/lib/user-content';
-import { useToast, toast } from '@/src/hooks/use-toast';
+import { useToast } from '@/src/hooks/use-toast';
 
 export const MovieCard = ({ posterImg, title, voteAverage, releaseDate, dropDown, link, externalImg }: { dropDown?: any, posterImg: string, title: string, voteAverage?: any, releaseDate?: any, link?: string, externalImg?: boolean }) => {
     const displayVoteAverage = voteAverage ? voteAverage.toString().substring(0, 3) : "N/A"; // Fallback value for voteAverage

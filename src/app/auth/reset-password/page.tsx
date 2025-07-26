@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/src/components/ui/button';
@@ -12,14 +12,6 @@ import { Alert, AlertDescription } from '@/src/components/ui/alert';
 import { motion } from 'framer-motion';
 
 export default function ResetPasswordPage() {
-  return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-[50vh]">Loading...</div>}>
-      <ResetPasswordForm />
-    </Suspense>
-  );
-}
-
-function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');

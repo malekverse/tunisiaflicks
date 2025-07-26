@@ -18,6 +18,7 @@ import { HiOutlineArrowsExpand } from "react-icons/hi";
 import { addToFavorites, removeFromFavorites, saveForLater, removeFromSaved, addToWatchHistory, isInUserList } from '@/src/lib/user-content';
 import { useSession } from 'next-auth/react';
 import { toast } from '@/src/hooks/use-toast';
+import Link from 'next/link';
 
 
 
@@ -29,18 +30,18 @@ function Page({ params }: { params: { id: string } }) {
       // https://www.2embed.cc/
       // https://www.2embed.skin/
       name: '2embed.cc',
-      url: `https://www.2embed.skin/embedtvfull/${params.id}/${epNumber.season_number}/${epNumber.episode_number}`
+      url: `https://www.2embed.cc/embedtv/${params.id}&s=${epNumber.season_number}&e=${epNumber.episode_number}`
     },
     {
       // https://www.superembed.stream/#install
       name: 'MultiEmbed',
-      url: `https://multiembed.mov/?video_id=${params.id}&tmdb=1`
+      url: `https://multiembed.mov/?video_id=${params.id}&tmdb=1&s=${epNumber.season_number}&e=${epNumber.episode_number}`
     },
-    {
-      // https://2embed.pro
-      name: '2embed.pro',
-      url: `https://2embed.pro/embed/movie/${params.id}`
-    },
+    // {
+    //   // https://2embed.pro
+    //   name: '2embed.pro',
+    //   url: `https://2embed.pro/embed/movie/${params.id}`
+    // },
   ]
 
   const [data, setData] = useState(null)
@@ -301,9 +302,11 @@ function Page({ params }: { params: { id: string } }) {
 
                       <div className='flex gap-4 mt-6 flex-wrap justify-center md:justify-start'>
                         <div className='flex justify-center items-center gap-3'>
-                          <Button onClick={handleWatchNow} className='text-white-500 bg-red-500 hover:bg-red-400'>
-                            <FaPlay className="mr-1" /> Watch Now
-                          </Button>
+                          <Link href={"#streamSection"}>
+                            <Button onClick={handleWatchNow} className='text-white-500 bg-red-500 hover:bg-red-400'>
+                              <FaPlay className="mr-1" /> Watch Now
+                            </Button>
+                          </Link>
                           <Button onClick={handleWatchTrailer} variant='outline' className='border-white bg-transparent'>
                             Watch Trailer
                           </Button>
@@ -349,31 +352,102 @@ function Page({ params }: { params: { id: string } }) {
 }
 
 const WatchEpisode = ({ id, epNumber, streamServices, similar }) => {
+  const [currentStreamService, setCurrentStreamService] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Check if epNumber has valid season and episode numbers
+  const hasValidEpisode = epNumber && epNumber.season_number !== undefined && epNumber.episode_number !== undefined;
+
   return (
-    <div className='w-full h-[50vh] md:h-[80vh] md:pr-5' id='watchSection'>
-      <div className='flex gap-3 flex-wrap py-1 pl-2  bg-red-500 rounded-t-lg'>
+    <div id='streamSection' className='w-full h-[50vh] md:h-[80vh] md:pr-5'>
+      <div className='flex gap-3 flex-wrap py-1 pl-2 bg-red-500 rounded-t-lg'>
         {streamServices.map((item, index) => (
-          <div key={index} className='cursor-pointer px-1 rounded-md text-white-500 bg-red-500 hover:bg-red-400'>
+          <div 
+            key={index} 
+            className={`cursor-pointer px-2 py-1 rounded-md text-white-500 ${currentStreamService === index ? 'bg-red-600' : 'bg-red-500 hover:bg-red-400'}`}
+            onClick={() => {
+              if (!hasValidEpisode) {
+                toast({
+                  title: "Select an Episode",
+                  description: "Please select a season and episode first",
+                  variant: "destructive",
+                  duration: 3000
+                });
+                return;
+              }
+              
+              setCurrentStreamService(index);
+              setIsLoading(true);
+              
+              // Show toast notification when stream service changes
+              toast({
+                title: "Stream Service Changed",
+                description: `Now using ${item.name} service`,
+                duration: 3000
+              });
+            }}
+          >
             {item.name}
           </div>
         ))}
       </div>
-      <iframe src={streamServices[0].url} className='w-full h-[80%] md:h-full' allowFullScreen></iframe>
+      
+      {!hasValidEpisode ? (
+        <div className="w-full h-[80%] md:h-full flex items-center justify-center bg-gray-900">
+          <div className="text-center">
+            <h3 className="text-xl font-semibold mb-2">Select a Season and Episode</h3>
+            <p className="text-gray-400">Please select a season and episode to watch</p>
+          </div>
+        </div>
+      ) : (
+        <div className="relative w-full h-[80%] md:h-full">
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-70 z-10">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+            </div>
+          )}
+          <iframe 
+            id="streamFrame" 
+            src={streamServices[currentStreamService].url} 
+            className='w-full h-full' 
+            allowFullScreen
+            onLoad={() => setIsLoading(false)}
+          ></iframe>
+        </div>
+      )}
     </div>
   )
 }
 
 
 const Episodes = ({ id, episodes, setEpNumberParent, selectedSeasons }) => {
-  const [selectedEpisodeNum, setSelectedEpisodeNum] = useState(null)
+  const [selectedEpisodeNum, setSelectedEpisodeNum] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedEpisodeId, setSelectedEpisodeId] = useState(null);
+  
   const fetchMovieData = async (id, selectedEpisode) => {
     try {
-      console.log(id, selectedSeasons.season_number, selectedEpisode);
+      setIsLoading(true);
       const episodesData = await getEpisodeDetails(id, selectedSeasons.season_number, selectedEpisode);
       setEpNumberParent(episodesData);
-      console.log(episodesData);
+      
+      // Show toast notification when episode is selected
+      toast({
+        title: "Episode Selected",
+        description: `Now watching S${episodesData.season_number}:E${episodesData.episode_number} - ${episodesData.name}`,
+        duration: 3000
+      });
+      
+      setIsLoading(false);
     } catch (error) {
-      console.error("Error fetching movie:", error);
+      console.error("Error fetching episode:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load episode details",
+        variant: "destructive",
+        duration: 3000
+      });
+      setIsLoading(false);
     }
   };
 
@@ -384,38 +458,75 @@ const Episodes = ({ id, episodes, setEpNumberParent, selectedSeasons }) => {
     }
   }, [id, selectedSeasons, selectedEpisodeNum]);
 
-  const handleWatchEpisode = (id, season, episode) => {
+  const handleWatchEpisode = (episodeId, season, episode) => {
+    setSelectedEpisodeId(episodeId);
     setSelectedEpisodeNum(episode);
   };
 
   return (
-    <a href="#watchSection" id='episodesSection'>
-    <div className='w-full'>
+    <div id='episodesSection' className='w-full'>
       <p className='md:ml-10 mb-8 text-2xl'>Episodes: {episodes.name}</p>
+      {isLoading && (
+        <div className="flex justify-center mb-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-500"></div>
+        </div>
+      )}
       <div className='flex gap-3 flex-wrap justify-center'>
         {episodes.episodes.map((item, index) => (
-          <div key={index} title={item.overview} onClick={() => handleWatchEpisode(item.id, item.season_number, item.episode_number)}
-            className='flex flex-col gap-3 items-center mt-3 cursor-pointer'>
-            <Image src={`https://image.tmdb.org/t/p/w300${item.still_path}`} className=' rounded-md' width={300} height={300} alt={item.name} />
-            <div className='flex flex-col gap-1'>
-              <p className='font-semibold max-w-[300px]' title={item.name}>episode {item.episode_number}: {item.name}</p>
+          <Link href="#streamSection" key={index}>
+            <div 
+              title={item.overview} 
+              onClick={() => handleWatchEpisode(item.id, item.season_number, item.episode_number)}
+              className={`flex flex-col gap-3 items-center mt-3 cursor-pointer transition-all duration-200 ${selectedEpisodeId === item.id ? 'scale-105 ring-2 ring-red-500 rounded-md' : 'hover:scale-105'}`}
+            >
+              <Image 
+                src={item.still_path ? `https://image.tmdb.org/t/p/w300${item.still_path}` : '/episode-placeholder.png'} 
+                className='rounded-md' 
+                width={300} 
+                height={300} 
+                alt={item.name} 
+              />
+              <div className='flex flex-col gap-1'>
+                <p className='font-semibold max-w-[300px]' title={item.name}>Episode {item.episode_number}: {item.name}</p>
+              </div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
       <br />
     </div>
-    </a>)
+  )
 }
 
 
 const TvShowSeasonsCarousel = ({ setEpisodesParent, id, data }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedSeason, setSelectedSeason] = useState(null);
+  
   const fetchSeasonData = useCallback(async (seasonNumber) => {
     try {
+      setIsLoading(true);
       const episodesData = await getSeasonDetails(id, seasonNumber);
       setEpisodesParent(episodesData);
+      setSelectedSeason(seasonNumber);
+      
+      // Show toast notification when season is selected
+      toast({
+        title: "Season Selected",
+        description: `Now viewing ${episodesData.name}`,
+        duration: 3000
+      });
+      
+      setIsLoading(false);
     } catch (error) {
       console.error("Error fetching season:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load season details",
+        variant: "destructive",
+        duration: 3000
+      });
+      setIsLoading(false);
     }
   }, [id, setEpisodesParent]);
 

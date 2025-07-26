@@ -18,6 +18,7 @@ export default function Page({ params }: { params: { id: string } }) {
         `https://api.themoviedb.org/3/discover/movie?api_key=b5d2609c326586f7f753f77b085a0b31&with_genres=${params.id}&page=${page}`
       );
       const data = await response.json();
+      console.log(data)
       setData(data.results);
       setTotalPages(data.total_pages);
     } catch (error) {

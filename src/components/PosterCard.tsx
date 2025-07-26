@@ -2,11 +2,12 @@ import React from 'react'
 import { IoMdStar } from "react-icons/io";
 import Link from 'next/link';
 
-export default function PosterCard({ posterImg, title, voteAverage, releaseDate, dropDown, link, externalImg }:
-     { dropDown?: any, posterImg: string, title: string, voteAverage?: any, releaseDate?: any, link?: string, externalImg?: boolean }) {
+export default function PosterCard({ posterImg, title, voteAverage, releaseDate, dropDown, link, externalImg, mediaType }:
+     { dropDown?: any, posterImg: string, title: string, voteAverage?: any, releaseDate?: any, link?: string, externalImg?: boolean, mediaType?: string }) {
   return (
             <Link href={link || "/"}>
                 <div className='w-[150px] h-[196px] sm:w-[170px] sm:h-[225px]  rounded-xl p-0 z-0 relative'
+                    title={title}
                     style={posterImg ? {
                         backgroundImage: (!externalImg ? `url(https://image.tmdb.org/t/p/w500${posterImg})` : `url(${posterImg})`),
                         backgroundSize: 'cover', backgroundRepeat: 'no-repeat', backgroundPosition: 'center'
@@ -26,6 +27,12 @@ export default function PosterCard({ posterImg, title, voteAverage, releaseDate,
                             <IoMdStar className='inline-block mr-1 text-yellow-400' />
                             <p className="inline-block bbc-text-shadow p-0 text-xs">{voteAverage.toString().substring(0, 3)}</p>
                         </label>
+                        : null
+                    }
+                    {
+                        mediaType ? <div className='absolute right-1 top-1 bg-gray-900 pb-1 px-2 rounded-xl scale-75 sm:scale-100 opacity-75'>
+                            <p>{mediaType}</p>
+                        </div>
                         : null
                     }
                     <div className='absolute bottom-5 left-3'>

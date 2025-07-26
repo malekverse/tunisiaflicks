@@ -4,15 +4,16 @@ import { Button } from './ui/button';
 import Link from 'next/link';
 import { Skeleton } from './ui/skeleton';
 
-export default function Genres() {
+export default function Genres({ type }: { type?: any }) {
 
     const [data, setData] = useState(null);
     const [loader, setLoader] = useState(true);
 
     React.useEffect(() => {
-        fetch('https://api.themoviedb.org/3/genre/movie/list?api_key=b5d2609c326586f7f753f77b085a0b31&language=en-US')
+        fetch(`https://api.themoviedb.org/3/genre/${type === "tv" ? "tv" : "movie" }/list?api_key=b5d2609c326586f7f753f77b085a0b31&language=en-US`)
             .then(response => response.json())
             .then(data => {
+                console.log(data)
                 setData(data.genres);
                 setLoader(false);
             })

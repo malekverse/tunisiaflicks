@@ -18,6 +18,7 @@ import { HiOutlineArrowsExpand } from "react-icons/hi";
 import { addToFavorites, removeFromFavorites, saveForLater, removeFromSaved, addToWatchHistory, isInUserList } from '@/src/lib/user-content';
 import { useSession } from 'next-auth/react';
 import { toast } from '@/src/hooks/use-toast';
+import Link from 'next/link';
 
 
 
@@ -35,11 +36,11 @@ function Page({ params }: { params: { id: string } }) {
       name: 'MultiEmbed',
       url: `https://multiembed.mov/?video_id=${params.id}&tmdb=1`
     },
-    {
-      // https://2embed.pro
-      name: '2embed.pro',
-      url: `https://2embed.pro/embed/movie/${params.id}`
-    },
+    // {
+    //   // https://2embed.pro
+    //   name: '2embed.pro',
+    //   url: `https://2embed.pro/embed/movie/${params.id}`
+    // },
   ]
 
   const [data, setData] = useState(null)
@@ -126,7 +127,6 @@ function Page({ params }: { params: { id: string } }) {
         console.error('Failed to add to watch history:', error);
       });
     }
-    
     // Continue with watch functionality
   };
 
@@ -304,18 +304,20 @@ function Page({ params }: { params: { id: string } }) {
 
                       <div className='flex gap-4 mt-6 flex-wrap justify-center md:justify-start'>
                         <div className='flex justify-center items-center gap-3'>
-                          <Button onClick={handleWatchNow} className='text-white-500 bg-red-500 hover:bg-red-400'>
-                            <FaPlay className="mr-1" /> Watch Now
-                          </Button>
+                          <Link href={"#streamSection"}>
+                            <Button onClick={handleWatchNow} className='text-white-500 bg-red-500 hover:bg-red-400'>
+                              <FaPlay className="mr-1" /> Watch Now
+                            </Button>
+                          </Link>
                           <Button onClick={handleWatchTrailer} variant='outline' className='border-white bg-transparent'>
                             Watch Trailer
                           </Button>
                         </div>
                         <div className='flex justify-center items-center gap-3'>
                           <InteractiveButton clicked={handleAddToFavorites} icon={<FaHeart className='w-5 h-5' />} title="Add to Favorites" titleled="Favorited!" isActive={isFavorite} />
-                          <div className='mx-2 group cursor-pointer'><FaBookmark className='w-5 h-5 group-hover:scale-110' /></div>
-                          <div className='group cursor-pointer'><FaShareAlt className='w-5 h-5 group-hover:scale-110' /></div>
                           <InteractiveButton clicked={handleSaveForLater} icon={<FaBookmark className='w-5 h-5' />} title="Save for Later" titleled="Saved!" isActive={isSaved} />
+                          {/* <div className='mx-2 group cursor-pointer'><FaBookmark className='w-5 h-5 group-hover:scale-110' /></div> */}
+                          <div className='group cursor-pointer'><FaShareAlt className='w-5 h-5 group-hover:scale-110' /></div>
                           {/* <InteractiveButton clicked={handleShare} icon={<FaShareAlt className='w-5 h-5' />} title="Share" titleled="Shared" /> */}
                         </div>
                       </div>
@@ -331,14 +333,30 @@ function Page({ params }: { params: { id: string } }) {
                 <SimilarMoviesCarousel similar={similar} />
 
                 <div className='w-full h-[50vh] md:h-[80vh] md:pr-5'>
-                  <div className='flex gap-3 flex-wrap py-1 pl-2  bg-red-500 rounded-t-lg'>
+                  <div id='streamSection' className='flex gap-3 flex-wrap py-1 pl-2 bg-red-500 rounded-t-lg'>
                     {streamServices.map((item, index) => (
-                        <div key={index} className='cursor-pointer px-1 rounded-md text-white-500 bg-red-500 hover:bg-red-400'>
+                        <div 
+                          key={index} 
+                          className='cursor-pointer px-2 py-1 rounded-md text-white-500 bg-red-500 hover:bg-red-400'
+                          onClick={() => {
+                            // Update iframe source when clicking on a stream service
+                            const iframe = document.querySelector('#streamFrame') as HTMLIFrameElement;
+                            if (iframe) {
+                              iframe.src = item.url;
+                              // Show toast notification when stream service changes
+                              toast({
+                                title: "Stream Service Changed",
+                                description: `Now using ${item.name} service`,
+                                duration: 3000
+                              });
+                            }
+                          }}
+                        >
                           {item.name}
                         </div>
                     ))}
                   </div>
-                  <iframe src={streamServices[0].url} className='w-full h-[80%] md:h-full' allowFullScreen></iframe>
+                  <iframe id="streamFrame" src={streamServices[0].url} className='w-full h-[80%] md:h-full' allowFullScreen></iframe>
                 </div>
 
                 <br />

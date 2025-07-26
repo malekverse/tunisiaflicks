@@ -8,6 +8,7 @@ import Navbar from "@/src/components/Navbar";
 import Sidebar from "@/src/components/Sidebar";
 import { SessionProvider } from "@/src/components/SessionProvider";
 import Loader from "../components/Loader";
+import { Toaster } from "@/src/components/ui/toaster";
 
 import type { Viewport } from 'next'
 
@@ -111,6 +112,7 @@ export default function RootLayout({
             </div>
           </Providers>
         </SessionProvider>
+        <Toaster />
         <SpeedInsights />
         <Analytics />
       </body>
