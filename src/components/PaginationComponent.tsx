@@ -11,6 +11,7 @@ import {
     PaginationPrevious,
 } from "@/src/components/ui/pagination";
 import { useMediaQuery } from '@/src/hooks/use-media-query';
+import { useT } from '@/src/components/I18nProvider';
 
 interface PaginationComponentProps {
     currentPage: number;
@@ -26,6 +27,7 @@ const PaginationComponent: React.FC<PaginationComponentProps> = ({
     maxVisiblePages = 5
 }) => {
     const isMobile = useMediaQuery("(max-width: 640px)");
+    const t = useT();
 
     const getPageNumbers = () => {
         const pageNumbers = [];
@@ -68,10 +70,12 @@ const PaginationComponent: React.FC<PaginationComponentProps> = ({
     };
 
     return (
-        <Pagination>
+        <Pagination aria-label={t('pagination.aria')}>
             <PaginationContent className="flex-wrap justify-center">
                 <PaginationItem>
-                    <PaginationPrevious 
+                    <PaginationPrevious
+                        label={t('pagination.previous')}
+                        aria-label={t('pagination.previousAria')}
                         onClick={() => onPageChange(currentPage - 1)}
                         className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
                     />
@@ -79,7 +83,7 @@ const PaginationComponent: React.FC<PaginationComponentProps> = ({
                 {getPageNumbers().map((pageNumber, index) => (
                     <PaginationItem key={index}>
                         {pageNumber === 'ellipsis' ? (
-                            <PaginationEllipsis />
+                            <PaginationEllipsis label={t('pagination.more')} />
                         ) : (
                             <PaginationLink
                                 href="#"
@@ -95,7 +99,9 @@ const PaginationComponent: React.FC<PaginationComponentProps> = ({
                     </PaginationItem>
                 ))}
                 <PaginationItem>
-                    <PaginationNext 
+                    <PaginationNext
+                        label={t('pagination.next')}
+                        aria-label={t('pagination.nextAria')}
                         onClick={() => onPageChange(currentPage + 1)}
                         className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
                     />

@@ -1,6 +1,7 @@
 "use client"
 
 import { useToast } from "@/src/hooks/use-toast"
+import { useDir } from "@/src/components/I18nProvider"
 import {
   Toast,
   ToastClose,
@@ -12,9 +13,11 @@ import {
 
 export function Toaster() {
   const { toasts } = useToast()
+  // Toasts sit at the end edge, so they are swiped away towards it.
+  const swipeDirection = useDir() === "rtl" ? "left" : "right"
 
   return (
-    <ToastProvider>
+    <ToastProvider swipeDirection={swipeDirection}>
       {toasts.map(function ({ id, title, description, action, ...props }) {
         return (
           <Toast key={id} {...props}>

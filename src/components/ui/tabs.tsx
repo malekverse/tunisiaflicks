@@ -4,8 +4,12 @@ import * as React from "react"
 import * as TabsPrimitive from "@radix-ui/react-tabs"
 
 import { cn } from "@/src/lib/utils"
+import { useDir } from "@/src/components/I18nProvider"
 
-const Tabs = TabsPrimitive.Root
+// Radix doesn't read the page direction from <html>: pass it (arrow-key order).
+const Tabs = (props: React.ComponentProps<typeof TabsPrimitive.Root>) => (
+  <TabsPrimitive.Root dir={useDir()} {...props} />
+)
 
 const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
