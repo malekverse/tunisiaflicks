@@ -2,11 +2,12 @@ import Genres from '@/src/components/Genres'
 import { HeroSlider, PosterSlider } from '@/src/components/Sliders'
 import getTVShows from './actions'
 import { getT } from '@/src/lib/i18n/server'
+import { getKidsMode } from '@/src/lib/profiles'
 
 export const dynamic = 'force-dynamic'
 
 export default async function TVPage() {
-  const data = await getTVShows()
+  const data = await getTVShows(await getKidsMode())
   const t = getT()
 
   return (

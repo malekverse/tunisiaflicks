@@ -1,14 +1,15 @@
-import { tmdbFetchSafe } from '@/src/lib/tmdb';
+import { fetchList } from '@/src/lib/kids';
 import type { TVShowsState } from './types';
 
 // Each row loads independently: if one TMDB call fails the others still render.
-export default async function getTVShows(): Promise<Partial<TVShowsState>> {
+// Kids profiles get the same rows built from kids' TV only (see lib/kids.ts).
+export default async function getTVShows(kids = false): Promise<Partial<TVShowsState>> {
   const [trendingTVShows, popularTVShows, topRatedTVShows, onTheAirTVShows, airingTodayTVShows] = await Promise.all([
-    tmdbFetchSafe('trending/tv/day', { page: 1 }),
-    tmdbFetchSafe('tv/popular', { page: 1 }),
-    tmdbFetchSafe('tv/top_rated', { page: 1 }),
-    tmdbFetchSafe('tv/on_the_air', { page: 1 }),
-    tmdbFetchSafe('tv/airing_today', { page: 1 }),
+    fetchList('tv', 'trending', kids, 'trending/tv/day'),
+    fetchList('tv', 'popular', kids, 'tv/popular'),
+    fetchList('tv', 'top_rated', kids, 'tv/top_rated'),
+    fetchList('tv', 'on_the_air', kids, 'tv/on_the_air'),
+    fetchList('tv', 'airing_today', kids, 'tv/airing_today'),
   ]);
 
   return {

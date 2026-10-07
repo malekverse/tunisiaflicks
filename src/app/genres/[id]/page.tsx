@@ -4,6 +4,8 @@ import { getList, parsePage } from '@/src/lib/lists'
 import { tmdbFetchSafe, tmdbLanguage } from '@/src/lib/tmdb'
 import { createTranslator } from '@/src/lib/i18n'
 import { getLocale } from '@/src/lib/i18n/server'
+import { kidsDiscoverParams } from '@/src/lib/kids'
+import { getKidsMode } from '@/src/lib/profiles'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,9 +14,10 @@ export default async function GenrePage({ params, searchParams }: { params: { id
   const kind = searchParams.type === 'tv' ? 'tv' : 'movie'
   const locale = getLocale()
   const t = createTranslator(locale)
+  const kids = await getKidsMode()
 
   const [{ results, totalPages, failed }, genres] = await Promise.all([
-    getList(`discover/${kind}`, page, { with_genres: params.id }),
+    getList(`discover/${kind}`, page, kids ? kidsDiscoverParams(kind, { with_genres: params.id }) : { with_genres: params.id }),
     tmdbFetchSafe<{ genres: { id: number, name: string }[] }>(`genre/${kind}/list`, { language: tmdbLanguage(locale) }, 86400),
   ])
   const genreName = genres?.genres.find((genre) => String(genre.id) === params.id)?.name

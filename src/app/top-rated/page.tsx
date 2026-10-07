@@ -3,6 +3,8 @@ import MediaGrid from '@/src/components/MediaGrid'
 import PageNav from '@/src/components/PageNav'
 import { getList, parsePage } from '@/src/lib/lists'
 import { getT } from '@/src/lib/i18n/server'
+import { kidsList } from '@/src/lib/kids'
+import { getKidsMode } from '@/src/lib/profiles'
 
 export const dynamic = 'force-dynamic'
 export const generateMetadata = () => ({ title: `${getT()('topRated.title')} | TunisiaFlicks` })
@@ -10,7 +12,10 @@ export const generateMetadata = () => ({ title: `${getT()('topRated.title')} | T
 export default async function TopRatedPage({ searchParams }: { searchParams: { page?: string, type?: string } }) {
   const page = parsePage(searchParams.page)
   const kind = searchParams.type === 'tv' ? 'tv' : 'movie'
-  const { results, totalPages, failed } = await getList(`${kind}/top_rated`, page)
+  const kids = kidsList(kind, 'top_rated')
+  const { results, totalPages, failed } = await getKidsMode()
+    ? await getList(kids.path, page, kids.params)
+    : await getList(`${kind}/top_rated`, page)
   const t = getT()
 
   const tab = (active: boolean) =>

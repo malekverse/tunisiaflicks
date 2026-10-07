@@ -38,6 +38,13 @@ export function kidsDiscoverParams(kind: Kind, params: Params = {}): Params {
 
 export type KidsList = 'trending' | 'popular' | 'top_rated' | 'now_playing' | 'upcoming' | 'on_the_air' | 'airing_today'
 
+/** One of TMDB's fixed lists, or its Kids-safe stand-in for a Kids profile. */
+export function fetchList(kind: Kind, list: KidsList, kids: boolean, path: string) {
+  if (!kids) return tmdbFetchSafe(path, { page: 1 })
+  const request = kidsList(kind, list)
+  return tmdbFetchSafe(request.path, { ...request.params, page: 1 })
+}
+
 const day = (offset: number) => new Date(Date.now() + offset * 86400000).toISOString().slice(0, 10)
 
 /** The Kids-safe discover request standing in for one of TMDB's fixed lists (which can't be filtered). */

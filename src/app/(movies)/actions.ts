@@ -1,14 +1,15 @@
-import { tmdbFetchSafe } from '@/src/lib/tmdb'
+import { fetchList } from '@/src/lib/kids'
 import type { MoviesState } from './types'
 
 // Each row loads independently: if one TMDB call fails the others still render.
-export default async function getMovies(): Promise<MoviesState> {
+// Kids profiles get the same rows built from G/PG titles only (see lib/kids.ts).
+export default async function getMovies(kids = false): Promise<MoviesState> {
   const [TrendingMovies, popularMovies, topRatedMovies, nowPlayingMovies, upcomingMovies] = await Promise.all([
-    tmdbFetchSafe('trending/movie/day', { page: 1 }),
-    tmdbFetchSafe('movie/popular', { page: 1 }),
-    tmdbFetchSafe('movie/top_rated', { page: 1 }),
-    tmdbFetchSafe('movie/now_playing', { page: 1 }),
-    tmdbFetchSafe('movie/upcoming', { page: 1 }),
+    fetchList('movie', 'trending', kids, 'trending/movie/day'),
+    fetchList('movie', 'popular', kids, 'movie/popular'),
+    fetchList('movie', 'top_rated', kids, 'movie/top_rated'),
+    fetchList('movie', 'now_playing', kids, 'movie/now_playing'),
+    fetchList('movie', 'upcoming', kids, 'movie/upcoming'),
   ])
 
   return {

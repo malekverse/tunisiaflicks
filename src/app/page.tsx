@@ -4,13 +4,14 @@ import Genres from '@/src/components/Genres'
 import { HeroSlider, PosterSlider } from '@/src/components/Sliders'
 import getMovies from './(movies)/actions'
 import { getT } from '@/src/lib/i18n/server'
+import { getKidsMode } from '@/src/lib/profiles'
 
 // TMDB responses are cached for an hour by the data cache (see lib/tmdb.ts); the page itself is
 // rendered per request so a TMDB hiccup can never get frozen into a static page.
 export const dynamic = 'force-dynamic'
 
 export default async function MainPage() {
-  const data = await getMovies()
+  const data = await getMovies(await getKidsMode())
   const t = getT()
 
   return (

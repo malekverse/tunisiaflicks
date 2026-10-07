@@ -3,6 +3,8 @@ import HorizontalScroller from './custom/HorizontalScroller';
 import { Button } from './ui/button';
 import { tmdbFetchSafe, tmdbLanguage } from '@/src/lib/tmdb';
 import { getLocale } from '@/src/lib/i18n/server';
+import { isGrownUpGenre } from '@/src/lib/kids';
+import { getKidsMode } from '@/src/lib/profiles';
 
 // Server component: the genre list is fetched on the server (cached for a day), so the TMDB key
 // never reaches the browser and the bar renders with the page instead of popping in later.
@@ -10,7 +12,9 @@ export default async function Genres({ type }: { type?: 'tv' | 'movie' }) {
     const data = await tmdbFetchSafe<{ genres: { id: number, name: string }[] }>(
         `genre/${type === 'tv' ? 'tv' : 'movie'}/list`, { language: tmdbLanguage(getLocale()) }, 86400
     );
-    const genres = data?.genres ?? [];
+    // Kids profiles don't get Horror, Crime, War…: those lists would be empty for them anyway.
+    const kids = await getKidsMode();
+    const genres = (data?.genres ?? []).filter((genre) => !kids || !isGrownUpGenre(genre.id));
     if (genres.length === 0) return null;
 
     return (

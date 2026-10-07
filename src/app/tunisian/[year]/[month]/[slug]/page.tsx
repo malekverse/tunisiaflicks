@@ -5,6 +5,8 @@ import { FaPlay } from 'react-icons/fa6'
 import TunisianSeasons from '@/src/components/detail/TunisianSeasons'
 import PosterCard from '@/src/components/PosterCard'
 import { GRID_CLASS } from '@/src/components/MediaGrid'
+import KidsBlocked from '@/src/components/profiles/KidsBlocked'
+import { getKidsMode } from '@/src/lib/profiles'
 import { getTunisianDetail, getTunisianTitles } from '@/src/lib/tunisian'
 import { getT } from '@/src/lib/i18n/server'
 
@@ -25,6 +27,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function TunisianDetailPage({ params }: Props) {
+  // The Tunisian catalogue has no age ratings, so Kids profiles can't be offered it.
+  if (await getKidsMode()) return <KidsBlocked what={'The Tunisian catalogue'} />
   const detail = await getTunisianDetail(slugOf(params))
   const t = getT()
   if (detail === null) notFound()
