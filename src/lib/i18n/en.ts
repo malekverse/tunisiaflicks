@@ -613,6 +613,16 @@ export const en = {
   // Cinema mode
   'stream.lightsOff': 'Lights off',
   'stream.lightsOn': 'Lights on',
+
+  // Pick of the day, community trending
+  'pick.title': 'Pick of the day',
+  'pick.moreInfo': 'More info',
+  'pick.runtime': '{hours}h {minutes}m',
+  'pick.seasons': '{count} seasons',
+  'home.communityTrending': 'Trending on TunisiaFlicks this week',
+
+  // Pick of the day (cont.)
+  'pick.oneSeason': '1 season',
 } satisfies Record<string, string>
 
 export type TKey = keyof typeof en

@@ -60,6 +60,7 @@ const en: Record<LegalPageId, LegalDoc> = {
         bullets: [
           'To provide your account features (sync, recommendations, alerts, your yearly recap).',
           'To send the emails you ask for: password resets, email verification and release alerts.',
+          'To show anonymous site-wide trends ("Trending on TunisiaFlicks"): only counts of how many accounts watched a title, and only once several different accounts have.',
           'To keep the service secure and fix problems.',
         ],
       },
@@ -213,6 +214,7 @@ const ar: Record<LegalPageId, LegalDoc> = {
         bullets: [
           'لتقديم ميزات حسابك (المزامنة والاقتراحات والتنبيهات وملخصك السنوي).',
           'لإرسال الرسائل التي تطلبها: إعادة تعيين كلمة المرور وتأكيد البريد وتنبيهات الإصدارات.',
+          'لعرض توجهات عامة مجهولة الهوية («الأكثر مشاهدة على TunisiaFlicks»): مجرد عدد الحسابات التي شاهدت عملًا ما، وفقط بعد أن تشاهده عدة حسابات مختلفة.',
           'للحفاظ على أمان الخدمة وإصلاح المشاكل.',
         ],
       },

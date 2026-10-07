@@ -615,4 +615,14 @@ export const ar: Record<TKey, string> = {
   // Cinema mode
   'stream.lightsOff': 'إطفاء الأضواء',
   'stream.lightsOn': 'تشغيل الأضواء',
+
+  // Pick of the day, community trending
+  'pick.title': 'اختيار اليوم',
+  'pick.moreInfo': 'تفاصيل أكثر',
+  'pick.runtime': '{hours}س {minutes}د',
+  'pick.seasons': '{count} مواسم',
+  'home.communityTrending': 'الأكثر مشاهدة على TunisiaFlicks هذا الأسبوع',
+
+  // Pick of the day (cont.)
+  'pick.oneSeason': 'موسم واحد',
 }
