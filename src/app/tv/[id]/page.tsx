@@ -3,6 +3,9 @@ import { notFound } from 'next/navigation'
 import TvDetail from '@/src/components/detail/TvDetail'
 import { TmdbError, tmdbFetch, tmdbFetchSafe, withTranslatedFields } from '@/src/lib/tmdb'
 import { getLocale } from '@/src/lib/i18n/server'
+import KidsBlocked from '@/src/components/profiles/KidsBlocked'
+import { filterKidSafe, isKidSafe } from '@/src/lib/kids'
+import { getKidsMode } from '@/src/lib/profiles'
 
 type Props = { params: { id: string }, searchParams?: { s?: string, e?: string } }
 
@@ -47,11 +50,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function TvPage({ params, searchParams }: Props) {
   // Arabic UI: TMDB's Arabic overview, genre and season names where they exist; titles stay as they are.
   const arabic = getLocale() === 'ar'
-  const [show, recommendations, translated] = await Promise.all([
+  const [show, recommendations, translated, kids] = await Promise.all([
     getShow(params.id),
     tmdbFetchSafe(`tv/${params.id}/recommendations`),
     arabic && isValidId(params.id) ? tmdbFetchSafe(`tv/${params.id}`, { language: 'ar' }) : null,
+    getKidsMode(),
   ])
+
+  if (kids && !(await isKidSafe(show, 'tv'))) return <KidsBlocked />
+  const similar = kids ? await filterKidSafe(recommendations?.results ?? [], 'tv') : recommendations?.results ?? []
 
   const data = withTranslatedFields(show, translated, ['overview', 'genres'])
   if (translated?.seasons) {
@@ -59,5 +66,5 @@ export default async function TvPage({ params, searchParams }: Props) {
     const names = new Map<number, string>(translated.seasons.map((season: any) => [season.id, season.name]))
     data.seasons = (data.seasons ?? []).map((season: any) => ({ ...season, name: names.get(season.id) || season.name }))
   }
-  return <TvDetail id={params.id} data={data} similar={recommendations?.results ?? []} resume={parseResume(searchParams)} />
+  return <TvDetail id={params.id} data={data} similar={similar} resume={parseResume(searchParams)} />
 }

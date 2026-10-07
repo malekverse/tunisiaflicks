@@ -2,13 +2,18 @@ import MediaGrid from '@/src/components/MediaGrid'
 import PageNav from '@/src/components/PageNav'
 import { getList, parsePage } from '@/src/lib/lists'
 import { getT } from '@/src/lib/i18n/server'
+import { kidsList } from '@/src/lib/kids'
+import { getKidsMode } from '@/src/lib/profiles'
 
 export const dynamic = 'force-dynamic'
 export const generateMetadata = () => ({ title: `${getT()('upcoming.title')} | TunisiaFlicks` })
 
 export default async function UpcomingPage({ searchParams }: { searchParams: { page?: string } }) {
   const page = parsePage(searchParams.page)
-  const { results, totalPages, failed } = await getList('movie/upcoming', page)
+  const kids = kidsList('movie', 'upcoming')
+  const { results, totalPages, failed } = await getKidsMode()
+    ? await getList(kids.path, page, kids.params)
+    : await getList('movie/upcoming', page)
   const t = getT()
 
   return (

@@ -6,6 +6,8 @@ import { PosterSlider } from '@/src/components/Sliders'
 import { TmdbError, tmdbFetch, tmdbFetchSafe, withTranslatedFields } from '@/src/lib/tmdb'
 import { createTranslator, type Locale, type TKey } from '@/src/lib/i18n'
 import { getLocale } from '@/src/lib/i18n/server'
+import { filterKidSafe } from '@/src/lib/kids'
+import { getKidsMode } from '@/src/lib/profiles'
 
 type Props = { params: { id: string } }
 
@@ -72,12 +74,16 @@ export default async function PersonPage({ params }: Props) {
   const locale = getLocale()
   const t = createTranslator(locale)
   // Arabic UI: TMDB's Arabic biography when there is one (most people only have an English one).
-  const [english, translated] = await Promise.all([
+  const [english, translated, kids] = await Promise.all([
     getPerson(params.id),
     locale === 'ar' && isValidId(params.id) ? tmdbFetchSafe(`person/${params.id}`, { language: 'ar' }) : null,
+    getKidsMode(),
   ])
   const person = withTranslatedFields(english, translated, ['biography'])
-  const credits = buildCredits(person)
+  // Kids profiles: only their best-known titles that are rated for kids.
+  const credits = kids
+    ? await filterKidSafe(buildCredits(person).sort((a, b) => (b.vote_count ?? 0) - (a.vote_count ?? 0)), undefined, 60)
+    : buildCredits(person)
   const department = (name: string) => {
     const key = `dept.${name}` as TKey
     return t(key) === key ? name : t(key)

@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import PosterCard from '@/src/components/PosterCard'
 import { GRID_CLASS } from '@/src/components/MediaGrid'
+import KidsBlocked from '@/src/components/profiles/KidsBlocked'
+import { getKidsMode } from '@/src/lib/profiles'
 import { getTunisianTitles } from '@/src/lib/tunisian'
 import type { TKey } from '@/src/lib/i18n'
 import { getT } from '@/src/lib/i18n/server'
@@ -17,6 +19,8 @@ const TABS: { label: TKey, value?: 'series' | 'movie' }[] = [
 ]
 
 export default async function TunisianPage({ searchParams }: { searchParams: { type?: string } }) {
+  // The Tunisian catalogue has no age ratings, so Kids profiles can't be offered it.
+  if (await getKidsMode()) return <KidsBlocked what={'The Tunisian catalogue'} />
   const titles = await getTunisianTitles()
   const t = getT()
   const type = searchParams.type === 'series' || searchParams.type === 'movie' ? searchParams.type : undefined

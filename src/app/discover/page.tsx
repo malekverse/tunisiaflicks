@@ -6,6 +6,8 @@ import { getList, parsePage } from '@/src/lib/lists'
 import { tmdbFetchSafe, tmdbLanguage } from '@/src/lib/tmdb'
 import { createTranslator } from '@/src/lib/i18n'
 import { getLocale, getT } from '@/src/lib/i18n/server'
+import { kidsDiscoverParams } from '@/src/lib/kids'
+import { getKidsMode } from '@/src/lib/profiles'
 
 export const dynamic = 'force-dynamic'
 export const generateMetadata = () => ({ title: `${getT()('discover.title')} | TunisiaFlicks` })
@@ -42,14 +44,17 @@ export default async function DiscoverPage({ searchParams }: { searchParams: Sea
         ? { sort_by: `${dateField}.desc`, [`${dateField}.lte`]: today, 'vote_count.gte': 20 }
         : { sort_by: 'popularity.desc', 'vote_count.gte': 100 }
 
+  const params = {
+    ...sortParams,
+    include_adult: false,
+    with_genres: filters.genre,
+    ...(filters.year ? { [kind === 'movie' ? 'primary_release_year' : 'first_air_date_year']: filters.year } : {}),
+    'vote_average.gte': filters.rating,
+  }
+  const kids = await getKidsMode()
+
   const [{ results, totalPages, failed }, genreList] = await Promise.all([
-    getList(`discover/${kind}`, page, {
-      ...sortParams,
-      include_adult: false,
-      with_genres: filters.genre,
-      ...(filters.year ? { [kind === 'movie' ? 'primary_release_year' : 'first_air_date_year']: filters.year } : {}),
-      'vote_average.gte': filters.rating,
-    }),
+    getList(`discover/${kind}`, page, kids ? kidsDiscoverParams(kind, params) : params),
     tmdbFetchSafe<{ genres: { id: number, name: string }[] }>(`genre/${kind}/list`, { language: tmdbLanguage(locale) }, 86400),
   ])
 
