@@ -6,6 +6,8 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from '@vercel/analytics/react';
 import Navbar from "@/src/components/Navbar";
 import Sidebar from "@/src/components/Sidebar";
+import Footer from "@/src/components/Footer";
+import VerifyEmailBanner from "@/src/components/VerifyEmailBanner";
 import { SessionProvider } from "@/src/components/SessionProvider";
 import { Toaster } from "@/src/components/ui/toaster";
 import ServiceWorkerRegister from "@/src/components/ServiceWorkerRegister";
@@ -116,9 +118,14 @@ export default function RootLayout({
               {/* Navbar is fixed; the sidebar and <main> share one flex row below it. */}
               <div className="bg-white text-black flex min-h-screen pt-14 sm:pt-16 dark:bg-[#0d0c0f] dark:text-white">
                 <Sidebar />
-                <main role="main" className="flex-1 min-w-0 flex justify-center pt-4 pb-20 sm:pb-8">
-                  {children}
-                </main>
+                {/* Content column: the page, then the footer (both beside the sidebar). */}
+                <div className="flex-1 min-w-0 flex flex-col">
+                  <VerifyEmailBanner />
+                  <main role="main" className="flex-1 min-w-0 flex justify-center pt-4 pb-4">
+                    {children}
+                  </main>
+                  <Footer />
+                </div>
               </div>
             </Providers>
           </SessionProvider>

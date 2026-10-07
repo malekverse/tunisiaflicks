@@ -200,3 +200,43 @@ export async function sendReleaseAlertsEmail(email: string, name: string | null 
 
   await createTransporter().sendMail({ from, to: email, subject, text, html });
 }
+
+export type ContactMessage = {
+  kind: 'contact' | 'dmca'
+  name: string
+  email: string
+  topic?: string
+  message: string
+  work?: string
+  urls?: string
+  signature?: string
+}
+
+/**
+ * Forwards a contact-form or DMCA message to the site owner (CONTACT_EMAIL, never shown on the
+ * site). Reply-To is the sender, so answering the email answers them.
+ */
+export async function sendContactEmail(msg: ContactMessage) {
+  const { from } = requireEmailEnv();
+  const to = process.env.CONTACT_EMAIL || process.env.FROM_EMAIL;
+  if (!to) throw new Error('Email configuration error');
+
+  const isDmca = msg.kind === 'dmca';
+  const subject = isDmca ? `[DMCA] Copyright notice from ${msg.name}` : `[Contact${msg.topic ? `: ${msg.topic}` : ''}] Message from ${msg.name}`;
+  const rows: [string, string | undefined][] = [
+    ['From', `${msg.name} <${msg.email}>`],
+    ['Topic', msg.topic],
+    ['Copyrighted work', msg.work],
+    ['Reported URLs', msg.urls],
+    ['Signature', msg.signature],
+  ];
+  const present = rows.filter(([, value]) => value);
+  const text = `${present.map(([label, value]) => `${label}: ${value}`).join('\n')}\n\n${msg.message}`;
+  const html = emailLayout(isDmca ? 'Copyright (DMCA) notice' : 'New contact message', `
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+              ${present.map(([label, value]) => `<tr><td style="color: #a0a0a0; padding: 6px 12px 6px 0; vertical-align: top; white-space: nowrap;">${label}</td><td style="color: #ffffff; padding: 6px 0; white-space: pre-wrap;">${escapeHtml(value!)}</td></tr>`).join('')}
+            </table>
+            <div style="background-color: #1a1a1a; border-radius: 6px; padding: 16px; color: #e0e0e0; white-space: pre-wrap; line-height: 1.5;">${escapeHtml(msg.message)}</div>`);
+
+  await createTransporter().sendMail({ from, to, replyTo: `"${msg.name.replace(/"/g, '')}" <${msg.email}>`, subject, text, html });
+}
