@@ -1,16 +1,19 @@
 "use client"
 import React, { useEffect, useRef, useState } from 'react'
-import { FaLightbulb, FaRegLightbulb } from 'react-icons/fa6'
+import { FaLightbulb, FaRegLightbulb, FaTriangleExclamation } from 'react-icons/fa6'
 import { toast } from '@/src/hooks/use-toast'
 import type { StreamProvider } from '@/src/lib/stream-providers'
 import { useT } from '@/src/components/I18nProvider'
+import { useStreamSource } from '@/src/hooks/use-stream-source'
 
 /**
  * Player with a source switcher and a download link. `enabled=false` shows `placeholder` instead
  * of the iframe (e.g. a TV show before an episode has been picked).
  *
  * Streams come from several third-party providers (see lib/stream-providers.ts) so the viewer can
- * switch when one is down. `downloadUrl` opens a direct-download page in a new tab.
+ * switch when one is down. `downloadUrl` opens a direct-download page in a new tab. The source that
+ * last played for this viewer is reopened, and sources other viewers report as broken move to the
+ * end (crowd-sourced, see use-stream-source / lib/stream-health).
  *
  * Cinema touches: an ambient glow in the poster's colour (see use-ambient-color) and a
  * "lights off" mode that dims the rest of the page (Esc or a click outside turns them back on).
@@ -23,13 +26,11 @@ export default function StreamSection({ services, downloadSlot, enabled = true, 
     placeholder?: { title: string, description: string }
 }) {
     const t = useT()
-    const [current, setCurrent] = useState(0)
     const [isLoading, setIsLoading] = useState(true)
     const [lightsOff, setLightsOff] = useState(false)
     const sectionRef = useRef<HTMLElement>(null)
-    // Re-selecting the first provider (index 0) whenever the list identity changes keeps the
-    // player on a valid source if the services array shrinks.
-    const url = services[current]?.url ?? services[0]?.url
+    const source = useStreamSource(services, { playing: enabled && !isLoading })
+    const url = source.ready ? source.current?.url : undefined
 
     // A new source or episode means a new iframe load.
     useEffect(() => {
@@ -44,7 +45,7 @@ export default function StreamSection({ services, downloadSlot, enabled = true, 
         return () => window.removeEventListener('keydown', onKey)
     }, [lightsOff])
 
-    const select = (index: number) => {
+    const select = (name: string) => {
         if (!enabled) {
             toast({
                 title: placeholder?.title ?? t('common.notReady'),
@@ -54,9 +55,20 @@ export default function StreamSection({ services, downloadSlot, enabled = true, 
             })
             return
         }
-        if (index === current) return
-        setCurrent(index)
-        toast({ title: t('stream.changed'), description: t('stream.nowUsing', { name: services[index].name }), duration: 3000 })
+        if (name === source.current?.name) return
+        source.select(name)
+        toast({ title: t('stream.changed'), description: t('stream.nowUsing', { name }), duration: 3000 })
+    }
+
+    const notWorking = () => {
+        const next = source.reportBroken()
+        if (next) toast({ title: t('stream.reported'), description: t('stream.nowUsing', { name: next }), duration: 4000 })
+    }
+
+    const healthLabel = (name: string) => {
+        const status = source.health[name]?.status
+        if (name === source.remembered) return t('stream.lastWorked')
+        return status === 'good' ? t('stream.healthGood') : status === 'down' ? t('stream.healthDown') : undefined
     }
 
     return (
@@ -82,18 +94,26 @@ export default function StreamSection({ services, downloadSlot, enabled = true, 
                 />
                 <div className="flex items-center gap-2 py-1 px-2 bg-red-500 rounded-t-lg">
                     <div className="flex gap-2 flex-wrap flex-1 min-w-0" role="tablist" aria-label={t('stream.sourceAria')}>
-                        {services.map((item, index) => (
-                            <button
-                                key={item.name}
-                                type="button"
-                                role="tab"
-                                aria-selected={current === index}
-                                onClick={() => select(index)}
-                                className={`px-2 py-1 rounded-md text-sm text-white transition-colors ${current === index ? 'bg-red-700' : 'bg-red-500 hover:bg-red-400'}`}
-                            >
-                                {item.name}
-                            </button>
-                        ))}
+                        {source.ordered.map((item) => {
+                            const active = source.ready && source.current?.name === item.name
+                            const status = source.health[item.name]?.status
+                            return (
+                                <button
+                                    key={item.name}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={active}
+                                    title={healthLabel(item.name)}
+                                    onClick={() => select(item.name)}
+                                    className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-sm text-white transition-colors ${active ? 'bg-red-700' : 'bg-red-500 hover:bg-red-400'} ${status === 'down' ? 'opacity-60' : ''}`}
+                                >
+                                    {(status === 'good' || status === 'down' || item.name === source.remembered) && (
+                                        <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${status === 'down' ? 'bg-yellow-300' : 'bg-emerald-300'}`} />
+                                    )}
+                                    {item.name}
+                                </button>
+                            )
+                        })}
                     </div>
                     <button
                         type="button"
@@ -123,7 +143,7 @@ export default function StreamSection({ services, downloadSlot, enabled = true, 
                                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500" />
                                 </div>
                             )}
-                            <iframe
+                            {url && <iframe
                                 key={url}
                                 src={url}
                                 title={t('stream.player')}
@@ -131,15 +151,24 @@ export default function StreamSection({ services, downloadSlot, enabled = true, 
                                 referrerPolicy="origin"
                                 allowFullScreen
                                 onLoad={() => setIsLoading(false)}
-                            />
+                            />}
                         </>
                     )}
                 </div>
             </div>
 
-            <p className={`mt-2 px-2 md:px-0 text-xs text-gray-500 ${lightsOff ? 'relative z-[61]' : ''}`}>
-                {t('stream.note')}
-            </p>
+            <div className={`mt-2 px-2 md:px-0 flex flex-col-reverse gap-2 sm:flex-row sm:items-start sm:justify-between ${lightsOff ? 'relative z-[61]' : ''}`}>
+                <p className="text-xs text-gray-500">{t('stream.note')}</p>
+                {enabled && source.ready && (
+                    <button
+                        type="button"
+                        onClick={notWorking}
+                        className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-md px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 hover:text-red-500 dark:text-gray-400 dark:hover:bg-zinc-900"
+                    >
+                        <FaTriangleExclamation /> {t('stream.notWorking')}
+                    </button>
+                )}
+            </div>
         </section>
     )
 }

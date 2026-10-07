@@ -643,4 +643,11 @@ export const ar: Record<TKey, string> = {
   'push.turnOn': 'تفعيل',
   'push.notNow': 'ليس الآن',
   'push.pickTitle': '🎬 اختيار الليلة: {title}',
+
+  // Stream source health
+  'stream.notWorking': 'لا يعمل؟ جرّب المصدر التالي',
+  'stream.reported': 'شكرًا على الإبلاغ',
+  'stream.lastWorked': 'عمل معك في المرة السابقة',
+  'stream.healthGood': 'يعمل لدى أغلب المشاهدين',
+  'stream.healthDown': 'تم الإبلاغ مؤخرًا أنه لا يعمل',
 }

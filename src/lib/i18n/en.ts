@@ -641,6 +641,13 @@ export const en = {
   'push.turnOn': 'Turn on',
   'push.notNow': 'Not now',
   'push.pickTitle': '🎬 Tonight\'s pick: {title}',
+
+  // Stream source health
+  'stream.notWorking': 'Not working? Try the next source',
+  'stream.reported': 'Thanks for reporting',
+  'stream.lastWorked': 'Worked for you last time',
+  'stream.healthGood': 'Working for most viewers',
+  'stream.healthDown': 'Reported as not working lately',
 } satisfies Record<string, string>
 
 export type TKey = keyof typeof en

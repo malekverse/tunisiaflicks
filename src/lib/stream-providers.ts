@@ -74,3 +74,6 @@ export function getStreamProviders(type: MediaType, id: string, season = 1, epis
     url: type === 'movie' ? provider.movie(id) : provider.tv(id, season, episode),
   }))
 }
+
+/** Names of all providers (for validating health reports). */
+export const PROVIDER_NAMES: readonly string[] = PROVIDERS.map((provider) => provider.name)
