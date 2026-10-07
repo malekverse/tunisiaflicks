@@ -1,0 +1,7 @@
+// Runs once when the server starts. Error monitoring (Sentry) is opt-in: nothing is loaded
+// unless SENTRY_DSN / NEXT_PUBLIC_SENTRY_DSN is set.
+export async function register() {
+  if (!process.env.SENTRY_DSN && !process.env.NEXT_PUBLIC_SENTRY_DSN) return
+  if (process.env.NEXT_RUNTIME === 'nodejs') await import('../sentry.server.config')
+  if (process.env.NEXT_RUNTIME === 'edge') await import('../sentry.edge.config')
+}

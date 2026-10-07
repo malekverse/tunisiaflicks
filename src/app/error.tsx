@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { Button } from '@/src/components/ui/button';
 import { useT } from '@/src/components/I18nProvider';
+import { reportError } from '@/src/lib/report-error';
 
 // Catches render errors inside a page so one broken component shows a retry prompt instead of
 // taking the whole site down with "Application error: a client-side exception has occurred".
@@ -10,6 +11,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
   const t = useT();
   useEffect(() => {
     console.error(error);
+    reportError(error);
   }, [error]);
 
   return (

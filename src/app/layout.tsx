@@ -12,6 +12,7 @@ import { SessionProvider } from "@/src/components/SessionProvider";
 import { Toaster } from "@/src/components/ui/toaster";
 import ServiceWorkerRegister from "@/src/components/ServiceWorkerRegister";
 import DailyPushTrigger from "@/src/components/DailyPushTrigger";
+import ErrorReporter from "@/src/components/ErrorReporter";
 import { I18nProvider } from "@/src/components/I18nProvider";
 import { dirOf, htmlLang, isArabicScript } from "@/src/lib/i18n";
 import { getLocale } from "@/src/lib/i18n/server";
@@ -136,6 +137,7 @@ export default function RootLayout({
         <Analytics />
         <ServiceWorkerRegister />
         <DailyPushTrigger />
+        <ErrorReporter />
       </body>
     </html>
   );
