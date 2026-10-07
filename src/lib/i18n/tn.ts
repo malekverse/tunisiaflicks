@@ -427,4 +427,10 @@ export const tn: Partial<Record<TKey, string>> = {
   'detail.status.Rumored': 'إشاعة',
   'detail.status.Pilot': 'حلقة تجريبية',
   'detail.ratingOutOf': 'التقييم {rating} على 10',
+
+  // Person page
+  'person.upcoming': 'قريب',
+  'person.as': 'في دور {character}',
+  'person.noDate': 'التاريخ مازال ما تعلنش',
+  'person.showAll': 'ورّي الكل ({count})',
 }

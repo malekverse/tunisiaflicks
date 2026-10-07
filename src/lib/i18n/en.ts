@@ -825,6 +825,12 @@ export const en = {
   'detail.status.Rumored': 'Rumored',
   'detail.status.Pilot': 'Pilot',
   'detail.ratingOutOf': 'Rated {rating} out of 10',
+
+  // Person page
+  'person.upcoming': 'Upcoming',
+  'person.as': 'as {character}',
+  'person.noDate': 'Date to be announced',
+  'person.showAll': 'Show all {count}',
 } satisfies Record<string, string>
 
 export type TKey = keyof typeof en

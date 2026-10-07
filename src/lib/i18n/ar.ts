@@ -827,4 +827,10 @@ export const ar: Record<TKey, string> = {
   'detail.status.Rumored': 'شائعة',
   'detail.status.Pilot': 'حلقة تجريبية',
   'detail.ratingOutOf': 'التقييم {rating} من 10',
+
+  // Person page
+  'person.upcoming': 'قريباً',
+  'person.as': 'بدور {character}',
+  'person.noDate': 'التاريخ لم يُعلن بعد',
+  'person.showAll': 'عرض الكل ({count})',
 }

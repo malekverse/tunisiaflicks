@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ExpandableText from '@/src/components/ExpandableText'
 import TmdbImage from '@/src/components/TmdbImage'
-import MediaGrid from '@/src/components/MediaGrid'
+import Filmography, { type Credit } from '@/src/components/person/Filmography'
+import RoomTint from '@/src/components/shell/RoomTint'
 import { PosterSlider } from '@/src/components/Sliders'
 import { TmdbError, tmdbFetch, tmdbFetchSafe, withTranslatedFields } from '@/src/lib/tmdb'
 import { createTranslator, isArabicScript, type Locale, type TKey } from '@/src/lib/i18n'
@@ -105,49 +106,76 @@ export default async function PersonPage({ params }: Props) {
     credits.length > 0 && { label: t('person.credits'), value: t('person.titles', { count: credits.length }) },
   ].filter(Boolean) as { label: string, value: string }[]
 
+  const timeline: Credit[] = filmography.map((credit) => ({
+    id: credit.id,
+    media_type: credit.media_type,
+    title: credit.title || credit.name,
+    date: dateOf(credit),
+    role: credit.character ? t('person.as', { character: credit.character }) : credit.job ?? '',
+    poster_path: credit.poster_path ?? null,
+    vote_average: credit.vote_average ?? 0,
+  }))
+  // The atmosphere: their best-known title's backdrop, dimmed far behind the portrait.
+  const backdrop = knownFor.find((credit) => credit.backdrop_path)?.backdrop_path
+
   return (
-    <div className="w-full max-w-[1800px] px-4 sm:px-14 space-y-10 pb-8">
-      <section className="flex flex-col md:flex-row gap-6 md:gap-10 items-center md:items-start">
-        <div className="relative w-48 md:w-64 aspect-[2/3] rounded-xl overflow-hidden shadow-2xl shadow-black/40 shrink-0 bg-zinc-800">
-          <TmdbImage
-            kind="profile"
-            path={person.profile_path}
-            fallback="/actor.png"
-            alt={person.name}
-            fill
-            sizes="(min-width: 768px) 256px, 192px"
-            preview="w45"
-            priority
-            className="object-cover"
-          />
+    <div className="w-full min-w-0 space-y-14 pb-10">
+      <RoomTint poster={knownFor[0]?.poster_path} />
+      <section className="relative isolate">
+        {backdrop && (
+          <div aria-hidden className="absolute inset-x-0 top-0 -z-10 h-[78vh] overflow-hidden">
+            <TmdbImage kind="backdrop" path={backdrop} alt="" fill sizes="100vw" shimmer={false} className="scale-105 object-cover opacity-30 blur-[3px]" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/30" />
+          </div>
+        )}
+        <div className="page-x flex flex-col items-center gap-8 pt-[calc(var(--topbar)+env(safe-area-inset-top,0px)+32px)] md:flex-row md:items-end md:gap-12 md:pt-[calc(var(--topbar)+80px)]">
+          <div className="relative isolate w-44 shrink-0 animate-focus-in sm:w-56 md:w-64">
+            <div aria-hidden className="absolute inset-4 -z-10 rounded-[2rem] bg-red-500/20 blur-3xl" />
+            <div className="relative aspect-[2/3] overflow-hidden rounded-[22px] bg-white/[0.05] shadow-[0_40px_80px_-30px_rgb(0_0_0/0.9)] ring-1 ring-white/10">
+              <TmdbImage
+                kind="profile"
+                path={person.profile_path}
+                fallback="/actor.png"
+                alt={person.name}
+                fill
+                sizes="(min-width: 768px) 256px, 224px"
+                preview="w45"
+                priority
+                className="object-cover"
+              />
+            </div>
+          </div>
+          <div className="min-w-0 flex-1 text-center md:pb-2 md:text-start">
+            {person.known_for_department && <p className="animate-focus-in text-[14px] font-medium text-white/55">{department(person.known_for_department)}</p>}
+            <h1 className="mt-1 animate-focus-in text-balance font-display text-[clamp(44px,7vw,104px)] font-extrabold leading-[0.92] [animation-delay:60ms]"><bdi>{person.name}</bdi></h1>
+            {facts.length > 0 && (
+              <dl className="mt-6 flex animate-focus-in flex-wrap justify-center gap-x-10 gap-y-4 [animation-delay:120ms] md:justify-start">
+                {facts.filter((fact) => fact.label !== t('person.knownFor')).map((fact) => (
+                  <div key={fact.label}>
+                    <dt className="text-[12.5px] text-white/45">{fact.label}</dt>
+                    <dd className="mt-0.5 text-[15px] font-medium text-white/90">{fact.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </div>
         </div>
-        <div className="min-w-0 flex-1 w-full">
-          <h1 className="text-3xl md:text-4xl font-bold text-center md:text-start">{person.name}</h1>
-          {facts.length > 0 && (
-            <dl className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 max-w-2xl">
-              {facts.map((fact) => (
-                <div key={fact.label}>
-                  <dt className="text-xs uppercase tracking-wide text-gray-500">{fact.label}</dt>
-                  <dd className="font-medium">{fact.value}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
-          {person.biography && (
-            <div className="mt-6 max-w-3xl">
-              <h2 className="text-lg font-semibold mb-2">{t('person.biography')}</h2>
+        {person.biography && (
+          <div className="page-x mt-12">
+            <div className="max-w-[72ch]">
+              <h2 className="mb-3 font-display text-[21px] font-bold sm:text-[26px]">{t('person.biography')}</h2>
               <ExpandableText text={person.biography} />
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </section>
 
       {knownFor.length > 0 && <PosterSlider title={t('person.knownForRow')} items={knownFor} kind="mixed" />}
 
-      {filmography.length > 0 && (
-        <section aria-label={t('person.filmography')}>
-          <h2 className="text-2xl sm:text-3xl font-semibold mb-4">{t('person.filmography')}</h2>
-          <MediaGrid items={filmography} showTypeBadge />
+      {timeline.length > 0 && (
+        <section aria-label={t('person.filmography')} className="page-x">
+          <h2 className="mb-6 font-display text-[21px] font-bold sm:text-[26px]">{t('person.filmography')}</h2>
+          <Filmography credits={timeline} />
         </section>
       )}
     </div>
