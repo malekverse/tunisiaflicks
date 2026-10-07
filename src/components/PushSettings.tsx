@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect, useState } from 'react'
-import { FaBell } from 'react-icons/fa6'
+import { Bell, BellRing } from 'lucide-react'
 import { Button } from '@/src/components/ui/button'
 import { useT } from '@/src/components/I18nProvider'
 import { toast } from '@/src/hooks/use-toast'
@@ -49,7 +49,7 @@ export function PushSettingsCard() {
   const message = STATUS_MESSAGE[status]
   return (
     <section className="mt-8 rounded-2xl border border-gray-200 p-5 dark:border-zinc-800">
-      <h2 className="flex items-center gap-2 text-xl font-semibold"><FaBell className="text-red-500" />{t('push.title')}</h2>
+      <h2 className="flex items-center gap-2 text-xl font-semibold"><Bell aria-hidden className="h-5 w-5 text-red-500" />{t('push.title')}</h2>
       <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('push.description')}</p>
       {status === 'loading' ? null : message ? (
         <p className="mt-4 text-sm text-amber-600 dark:text-amber-400">{t(message)}</p>
@@ -93,15 +93,19 @@ export function PushPrompt() {
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 sm:flex-row sm:items-center">
-      <FaBell className="hidden shrink-0 text-2xl text-red-500 sm:block" aria-hidden />
-      <div className="flex-1">
-        <p className="font-semibold">{t('push.promptTitle')}</p>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('push.promptText')}</p>
-      </div>
-      <div className="flex gap-2">
-        <Button onClick={enable} disabled={busy} className="bg-red-500 text-white hover:bg-red-400">{t('push.turnOn')}</Button>
-        <Button variant="ghost" onClick={dismiss}>{t('push.notNow')}</Button>
+    <div className="page-x">
+      <div className="flex flex-col gap-4 rounded-[22px] bg-white/[0.04] p-5 ring-1 ring-white/[0.08] sm:flex-row sm:items-center">
+        <span className="hidden h-12 w-12 shrink-0 place-items-center rounded-full bg-red-500/15 text-red-400 sm:grid">
+          <BellRing aria-hidden className="h-6 w-6" />
+        </span>
+        <div className="flex-1">
+          <p className="font-display text-lg font-bold">{t('push.promptTitle')}</p>
+          <p className="text-sm text-white/60">{t('push.promptText')}</p>
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={enable} disabled={busy}>{t('push.turnOn')}</Button>
+          <Button variant="ghost" onClick={dismiss}>{t('push.notNow')}</Button>
+        </div>
       </div>
     </div>
   )
