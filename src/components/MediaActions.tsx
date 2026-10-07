@@ -98,7 +98,7 @@ export function MediaContextMenu({ children, ...meta }: MediaMeta & { children: 
                 {children}
             </ContextMenuTrigger>
             <ContextMenuContent>
-                <ContextMenuLabel className='font-bold text-base'>{meta.title}</ContextMenuLabel>
+                <ContextMenuLabel className='font-bold text-base'><bdi>{meta.title}</bdi></ContextMenuLabel>
                 <ContextMenuSeparator />
                 <ContextMenuItem onSelect={actions.favorite}><FaHeart className='me-2' />{t('card.addFavorites')}</ContextMenuItem>
                 <ContextMenuItem onSelect={actions.bookmark}><FaBookmark className='me-2' />{t('card.addBookmarks')}</ContextMenuItem>
@@ -131,7 +131,7 @@ export function MediaOptionsMenu({ voteAverage, ...meta }: MediaMeta & { voteAve
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-                <DropdownMenuLabel className='font-bold text-base'>{meta.title}</DropdownMenuLabel>
+                <DropdownMenuLabel className='font-bold text-base'><bdi>{meta.title}</bdi></DropdownMenuLabel>
                 {voteAverage !== undefined && (
                     <DropdownMenuLabel className='-mt-3 -ms-1'>
                         <span className='rounded-xl scale-75 sm:scale-100'>

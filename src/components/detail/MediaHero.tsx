@@ -76,7 +76,7 @@ export type MediaHeroProps = {
  * the content and the content decides the height, so it behaves on every screen size.
  */
 export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFavorite, onToggleSaved, onWatch }: MediaHeroProps) {
-    const { t } = useI18n()
+    const { t, locale } = useI18n()
     const [trailerOpen, setTrailerOpen] = useState(false)
 
     const title: string = data.title || data.name || ''
@@ -85,7 +85,7 @@ export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFav
     const [showAllCast, setShowAllCast] = useState(false)
     const allCast: any[] = data.credits?.cast ?? []
     const cast = allCast.slice(0, showAllCast ? 24 : 7)
-    const genres = (data.genres ?? []).map((item: any) => item.name).join(', ')
+    const genres = (data.genres ?? []).map((item: any) => item.name).join(locale === 'ar' ? '، ' : ', ')
     const startDate: string = (kind === 'tv' ? data.first_air_date : data.release_date) || ''
     const endYear = kind === 'tv' && data.last_air_date ? data.last_air_date.substring(0, 4) : ''
     const years = kind === 'tv'

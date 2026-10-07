@@ -139,7 +139,7 @@ const SearchBar = () => {
                                                     className="w-20 h-[120px] object-cover rounded-md bg-zinc-800"
                                                 />
                                                 <span>
-                                                    {item.title || item.name}
+                                                    <bdi>{item.title || item.name}</bdi>
                                                     <span className="block text-xs opacity-80">{item.release_date || item.first_air_date || ''}</span>
                                                     <span className="block text-xs opacity-80">{item.media_type === 'tv' ? t('common.tvShow') : t('common.movie')}</span>
                                                 </span>

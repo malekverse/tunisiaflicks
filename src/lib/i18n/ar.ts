@@ -149,6 +149,7 @@ export const ar: Record<TKey, string> = {
   'filters.anyYear': 'أي سنة',
   'filters.minRating': 'أدنى تقييم',
   'filters.anyRating': 'أي تقييم',
+  'filters.minStars': '★ {rating} فأكثر',
   'filters.sortBy': 'الترتيب حسب',
   'filters.popular': 'الأكثر شعبية',
   'filters.top': 'الأعلى تقييماً',

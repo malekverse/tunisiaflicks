@@ -118,7 +118,7 @@ export default function PosterCard({
                     </div>
                 }
                 <div className='absolute z-20 bottom-5 start-3 end-2'>
-                    <p className='text-white text-sm sm:text-base font-semibold bbc-text-shadow leading-tight line-clamp-3'>{title}</p>
+                    <p className='text-white text-sm sm:text-base font-semibold bbc-text-shadow leading-tight line-clamp-3'><bdi>{title}</bdi></p>
                     {releaseDate ? <p className='text-white text-xs font-semibold bbc-text-shadow'>{releaseDate.substring(0, 4)}</p> : null}
                 </div>
             </div>

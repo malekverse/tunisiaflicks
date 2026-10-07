@@ -42,7 +42,7 @@ export default function MovieBackdropCard({ backdropImg, title, voteAverage, rel
                 />
                 <div className='absolute inset-0 z-10 bg-black opacity-10 transition-opacity ease-in-out duration-700 hover:opacity-0' />
                 <div className='absolute z-20 bottom-3 start-5 end-3 sm:start-3'>
-                    <p className='text-white text-lg sm:text-2xl font-semibold bbc-text-shadow'>{title}</p>
+                    <p className='text-white text-lg sm:text-2xl font-semibold bbc-text-shadow'><bdi>{title}</bdi></p>
                     <p className='text-white text-sm sm:text-base font-semibold bbc-text-shadow'>{releaseDate}</p>
                     <label className='flex items-center'>
                         <Image src={"/imdb-logo.png"} alt='IMDb' width={100} height={100} className="inline-block w-[30px] sm:w-[40px] h-auto me-2" />

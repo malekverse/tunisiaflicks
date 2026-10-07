@@ -116,7 +116,7 @@ export default function UserContent() {
             <div className="p-4 flex-1 flex flex-col justify-between">
               <div>
                 <Link href={`/${item.media_type}/${item.id}`} className="hover:underline">
-                  <h3 className="text-xl font-bold mb-2">{item.title}</h3>
+                  <h3 className="text-xl font-bold mb-2"><bdi>{item.title}</bdi></h3>
                 </Link>
                 <p className="text-gray-400 text-sm mb-2">
                   {item.media_type === 'movie' ? t('common.movie') : t('common.tvShow')}

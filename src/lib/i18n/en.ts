@@ -146,6 +146,7 @@ export const en = {
   'filters.anyYear': 'Any year',
   'filters.minRating': 'Minimum rating',
   'filters.anyRating': 'Any rating',
+  'filters.minStars': '{rating}+ ★',
   'filters.sortBy': 'Sort by',
   'filters.popular': 'Most popular',
   'filters.top': 'Top rated',

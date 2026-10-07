@@ -49,7 +49,7 @@ export default function DiscoverFilters({ genres, values }: { genres: { id: numb
       </select>
       <select aria-label={t('filters.minRating')} className={selectClass} value={values.rating ?? ''} onChange={(e) => update('rating', e.target.value)}>
         <option value="">{t('filters.anyRating')}</option>
-        {RATINGS.map((rating) => <option key={rating} value={rating}>{rating}+ ★</option>)}
+        {RATINGS.map((rating) => <option key={rating} value={rating}>{t('filters.minStars', { rating })}</option>)}
       </select>
       <select aria-label={t('filters.sortBy')} className={selectClass} value={values.sort} onChange={(e) => update('sort', e.target.value === 'popular' ? '' : e.target.value)}>
         {SORTS.map((option) => <option key={option.value} value={option.value}>{t(option.label)}</option>)}
