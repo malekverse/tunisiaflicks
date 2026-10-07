@@ -3,6 +3,7 @@ import { useCallback, useEffect } from 'react'
 import { create } from 'zustand'
 import { useSession } from 'next-auth/react'
 import { toast } from '@/src/hooks/use-toast'
+import { useT } from '@/src/components/I18nProvider'
 import type { FollowItem, FollowMediaType } from '@/src/lib/models/Follow'
 
 const keyOf = (mediaType: FollowMediaType, id: string) => `${mediaType}:${id}`
@@ -70,6 +71,7 @@ export const useFollowStore = create<FollowStore>()((set, get) => ({
 /** Follow state for one title: "Notify me" for movies, "Follow" (new episodes) for TV shows. */
 export function useFollow(mediaType: FollowMediaType, id: string | undefined) {
   const { data: session, status } = useSession()
+  const t = useT()
   const userId = session?.user?.id ?? null
   const load = useFollowStore((state) => state.load)
   const setFollowing = useFollowStore((state) => state.setFollowing)
@@ -84,22 +86,22 @@ export function useFollow(mediaType: FollowMediaType, id: string | undefined) {
   const toggle = useCallback(async (title?: string) => {
     if (!id || busy) return
     if (!userId) {
-      toast({ title: "Login Required", description: mediaType === 'movie' ? "Please login to get release alerts" : "Please login to follow shows", variant: "destructive" })
+      toast({ title: t('common.loginRequired'), description: t(mediaType === 'movie' ? 'alerts.loginMovie' : 'alerts.loginTv'), variant: "destructive" })
       return
     }
-    const name = title || 'this title'
+    const name = title || t('alerts.thisTitle')
     try {
       await setFollowing(mediaType, id, !following)
       toast(following
-        ? { title: "Alerts off", description: `You won't get alerts for ${name} anymore` }
+        ? { title: t('alerts.offTitle'), description: t('alerts.offDesc', { title: name }) }
         : mediaType === 'movie'
-          ? { title: "We'll let you know", description: `You'll get an email when ${name} is out` }
-          : { title: "Following", description: `You'll get an email when a new episode of ${name} airs` })
+          ? { title: t('alerts.movieOnTitle'), description: t('alerts.movieOnDesc', { title: name }) }
+          : { title: t('alerts.following'), description: t('alerts.tvOnDesc', { title: name }) })
     } catch (error) {
       console.error('Failed to update follow:', error)
-      toast({ title: "Error", description: error instanceof Error ? error.message : "Failed to update alerts", variant: "destructive" })
+      toast({ title: t('common.error'), description: t('alerts.updateFailed'), variant: "destructive" })
     }
-  }, [id, busy, userId, mediaType, following, setFollowing])
+  }, [id, busy, userId, mediaType, following, setFollowing, t])
 
   return { following, busy, toggle }
 }

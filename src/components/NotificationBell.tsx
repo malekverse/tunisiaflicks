@@ -12,25 +12,31 @@ import {
     DropdownMenuTrigger,
 } from '@/src/components/ui/dropdown-menu'
 import { cn } from '@/src/lib/utils'
-import { episodeCode, type NotificationItem } from '@/src/lib/models/Follow'
+import { useI18n } from '@/src/components/I18nProvider'
+import type { Translate } from '@/src/lib/i18n'
+import type { NotificationItem } from '@/src/lib/models/Follow'
 
-function timeAgo(iso: string) {
+function timeAgo(iso: string, locale: string | undefined) {
+    const format = new Intl.RelativeTimeFormat(locale, { numeric: 'auto', style: 'short' })
     const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000)
-    if (minutes < 60) return `${Math.max(minutes, 1)}m ago`
+    if (minutes < 60) return format.format(-Math.max(minutes, 1), 'minute')
     const hours = Math.round(minutes / 60)
-    if (hours < 24) return `${hours}h ago`
+    if (hours < 24) return format.format(-hours, 'hour')
     const days = Math.round(hours / 24)
-    return days < 30 ? `${days}d ago` : new Date(iso).toLocaleDateString()
+    return days < 30 ? format.format(-days, 'day') : new Date(iso).toLocaleDateString(locale)
 }
 
-const describe = (item: NotificationItem) =>
-    item.kind === 'movie_released'
-        ? 'Out now'
-        : item.episode ? `New episode ${episodeCode(item.episode)}${item.episode.name ? ` · ${item.episode.name}` : ''}` : 'New episode'
+function describe(item: NotificationItem, t: Translate) {
+    if (item.kind === 'movie_released') return t('alerts.outNow')
+    if (!item.episode) return t('alerts.newEpisode')
+    const code = t('common.seasonEpisode', { season: item.episode.season, episode: item.episode.episode })
+    return `${t('alerts.newEpisodeCode', { episode: code })}${item.episode.name ? ` · ${item.episode.name}` : ''}`
+}
 
 /** Navbar bell: release / new-episode alerts, with an unread badge. Renders nothing for guests. */
 export default function NotificationBell({ className }: { className?: string }) {
     const router = useRouter()
+    const { t, dateLocale } = useI18n()
     const { data: session } = useSession()
     const userId = session?.user?.id
     const [items, setItems] = useState<NotificationItem[]>([])
@@ -74,7 +80,7 @@ export default function NotificationBell({ className }: { className?: string }) 
 
     if (!userId) return null
 
-    const label = unread > 0 ? `Notifications (${unread} unread)` : 'Notifications'
+    const label = unread > 0 ? t('alerts.bellLabelUnread', { count: unread }) : t('alerts.bellLabel')
     return (
         <DropdownMenu onOpenChange={onOpenChange}>
             <DropdownMenuTrigger
@@ -84,17 +90,17 @@ export default function NotificationBell({ className }: { className?: string }) 
             >
                 {unread > 0 ? <FaBell className="text-xl" /> : <FaRegBell className="text-xl" />}
                 {unread > 0 && (
-                    <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-[18px] text-center">
+                    <span className="absolute top-0.5 end-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-[18px] text-center">
                         {unread > 9 ? '9+' : unread}
                     </span>
                 )}
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
-                <DropdownMenuLabel>Alerts</DropdownMenuLabel>
+                <DropdownMenuLabel>{t('alerts.menuTitle')}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {items.length === 0 ? (
                     <p className="px-2 py-4 text-sm text-gray-400 text-center">
-                        No alerts yet. Tap Notify me on an upcoming movie or Follow a TV show.
+                        {t('alerts.empty')}
                     </p>
                 ) : (
                     <div className="max-h-96 overflow-y-auto">
@@ -113,17 +119,17 @@ export default function NotificationBell({ className }: { className?: string }) 
                                 />
                                 <div className="min-w-0 flex-1">
                                     <p className="font-semibold leading-tight line-clamp-2">{item.title}</p>
-                                    <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{describe(item)}</p>
-                                    <p className="text-[11px] text-gray-500 mt-0.5">{timeAgo(item.created_at)}</p>
+                                    <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{describe(item, t)}</p>
+                                    <p className="text-[11px] text-gray-500 mt-0.5">{timeAgo(item.created_at, dateLocale)}</p>
                                 </div>
-                                {!item.read && <span className="mt-1 w-2 h-2 rounded-full bg-red-500 shrink-0" aria-label="Unread" />}
+                                {!item.read && <span className="mt-1 w-2 h-2 rounded-full bg-red-500 shrink-0" aria-label={t('alerts.unread')} />}
                             </DropdownMenuItem>
                         ))}
                     </div>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => router.push('/profile#following')} className="justify-center text-sm cursor-pointer">
-                    Manage alerts
+                    {t('alerts.manage')}
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>

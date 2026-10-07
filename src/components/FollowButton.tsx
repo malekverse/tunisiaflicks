@@ -3,6 +3,7 @@ import React from 'react'
 import { FaBell, FaRegBell } from 'react-icons/fa'
 import { Button } from '@/src/components/ui/button'
 import { useFollow } from '@/src/hooks/use-follow'
+import { useT } from '@/src/components/I18nProvider'
 import { cn } from '@/src/lib/utils'
 import type { FollowMediaType } from '@/src/lib/models/Follow'
 
@@ -17,11 +18,12 @@ type FollowButtonProps = {
 
 /** "Notify me" (upcoming movie) / "Follow" (TV show) toggle for release and new-episode alerts. */
 export default function FollowButton({ mediaType, id, title, variant = 'hero', className }: FollowButtonProps) {
+    const t = useT()
     const { following, busy, toggle } = useFollow(mediaType, id)
     const isMovie = mediaType === 'movie'
     const label = following
-        ? (isMovie ? `Stop release alerts for ${title}` : `Unfollow ${title}`)
-        : (isMovie ? `Notify me when ${title} is out` : `Follow ${title} for new episodes`)
+        ? t(isMovie ? 'alerts.stopMovieAria' : 'alerts.unfollowAria', { title })
+        : t(isMovie ? 'alerts.notifyMeAria' : 'alerts.followAria', { title })
     const Icon = following ? FaBell : FaRegBell
 
     if (variant === 'card') {
@@ -63,8 +65,8 @@ export default function FollowButton({ mediaType, id, title, variant = 'hero', c
                 className
             )}
         >
-            <Icon className="mr-2" />
-            {isMovie ? (following ? 'Notifying you' : 'Notify me') : (following ? 'Following' : 'Follow')}
+            <Icon className="me-2" />
+            {isMovie ? t(following ? 'alerts.notifying' : 'alerts.notifyMe') : t(following ? 'alerts.following' : 'alerts.follow')}
         </Button>
     )
 }
