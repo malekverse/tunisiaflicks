@@ -7,6 +7,7 @@ import PosterCard from '@/src/components/PosterCard'
 import { getWatchHistory, removeFromWatchHistory } from '@/src/lib/user-content'
 import { toast } from '@/src/hooks/use-toast'
 import type { WatchHistoryItem } from '@/src/lib/models/UserContent'
+import { useT } from '@/src/components/I18nProvider'
 
 const MAX_ITEMS = 15
 
@@ -24,6 +25,7 @@ const resumeHref = (item: WatchHistoryItem) =>
  */
 export default function ContinueWatching() {
   const { status } = useSession()
+  const t = useT()
   const [items, setItems] = useState<WatchHistoryItem[]>([])
 
   useEffect(() => {
@@ -45,18 +47,18 @@ export default function ContinueWatching() {
     setItems((current) => current.filter((entry) => entry.id !== item.id)) // optimistic
     try {
       await removeFromWatchHistory(item.id)
-      toast({ title: "Removed", description: `${item.title} was removed from Continue Watching`, duration: 3000 })
+      toast({ title: t('home.continueRemoved'), description: t('home.continueRemovedDesc', { title: item.title }), duration: 3000 })
     } catch {
       setItems(previous)
-      toast({ title: "Error", description: "Couldn't remove it, please try again", variant: "destructive" })
+      toast({ title: t('common.error'), description: t('home.continueRemoveFailed'), variant: "destructive" })
     }
   }
 
   if (items.length === 0) return null
 
   return (
-    <section aria-label="Continue Watching" className="w-full">
-      <h2 className="text-2xl sm:text-3xl font-semibold mb-3">Continue Watching</h2>
+    <section aria-label={t('home.continueWatching')} className="w-full">
+      <h2 className="text-2xl sm:text-3xl font-semibold mb-3">{t('home.continueWatching')}</h2>
       <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
         {items.map((item) => (
           <div key={`${item.media_type}-${item.id}`} className="group relative shrink-0 w-[145px] md:w-[167px]">
@@ -76,17 +78,17 @@ export default function ContinueWatching() {
             </div>
 
             {item.media_type === 'tv' && item.season !== undefined && item.episode !== undefined && (
-              <span className="pointer-events-none absolute left-1.5 top-1.5 z-30 rounded-md bg-red-600 px-1.5 py-0.5 text-[11px] font-semibold text-white">
-                S{item.season} · E{item.episode}
+              <span className="pointer-events-none absolute start-1.5 top-1.5 z-30 rounded-md bg-red-600 px-1.5 py-0.5 text-[11px] font-semibold text-white">
+                {t('home.continueBadge', { season: item.season, episode: item.episode })}
               </span>
             )}
 
             <button
               type="button"
               onClick={() => remove(item)}
-              aria-label={`Remove ${item.title} from Continue Watching`}
-              title="Remove from Continue Watching"
-              className="absolute right-1.5 top-1.5 z-30 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white transition-opacity hover:bg-red-500 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100"
+              aria-label={t('home.continueRemoveAria', { title: item.title })}
+              title={t('home.continueRemoveTitle')}
+              className="absolute end-1.5 top-1.5 z-30 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white transition-opacity hover:bg-red-500 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100"
             >
               <IoClose />
             </button>

@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { PosterSlider } from '@/src/components/Sliders'
+import { useT } from '@/src/components/I18nProvider'
 
 type Row = { seed: { id: string, title: string, media_type: 'movie' | 'tv' }, items: any[] }
 
@@ -11,6 +12,7 @@ type Row = { seed: { id: string, title: string, media_type: 'movie' | 'tv' }, it
  */
 export default function BecauseYouWatched() {
   const { status } = useSession()
+  const t = useT()
   const [rows, setRows] = useState<Row[]>([])
 
   useEffect(() => {
@@ -35,7 +37,7 @@ export default function BecauseYouWatched() {
       {rows.map((row) => (
         <PosterSlider
           key={`${row.seed.media_type}-${row.seed.id}`}
-          title={`Because you watched ${row.seed.title}`}
+          title={t('home.becauseYouWatched', { title: row.seed.title })}
           items={row.items}
           kind={row.seed.media_type}
         />

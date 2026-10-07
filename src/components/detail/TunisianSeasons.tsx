@@ -3,14 +3,16 @@ import React, { useState } from 'react'
 import { FaPlay } from 'react-icons/fa6'
 import { cn } from '@/src/lib/utils'
 import type { TunisianSeason } from '@/src/lib/tunisian'
+import { useT } from '@/src/components/I18nProvider'
 
 export default function TunisianSeasons({ seasons }: { seasons: TunisianSeason[] }) {
+  const t = useT()
   const [active, setActive] = useState(seasons[0].season)
   const current = seasons.find((season) => season.season === active) ?? seasons[0]
 
   return (
-    <section aria-label="Episodes">
-      <div className="flex gap-2 overflow-x-auto pb-3 no-scrollbar" role="tablist" aria-label="Seasons">
+    <section aria-label={t('tv.episodes')}>
+      <div className="flex gap-2 overflow-x-auto pb-3 no-scrollbar" role="tablist" aria-label={t('tv.seasons')}>
         {seasons.map((season) => (
           <button
             key={season.season}
@@ -23,12 +25,12 @@ export default function TunisianSeasons({ seasons }: { seasons: TunisianSeason[]
               season.season === current.season ? "bg-red-500 text-white" : "bg-zinc-800 text-gray-300 hover:bg-zinc-600 hover:text-white"
             )}
           >
-            Season {season.season}
+            {t('tunisian.season', { number: season.season })}
           </button>
         ))}
       </div>
 
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3 mt-2" dir="ltr">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3 mt-2">
         {current.episodes.map((episode) => (
           <a
             key={episode.url}
@@ -41,7 +43,7 @@ export default function TunisianSeasons({ seasons }: { seasons: TunisianSeason[]
           </a>
         ))}
       </div>
-      <p className="mt-4 text-xs text-gray-500">Episodes open on the source site in a new tab.</p>
+      <p className="mt-4 text-xs text-gray-500">{t('tunisian.sourceNote')}</p>
     </section>
   )
 }

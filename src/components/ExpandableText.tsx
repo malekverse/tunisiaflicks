@@ -1,9 +1,11 @@
 "use client"
 import React, { useState } from 'react'
+import { useT } from './I18nProvider'
 
 /** Long text clamped to a few lines with a "Read more / Show less" toggle (only when it's long). */
 export default function ExpandableText({ text, lines = 5, threshold = 420 }: { text: string, lines?: number, threshold?: number }) {
   const [expanded, setExpanded] = useState(false)
+  const t = useT()
   const isLong = text.length > threshold
 
   return (
@@ -20,7 +22,7 @@ export default function ExpandableText({ text, lines = 5, threshold = 420 }: { t
           onClick={() => setExpanded((value) => !value)}
           className="mt-2 text-sm font-medium text-red-500 hover:text-red-400"
         >
-          {expanded ? 'Show less' : 'Read more'}
+          {expanded ? t('common.showLess') : t('common.readMore')}
         </button>
       )}
     </div>

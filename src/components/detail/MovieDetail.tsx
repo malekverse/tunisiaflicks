@@ -6,8 +6,10 @@ import { PosterSlider } from '@/src/components/Sliders'
 import DownloadDialog from '@/src/components/detail/DownloadDialog'
 import { useMediaLists } from '@/src/hooks/use-media-lists'
 import { getStreamProviders } from '@/src/lib/stream-providers'
+import { useT } from '@/src/components/I18nProvider'
 
 export default function MovieDetail({ id, data, similar }: { id: string, data: any, similar: any[] }) {
+  const t = useT()
   const lists = useMediaLists({ id, title: data.title, poster_path: data.poster_path, media_type: 'movie' })
 
   const streamServices = getStreamProviders('movie', id)
@@ -29,7 +31,7 @@ export default function MovieDetail({ id, data, similar }: { id: string, data: a
         downloadSlot={imdbId ? <DownloadDialog type="movie" imdbId={imdbId} title={data.title} /> : undefined}
       />
       <div className="px-4 sm:px-14 max-w-[1800px] mx-auto w-full space-y-8">
-        <PosterSlider title="Recommended" items={similar} kind="movie" />
+        <PosterSlider title={t('common.recommended')} items={similar} kind="movie" />
       </div>
     </div>
   )

@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import { toast } from '@/src/hooks/use-toast'
 import type { StreamProvider } from '@/src/lib/stream-providers'
+import { useT } from '@/src/components/I18nProvider'
 
 /**
  * Player with a source switcher and a download link. `enabled=false` shows `placeholder` instead
@@ -17,6 +18,7 @@ export default function StreamSection({ services, downloadSlot, enabled = true, 
     enabled?: boolean
     placeholder?: { title: string, description: string }
 }) {
+    const t = useT()
     const [current, setCurrent] = useState(0)
     const [isLoading, setIsLoading] = useState(true)
     // Re-selecting the first provider (index 0) whenever the list identity changes keeps the
@@ -31,7 +33,7 @@ export default function StreamSection({ services, downloadSlot, enabled = true, 
     const select = (index: number) => {
         if (!enabled) {
             toast({
-                title: placeholder?.title ?? 'Not ready yet',
+                title: placeholder?.title ?? t('common.notReady'),
                 description: placeholder?.description ?? '',
                 variant: 'destructive',
                 duration: 3000,
@@ -40,13 +42,13 @@ export default function StreamSection({ services, downloadSlot, enabled = true, 
         }
         if (index === current) return
         setCurrent(index)
-        toast({ title: "Stream source changed", description: `Now using ${services[index].name}`, duration: 3000 })
+        toast({ title: t('stream.changed'), description: t('stream.nowUsing', { name: services[index].name }), duration: 3000 })
     }
 
     return (
         <section id="streamSection" className="w-full scroll-mt-20 px-0 md:px-10">
             <div className="flex items-center gap-2 py-1 px-2 bg-red-500 rounded-t-lg">
-                <div className="flex gap-2 flex-wrap flex-1 min-w-0" role="tablist" aria-label="Stream source">
+                <div className="flex gap-2 flex-wrap flex-1 min-w-0" role="tablist" aria-label={t('stream.sourceAria')}>
                     {services.map((item, index) => (
                         <button
                             key={item.name}
@@ -81,7 +83,7 @@ export default function StreamSection({ services, downloadSlot, enabled = true, 
                         <iframe
                             key={url}
                             src={url}
-                            title="Video player"
+                            title={t('stream.player')}
                             className="absolute inset-0 w-full h-full"
                             referrerPolicy="origin"
                             allowFullScreen
@@ -92,7 +94,7 @@ export default function StreamSection({ services, downloadSlot, enabled = true, 
             </div>
 
             <p className="mt-2 px-2 md:px-0 text-xs text-gray-500">
-                Streaming and downloads are provided by third-party sources. If one doesn&apos;t work, try another source above.
+                {t('stream.note')}
             </p>
         </section>
     )

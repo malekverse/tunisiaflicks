@@ -1,5 +1,6 @@
 import PosterCard from '@/src/components/PosterCard'
 import routes from '@/src/routes/client/routes'
+import { T } from '@/src/components/I18nProvider'
 
 type Kind = 'movie' | 'tv'
 
@@ -11,7 +12,7 @@ export default function MediaGrid({ items, kind, showTypeBadge }: { items?: any[
   const list = (items ?? []).filter((item) => item && (kind || item.media_type === 'movie' || item.media_type === 'tv'))
 
   if (list.length === 0) {
-    return <p className='text-gray-400 py-10 text-center'>Nothing to show here.</p>
+    return <p className='text-gray-400 py-10 text-center'><T k='common.nothingToShow' /></p>
   }
 
   return (

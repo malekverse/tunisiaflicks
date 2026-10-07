@@ -2,10 +2,13 @@
 
 import React, { useRef } from 'react';
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { useT } from "../I18nProvider";
 
 function HorizontalScroller({ children }: { children: React.ReactNode }) {
     const menuRef = useRef<HTMLDivElement>(null);
+    const t = useT();
 
+    // Physical directions on purpose: the left arrow always moves the strip left, in LTR and RTL.
     const scroll = (direction: 'left' | 'right') => {
         menuRef.current?.scrollBy({ left: direction === 'left' ? -240 : 240, behavior: 'smooth' });
     };
@@ -14,7 +17,7 @@ function HorizontalScroller({ children }: { children: React.ReactNode }) {
 
     return (
         <div className="relative flex overflow-hidden">
-            <button type="button" aria-label="Scroll left" className={`${arrow} left-0`} onClick={() => scroll('left')}>
+            <button type="button" aria-label={t('common.scrollLeft')} className={`${arrow} left-0`} onClick={() => scroll('left')}>
                 <FaChevronLeft />
             </button>
 
@@ -27,7 +30,7 @@ function HorizontalScroller({ children }: { children: React.ReactNode }) {
                 {children}
             </div>
 
-            <button type="button" aria-label="Scroll right" className={`${arrow} right-0`} onClick={() => scroll('right')}>
+            <button type="button" aria-label={t('common.scrollRight')} className={`${arrow} right-0`} onClick={() => scroll('right')}>
                 <FaChevronRight />
             </button>
         </div>

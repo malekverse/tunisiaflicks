@@ -11,16 +11,18 @@ import { Button } from '@/src/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/src/components/ui/dialog'
 import { toast } from '@/src/hooks/use-toast'
 import { cn } from '@/src/lib/utils'
+import { useI18n } from '@/src/components/I18nProvider'
 
 const TMDB = 'https://image.tmdb.org/t/p'
 
 function Backdrops({ backdrops, fallback, title }: { backdrops: { file_path: string }[], fallback?: string | null, title: string }) {
+    const { t, dir } = useI18n()
     const slides = useMemo(() => {
         const paths = backdrops.slice(0, 8).map((item) => item.file_path)
         return paths.length > 0 ? paths : fallback ? [fallback] : []
     }, [backdrops, fallback])
     const plugins = useMemo(() => [Autoplay({ delay: 4000 })], [])
-    const [emblaRef] = useEmblaCarousel({ loop: slides.length > 1 }, plugins)
+    const [emblaRef] = useEmblaCarousel({ loop: slides.length > 1, direction: dir }, plugins)
 
     return (
         <div className="overflow-hidden h-full" ref={emblaRef}>
@@ -30,7 +32,7 @@ function Backdrops({ backdrops, fallback, title }: { backdrops: { file_path: str
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                             src={`${TMDB}/w1280${path}`}
-                            alt={index === 0 ? `${title} backdrop` : ''}
+                            alt={index === 0 ? t('hero.backdropAlt', { title }) : ''}
                             loading={index === 0 ? 'eager' : 'lazy'}
                             className="w-full h-full object-cover object-top"
                         />
@@ -74,6 +76,7 @@ export type MediaHeroProps = {
  * the content and the content decides the height, so it behaves on every screen size.
  */
 export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFavorite, onToggleSaved, onWatch }: MediaHeroProps) {
+    const { t } = useI18n()
     const [trailerOpen, setTrailerOpen] = useState(false)
 
     const title: string = data.title || data.name || ''
@@ -86,7 +89,7 @@ export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFav
     const startDate: string = (kind === 'tv' ? data.first_air_date : data.release_date) || ''
     const endYear = kind === 'tv' && data.last_air_date ? data.last_air_date.substring(0, 4) : ''
     const years = kind === 'tv'
-        ? `${startDate.substring(0, 4)} – ${data.status === 'Ended' || data.status === 'Canceled' ? endYear : 'Present'}`
+        ? `${startDate.substring(0, 4)} – ${data.status === 'Ended' || data.status === 'Canceled' ? endYear : t('hero.present')}`
         : startDate.substring(0, 4)
 
     const trailer = useMemo(() => {
@@ -103,11 +106,11 @@ export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFav
                 await navigator.share({ title, url })
             } else {
                 await navigator.clipboard.writeText(url)
-                toast({ title: "Link copied", description: `${title} link copied to clipboard` })
+                toast({ title: t('common.linkCopied'), description: t('common.linkCopiedDesc', { title }) })
             }
         } catch (error: any) {
             if (error?.name !== 'AbortError') {
-                toast({ title: "Error", description: "Couldn't share this title", variant: "destructive" })
+                toast({ title: t('common.error'), description: t('hero.shareFailed'), variant: "destructive" })
             }
         }
     }
@@ -118,17 +121,17 @@ export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFav
             <div className="absolute inset-x-0 top-0 h-[60%] md:h-full">
                 <Backdrops backdrops={data.images?.backdrops ?? []} fallback={data.backdrop_path} title={title} />
                 <div className="absolute inset-x-0 bottom-0 h-1/2 md:h-2/6 bg-gradient-to-t from-[#0d0c0f] to-transparent" />
-                <div className="hidden md:block absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-[#0d0c0f] to-transparent" />
+                <div className="hidden md:block absolute inset-y-0 start-0 w-1/2 bg-gradient-to-r rtl:bg-gradient-to-l from-[#0d0c0f] to-transparent" />
             </div>
 
             <div className="relative z-10 flex flex-col min-h-[560px] md:min-h-[640px] px-5 md:px-10 pt-8 pb-10">
                 {logo && (
                     <Image
                         src={`${TMDB}/w500${logo.file_path}`}
-                        className="w-32 md:w-48 h-auto max-h-24 object-contain object-left"
+                        className="w-32 md:w-48 h-auto max-h-24 object-contain object-left rtl:object-right"
                         width={500}
                         height={200}
-                        alt={`${title} logo`}
+                        alt={t('hero.logoAlt', { title })}
                         priority
                     />
                 )}
@@ -140,7 +143,7 @@ export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFav
                             className="w-36 md:w-48 h-auto rounded-xl shadow-2xl shadow-black shrink-0"
                             width={500}
                             height={750}
-                            alt={`${title} poster`}
+                            alt={t('hero.posterAlt', { title })}
                         />
                     )}
 
@@ -156,7 +159,7 @@ export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFav
                             )}
                             <div className="flex gap-1 items-center">
                                 <FaHeart className="text-red-500" />
-                                <span className="text-red-500 font-bold">{Math.round((data.vote_average || 0) * 10)}%</span> Likes
+                                <span className="text-red-500 font-bold">{Math.round((data.vote_average || 0) * 10)}%</span> {t('hero.likes')}
                             </div>
                             {years && <><span className="hidden md:block">•</span><span>{years}</span></>}
                             {data.adult && <span className="bg-red-500 px-3 rounded-xl">+18</span>}
@@ -167,13 +170,13 @@ export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFav
 
                         {cast.length > 0 && (
                             <div className="mt-4 flex flex-col items-center md:items-start">
-                                <p>CASTS:</p>
+                                <p>{t('hero.cast')}</p>
                                 <div className="flex justify-center md:justify-start gap-2 mt-2 select-none flex-wrap">
                                     {cast.map((person) => (
                                         <Link
                                             key={person.credit_id ?? person.id}
                                             href={`/person/${person.id}`}
-                                            title={person.character ? `${person.name} as ${person.character}` : person.name}
+                                            title={person.character ? t('hero.castAs', { name: person.name, character: person.character }) : person.name}
                                             className="rounded-full transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                                         >
                                             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -191,12 +194,12 @@ export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFav
                                             type="button"
                                             onClick={() => setShowAllCast((value) => !value)}
                                             aria-expanded={showAllCast}
-                                            aria-label={showAllCast ? 'Show less cast' : 'Show full cast'}
-                                            title={showAllCast ? 'Show less' : 'Show full cast'}
+                                            aria-label={showAllCast ? t('hero.showLessCast') : t('hero.showFullCast')}
+                                            title={showAllCast ? t('hero.showLess') : t('hero.showFullCast')}
                                             className="w-12 h-12 md:w-14 md:h-14 bg-gray-500 bg-opacity-40 border-opacity-70 border-2 border-gray-200 rounded-full flex items-center justify-center hover:border-red-500 hover:text-red-500 transition-colors"
                                         >
                                             {showAllCast
-                                                ? <span className="text-xs font-semibold">Less</span>
+                                                ? <span className="text-xs font-semibold">{t('hero.less')}</span>
                                                 : <HiOutlineArrowsExpand className="w-6 h-6 md:w-8 md:h-8" />}
                                         </button>
                                     )}
@@ -207,22 +210,22 @@ export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFav
                         <div className="flex gap-4 mt-6 flex-wrap justify-center md:justify-start">
                             <div className="flex items-center gap-3">
                                 <Button asChild onClick={onWatch} className="bg-red-500 text-white hover:bg-red-400">
-                                    <a href="#streamSection"><FaPlay className="mr-1" /> Watch Now</a>
+                                    <a href="#streamSection"><FaPlay className="me-1" /> {t('hero.watchNow')}</a>
                                 </Button>
                                 <Button
                                     variant="outline"
                                     disabled={!trailer}
-                                    title={trailer ? 'Watch the trailer' : 'No trailer available'}
+                                    title={trailer ? t('hero.watchTrailerTitle') : t('hero.noTrailer')}
                                     onClick={() => setTrailerOpen(true)}
                                     className="border-white bg-transparent text-white hover:bg-white/10 hover:text-white"
                                 >
-                                    Watch Trailer
+                                    {t('hero.watchTrailer')}
                                 </Button>
                             </div>
                             <div className="flex items-center gap-3">
-                                <RoundButton icon={<FaHeart className="w-5 h-5" />} label={isFavorite ? 'Remove from favorites' : 'Add to favorites'} active={isFavorite} onClick={onToggleFavorite} />
-                                <RoundButton icon={<FaBookmark className="w-5 h-5" />} label={isSaved ? 'Remove from saved' : 'Save for later'} active={isSaved} onClick={onToggleSaved} />
-                                <RoundButton icon={<FaShareAlt className="w-5 h-5" />} label="Share" onClick={share} />
+                                <RoundButton icon={<FaHeart className="w-5 h-5" />} label={isFavorite ? t('hero.removeFavorites') : t('hero.addFavorites')} active={isFavorite} onClick={onToggleFavorite} />
+                                <RoundButton icon={<FaBookmark className="w-5 h-5" />} label={isSaved ? t('hero.removeSaved') : t('hero.saveForLater')} active={isSaved} onClick={onToggleSaved} />
+                                <RoundButton icon={<FaShareAlt className="w-5 h-5" />} label={t('hero.share')} onClick={share} />
                             </div>
                         </div>
                     </div>
@@ -232,12 +235,12 @@ export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFav
             {trailer && (
                 <Dialog open={trailerOpen} onOpenChange={setTrailerOpen}>
                     <DialogContent className="max-w-4xl p-0 border-0 bg-black overflow-hidden">
-                        <DialogTitle className="sr-only">{title} trailer</DialogTitle>
+                        <DialogTitle className="sr-only">{t('hero.trailerTitle', { title })}</DialogTitle>
                         <div className="aspect-video w-full">
                             {trailerOpen && (
                                 <iframe
                                     src={`https://www.youtube-nocookie.com/embed/${trailer.key}?autoplay=1&rel=0`}
-                                    title={`${title} trailer`}
+                                    title={t('hero.trailerTitle', { title })}
                                     className="w-full h-full"
                                     allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
                                     allowFullScreen

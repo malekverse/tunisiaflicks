@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Skeleton } from './ui/skeleton';
 import { MediaContextMenu, MediaOptionsMenu } from './MediaActions';
+import { useT } from './I18nProvider';
 
 type BackdropCardProps = {
     backdropImg?: string | null
@@ -23,6 +24,7 @@ export function SkeletonLoader() {
 }
 
 export default function MovieBackdropCard({ backdropImg, title, voteAverage, releaseDate, link, id, mediaType = 'movie' }: BackdropCardProps) {
+    const t = useT()
     const itemId = id || (link ? link.split('/').pop() : '')
     const src = backdropImg ? `https://image.tmdb.org/t/p/w780${backdropImg}` : '/404.png'
 
@@ -39,12 +41,12 @@ export default function MovieBackdropCard({ backdropImg, title, voteAverage, rel
                     className='absolute inset-0 w-full h-full object-cover'
                 />
                 <div className='absolute inset-0 z-10 bg-black opacity-10 transition-opacity ease-in-out duration-700 hover:opacity-0' />
-                <div className='absolute z-20 bottom-3 left-5 right-3 sm:left-3'>
+                <div className='absolute z-20 bottom-3 start-5 end-3 sm:start-3'>
                     <p className='text-white text-lg sm:text-2xl font-semibold bbc-text-shadow'>{title}</p>
                     <p className='text-white text-sm sm:text-base font-semibold bbc-text-shadow'>{releaseDate}</p>
                     <label className='flex items-center'>
-                        <Image src={"/imdb-logo.png"} alt='IMDb' width={100} height={100} className="inline-block w-[30px] sm:w-[40px] h-auto mr-2" />
-                        <span className="inline-block bbc-text-shadow text-xs sm:text-base text-white">{voteAverage} Rating</span>
+                        <Image src={"/imdb-logo.png"} alt='IMDb' width={100} height={100} className="inline-block w-[30px] sm:w-[40px] h-auto me-2" />
+                        <span className="inline-block bbc-text-shadow text-xs sm:text-base text-white">{t('card.rating', { rating: voteAverage })}</span>
                     </label>
                 </div>
             </div>
@@ -55,7 +57,7 @@ export default function MovieBackdropCard({ backdropImg, title, voteAverage, rel
     return (
         <div className='relative'>
             <MediaContextMenu {...meta}>{card}</MediaContextMenu>
-            <div className='sm:hidden absolute z-30 left-0 top-0 scale-50 origin-top-left'>
+            <div className='sm:hidden absolute z-30 start-0 top-0 scale-50 origin-top-left rtl:origin-top-right'>
                 <MediaOptionsMenu {...meta} />
             </div>
         </div>

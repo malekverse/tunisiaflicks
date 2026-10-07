@@ -5,6 +5,7 @@ import { toast } from '@/src/hooks/use-toast'
 import {
   addToFavorites, removeFromFavorites, saveForLater, removeFromSaved, addToWatchHistory, isInUserList,
 } from '@/src/lib/user-content'
+import { useT } from '@/src/components/I18nProvider'
 
 type MediaInfo = {
   id: string
@@ -16,6 +17,7 @@ type MediaInfo = {
 /** Favorite / bookmark / watch-history state for one movie or show (shared by both detail pages). */
 export function useMediaLists({ id, title, poster_path, media_type }: MediaInfo) {
   const { data: session } = useSession()
+  const t = useT()
   const userId = session?.user?.id
   const [isFavorite, setIsFavorite] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
@@ -40,49 +42,49 @@ export function useMediaLists({ id, title, poster_path, media_type }: MediaInfo)
 
   const requireLogin = useCallback((description: string) => {
     if (session) return true
-    toast({ title: "Login Required", description, variant: "destructive" })
+    toast({ title: t('common.loginRequired'), description, variant: "destructive" })
     return false
-  }, [session])
+  }, [session, t])
 
   const item = () => ({ id, title: title!, poster_path: poster_path ?? undefined, media_type, added_at: new Date() })
 
   const toggleFavorite = useCallback(async () => {
-    if (!requireLogin("Please login to add to favorites") || !title) return
+    if (!requireLogin(t('toast.loginToFavorite')) || !title) return
     try {
       if (isFavorite) {
         await removeFromFavorites(id)
         setIsFavorite(false)
-        toast({ title: "Removed from favorites", description: `${title} has been removed from your favorites` })
+        toast({ title: t('toast.removedFavorites'), description: t('toast.removedFavoritesDesc', { title }) })
       } else {
         await addToFavorites(item())
         setIsFavorite(true)
-        toast({ title: "Added to favorites", description: `${title} has been added to your favorites` })
+        toast({ title: t('toast.addedFavorites'), description: t('toast.addedFavoritesDesc', { title }) })
       }
     } catch (error) {
       console.error('Failed to update favorites:', error)
-      toast({ title: "Error", description: "Failed to update favorites", variant: "destructive" })
+      toast({ title: t('common.error'), description: t('toast.updateFavoritesFailed'), variant: "destructive" })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requireLogin, isFavorite, id, title, poster_path, media_type])
+  }, [requireLogin, isFavorite, id, title, poster_path, media_type, t])
 
   const toggleSaved = useCallback(async () => {
-    if (!requireLogin("Please login to save for later") || !title) return
+    if (!requireLogin(t('toast.loginToSave')) || !title) return
     try {
       if (isSaved) {
         await removeFromSaved(id)
         setIsSaved(false)
-        toast({ title: "Removed from saved", description: `${title} has been removed from your saved list` })
+        toast({ title: t('toast.removedSaved'), description: t('toast.removedSavedDesc', { title }) })
       } else {
         await saveForLater(item())
         setIsSaved(true)
-        toast({ title: "Saved for later", description: `${title} has been saved for later` })
+        toast({ title: t('toast.savedForLater'), description: t('toast.savedForLaterDesc', { title }) })
       }
     } catch (error) {
       console.error('Failed to update saved list:', error)
-      toast({ title: "Error", description: "Failed to update saved list", variant: "destructive" })
+      toast({ title: t('common.error'), description: t('toast.updateSavedFailed'), variant: "destructive" })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requireLogin, isSaved, id, title, poster_path, media_type])
+  }, [requireLogin, isSaved, id, title, poster_path, media_type, t])
 
   /**
    * Records the title in the watch history (signed-in users only; guests can still watch).

@@ -6,25 +6,27 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import PosterCard, { SkeletonLoader as PosterSkeleton } from '@/src/components/PosterCard'
 import MovieBackdropCard, { SkeletonLoader as BackdropSkeleton } from '@/src/components/MovieBackdropCard'
 import routes from '@/src/routes/client/routes'
+import { useT } from '@/src/components/I18nProvider'
 
 type Kind = 'movie' | 'tv'
 
 const heroItemClass = `transition-transform ease-in-out duration-300 select-none basis-[300px] sm:basis-[400px] lg:basis-[500px]
-    my-4 pl-0 ml-4 hover:scale-105 hover:z-10 shadow-black shadow-2xl`
+    my-4 ps-0 ms-4 hover:scale-105 hover:z-10 shadow-black shadow-2xl`
 const posterItemClass = `transition-transform ease-in-out duration-300 select-none basis-[145px] md:basis-[167px]
-    my-4 p-0 ml-4 hover:scale-105 hover:z-10`
+    my-4 p-0 ms-4 hover:scale-105 hover:z-10`
 
 const toRoute = (kind: Kind, id: number | string) => (kind === 'tv' ? routes.tvShow(String(id)) : routes.movie(String(id)))
 const itemKind = (kind: Kind | 'mixed', item: any): Kind => (kind === 'mixed' ? (item.media_type === 'tv' ? 'tv' : 'movie') : kind)
 
 function SectionHeader({ title, href }: { title: string, href?: string }) {
+    const t = useT()
     return (
         <div className='flex justify-between items-end w-full'>
             <h2 className='text-2xl sm:text-3xl font-semibold mb-3'>{title}</h2>
             {href &&
                 <Link href={href} className='text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-white mb-3'>
-                    <span className='text-sm font-light mr-2'>See More</span>
-                    <FaLongArrowAltRight className='inline-block' />
+                    <span className='text-sm font-light me-2'>{t('common.seeMore')}</span>
+                    <FaLongArrowAltRight className='inline-block rtl:-scale-x-100' />
                 </Link>
             }
         </div>
