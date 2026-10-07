@@ -42,6 +42,8 @@ export const authOptions: NextAuthOptions = {
         token.email = user.email;
         token.name = user.name || null;
         // Do not include the image in the token
+        // When the password was last typed: a fresh sign-in may pick a grown-up profile without it.
+        token.loginAt = Date.now();
       }
       return token;
     },
@@ -53,6 +55,7 @@ export const authOptions: NextAuthOptions = {
         session.user.name = token.name as string | null;
         // Do not include the image in the session
       }
+      session.loginAt = token.loginAt;
       return session;
     },
   },

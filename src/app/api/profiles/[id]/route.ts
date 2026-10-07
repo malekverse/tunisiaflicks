@@ -1,0 +1,79 @@
+// Rename / recolour / Kids toggle (PATCH) and delete (DELETE) one of the signed-in account's profiles.
+// The id is only ever matched inside the session user's own document, so foreign ids simply 404.
+import { NextRequest, NextResponse } from 'next/server'
+import { ObjectId } from 'mongodb'
+import clientPromise from '@/src/lib/mongodb'
+import { requireGrownUpProfile } from '@/src/lib/profiles'
+import { PROFILE_COLORS, PROFILE_COOKIE, cleanProfileName, isProfileId } from '@/src/lib/models/Profile'
+
+export const dynamic = 'force-dynamic'
+
+type Params = { params: { id: string } }
+
+export async function PATCH(request: NextRequest, { params }: Params) {
+  const result = await requireGrownUpProfile()
+  if ('error' in result) return result.error
+  const { userId, active } = result
+
+  const target = isProfileId(params.id) ? active.profiles.find((profile) => profile.id === params.id) : undefined
+  if (!target) {
+    return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+  }
+
+  const body = await request.json().catch(() => null)
+  const set: Record<string, unknown> = {}
+  if (body?.name !== undefined) {
+    const name = cleanProfileName(body.name)
+    if (!name) return NextResponse.json({ error: 'Profile names need 1 to 20 characters' }, { status: 400 })
+    if (active.profiles.some((profile) => profile.id !== target.id && profile.name.toLowerCase() === name.toLowerCase())) {
+      return NextResponse.json({ error: 'You already have a profile with that name' }, { status: 400 })
+    }
+    set['profiles.$.name'] = name
+  }
+  if (body?.color !== undefined) {
+    if (!PROFILE_COLORS.includes(body.color)) return NextResponse.json({ error: 'Invalid colour' }, { status: 400 })
+    set['profiles.$.color'] = body.color
+  }
+  if (body?.kids !== undefined) {
+    if (typeof body.kids !== 'boolean') return NextResponse.json({ error: 'Invalid Kids setting' }, { status: 400 })
+    // Someone must always be able to manage the account.
+    if (body.kids && !active.profiles.some((profile) => profile.id !== target.id && !profile.kids)) {
+      return NextResponse.json({ error: 'Keep at least one grown-up profile' }, { status: 400 })
+    }
+    set['profiles.$.kids'] = body.kids
+  }
+  if (Object.keys(set).length === 0) {
+    return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
+  }
+
+  const client = await clientPromise
+  await client.db().collection('users').updateOne({ _id: new ObjectId(userId), 'profiles.id': target.id }, { $set: set })
+  return NextResponse.json({ success: true })
+}
+
+export async function DELETE(_request: NextRequest, { params }: Params) {
+  const result = await requireGrownUpProfile()
+  if ('error' in result) return result.error
+  const { userId, active } = result
+
+  const target = isProfileId(params.id) ? active.profiles.find((profile) => profile.id === params.id) : undefined
+  if (!target) {
+    return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+  }
+  if (!active.profiles.some((profile) => profile.id !== target.id && !profile.kids)) {
+    return NextResponse.json({ error: 'Keep at least one grown-up profile' }, { status: 400 })
+  }
+
+  const client = await clientPromise
+  const db = client.db()
+  await db.collection('users').updateOne(
+    { _id: new ObjectId(userId) },
+    { $pull: { profiles: { id: target.id } } } as any
+  )
+  // The profile's favorites, bookmarks and history go with it.
+  await db.collection('userContent').deleteMany({ userId, profileId: target.id })
+
+  const response = NextResponse.json({ success: true })
+  if (active.profile?.id === target.id) response.cookies.delete(PROFILE_COOKIE)
+  return response
+}
