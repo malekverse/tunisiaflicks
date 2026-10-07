@@ -3,6 +3,7 @@ import ContinueWatching from '@/src/components/ContinueWatching'
 import Genres from '@/src/components/Genres'
 import MoodChips from '@/src/components/MoodChips'
 import PickOfTheDay from '@/src/components/PickOfTheDay'
+import { PushPrompt } from '@/src/components/PushSettings'
 import { HeroSlider, PosterSlider } from '@/src/components/Sliders'
 import getMovies from './(movies)/actions'
 import { getLocale, getT } from '@/src/lib/i18n/server'
@@ -29,6 +30,8 @@ export default async function MainPage() {
       <Genres />
       <MoodChips />
       <PickOfTheDay pick={pick} />
+      {/* Installed app only: invite to get the pick as a notification. */}
+      <PushPrompt />
       {/* Signed-in users only; both render nothing for guests. */}
       <ContinueWatching />
       <BecauseYouWatched />

@@ -625,4 +625,22 @@ export const ar: Record<TKey, string> = {
 
   // Pick of the day (cont.)
   'pick.oneSeason': 'موسم واحد',
+
+  // Push notifications
+  'push.title': 'الإشعارات على هذا الجهاز',
+  'push.description': 'إشعارات مجانية من متصفحك أو من التطبيق المثبّت. يمكنك إيقافها في أي وقت.',
+  'push.pickLabel': 'اختيار الليلة',
+  'push.pickHint': 'اقتراح واحد كل مساء حوالي الساعة 18:00.',
+  'push.alertsLabel': 'الأعمال التي أتابعها',
+  'push.alertsHint': 'عند صدور فيلم أتابعه أو عرض حلقة جديدة.',
+  'push.unsupported': 'هذا المتصفح لا يدعم الإشعارات. على iPhone، أضف TunisiaFlicks إلى الشاشة الرئيسية أولًا.',
+  'push.unavailable': 'الإشعارات غير متاحة حاليًا.',
+  'push.denied': 'الإشعارات محظورة لهذا الموقع في إعدادات متصفحك.',
+  'push.enabled': 'تم تفعيل الإشعارات',
+  'push.failed': 'تعذّر تحديث الإشعارات. حاول مرة أخرى.',
+  'push.promptTitle': 'احصل على اختيار الليلة كل مساء',
+  'push.promptText': 'اقتراح فيلم أو مسلسل واحد يوميًا، مع تنبيهات للأعمال التي تتابعها.',
+  'push.turnOn': 'تفعيل',
+  'push.notNow': 'ليس الآن',
+  'push.pickTitle': '🎬 اختيار الليلة: {title}',
 }

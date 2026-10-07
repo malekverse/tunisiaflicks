@@ -623,6 +623,24 @@ export const en = {
 
   // Pick of the day (cont.)
   'pick.oneSeason': '1 season',
+
+  // Push notifications
+  'push.title': 'Notifications on this device',
+  'push.description': 'Free notifications from your browser or the installed app. You can turn them off at any time.',
+  'push.pickLabel': 'Tonight\'s pick',
+  'push.pickHint': 'One suggestion every evening around 18:00.',
+  'push.alertsLabel': 'Titles I follow',
+  'push.alertsHint': 'When a followed movie comes out or a new episode airs.',
+  'push.unsupported': 'This browser doesn\'t support notifications. On iPhone, add TunisiaFlicks to your Home Screen first.',
+  'push.unavailable': 'Notifications aren\'t available right now.',
+  'push.denied': 'Notifications are blocked for this site in your browser settings.',
+  'push.enabled': 'Notifications turned on',
+  'push.failed': 'Couldn\'t update notifications. Please try again.',
+  'push.promptTitle': 'Get tonight\'s pick every evening',
+  'push.promptText': 'One movie or show suggestion a day, plus alerts for titles you follow.',
+  'push.turnOn': 'Turn on',
+  'push.notNow': 'Not now',
+  'push.pickTitle': '🎬 Tonight\'s pick: {title}',
 } satisfies Record<string, string>
 
 export type TKey = keyof typeof en

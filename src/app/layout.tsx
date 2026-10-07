@@ -11,6 +11,7 @@ import VerifyEmailBanner from "@/src/components/VerifyEmailBanner";
 import { SessionProvider } from "@/src/components/SessionProvider";
 import { Toaster } from "@/src/components/ui/toaster";
 import ServiceWorkerRegister from "@/src/components/ServiceWorkerRegister";
+import DailyPushTrigger from "@/src/components/DailyPushTrigger";
 import { I18nProvider } from "@/src/components/I18nProvider";
 import { dirOf } from "@/src/lib/i18n";
 import { getLocale } from "@/src/lib/i18n/server";
@@ -134,6 +135,7 @@ export default function RootLayout({
         <SpeedInsights />
         <Analytics />
         <ServiceWorkerRegister />
+        <DailyPushTrigger />
       </body>
     </html>
   );

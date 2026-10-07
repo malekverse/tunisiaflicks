@@ -6,7 +6,7 @@ import clientPromise from '@/src/lib/mongodb'
 const SECRET_FIELDS = { password: 0, resetToken: 0, resetTokenExpiry: 0, verifyTokenHash: 0, verifyTokenExpiry: 0 }
 
 // Collections holding per-user documents keyed by the user id (as a string).
-const USER_COLLECTIONS = ['userContent', 'follows', 'notifications', 'lists', 'wrappedShares'] as const
+const USER_COLLECTIONS = ['userContent', 'follows', 'notifications', 'lists', 'wrappedShares', 'pushSubscriptions'] as const
 
 /** Everything stored about a user, as one JSON-friendly object (the "download my data" file). */
 export async function exportUserData(userId: string) {

@@ -50,6 +50,7 @@ const en: Record<LegalPageId, LegalDoc> = {
         bullets: [
           'Account details: your name, email address, profile picture and a securely hashed password (never the password itself). If you sign in with Google we receive your name, email and profile picture from Google.',
           'Your activity on TunisiaFlicks: favorites, bookmarks, watch history, lists, profiles, followed titles and notification preferences.',
+          'If you turn on notifications: the address your browser gives us to deliver them (a push subscription), your language and which notifications you chose. Turning them off deletes it.',
           'Technical data: your IP address is used briefly to protect logins and forms against abuse (rate limiting) and is not kept for longer than a day.',
           'Cookies: a session cookie to keep you signed in, and small preference cookies for your language and active profile. We do not use advertising cookies.',
           'Analytics: anonymous, cookie-free page statistics (Vercel Web Analytics) to see which pages are used.',
@@ -204,6 +205,7 @@ const ar: Record<LegalPageId, LegalDoc> = {
         bullets: [
           'بيانات الحساب: اسمك وبريدك الإلكتروني وصورتك الشخصية وكلمة مرور مشفّرة بشكل آمن (وليس كلمة المرور نفسها). عند تسجيل الدخول عبر Google نتلقى منها اسمك وبريدك وصورتك.',
           'نشاطك على TunisiaFlicks: المفضلة والمحفوظات وسجل المشاهدة والقوائم والملفات الشخصية والعناوين التي تتابعها وإعدادات التنبيهات.',
+          'إذا فعّلت الإشعارات: العنوان الذي يمنحه متصفحك لإيصالها (اشتراك الإشعارات)، ولغتك والإشعارات التي اخترتها. إيقافها يحذفه.',
           'بيانات تقنية: يُستخدم عنوان IP لفترة قصيرة لحماية تسجيل الدخول والنماذج من الإساءة (تحديد عدد المحاولات) ولا يُحتفظ به لأكثر من يوم.',
           'ملفات تعريف الارتباط: ملف جلسة لإبقائك مسجلًا، وملفات صغيرة لحفظ اللغة والملف الشخصي النشط. لا نستخدم ملفات تعريف ارتباط إعلانية.',
           'الإحصاءات: إحصاءات صفحات مجهولة الهوية وبدون ملفات تعريف ارتباط (Vercel Web Analytics) لمعرفة الصفحات المستخدمة.',

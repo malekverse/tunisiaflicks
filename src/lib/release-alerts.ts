@@ -3,6 +3,7 @@
 //     keyed by a unique (userId, event_key) so it can never be created twice, and only then does the
 //     follow's marker move forward (a crash in between just retries, it never loses or doubles an alert);
 //  2. each user's pending notifications are claimed, sent as ONE email, then marked sent.
+// New notifications are also pushed right away to the follower's devices that opted in (lib/push.ts).
 import { randomUUID } from 'crypto'
 import { MongoServerError, ObjectId } from 'mongodb'
 import clientPromise from '@/src/lib/mongodb'
@@ -11,6 +12,8 @@ import {
   alertCollections, episodeCode, fetchTitleSnapshot, hasReleased, isNewerEpisode, todayUtc, type TitleSnapshot,
 } from '@/src/lib/follows'
 import type { FollowMediaType, ReleaseNotification } from '@/src/lib/models/Follow'
+import { pushToUser } from '@/src/lib/push'
+import { createTranslator } from '@/src/lib/i18n'
 
 const TMDB_CONCURRENCY = 6
 /** Gmail allows ~500 messages a day; whatever is left over goes out on the next run. */
@@ -92,7 +95,21 @@ export async function runReleaseAlerts({ deadline = Date.now() + 50_000 }: { dea
       stats.notificationsCreated++
     } catch (error) {
       if (!isDuplicateKey(error)) throw error // already created by an earlier (interrupted) run
+      return
     }
+    // Best effort: the email and the in-app bell remain the reliable channels.
+    await pushToUser(userId, (device) => {
+      const t = createTranslator(device.locale)
+      const episode = doc.episode
+        ? t('alerts.newEpisodeCode', { episode: t('common.seasonEpisode', { season: doc.episode.season, episode: doc.episode.episode }) })
+        : t('alerts.newEpisode')
+      return {
+        title: snapshot.title,
+        body: doc.kind === 'movie_released' ? t('alerts.outNow') : episode,
+        url: `/${snapshot.media_type}/${snapshot.tmdbId}`,
+        tag: doc.event_key,
+      }
+    }).catch((error) => console.error('Release alert push failed:', error))
   }
 
   const checkTitle = async ({ _id: { media_type, tmdbId } }: (typeof titles)[number]) => {

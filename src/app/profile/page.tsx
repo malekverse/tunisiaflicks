@@ -7,6 +7,7 @@ import UserContent from './UserContent';
 import Following from './Following';
 import ProfileManager from './ProfileManager';
 import AccountSecurity from './AccountSecurity';
+import { PushSettingsCard } from '@/src/components/PushSettings';
 import clientPromise from '@/src/lib/mongodb';
 import { ObjectId } from 'mongodb';
 import { getT } from '@/src/lib/i18n/server';
@@ -46,6 +47,9 @@ export default async function ProfilePage() {
 
       {/* Release / new-episode alerts */}
       <Following />
+
+      {/* Push notifications on this device */}
+      <PushSettingsCard />
 
       {/* Password, data export, account deletion */}
       <AccountSecurity />
