@@ -1,0 +1,49 @@
+# Lint, type-check, build, then start the app against a throwaway MongoDB and run the smoke tests.
+# Free on GitHub Actions. Add a TMDB_API_KEY repository secret to also smoke-test the TMDB pages.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mongo:
+        image: mongo:7
+        ports: ['27017:27017']
+    env:
+      MONGODB_URI: mongodb://localhost:27017/tunisiaflicks_ci
+      NEXTAUTH_SECRET: ci-only-secret
+      NEXTAUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - name: Type-check
+        run: npx tsc --noEmit
+      - run: npm run build
+      - name: Start the app
+        run: |
+          npm start > server.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf -o /dev/null http://localhost:3000/robots.txt && exit 0; sleep 1; done
+          cat server.log; exit 1
+      - name: Smoke tests
+        run: npm run test:smoke
+      - name: Server log
+        if: failure()
+        run: cat server.log
