@@ -1,13 +1,13 @@
-// Personalised "Because you watched X" rows for the signed-in user.
+// Personalised "Because you watched X" rows for the signed-in user's active profile.
 //
 // Seeds are the user's most recent history (then favorites); for each seed we take TMDB's own
 // recommendations, drop anything the user already watched / favorited / saved, and avoid repeating
 // a title across rows. No ML, no extra storage: just the lists we already keep + TMDB.
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/src/lib/auth'
 import clientPromise from '@/src/lib/mongodb'
 import { tmdbFetchSafe } from '@/src/lib/tmdb'
+import { filterKidSafe } from '@/src/lib/kids'
+import { requireActiveProfile } from '@/src/lib/profiles'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,16 +21,14 @@ type Seed = { id: string, title: string, media_type: 'movie' | 'tv' }
 const keyOf = (type: string, id: string | number) => `${type}-${id}`
 
 export async function GET() {
-  const session = await getServerSession(authOptions)
-  const userId = session?.user?.id
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
   try {
+    const owner = await requireActiveProfile()
+    if ('error' in owner) return owner.error
+    const { userId, profile } = owner
+
     const client = await clientPromise
     const lists = await client.db().collection('userContent')
-      .find({ userId, type: { $in: ['history', 'favorites', 'saved'] } })
+      .find({ userId, profileId: profile.id, type: { $in: ['history', 'favorites', 'saved'] } })
       .toArray()
     const listOf = (type: string): any[] => lists.find((list) => list.type === type)?.items ?? []
 
@@ -52,7 +50,11 @@ export async function GET() {
     }
 
     const recommendations = await Promise.all(
-      seeds.map((seed) => tmdbFetchSafe<{ results: any[] }>(`${seed.media_type}/${seed.id}/recommendations`, { page: 1 }, 86400))
+      seeds.map(async (seed) => {
+        const data = await tmdbFetchSafe<{ results: any[] }>(`${seed.media_type}/${seed.id}/recommendations`, { page: 1 }, 86400)
+        // Kids profiles only get titles rated for them.
+        return data && profile.kids ? { results: await filterKidSafe(data.results ?? [], seed.media_type) } : data
+      })
     )
 
     const used = new Set<string>()

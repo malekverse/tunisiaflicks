@@ -1,27 +1,19 @@
 // API route for user content interactions (favorites, saved, watch history)
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/src/lib/auth';
 import clientPromise from '@/src/lib/mongodb';
-import { ObjectId } from 'mongodb';
 import { ContentItem, WatchHistoryItem } from '@/src/lib/models/UserContent';
+import { requireActiveProfile } from '@/src/lib/profiles';
 
-// Helper function to get user ID from session
-async function getUserId() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return null;
-  }
-  return session.user.id;
-}
+// Every list belongs to one profile of the signed-in user: the active profile from the profile
+// cookie, checked against the session user's own profiles (see lib/profiles.ts).
 
 // GET handler for retrieving user content lists
 export async function GET(request: NextRequest) {
   try {
-    const userId = await getUserId();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const owner = await requireActiveProfile();
+    if ('error' in owner) return owner.error;
+    const userId = owner.userId;
+    const profileId = owner.profile.id;
 
     const searchParams = request.nextUrl.searchParams;
     const listType = searchParams.get('type'); // 'favorites', 'saved', or 'history'
@@ -37,6 +29,7 @@ export async function GET(request: NextRequest) {
     // Find the user's content list
     const userContent = await userContentCollection.findOne({
       userId: userId,
+      profileId: profileId,
       type: listType
     });
 
@@ -55,10 +48,10 @@ export async function GET(request: NextRequest) {
 // POST handler for adding items to user content lists
 export async function POST(request: NextRequest) {
   try {
-    const userId = await getUserId();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const owner = await requireActiveProfile();
+    if ('error' in owner) return owner.error;
+    const userId = owner.userId;
+    const profileId = owner.profile.id;
 
     const { type, item } = await request.json();
 
@@ -98,9 +91,9 @@ export async function POST(request: NextRequest) {
 
     // Update or insert the item in the user's content list
     const result = await userContentCollection.updateOne(
-      { userId: userId, type: type },
+      { userId: userId, profileId: profileId, type: type },
       {
-        $setOnInsert: { userId: userId, type: type },
+        $setOnInsert: { userId: userId, profileId: profileId, type: type },
         $pull: { items: { id: item.id } } // Remove if exists to avoid duplicates
       },
       { upsert: true }
@@ -108,7 +101,7 @@ export async function POST(request: NextRequest) {
 
     // Add the item to the array (now that we've removed any duplicate)
     await userContentCollection.updateOne(
-      { userId: userId, type: type },
+      { userId: userId, profileId: profileId, type: type },
       { $push: { items: { $each: [contentItem], $position: 0 } } } // Add to beginning of array
     );
 
@@ -122,10 +115,10 @@ export async function POST(request: NextRequest) {
 // DELETE handler for removing items from user content lists
 export async function DELETE(request: NextRequest) {
   try {
-    const userId = await getUserId();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const owner = await requireActiveProfile();
+    if ('error' in owner) return owner.error;
+    const userId = owner.userId;
+    const profileId = owner.profile.id;
 
     const searchParams = request.nextUrl.searchParams;
     const type = searchParams.get('type'); // 'favorites', 'saved', or 'history'
@@ -145,7 +138,7 @@ export async function DELETE(request: NextRequest) {
 
     // Remove the item from the user's content list
     const result = await userContentCollection.updateOne(
-      { userId: userId, type: type },
+      { userId: userId, profileId: profileId, type: type },
       { $pull: { items: { id: itemId } } }
     );
 
