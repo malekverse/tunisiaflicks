@@ -10,6 +10,8 @@ import { HiOutlineArrowsExpand } from "react-icons/hi"
 import { Button } from '@/src/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/src/components/ui/dialog'
 import FollowButton from '@/src/components/FollowButton'
+import ReleaseCountdown from '@/src/components/detail/ReleaseCountdown'
+import { upcomingRelease } from '@/src/lib/calendar'
 import { toast } from '@/src/hooks/use-toast'
 import { cn } from '@/src/lib/utils'
 import { useI18n } from '@/src/components/I18nProvider'
@@ -129,6 +131,9 @@ export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFav
         ? data.status !== 'Ended' && data.status !== 'Canceled'
         : !data.release_date || data.release_date > new Date().toISOString().slice(0, 10)
 
+    // Upcoming movie release / next TV episode: live countdown + add to calendar.
+    const release = useMemo(() => upcomingRelease(kind, data), [kind, data])
+
     const trailer = useMemo(() => {
         const videos: any[] = (data.videos?.results ?? []).filter((video: any) => video.site === 'YouTube')
         return videos.find((video) => video.type === 'Trailer' && video.official)
@@ -211,6 +216,8 @@ export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFav
                         </div>
 
                         <p className="mt-3 text-gray-300 text-center md:text-start">{data.overview}</p>
+
+                        {release && <ReleaseCountdown event={release} />}
 
                         {cast.length > 0 && (
                             <div className="mt-4 flex flex-col items-center md:items-start">
