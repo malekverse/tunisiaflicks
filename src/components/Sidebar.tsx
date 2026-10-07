@@ -16,6 +16,8 @@ import {
     MdFavorite, MdFavoriteBorder,
     MdBookmark, MdBookmarkBorder,
     MdOutlineStar, MdOutlineStarBorder,
+    MdPlaylistPlay, MdOutlinePlaylistPlay,
+    MdAutoAwesome, MdOutlineAutoAwesome,
 } from 'react-icons/md';
 
 import { globalStore } from '@/src/store/store';
@@ -31,6 +33,8 @@ const sidebarElem = [
     { title: 'Recent', DefIcon: <MdAccessTimeFilled className={ICON} />, OutIcon: <MdAccessTime className={ICON} />, path: '/history' },
     { title: 'Favorites', DefIcon: <MdFavorite className={ICON} />, OutIcon: <MdFavoriteBorder className={ICON} />, path: '/favorites' },
     { title: 'Bookmarked', DefIcon: <MdBookmark className={ICON} />, OutIcon: <MdBookmarkBorder className={ICON} />, path: '/saved' },
+    { title: 'My Lists', DefIcon: <MdPlaylistPlay className={ICON} />, OutIcon: <MdOutlinePlaylistPlay className={ICON} />, path: '/lists' },
+    { title: 'My Year', DefIcon: <MdAutoAwesome className={ICON} />, OutIcon: <MdOutlineAutoAwesome className={ICON} />, path: '/wrapped' },
 ];
 
 const itemBase = 'flex items-center w-full rounded-xl p-4 transition-colors duration-200 overflow-hidden whitespace-nowrap';
