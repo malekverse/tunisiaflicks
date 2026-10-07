@@ -20,14 +20,23 @@ export async function GET() {
     const user = await client
       .db()
       .collection('users')
-      .findOne({ _id: new ObjectId(session.user.id) }, { projection: { name: 1, image: 1 } });
+      .findOne({ _id: new ObjectId(session.user.id) }, { projection: { name: 1, image: 1, email: 1, emailVerified: 1, password: 1 } });
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     return NextResponse.json(
-      { user: { name: user.name ?? null, image: user.image ?? null } },
+      {
+        user: {
+          name: user.name ?? null,
+          image: user.image ?? null,
+          email: user.email ?? null,
+          emailVerified: !!user.emailVerified,
+          // Whether a password is set (Google-only accounts have none). Never the hash itself.
+          hasPassword: typeof user.password === 'string' && user.password.length > 0,
+        },
+      },
       { headers: { 'Cache-Control': 'private, no-store' } }
     );
   } catch (error) {

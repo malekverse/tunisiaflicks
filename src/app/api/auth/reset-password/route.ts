@@ -2,14 +2,26 @@
 import { NextResponse } from 'next/server';
 import clientPromise from '@/src/lib/mongodb';
 import { hash } from 'bcrypt';
+import { clientIp, rateLimit, tooManyRequests } from '@/src/lib/rate-limit';
 
 export async function POST(request: Request) {
   try {
+    // Token guessing protection.
+    const limit = await rateLimit(`reset:ip:${clientIp(request.headers)}`, 10, 15 * 60);
+    if (!limit.ok) return tooManyRequests(limit.retryAfter);
+
     const { token, password } = await request.json();
 
     if (!token || !password) {
       return NextResponse.json(
         { message: 'Token and password are required' },
+        { status: 400 }
+      );
+    }
+
+    if (typeof password !== 'string' || password.length < 8) {
+      return NextResponse.json(
+        { message: 'Password must be at least 8 characters' },
         { status: 400 }
       );
     }

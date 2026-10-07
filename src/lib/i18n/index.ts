@@ -45,6 +45,7 @@ const API_MESSAGES: Record<string, TKey> = {
   'Password must be at least 8 characters': 'api.passwordMin8',
   'User already exists': 'api.userExists',
   'Error creating user': 'api.createFailed',
+  'Too many attempts. Please try again later.': 'api.tooManyAttempts',
 }
 
 /** Translates a known API message; anything else is returned unchanged. */

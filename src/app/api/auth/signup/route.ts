@@ -2,9 +2,16 @@
 import { NextResponse } from 'next/server';
 import clientPromise from '@/src/lib/mongodb';
 import { hash } from 'bcrypt';
+import { clientIp, rateLimit, tooManyRequests } from '@/src/lib/rate-limit';
+import { startEmailVerification } from '@/src/lib/verification';
+import { findUserByEmail } from '@/src/lib/users';
 
 export async function POST(request: Request) {
   try {
+    // Account-spam protection: a handful of signups per IP per hour.
+    const limit = await rateLimit(`signup:ip:${clientIp(request.headers)}`, 5, 60 * 60);
+    if (!limit.ok) return tooManyRequests(limit.retryAfter);
+
     const { name, email, password } = await request.json();
 
     if (!name || !email || !password) {
@@ -24,7 +31,8 @@ export async function POST(request: Request) {
     const client = await clientPromise;
     const db = client.db();
 
-    const existingUser = await db.collection('users').findOne({ email });
+    // Case-insensitive: "Ali@x.com" and "ali@x.com" are the same person.
+    const existingUser = await findUserByEmail(String(email));
     if (existingUser) {
       return NextResponse.json(
         { message: 'User already exists' },
@@ -33,13 +41,17 @@ export async function POST(request: Request) {
     }
 
     const hashedPassword = await hash(password, 10);
-    await db.collection('users').insertOne({
+    const { insertedId } = await db.collection('users').insertOne({
       name,
-      email,
+      email: String(email).trim(),
       password: hashedPassword,
+      emailVerified: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+
+    // Soft verification: the account works right away; the link just confirms the address.
+    await startEmailVerification(insertedId, String(email).trim());
 
     return NextResponse.json(
       { message: 'User created successfully' },

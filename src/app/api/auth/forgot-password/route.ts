@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import clientPromise from '@/src/lib/mongodb';
 import { randomBytes } from 'crypto';
 import { sendPasswordResetEmail } from '@/src/lib/email';
+import { clientIp, normalizeEmail, rateLimitAll, tooManyRequests } from '@/src/lib/rate-limit';
 
 export async function POST(request: Request) {
   try {
@@ -14,6 +15,13 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // Stops reset-email flooding of one inbox and scripted probing from one IP.
+    const limit = await rateLimitAll([
+      [`forgot:ip:${clientIp(request.headers)}`, 5, 15 * 60],
+      [`forgot:email:${normalizeEmail(email)}`, 3, 60 * 60],
+    ]);
+    if (!limit.ok) return tooManyRequests(limit.retryAfter);
 
     const client = await clientPromise;
     const db = client.db();

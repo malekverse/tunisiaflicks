@@ -12,6 +12,7 @@ import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/src/components/ui/alert';
 import { motion } from 'framer-motion';
 import { useT } from '@/src/components/I18nProvider';
+import GoogleSignInButton from '@/src/components/GoogleSignInButton';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,6 +20,17 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  // next-auth sends errors back here as ?error=<code> (e.g. a cancelled Google sign-in).
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get('error');
+    if (!code) return;
+    setError(code === 'OAuthAccountNotLinked' ? t('auth.oauthNotLinked')
+      : code === 'AccessDenied' ? t('auth.oauthDenied')
+      : code === 'CredentialsSignin' ? t('auth.invalidCredentials')
+      : t('auth.oauthFailed'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [isLoading, setIsLoading] = useState(false);
 
   const { data: session, status } = useSession();
@@ -46,7 +58,7 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError(result.error === 'CredentialsSignin' ? t('auth.invalidCredentials') : result.error);
+        setError(result.error === 'TooManyAttempts' ? t('auth.tooManyAttempts') : result.error === 'CredentialsSignin' ? t('auth.invalidCredentials') : result.error);
       } else {
         // "Who's watching?" (it goes straight on when the account has a single profile).
         router.push('/profiles');
@@ -118,6 +130,7 @@ export default function LoginPage() {
                 {isLoading ? t('auth.loggingIn') : t('auth.login')}
               </Button>
             </form>
+            <GoogleSignInButton />
           </CardContent>
           <CardFooter className="flex flex-col space-y-2 items-center">
             <p className="text-sm text-white/80">

@@ -63,10 +63,18 @@ export default function ProfileForm({ user }: { user: User }) {
     setIsLoading(true)
 
     try {
-      await updateProfile(data)
+      const result = await updateProfile(data)
+      if ('error' in result) {
+        toast({
+          title: t("common.error"),
+          description: t(result.error === 'emailTaken' ? "account.emailTaken" : "profile.updateFailed"),
+          variant: "destructive",
+        })
+        return
+      }
       toast({
         title: t("profile.updated"),
-        description: t("profile.updatedDesc"),
+        description: result.emailChanged ? t("verify.sentToNew") : t("profile.updatedDesc"),
       })
       router.refresh()
     } catch (error) {

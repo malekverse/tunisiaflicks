@@ -11,6 +11,7 @@ import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import { useT } from '@/src/components/I18nProvider';
 import { translateApiMessage } from '@/src/lib/i18n';
+import GoogleSignInButton from '@/src/components/GoogleSignInButton';
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -125,6 +126,7 @@ export default function SignUpPage() {
                 {isLoading ? t('auth.signingUp') : t('auth.signUp')}
               </Button>
             </form>
+            <GoogleSignInButton />
           </CardContent>
           <CardFooter className="flex justify-center">
             <p className="text-sm text-white/80">
