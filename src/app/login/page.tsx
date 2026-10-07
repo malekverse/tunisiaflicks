@@ -23,12 +23,12 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      router.push('/dashboard'); // Redirect to dashboard if logged in
+      router.replace('/'); // Already logged in
     }
   }, [status, router]);
 
   if (status === 'loading' || status === 'authenticated') {
-    return <p>Loading...</p>; // Show a loader while checking auth state
+    return <p className="text-gray-400 py-10">Loading...</p>; // Show a loader while checking auth state
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,9 +44,9 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError(result.error);
+        setError(result.error === 'CredentialsSignin' ? 'Invalid email or password.' : result.error);
       } else {
-        router.push('/dashboard');
+        router.push('/');
         router.refresh();
       }
     } catch (error) {

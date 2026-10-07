@@ -22,12 +22,12 @@ export default function SignUpPage() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      router.push('/dashboard'); // Redirect to dashboard if logged in
+      router.replace('/'); // Already logged in
     }
   }, [status, router]);
 
   if (status === 'loading' || status === 'authenticated') {
-    return <p>Loading...</p>; // Show a loader while checking auth state
+    return <p className="text-gray-400 py-10">Loading...</p>; // Show a loader while checking auth state
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -105,6 +105,7 @@ export default function SignUpPage() {
                   <Input
                     id="password"
                     type="password"
+                    minLength={8}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required

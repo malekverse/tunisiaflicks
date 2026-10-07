@@ -10,12 +10,13 @@ import { Button } from '@/src/components/ui/button';
 import { Card, CardContent } from '@/src/components/ui/card';
 import { toast } from '@/src/hooks/use-toast';
 import { useSession } from 'next-auth/react';
-import { redirect } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
 import { Progress } from '@/src/components/ui/progress';
 
 export default function WatchHistoryPage() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [watchHistory, setWatchHistory] = useState<WatchHistoryItem[]>([]);
   const [filteredHistory, setFilteredHistory] = useState<WatchHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,9 +27,9 @@ export default function WatchHistoryPage() {
   // Redirect if not authenticated
   useEffect(() => {
     if (status === 'unauthenticated') {
-      redirect('/login');
+      router.replace('/login');
     }
-  }, [status]);
+  }, [status, router]);
 
   useEffect(() => {
     const fetchWatchHistory = async () => {

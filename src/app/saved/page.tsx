@@ -10,11 +10,12 @@ import { Button } from '@/src/components/ui/button';
 import { Card, CardContent } from '@/src/components/ui/card';
 import { toast } from '@/src/hooks/use-toast';
 import { useSession } from 'next-auth/react';
-import { redirect } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
 
 export default function SavedItemsPage() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [savedItems, setSavedItems] = useState<ContentItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<ContentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,9 +25,9 @@ export default function SavedItemsPage() {
   // Redirect if not authenticated
   useEffect(() => {
     if (status === 'unauthenticated') {
-      redirect('/login');
+      router.replace('/login');
     }
-  }, [status]);
+  }, [status, router]);
 
   useEffect(() => {
     const fetchSavedItems = async () => {

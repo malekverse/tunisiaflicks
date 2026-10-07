@@ -10,19 +10,20 @@ import { Button } from '@/src/components/ui/button';
 import { Card, CardContent } from '@/src/components/ui/card';
 import { toast } from '@/src/hooks/use-toast';
 import { useSession } from 'next-auth/react';
-import { redirect } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 export default function FavoritesPage() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [favorites, setFavorites] = useState<ContentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Redirect if not authenticated
   useEffect(() => {
     if (status === 'unauthenticated') {
-      redirect('/login');
+      router.replace('/login');
     }
-  }, [status]);
+  }, [status, router]);
 
   useEffect(() => {
     const fetchFavorites = async () => {

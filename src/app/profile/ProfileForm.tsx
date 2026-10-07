@@ -23,10 +23,9 @@ const profileFormSchema = z.object({
   email: z.string().email({
     message: "Please enter a valid email address.",
   }),
-  phone: z.string().regex(phoneRegex, "Invalid phone number"),
-  birthdate: z.string().refine((date) => {
-    return new Date(date) < new Date()
-  }, {
+  // Phone and birthdate are optional: empty is fine, but if filled they must be valid.
+  phone: z.string().refine((value) => value === "" || phoneRegex.test(value), "Invalid phone number"),
+  birthdate: z.string().refine((date) => date === "" || new Date(date) < new Date(), {
     message: "Birthdate must be in the past",
   }),
 })

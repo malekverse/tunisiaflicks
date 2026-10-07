@@ -35,12 +35,15 @@ export default function AvatarUpload({ user }: { user: User }) {
       reader.readAsDataURL(file);
       setIsOpen(true);
     }
+    // Let the same file be picked again later.
+    e.target.value = '';
   };
 
   const handleSave = async () => {
     if (editorRef.current) {
       const canvas = editorRef.current.getImageScaledToCanvas();
-      const dataUrl = canvas.toDataURL();
+      // JPEG keeps the stored image small (it lives in the user's database record).
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
 
       try {
         await updateAvatar(dataUrl);

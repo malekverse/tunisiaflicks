@@ -8,7 +8,7 @@ export async function middleware(req: NextRequest) {
   // Redirect logged-in users away from login and signup pages
   if (token && (req.nextUrl.pathname === '/login' || req.nextUrl.pathname === '/signup')) {
     const url = req.nextUrl.clone();
-    url.pathname = '/dashboard';
+    url.pathname = '/';
     return NextResponse.redirect(url);
   }
 
