@@ -20,7 +20,7 @@ const TABS: { label: TKey, value?: 'series' | 'movie' }[] = [
 
 export default async function TunisianPage({ searchParams }: { searchParams: { type?: string } }) {
   // The Tunisian catalogue has no age ratings, so Kids profiles can't be offered it.
-  if (await getKidsMode()) return <KidsBlocked what={'The Tunisian catalogue'} />
+  if (await getKidsMode()) return <KidsBlocked what='tunisian' />
   const titles = await getTunisianTitles()
   const t = getT()
   const type = searchParams.type === 'series' || searchParams.type === 'movie' ? searchParams.type : undefined

@@ -3,10 +3,11 @@ import { redirect } from 'next/navigation'
 import { ObjectId } from 'mongodb'
 import clientPromise from '@/src/lib/mongodb'
 import { getActiveProfile, toProfilesResponse } from '@/src/lib/profiles'
+import { getT } from '@/src/lib/i18n/server'
 import ProfilePicker from './ProfilePicker'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: "Who's watching? | TunisiaFlicks" }
+export const generateMetadata = () => ({ title: `${getT()('profiles.whoIsWatching')} | TunisiaFlicks` })
 
 export default async function ProfilesPage({ searchParams }: { searchParams: { next?: string } }) {
   const active = await getActiveProfile()
