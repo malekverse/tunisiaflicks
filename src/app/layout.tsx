@@ -7,7 +7,6 @@ import { Analytics } from '@vercel/analytics/react';
 import Navbar from "@/src/components/Navbar";
 import Sidebar from "@/src/components/Sidebar";
 import { SessionProvider } from "@/src/components/SessionProvider";
-import Loader from "../components/Loader";
 import { Toaster } from "@/src/components/ui/toaster";
 
 import type { Viewport } from 'next'
@@ -29,10 +28,6 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://tunisiaflicks.vercel.app'),
   alternates: {
     canonical: '/',
-    languages: {
-      'en-US': '/en-US',
-      'ar-TN': '/ar-TN',
-    },
   },
   openGraph: {
     title: 'TunisiaFlicks - Free Movies and TV Shows',
@@ -71,8 +66,6 @@ export const metadata: Metadata = {
   // viewport property moved to separate viewport export
   verification: {
     google: 'aXq6rN-W2lrmjvTfoy1CJUXSmrurfBgJ0wMOR_fQUOU',
-    yandex: 'your-yandex-verification',
-    yahoo: 'your-yahoo-verification',
     other: {
       me: ['malek.magraoui3@gmail.com', 'https://malek-maghraoui.netlify.app'],
     },
@@ -83,8 +76,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
 
@@ -99,10 +90,10 @@ export default function RootLayout({
         <SessionProvider>
           <Providers>
             <Navbar />
-            <div className="bg-white text-black flex min-h-screen dark:bg-[#0d0c0f] dark:text-white">
+            {/* Navbar is fixed; the sidebar and <main> share one flex row below it. */}
+            <div className="bg-white text-black flex min-h-screen pt-14 sm:pt-16 dark:bg-[#0d0c0f] dark:text-white">
               <Sidebar />
-              <main role="main" className="flex justify-center sm:pt-20 pt-14 w-full">
-                <Loader/>
+              <main role="main" className="flex-1 min-w-0 flex justify-center pt-4 pb-20 sm:pb-8">
                 {children}
               </main>
             </div>
@@ -115,4 +106,3 @@ export default function RootLayout({
     </html>
   );
 }
-

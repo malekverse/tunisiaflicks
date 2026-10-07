@@ -1,154 +1,181 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FaCog, FaMoon } from 'react-icons/fa';
-import { MdHome, MdOutlineHome, MdExplore, MdOutlineExplore, MdGroup, MdOutlineGroup, MdAlarm, MdOutlineAlarm, MdAccessTimeFilled, MdAccessTime, MdFavorite, MdFavoriteBorder, MdBookmark, MdBookmarkBorder, MdOutlineStar, MdOutlineStarBorder } from "react-icons/md";
-import { GiTunisia } from "react-icons/gi";
-
-import { useTheme } from 'next-themes'
-import { FiSun, FiMoon } from "react-icons/fi"
+import { useTheme } from 'next-themes';
+import { FaCog } from 'react-icons/fa';
+import { FiSun, FiMoon } from 'react-icons/fi';
+import { GiTunisia } from 'react-icons/gi';
+import { IoClose } from 'react-icons/io5';
+import {
+    MdHome, MdOutlineHome,
+    MdExplore, MdOutlineExplore,
+    MdAlarm, MdOutlineAlarm,
+    MdAccessTimeFilled, MdAccessTime,
+    MdFavorite, MdFavoriteBorder,
+    MdBookmark, MdBookmarkBorder,
+    MdOutlineStar, MdOutlineStarBorder,
+} from 'react-icons/md';
 
 import { globalStore } from '@/src/store/store';
 
-const Sidebar = () => {
+const ICON = 'text-xl shrink-0';
+
+const sidebarElem = [
+    { title: 'Home', DefIcon: <MdHome className={ICON} />, OutIcon: <MdOutlineHome className={ICON} />, path: '/' },
+    { title: 'Tunisian', DefIcon: <GiTunisia className={ICON} />, OutIcon: <GiTunisia className={ICON} />, path: '/tunisian' },
+    { title: 'Discovery', DefIcon: <MdExplore className={ICON} />, OutIcon: <MdOutlineExplore className={ICON} />, path: '/discover' },
+    { title: 'Coming Soon', DefIcon: <MdAlarm className={ICON} />, OutIcon: <MdOutlineAlarm className={ICON} />, path: '/upcoming' },
+    { title: 'Top Rated', DefIcon: <MdOutlineStar className={ICON} />, OutIcon: <MdOutlineStarBorder className={ICON} />, path: '/top-rated' },
+    { title: 'Recent', DefIcon: <MdAccessTimeFilled className={ICON} />, OutIcon: <MdAccessTime className={ICON} />, path: '/history' },
+    { title: 'Favorites', DefIcon: <MdFavorite className={ICON} />, OutIcon: <MdFavoriteBorder className={ICON} />, path: '/favorites' },
+    { title: 'Bookmarked', DefIcon: <MdBookmark className={ICON} />, OutIcon: <MdBookmarkBorder className={ICON} />, path: '/saved' },
+];
+
+const itemBase = 'flex items-center w-full rounded-xl p-4 transition-colors duration-200 overflow-hidden whitespace-nowrap';
+
+function SidebarContent({ expanded, onNavigate }: { expanded: boolean; onNavigate?: () => void }) {
     const pathname = usePathname();
-    const [isOpen, setIsOpen] = useState(false);
+    const { setTheme, resolvedTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
 
-    const [mounted, setMounted] = useState(false)
-    const { setTheme, resolvedTheme } = useTheme()
-
-    useEffect(() =>  setMounted(true), [])
-
-    const asideState = globalStore((state:any) => state.fillWithSideBar);
-
-    const toggleSidebar = () => {
-        setIsOpen(!isOpen);
-    };
-
-    const sidebarElem = [
-        {
-            title: "Home",
-            DefIcon: <MdHome className="text-xl" />,
-            OutIcon: <MdOutlineHome className="text-xl" />,
-            path: "/",
-            localStorageName: "home",
-            child: [
-                { title: "movies", path: "/movies" },
-                { title: "tv", path: "/movies" },
-            ]
-        },
-        {
-            title: "Tunisian",
-            DefIcon: <GiTunisia className="text-xl" />,
-            OutIcon: <GiTunisia className="text-xl" />,
-            path: "/tunisian",
-            localStorageName: "tunisian",
-        },
-        {
-            title: "Discovery",
-            DefIcon: <MdExplore className="text-xl" />,
-            OutIcon: <MdOutlineExplore className="text-xl" />,
-            path: "/discover",
-            localStorageName: "discover"
-        },
-        {
-            title: "Community",
-            DefIcon: <MdGroup className="text-xl" />,
-            OutIcon: <MdOutlineGroup className="text-xl" />,
-            path: "/community",
-            localStorageName: "community"
-        },
-        {
-            title: "Coming Soon",
-            DefIcon: <MdAlarm className="text-xl" />,
-            OutIcon: <MdOutlineAlarm className="text-xl" />,
-            path: "/upcoming",
-            localStorageName: "upcoming"
-        },
-        {
-            title: "Recent",
-            DefIcon: <MdAccessTimeFilled className="text-xl" />,
-            OutIcon: <MdAccessTime className="text-xl" />,
-            path: "/recent",
-            localStorageName: "recent"
-        },
-        {
-            title: "Favorites",
-            DefIcon: <MdFavorite className="text-xl" />,
-            OutIcon: <MdFavoriteBorder className="text-xl" />,
-            path: "/favorites",
-            localStorageName: "favorites",
-        },
-        {
-            title: "Bookmarked",
-            DefIcon: <MdBookmark className="text-xl" />,
-            OutIcon: <MdBookmarkBorder className="text-xl" />,
-            path: "/bookmarked",
-            localStorageName: "bookmarked"
-        },
-        {
-            title: "Top Rated",
-            DefIcon: <MdOutlineStar className="text-xl" />,
-            OutIcon: <MdOutlineStarBorder className="text-xl" />,
-            path: "/top-rated",
-            localStorageName: "topRated"
-        },
-    ];
-
-    useEffect(() => {
-        if (asideState) {
-          setIsOpen(true);
-        }
-      }, [asideState]);
+    const isDark = mounted && resolvedTheme === 'dark';
+    const label = (text: string) => (
+        <span className={`ml-3 transition-opacity duration-200 ${expanded ? 'opacity-100' : 'opacity-0 w-0'}`}>{text}</span>
+    );
+    const layout = expanded ? 'pl-8 pr-4' : 'justify-center';
 
     return (
-        <div className={`bg-gray-800 text-white w-0 ${asideState ? `w-screen pt-6 ${isOpen ? 'sm:w-72' : 'sm:w-20'}` : isOpen ? 'sm:w-72' : 'sm:w-20'} transition-all absolute sm:relative duration-300 overflow-scroll ease-in-out z-30 h-screen`}>
-        <div className={`bg-gray-800 text-white w-0 ${asideState ? `w-screen pt-6 ${isOpen ? 'sm:w-64' : 'sm:w-20'}` : isOpen ? 'sm:w-64' : 'sm:w-20'} sm:flex transition-all fixed top-0 left-0 duration-300 overflow-auto ease-in-out flex-col justify-between dark:bg-black light:text-gray-200 z-30 pt-16 h-screen scroll no-scrollbar`}>
-            <div className="flex flex-col items-center">
-                <button
-                    onClick={toggleSidebar}
-                    className={`absolute scale-90 right-0 ${asideState ? 'hidden' : 'flex'} mt-2 bg-zinc-900 text-white rounded-lg focus:outline-none w-full flex items-center justify-center transform transition-transform duration-300 hover:bg-zinc-600`}
+        <>
+            <nav aria-label="Primary" className="flex flex-col gap-1 px-2 py-2">
+                {sidebarElem.map((item) => {
+                    const isActive = item.path === '/' ? pathname === '/' : pathname.startsWith(item.path);
+                    return (
+                        <Link
+                            key={item.path}
+                            href={item.path}
+                            title={expanded ? undefined : item.title}
+                            aria-current={isActive ? 'page' : undefined}
+                            onClick={onNavigate}
+                            className={`${itemBase} ${layout} ${isActive
+                                ? 'text-red-600 font-bold hover:text-white hover:bg-red-500'
+                                : 'text-gray-300 hover:text-white hover:bg-zinc-800'}`}
+                        >
+                            {isActive ? item.DefIcon : item.OutIcon}
+                            {label(item.title)}
+                        </Link>
+                    );
+                })}
+            </nav>
+
+            <div className="mt-auto flex flex-col gap-1 px-2 py-2">
+                <Link
+                    href="/profile"
+                    title={expanded ? undefined : 'Settings'}
+                    onClick={onNavigate}
+                    className={`${itemBase} ${layout} text-gray-300 hover:text-white hover:bg-zinc-800`}
                 >
-                    <span className={`transform scale-75 transition-transform duration-300 ${!isOpen ? 'rotate-180' : ''}`}>
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </span>
+                    <FaCog className={ICON} />
+                    {label('Settings')}
+                </Link>
+                <button
+                    type="button"
+                    title={expanded ? undefined : isDark ? 'Light Mode' : 'Dark Mode'}
+                    onClick={() => setTheme(isDark ? 'light' : 'dark')}
+                    className={`${itemBase} ${layout} text-gray-300 hover:text-white hover:bg-zinc-800`}
+                >
+                    {isDark ? <FiSun className={ICON} /> : <FiMoon className={ICON} />}
+                    {label(isDark ? 'Light Mode' : 'Dark Mode')}
                 </button>
-                <nav className="mt-8 flex flex-col items-center space-y-4 w-full overflow-hidden">
-                    <div className='flex-col flex justify-center w-full'>
-                        {sidebarElem.map((item, index) => {
-                            if (asideState) {
-                                if(item.title == "Home"){
-                                    return null
-                                }
-                            }
-                            const isActive = item.path === "/" ? pathname === item.path : pathname.startsWith(item.path);
-                            return (
-                                <Link key={index + item.title} href={item.path} className={`flex  ${isActive ? "text-red-600 font-bold hover:text-white hover:bg-red-500" : "text-gray-300 hover:text-white hover:bg-zinc-800"} items-center w-full ${isOpen ? 'pl-10' : 'justify-center'} my-2 p-4 rounded-xl transition-colors duration-200`}>
-                                    {item.DefIcon}
-                                    <span className={`ml-3 ${isOpen ? 'block' : 'hidden'}`}>{item.title}</span>
-                                </Link>
-                            );
-                        })}
-                    </div>
-                </nav>
             </div>
-            <div>
-                <div className={`flex p-4 ${isOpen ? 'pl-10' : 'justify-center'} hover:bg-zinc-800 transition-colors duration-200 cursor-pointer`}>
-                    <FaCog className="text-xl" />
-                    <span className={`ml-3 ${isOpen ? 'block' : 'hidden'}`}>Settings</span>
+        </>
+    );
+}
+
+const Sidebar = () => {
+    const pathname = usePathname();
+    const expanded = globalStore((state) => state.sidebarExpanded);
+    const toggleSidebar = globalStore((state) => state.toggleSidebar);
+    const mobileOpen = globalStore((state) => state.mobileMenuOpen);
+    const setMobileOpen = globalStore((state) => state.setMobileMenuOpen);
+
+    // Restore the remembered desktop state after mount (avoids a hydration mismatch).
+    useEffect(() => {
+        globalStore.persist.rehydrate();
+    }, []);
+
+    // Close the mobile drawer whenever the route changes.
+    useEffect(() => {
+        setMobileOpen(false);
+    }, [pathname, setMobileOpen]);
+
+    // Escape closes the drawer, and the page behind it doesn't scroll while it is open.
+    useEffect(() => {
+        if (!mobileOpen) return;
+        const onKeyDown = (e: KeyboardEvent) => e.key === 'Escape' && setMobileOpen(false);
+        document.addEventListener('keydown', onKeyDown);
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.removeEventListener('keydown', onKeyDown);
+            document.body.style.overflow = previousOverflow;
+        };
+    }, [mobileOpen, setMobileOpen]);
+
+    return (
+        <>
+            {/*
+              Desktop: a real flex column of the page layout. It is `sticky` under the navbar and
+              its width transition pushes <main> (flex-1), so the content grows and shrinks with it.
+            */}
+            <aside
+                aria-label="Sidebar"
+                className={`hidden sm:flex shrink-0 flex-col sticky top-16 self-start h-[calc(100vh-4rem)] overflow-y-auto overflow-x-hidden no-scrollbar bg-gray-800 dark:bg-black text-white transition-[width] duration-300 ease-in-out ${expanded ? 'w-64' : 'w-20'}`}
+            >
+                <div className="px-2 pt-2">
+                    <button
+                        type="button"
+                        onClick={toggleSidebar}
+                        aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
+                        aria-expanded={expanded}
+                        className="w-full flex items-center justify-center rounded-lg bg-zinc-900 text-white hover:bg-zinc-600 transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                    >
+                        <span className={`transform scale-75 transition-transform duration-300 ${expanded ? '' : 'rotate-180'}`}>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6" aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </span>
+                    </button>
                 </div>
-                <div onClick={() => resolvedTheme === 'dark' ? setTheme('light') : setTheme('dark')
-                } className={`flex p-4 ${isOpen ? 'pl-10' : 'justify-center'} hover:bg-zinc-800 transition-colors duration-200 cursor-pointer`}>
-                    {resolvedTheme === 'dark' ? <FiSun className="text-xl" /> : <FiMoon className="text-xl" />}
-                    <span className={`ml-3 ${isOpen ? 'block' : 'hidden'}`}> {resolvedTheme === 'dark' ? "Light Mode" : "Dark Mode"}</span>
+                <SidebarContent expanded={expanded} />
+            </aside>
+
+            {/* Mobile: slide-over drawer */}
+            <div
+                className={`sm:hidden fixed inset-0 z-50 bg-black/60 transition-opacity duration-300 ${mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                onClick={() => setMobileOpen(false)}
+                aria-hidden="true"
+            />
+            <aside
+                aria-label="Menu"
+                aria-hidden={!mobileOpen}
+                className={`sm:hidden fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col overflow-y-auto no-scrollbar bg-gray-800 dark:bg-black text-white shadow-2xl transition-[transform,visibility] duration-300 ease-in-out ${mobileOpen ? 'translate-x-0' : '-translate-x-full invisible'}`}
+            >
+                <div className="flex justify-end p-2">
+                    <button
+                        type="button"
+                        onClick={() => setMobileOpen(false)}
+                        aria-label="Close menu"
+                        className="rounded-lg p-2 text-gray-300 hover:bg-zinc-800 hover:text-white"
+                    >
+                        <IoClose className="text-2xl" />
+                    </button>
                 </div>
-            </div>
-        </div>
-    </div>
+                <SidebarContent expanded onNavigate={() => setMobileOpen(false)} />
+            </aside>
+        </>
     );
 };
 

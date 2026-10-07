@@ -3,18 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { redirect, usePathname } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { IoMdLogIn } from "react-icons/io";
-// import { RiLoginCircleFill } from "react-icons/ri";
-import { BiSearchAlt2 } from "react-icons/bi";
-import { BiSolidSearchAlt2 } from "react-icons/bi";
-import { GoHome } from "react-icons/go";
-import { GoHomeFill } from "react-icons/go";
-import { BiMoviePlay } from "react-icons/bi";
-import { BiSolidMoviePlay } from "react-icons/bi";
-import { BiTv } from "react-icons/bi";
-import { BiSolidTv } from "react-icons/bi";
+import { BiSearchAlt2, BiSolidSearchAlt2, BiTv, BiSolidTv } from "react-icons/bi";
+import { MdExplore, MdOutlineExplore } from "react-icons/md";
+import { GoHome, GoHomeFill } from "react-icons/go";
 import { TbMenu2 } from "react-icons/tb";
 import { globalStore } from '@/src/store/store';
 import SearchBar from './SearchBar';
@@ -29,97 +23,86 @@ import {
 } from "@/src/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar"
 
+const mobileNav = [
+  { name: 'Home', href: '/', icon: <GoHome className='text-xl' />, activeIcon: <GoHomeFill className='text-xl text-red-500' /> },
+  { name: 'Discover', href: '/discover', icon: <MdOutlineExplore className='text-xl' />, activeIcon: <MdExplore className='text-xl text-red-500' /> },
+  { name: 'Search', href: '/search', icon: <BiSearchAlt2 className='text-xl' />, activeIcon: <BiSolidSearchAlt2 className='text-xl text-red-500' /> },
+  { name: 'TV Shows', href: '/tv', icon: <BiTv className='text-xl' />, activeIcon: <BiSolidTv className='text-xl text-red-500' /> },
+];
+
 const Navbar = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const { data: session } = useSession();
 
-  const [userData, setUserData] = useState<any>(null);
+  const [userImage, setUserImage] = useState<string | null>(null);
+  const avatar = globalStore((state) => state.avatar);
+  const setMobileMenuOpen = globalStore((state) => state.setMobileMenuOpen);
 
+  const userId = session?.user?.id;
   useEffect(() => {
-    if (session?.user?.id) {
-      // Fetch user data from the API route
-      fetch(`/api/user?userId=${session.user.id}`)
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.user) {
-            console.log(userData)
-            setUserData(data.user);
-          }
-        })
-        .catch((error) => {
-          console.error('Error fetching user data:', error);
-        });
+    if (!userId) {
+      setUserImage(null);
+      return;
     }
-  }, [session]);
+    const controller = new AbortController();
+    fetch('/api/user', { signal: controller.signal })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => setUserImage(data?.user?.image || null))
+      .catch((error) => {
+        if (error?.name !== 'AbortError') console.error('Error fetching user data:', error);
+      });
+    return () => controller.abort();
+  }, [userId]);
 
-  useEffect(() => {
-    const handleContextMenu = (event) => {
-      event.preventDefault();
-    };
+  const avatarSrc = avatar || userImage || session?.user?.image || '';
 
-    document.addEventListener('contextmenu', handleContextMenu);
-
-    return () => {
-      document.removeEventListener('contextmenu', handleContextMenu);
-    };
-  }, []);
-
-  const mobileNav = [
-    { name: 'Home', href: '/', icon: <GoHome className='text-xl' />, activeIcon: <GoHomeFill className='text-xl text-red-500' /> },
-    { name: 'Movies', href: '/movies', icon: <BiMoviePlay className='text-xl' />, activeIcon: <BiSolidMoviePlay className='text-xl text-red-500' /> },
-    { name: 'Search', href: '/search', icon: <BiSearchAlt2 className='text-xl' />, activeIcon: <BiSolidSearchAlt2 className='text-xl text-red-500' /> },
-    { name: 'TV Shows', href: '/tv', icon: <BiTv className='text-xl' />, activeIcon: <BiSolidTv className='text-xl text-red-500' /> },
-  ];
-
-  const asideState = globalStore((state: any) => state.fillWithSideBar);
-  const updateAsideState = globalStore((state: any) => state.setFillWithSideBar);
+  const accountMenu = (
+    <DropdownMenuContent>
+      <DropdownMenuLabel>My Account</DropdownMenuLabel>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onSelect={() => router.push('/profile')}>Profile</DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => router.push('/favorites')}>Favorites</DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => router.push('/saved')}>Bookmarked</DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onSelect={() => signOut()}>Log out</DropdownMenuItem>
+    </DropdownMenuContent>
+  );
 
   return (
     <nav>
       <div className="bg-gray-800 text-black shadow-md dark:shadow-none shadow-slate-800 fixed top-0 left-0 right-0 z-40 dark:bg-black dark:text-gray-200 dark:border-b-2 dark:border-gray-900">
         <div className="hidden sm:flex mx-auto px-2 sm:px-6 lg:px-8 justify-center">
           <div className="relative flex w-full items-center justify-between h-16 max-w-[2000px]">
-            <div className="flex items-center mt">
+            <div className="flex items-center">
               {/* Logo */}
-              <Link href="/">
-                <p className="flex-shrink-0">
-                  <Image src="/A.svg" alt="Logo" width={40} height={40} />
-                </p>
+              <Link href="/" aria-label="TunisiaFlicks home" className="flex-shrink-0">
+                <Image src="/A.svg" alt="Logo" width={40} height={35} className="h-9 w-auto" priority />
               </Link>
               {/* Links */}
               <div className="hidden sm:block sm:ml-6">
                 <div className="flex space-x-4">
-                  <Link href="/">
-                    <p className={`${pathname == "/" ? "text-red-500" : ""} hover:bg-zinc-700 hover:text-white px-3 py-2 rounded-xl text-sm font-medium`}>
-                      Movies
-                    </p>
+                  <Link href="/" className={`${pathname === "/" ? "text-red-500" : "text-gray-300"} hover:bg-zinc-700 hover:text-white px-3 py-2 rounded-xl text-sm font-medium`}>
+                    Movies
                   </Link>
-                  <Link href="/tv">
-                    <p className={`${pathname.startsWith("/tv") ? "text-red-500" : ""} text-gray-300 hover:bg-zinc-700 hover:text-white px-3 py-2 rounded-xl text-sm font-medium`}>
-                      TV Shows
-                    </p>
+                  <Link href="/tv" className={`${pathname.startsWith("/tv") ? "text-red-500" : "text-gray-300"} hover:bg-zinc-700 hover:text-white px-3 py-2 rounded-xl text-sm font-medium`}>
+                    TV Shows
                   </Link>
                 </div>
               </div>
             </div>
             {/* Search Bar */}
-            {!pathname.startsWith("/search") ? <SearchBar /> : null}
+            {!pathname.startsWith("/search") ? <SearchBar /> : <div className="flex-1" />}
             {/* User Profile or Login Button */}
             {session ? (
               <DropdownMenu>
-                <DropdownMenuTrigger>
+                <DropdownMenuTrigger aria-label="Account menu" className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500">
                   <Avatar>
-                    <AvatarImage src={userData?.image || session.user?.image || ''} />
+                    <AvatarImage src={avatarSrc} />
                     <AvatarFallback>{session.user?.name?.charAt(0) || 'U'}</AvatarFallback>
                   </Avatar>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => redirect('/profile')}>Profile</DropdownMenuItem>
-                  <DropdownMenuItem>Settings</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => signOut()}>Log out</DropdownMenuItem>
-                </DropdownMenuContent>
+                {accountMenu}
               </DropdownMenu>
             ) : (
               <Link href="/login">
@@ -130,22 +113,24 @@ const Navbar = () => {
         </div>
 
         {/* Top mobile navbar */}
-        <div className='sm:hidden p-3 flex gap-4'>
-          <TbMenu2 className='text-2xl text-white' onClick={() => updateAsideState(!asideState)} />
-          <div className='flex justify-center w-full pr-5'>
-            <Image src="/TunisiaFlicks.svg" alt="Logo" width={150} height={50} />
-          </div>
+        <div className='sm:hidden h-14 px-3 flex items-center gap-4'>
+          <button type="button" aria-label="Open menu" onClick={() => setMobileMenuOpen(true)} className="text-white">
+            <TbMenu2 className='text-2xl' />
+          </button>
+          <Link href="/" className='flex flex-1 justify-center pr-8'>
+            <Image src="/TunisiaFlicks.svg" alt="TunisiaFlicks" width={160} height={21} className="h-6 w-auto" priority />
+          </Link>
         </div>
       </div>
 
       {/* Bottom mobile navbar */}
-      <div className="sm:hidden fixed bottom-0 text-white bg-black w-full py-1 z-50">
+      <div className="sm:hidden fixed bottom-0 text-white bg-black w-full py-1 z-40">
         <ul className='flex justify-evenly'>
-          {mobileNav.map((item, index) => {
+          {mobileNav.map((item) => {
             const isActive = item.href === "/" ? pathname === item.href : pathname.startsWith(item.href);
             return (
-              <li key={index} className="flex justify-center p-2">
-                <Link href={item.href}>
+              <li key={item.href} className="flex justify-center p-2">
+                <Link href={item.href} aria-label={item.name}>
                   {isActive ? item.activeIcon : item.icon}
                 </Link>
               </li>
@@ -154,24 +139,18 @@ const Navbar = () => {
           {session ? (
             <li className="flex justify-center p-2">
               <DropdownMenu>
-                <DropdownMenuTrigger>
+                <DropdownMenuTrigger aria-label="Account menu">
                   <Avatar className='w-5 h-5'>
-                    <AvatarImage src={userData?.image || session.user?.image || ''} />
+                    <AvatarImage src={avatarSrc} />
                     <AvatarFallback>{session.user?.name?.charAt(0) || 'U'}</AvatarFallback>
                   </Avatar>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>Profile</DropdownMenuItem>
-                  <DropdownMenuItem>Settings</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => signOut()}>Log out</DropdownMenuItem>
-                </DropdownMenuContent>
+                {accountMenu}
               </DropdownMenu>
             </li>
           ) : (
             <li className="flex justify-center p-2">
-              <Link href="/login">
+              <Link href="/login" aria-label="Login">
                 <IoMdLogIn className='text-xl' />
               </Link>
             </li>
@@ -183,4 +162,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-
