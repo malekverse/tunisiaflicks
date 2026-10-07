@@ -9,6 +9,7 @@ const MOODS: { href: string, emoji: string, label: TKey, plain?: boolean }[] = [
   { href: '/discover?runtime=epic&sort=top', emoji: '🍿', label: 'mood.epic' },
   { href: '/discover?sort=newest', emoji: '✨', label: 'mood.new' },
   { href: '/discover?type=tv&runtime=90&sort=top', emoji: '📺', label: 'mood.bingeable' },
+  { href: '/swipe', emoji: '💞', label: 'mood.swipe' },
   // A route handler: plain <a> so every click is a fresh random pick.
   { href: '/surprise', emoji: '🎲', label: 'nav.surprise', plain: true },
 ]
