@@ -1,6 +1,7 @@
 "use client"
 import React, { useMemo, useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import useEmblaCarousel from 'embla-carousel-react'
 import Autoplay from 'embla-carousel-autoplay'
 import { FaHeart, FaPlay } from "react-icons/fa6"
@@ -78,7 +79,9 @@ export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFav
     const title: string = data.title || data.name || ''
     const logos: any[] = data.images?.logos ?? []
     const logo = logos.find((item) => item.iso_639_1 === 'en') ?? logos[0]
-    const cast: any[] = (data.credits?.cast ?? []).slice(0, 7)
+    const [showAllCast, setShowAllCast] = useState(false)
+    const allCast: any[] = data.credits?.cast ?? []
+    const cast = allCast.slice(0, showAllCast ? 24 : 7)
     const genres = (data.genres ?? []).map((item: any) => item.name).join(', ')
     const startDate: string = (kind === 'tv' ? data.first_air_date : data.release_date) || ''
     const endYear = kind === 'tv' && data.last_air_date ? data.last_air_date.substring(0, 4) : ''
@@ -167,20 +170,36 @@ export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFav
                                 <p>CASTS:</p>
                                 <div className="flex justify-center md:justify-start gap-2 mt-2 select-none flex-wrap">
                                     {cast.map((person) => (
-                                        // eslint-disable-next-line @next/next/no-img-element
-                                        <img
-                                            key={person.id}
-                                            src={person.profile_path ? `${TMDB}/w185${person.profile_path}` : '/actor.png'}
-                                            title={person.name}
-                                            alt={person.name}
-                                            loading="lazy"
-                                            className="w-12 h-12 md:w-14 md:h-14 object-cover rounded-full"
-                                            style={{ objectPosition: '0 30%' }}
-                                        />
+                                        <Link
+                                            key={person.credit_id ?? person.id}
+                                            href={`/person/${person.id}`}
+                                            title={person.character ? `${person.name} as ${person.character}` : person.name}
+                                            className="rounded-full transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                                        >
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                                src={person.profile_path ? `${TMDB}/w185${person.profile_path}` : '/actor.png'}
+                                                alt={person.name}
+                                                loading="lazy"
+                                                className="w-12 h-12 md:w-14 md:h-14 object-cover rounded-full hover:ring-2 hover:ring-red-500"
+                                                style={{ objectPosition: '0 30%' }}
+                                            />
+                                        </Link>
                                     ))}
-                                    <div className="w-12 h-12 md:w-14 md:h-14 bg-gray-500 bg-opacity-40 border-opacity-70 border-2 border-gray-200 rounded-full flex items-center justify-center">
-                                        <HiOutlineArrowsExpand className="w-6 h-6 md:w-8 md:h-8" />
-                                    </div>
+                                    {allCast.length > 7 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowAllCast((value) => !value)}
+                                            aria-expanded={showAllCast}
+                                            aria-label={showAllCast ? 'Show less cast' : 'Show full cast'}
+                                            title={showAllCast ? 'Show less' : 'Show full cast'}
+                                            className="w-12 h-12 md:w-14 md:h-14 bg-gray-500 bg-opacity-40 border-opacity-70 border-2 border-gray-200 rounded-full flex items-center justify-center hover:border-red-500 hover:text-red-500 transition-colors"
+                                        >
+                                            {showAllCast
+                                                ? <span className="text-xs font-semibold">Less</span>
+                                                : <HiOutlineArrowsExpand className="w-6 h-6 md:w-8 md:h-8" />}
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         )}

@@ -15,6 +15,7 @@ const posterItemClass = `transition-transform ease-in-out duration-300 select-no
     my-4 p-0 ml-4 hover:scale-105 hover:z-10`
 
 const toRoute = (kind: Kind, id: number | string) => (kind === 'tv' ? routes.tvShow(String(id)) : routes.movie(String(id)))
+const itemKind = (kind: Kind | 'mixed', item: any): Kind => (kind === 'mixed' ? (item.media_type === 'tv' ? 'tv' : 'movie') : kind)
 
 function SectionHeader({ title, href }: { title: string, href?: string }) {
     return (
@@ -74,7 +75,8 @@ export function HeroSlider({ title, href, items, kind = 'movie', loading }: { ti
 }
 
 /** Row of poster cards. */
-export function PosterSlider({ title, href, items, kind = 'movie', loading }: { title: string, href?: string, items?: any[], kind?: Kind, loading?: boolean }) {
+/** Row of poster cards. `kind="mixed"` routes each item by its own `media_type` (person credits, recommendations). */
+export function PosterSlider({ title, href, items, kind = 'movie', loading }: { title: string, href?: string, items?: any[], kind?: Kind | 'mixed', loading?: boolean }) {
     const list = items ?? []
     if (!loading && list.length === 0) return null
 
@@ -95,8 +97,9 @@ export function PosterSlider({ title, href, items, kind = 'movie', loading }: { 
                                     title={item.title || item.name}
                                     releaseDate={item.release_date || item.first_air_date}
                                     adult={item.adult}
-                                    mediaType={kind}
-                                    link={toRoute(kind, item.id)}
+                                    mediaType={itemKind(kind, item)}
+                                    showTypeBadge={kind === 'mixed'}
+                                    link={toRoute(itemKind(kind, item), item.id)}
                                 />
                             </CarouselItem>
                         ))}
