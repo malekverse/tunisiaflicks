@@ -1,50 +1,21 @@
-"server";
-
-"use server";
+import { tmdbFetchSafe } from '@/src/lib/tmdb'
 import type { MoviesState } from './types'
 
+// Each row loads independently: if one TMDB call fails the others still render.
 export default async function getMovies(): Promise<MoviesState> {
-  const API_KEY = process.env.TMDB_API_KEY
-  if (!API_KEY) {
-    throw new Error("TMDB_API_KEY is not set")
-  }
+  const [TrendingMovies, popularMovies, topRatedMovies, nowPlayingMovies, upcomingMovies] = await Promise.all([
+    tmdbFetchSafe('trending/movie/day', { page: 1 }),
+    tmdbFetchSafe('movie/popular', { page: 1 }),
+    tmdbFetchSafe('movie/top_rated', { page: 1 }),
+    tmdbFetchSafe('movie/now_playing', { page: 1 }),
+    tmdbFetchSafe('movie/upcoming', { page: 1 }),
+  ])
 
-  const endpoints = [
-    'trending/movie/day',
-    'movie/popular',
-    'movie/top_rated',
-    'movie/now_playing',
-    'movie/upcoming'
-  ]
-
-  try {
-    const responses = await Promise.all(
-      endpoints.map(endpoint =>
-        fetch(
-          `https://api.themoviedb.org/3/${endpoint}?api_key=${API_KEY}&language=en-US&page=1`,
-          { next: { revalidate: 3600 } }
-        )
-      )
-    )
-
-    const data = await Promise.all(
-      responses.map(async (res) => {
-        if (!res.ok) {
-          throw new Error(`Failed to fetch: ${res.statusText}`)
-        }
-        return res.json()
-      })
-    )
-
-    return {
-      TrendingMovies: data[0],
-      popularMovies: data[1],
-      topRatedMovies: data[2],
-      nowPlayingMovies: data[3],
-      upcomingMovies: data[4],
-    }
-  } catch (error) {
-    console.error("Error fetching movies:", error)
-    throw error
+  return {
+    TrendingMovies: TrendingMovies ?? undefined,
+    popularMovies: popularMovies ?? undefined,
+    topRatedMovies: topRatedMovies ?? undefined,
+    nowPlayingMovies: nowPlayingMovies ?? undefined,
+    upcomingMovies: upcomingMovies ?? undefined,
   }
 }
