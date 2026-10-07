@@ -4,6 +4,7 @@
 import { tmdbFetchSafe, withTranslatedFields } from '@/src/lib/tmdb'
 import { filterKidSafe } from '@/src/lib/kids'
 import { isArabicScript, type Locale } from '@/src/lib/i18n'
+import { pickLogo, pickTrailer } from '@/src/lib/media-assets'
 
 export type BillboardItem = {
   id: number
@@ -26,23 +27,12 @@ export type BillboardItem = {
 const SLIDES = 6
 const DETAIL_TTL = 6 * 3600
 
-export function pickTrailer(videos: any[] = []): string | null {
-  const youtube = videos.filter((video) => video.site === 'YouTube' && video.key)
-  const trailer = youtube.find((video) => video.type === 'Trailer' && video.official)
-    ?? youtube.find((video) => video.type === 'Trailer')
-    ?? youtube.find((video) => video.type === 'Teaser')
-  return trailer?.key ?? null
-}
-
-export function pickLogo(logos: any[] = []): BillboardItem['logo'] {
-  const logo = logos.find((item) => item.iso_639_1 === 'en') ?? logos[0]
-  return logo ? { path: logo.file_path, ratio: logo.aspect_ratio || 3 } : null
-}
-
-export async function getBillboard(kids: boolean, locale: Locale): Promise<BillboardItem[]> {
-  const trending = await tmdbFetchSafe<{ results: any[] }>('trending/all/day', {}, 3600)
-  let candidates = (trending?.results ?? []).filter((item) =>
-    (item.media_type === 'movie' || item.media_type === 'tv') && item.backdrop_path && item.overview)
+/** `only: 'tv'` for the TV page's billboard (shows only); otherwise movies and shows together. */
+export async function getBillboard(kids: boolean, locale: Locale, only?: 'movie' | 'tv'): Promise<BillboardItem[]> {
+  const trending = await tmdbFetchSafe<{ results: any[] }>(`trending/${only ?? 'all'}/day`, {}, 3600)
+  let candidates = (trending?.results ?? [])
+    .map((item) => (only ? { ...item, media_type: only } : item))
+    .filter((item) => (item.media_type === 'movie' || item.media_type === 'tv') && item.backdrop_path && item.overview)
   if (kids) candidates = await filterKidSafe(candidates)
 
   const arabic = isArabicScript(locale)

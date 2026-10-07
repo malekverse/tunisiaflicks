@@ -1,6 +1,7 @@
 "use client"
 import React, { useState } from 'react'
-import { FaDownload, FaSeedling } from 'react-icons/fa6'
+import { Download, Sprout } from 'lucide-react'
+import { cn } from '@/src/lib/utils'
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/src/components/ui/dialog'
@@ -48,15 +49,15 @@ export default function DownloadDialog({ title, disabled, disabledHint, ...query
         <button
           type="button"
           aria-disabled={disabled}
-          className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-sm font-medium bg-white text-red-600 hover:bg-red-50 transition-colors ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
+          className={cn('pressable inline-flex h-9 shrink-0 items-center gap-2 rounded-full bg-white/[0.1] px-3.5 text-[13px] font-medium text-white outline-none transition-colors hover:bg-white/[0.16] focus-visible:ring-2 focus-visible:ring-red-500', disabled && 'opacity-50')}
         >
-          <FaDownload className="text-xs" /> {t('download.button')}
+          <Download aria-hidden className="h-4 w-4" /> {t('download.button')}
         </button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg bg-zinc-900 border-zinc-800 text-white">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="truncate" dir="auto">{title}</DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogTitle className="truncate pe-10 font-display text-2xl font-bold" dir="auto">{title}</DialogTitle>
+          <DialogDescription>
             {t('download.description')}
           </DialogDescription>
         </DialogHeader>
@@ -64,7 +65,7 @@ export default function DownloadDialog({ title, disabled, disabledHint, ...query
         <div className="max-h-[55vh] overflow-y-auto -mx-1 px-1">
           {loading ? (
             <div className="flex items-center justify-center py-10">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-500" />
+              <span className="h-9 w-9 animate-spin rounded-full border-2 border-white/15 border-t-red-500" />
             </div>
           ) : options && options.length > 0 ? (
             <ul className="space-y-2">
@@ -73,16 +74,16 @@ export default function DownloadDialog({ title, disabled, disabledHint, ...query
                   <a
                     href={option.magnet}
                     onClick={() => toast({ title: t('download.opening'), description: option.label, duration: 3000 })}
-                    className="flex items-center gap-3 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors p-3"
+                    className="pressable flex items-center gap-3 rounded-2xl bg-white/[0.05] p-3.5 ring-1 ring-white/[0.06] transition-colors hover:bg-white/[0.09]"
                   >
-                    <FaDownload className="text-red-500 shrink-0" />
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-red-500/15 text-red-400"><Download aria-hidden className="h-4 w-4" /></span>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium truncate" dir="auto">{option.label}</p>
-                      <p className="text-xs text-gray-400 flex flex-wrap gap-x-3">
+                      <p className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-white/50">
                         <span>{option.source}</span>
                         {option.size && <span>{option.size}</span>}
                         {typeof option.seeds === 'number' && (
-                          <span className="inline-flex items-center gap-1"><FaSeedling className="text-green-500" />{option.seeds}</span>
+                          <span className="inline-flex items-center gap-1"><Sprout aria-hidden className="h-3.5 w-3.5 text-emerald-400" />{option.seeds}</span>
                         )}
                       </p>
                     </div>
@@ -91,13 +92,13 @@ export default function DownloadDialog({ title, disabled, disabledHint, ...query
               ))}
             </ul>
           ) : (
-            <p className="text-gray-400 text-center py-10 text-sm">
+            <p className="py-10 text-center text-sm text-white/55">
               {t('download.none')}
             </p>
           )}
         </div>
 
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-white/40">
           {t('download.disclaimer')}
         </p>
       </DialogContent>

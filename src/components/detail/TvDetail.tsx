@@ -2,195 +2,190 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import MediaHero from '@/src/components/detail/MediaHero'
 import StreamSection from '@/src/components/detail/StreamSection'
+import SectionNav from '@/src/components/detail/SectionNav'
+import EpisodeBrowser, { type Episode, type Season } from '@/src/components/detail/EpisodeBrowser'
+import { CastRow, DetailsGrid } from '@/src/components/detail/DetailSections'
 import { PosterSlider } from '@/src/components/Sliders'
-import { useMediaLists } from '@/src/hooks/use-media-lists'
+import DownloadDialog from '@/src/components/detail/DownloadDialog'
+import { useRoomLight } from '@/src/components/shell/RoomLight'
+import { useMarkWatched } from '@/src/hooks/use-media-lists'
 import { ambientStyle, useAmbientColor } from '@/src/hooks/use-ambient-color'
 import { toast } from '@/src/hooks/use-toast'
-import DownloadDialog from '@/src/components/detail/DownloadDialog'
 import { getSeasonDetails } from '@/src/app/tv/[id]/actions'
 import { getStreamProviders } from '@/src/lib/stream-providers'
-import { cn } from '@/src/lib/utils'
-import TmdbImage from '@/src/components/TmdbImage'
 import { useT } from '@/src/components/I18nProvider'
 
-type Season = { id: number, season_number: number, name: string, poster_path: string | null, episode_count: number }
-type Episode = { id: number, name: string, season_number: number, episode_number: number, still_path: string | null, overview: string }
+type Pick = { season: number, episode: number }
 
+const scrollToPlayer = () => {
+  // Let the enabled player render first. setTimeout (not requestAnimationFrame, which stalls in
+  // background tabs); jump instantly when hidden, since a smooth scroll can't animate there.
+  setTimeout(() => {
+    document.getElementById('streamSection')?.scrollIntoView({
+      behavior: document.visibilityState === 'visible' ? 'smooth' : 'instant',
+      block: 'start',
+    })
+  }, 120)
+}
+
+/** A show page: the hero, the player, the episodes, similar shows, the cast and the facts. */
 export default function TvDetail({ id, data, similar, resume }: {
   id: string
   data: any
   similar: any[]
-  /** Episode to reopen (from "Continue Watching" links: /tv/:id?s=&e=). */
-  resume?: { season: number, episode: number }
+  /** Episode to reopen (from "Continue watching" links: /tv/:id?s=&e=). */
+  resume?: Pick
 }) {
   const t = useT()
-  const lists = useMediaLists({ id, title: data.name, poster_path: data.poster_path, media_type: 'tv' })
   const ambient = useAmbientColor(data.poster_path)
+  useRoomLight(ambient)
+  const markWatched = useMarkWatched({ id, title: data.name, poster_path: data.poster_path, media_type: 'tv' })
 
   const seasons: Season[] = useMemo(() => data.seasons ?? [], [data.seasons])
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null)
   const [episodes, setEpisodes] = useState<Episode[]>([])
   const [seasonLoading, setSeasonLoading] = useState(false)
-  const [episode, setEpisode] = useState<{ season: number, episode: number } | null>(null)
+  const [episode, setEpisode] = useState<Pick | null>(null)
   const requestRef = useRef(0)
+  const firstSeason = (seasons.find((season) => season.season_number > 0) ?? seasons[0])?.season_number
 
-  const loadSeason = useCallback(async (seasonNumber: number, announce = true) => {
-    // Only the latest click wins if the user taps through seasons quickly.
+  const loadSeason = useCallback(async (seasonNumber: number): Promise<Episode[] | null> => {
+    // Only the latest request wins if the viewer flips through seasons quickly.
     const request = ++requestRef.current
     setSeasonLoading(true)
+    setSelectedSeason(seasonNumber)
     try {
       const season = await getSeasonDetails(id, seasonNumber)
-      if (request !== requestRef.current) return
-      setSelectedSeason(seasonNumber)
-      setEpisodes(season.episodes ?? [])
-      // The season list carries the (possibly translated) season names.
-      const name = seasons.find((item) => item.season_number === seasonNumber)?.name ?? season.name
-      if (announce) toast({ title: t('tv.seasonSelected'), description: t('tv.nowViewing', { season: name }), duration: 3000 })
+      if (request !== requestRef.current) return null
+      const list: Episode[] = season.episodes ?? []
+      setEpisodes(list)
+      return list
     } catch (error) {
-      if (request !== requestRef.current) return
-      console.error("Error fetching season:", error)
-      toast({ title: t('common.error'), description: t('tv.seasonFailed'), variant: "destructive", duration: 3000 })
+      if (request !== requestRef.current) return null
+      console.error('Error fetching season:', error)
+      toast({ title: t('common.error'), description: t('tv.seasonFailed'), variant: 'destructive', duration: 3000 })
+      return null
     } finally {
       if (request === requestRef.current) setSeasonLoading(false)
     }
-  }, [id, seasons, t])
+  }, [id, t])
 
-  // Open the resumed season (from a "Continue Watching" link) or else the first real season
+  // Open the resumed season (from a "Continue watching" link) or else the first real season
   // (skipping "Specials"), so there are episodes to pick right away.
   useEffect(() => {
     const resumable = resume && seasons.some((season) => season.season_number === resume.season)
-    const start = resumable ? resume.season : (seasons.find((season) => season.season_number > 0) ?? seasons[0])?.season_number
+    const start = resumable ? resume.season : firstSeason
     if (start === undefined) return
-
-    loadSeason(start, false).then(() => {
+    loadSeason(start).then(() => {
       if (!resumable) return
-      setEpisode({ season: resume.season, episode: resume.episode })
+      setEpisode(resume)
+      markWatched(resume)
       toast({
         title: t('tv.welcomeBack'),
         description: t('tv.resuming', { episode: t('common.seasonEpisode', { season: resume.season, episode: resume.episode }) }),
         duration: 3000,
       })
-      // Let the enabled player render first. setTimeout (not requestAnimationFrame, which stalls
-      // in background tabs); jump instantly when hidden, since a smooth scroll can't animate there.
-      setTimeout(() => {
-        document.getElementById('streamSection')?.scrollIntoView({
-          behavior: document.visibilityState === 'visible' ? 'smooth' : 'instant',
-        })
-      }, 150)
+      scrollToPlayer()
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
-  const pickEpisode = (item: Episode) => {
-    setEpisode({ season: item.season_number, episode: item.episode_number })
-    lists.markWatched({ season: item.season_number, episode: item.episode_number })
-    toast({
-      title: t('tv.episodeSelected'),
-      description: t('tv.nowWatching', {
-        episode: t('common.seasonEpisode', { season: item.season_number, episode: item.episode_number }),
-        name: item.name,
-      }),
-      duration: 3000,
-    })
-    document.getElementById('streamSection')?.scrollIntoView({ behavior: 'smooth' })
+  const pickEpisode = useCallback((item: Pick) => {
+    setEpisode(item)
+    markWatched(item)
+    scrollToPlayer()
+  }, [markWatched])
+
+  /** Hero "Play": the episode in progress, or the very first one. */
+  const playFromStart = async () => {
+    if (episode) return scrollToPlayer()
+    if (firstSeason === undefined) return
+    const list = selectedSeason === firstSeason && episodes.length ? episodes : await loadSeason(firstSeason)
+    const first = list?.[0]
+    if (first) pickEpisode({ season: first.season_number, episode: first.episode_number })
   }
+
+  // The next episode: in this season, or the first of the next season.
+  const next = useMemo(() => {
+    if (!episode) return null
+    const index = episodes.findIndex((item) => item.season_number === episode.season && item.episode_number === episode.episode)
+    if (index >= 0 && index < episodes.length - 1) return { season: episodes[index + 1].season_number, episode: episodes[index + 1].episode_number }
+    const following = seasons.find((season) => season.season_number > episode.season && season.episode_count > 0)
+    return following ? { season: following.season_number, episode: 1 } : null
+  }, [episode, episodes, seasons])
+
+  const playNext = async () => {
+    if (!next) return
+    if (next.season !== selectedSeason) await loadSeason(next.season)
+    pickEpisode(next)
+  }
+
+  const code = (item: Pick) => t('common.seasonEpisode', { season: item.season, episode: item.episode })
+  const playLabel = episode
+    ? t('detail.playEpisode', { episode: code(episode) })
+    : firstSeason !== undefined ? t('detail.playEpisode', { episode: code({ season: firstSeason, episode: 1 }) }) : t('billboard.play')
 
   const streamServices = getStreamProviders('tv', id, episode?.season, episode?.episode)
   const imdbId: string | undefined = data.external_ids?.imdb_id || undefined
+  const cast: any[] = data.credits?.cast ?? []
+
+  const sections = useMemo(() => [
+    { id: 'streamSection', label: t('detail.watch') },
+    ...(seasons.length ? [{ id: 'episodes', label: t('tv.episodes') }] : []),
+    ...(similar.length ? [{ id: 'similar', label: t('detail.moreLikeThis') }] : []),
+    ...(cast.length ? [{ id: 'cast', label: t('detail.cast') }] : []),
+    { id: 'details', label: t('detail.details') },
+  ], [t, seasons.length, similar.length, cast.length])
 
   return (
-    <div className="w-full min-w-0 space-y-8 pb-8 -mt-4" {...ambientStyle(ambient)}>
-      <MediaHero
-        kind="tv"
-        data={data}
-        isFavorite={lists.isFavorite}
-        isSaved={lists.isSaved}
-        onToggleFavorite={lists.toggleFavorite}
-        onToggleSaved={lists.toggleSaved}
-        onWatch={() => lists.markWatched()}
-      />
+    <div className="w-full min-w-0 pb-6" {...ambientStyle(ambient)}>
+      <MediaHero kind="tv" data={data} playLabel={playLabel} onPlay={playFromStart} />
+      <SectionNav sections={sections} />
+      <div className="space-y-16 pt-10">
+        <StreamSection
+          services={streamServices}
+          enabled={episode !== null}
+          backdrop={data.backdrop_path}
+          placeholder={{
+            title: t('detail.pickEpisode'),
+            description: t('detail.pickEpisodeText'),
+            action: firstSeason !== undefined ? { label: playLabel, onClick: playFromStart } : undefined,
+          }}
+          onNext={episode && next ? playNext : undefined}
+          nextLabel={next ? `${t('detail.nextEpisode')} ${code(next)}` : undefined}
+          downloadSlot={imdbId ? (
+            <DownloadDialog
+              type="tv"
+              imdbId={imdbId}
+              title={episode ? t('tv.downloadTitle', { name: data.name, season: episode.season, episode: episode.episode }) : data.name}
+              season={episode?.season ?? 1}
+              episode={episode?.episode ?? 1}
+              disabled={!episode}
+              disabledHint={t('tv.pickFirst')}
+            />
+          ) : undefined}
+        />
 
-      <div className="px-4 sm:px-14 max-w-[1800px] mx-auto w-full space-y-8">
         {seasons.length > 0 && (
-          <section aria-label={t('tv.seasons')}>
-            <h2 className="text-2xl sm:text-3xl font-semibold mb-3">{t('tv.seasons')}</h2>
-            <div className="flex gap-3 overflow-x-auto pb-3 no-scrollbar">
-              {seasons.map((season) => (
-                <button
-                  key={season.id}
-                  type="button"
-                  onClick={() => loadSeason(season.season_number)}
-                  aria-pressed={selectedSeason === season.season_number}
-                  className={cn(
-                    "shrink-0 w-[110px] sm:w-[140px] text-start rounded-xl transition-transform duration-200 hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500",
-                    selectedSeason === season.season_number && "ring-2 ring-red-500"
-                  )}
-                >
-                  <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-zinc-800">
-                    {season.poster_path && (
-                      <TmdbImage kind="poster" path={season.poster_path} alt={season.name} fill sizes="(min-width: 640px) 144px, 112px" className="object-cover" />
-                    )}
-                  </div>
-                  <p className="mt-1 px-1 text-sm font-semibold truncate">{season.name}</p>
-                  <p className="px-1 text-xs text-gray-500 dark:text-gray-400">{t('tv.episodeCount', { count: season.episode_count })}</p>
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {(episodes.length > 0 || seasonLoading) && (
-          <section id="episodesSection" aria-label={t('tv.episodes')} className="scroll-mt-20">
-            <h2 className="text-2xl sm:text-3xl font-semibold mb-3">
-              {t('tv.episodes')}{selectedSeason !== null && `: ${seasons.find((season) => season.season_number === selectedSeason)?.name ?? ''}`}
-            </h2>
-            <div className={cn("grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4 transition-opacity", seasonLoading && "opacity-50")}>
-              {episodes.map((item) => {
-                const isSelected = episode?.season === item.season_number && episode?.episode === item.episode_number
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    title={item.overview}
-                    onClick={() => pickEpisode(item)}
-                    className={cn(
-                      "text-start rounded-md transition-transform duration-200 hover:scale-[1.03] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500",
-                      isSelected && "ring-2 ring-red-500 scale-[1.03]"
-                    )}
-                  >
-                    <div className="relative aspect-video rounded-md overflow-hidden bg-zinc-800">
-                      {item.still_path && (
-                        <TmdbImage kind="still" path={item.still_path} alt="" fill sizes="(min-width: 640px) 256px, 208px" className="object-cover" />
-                      )}
-                    </div>
-                    <p className="mt-1 px-1 font-semibold text-sm">{t('tv.episodeTitle', { number: item.episode_number, name: item.name })}</p>
-                  </button>
-                )
-              })}
-            </div>
-          </section>
-        )}
-      </div>
-
-      <StreamSection
-        services={streamServices}
-        downloadSlot={imdbId ? (
-          <DownloadDialog
-            type="tv"
-            imdbId={imdbId}
-            title={episode ? t('tv.downloadTitle', { name: data.name, season: episode.season, episode: episode.episode }) : data.name}
-            season={episode?.season ?? 1}
-            episode={episode?.episode ?? 1}
-            disabled={!episode}
-            disabledHint={t('tv.pickFirst')}
+          <EpisodeBrowser
+            id="episodes"
+            seasons={seasons}
+            selectedSeason={selectedSeason}
+            episodes={episodes}
+            loading={seasonLoading}
+            current={episode}
+            onSeason={(season) => { loadSeason(season) }}
+            onEpisode={(item) => pickEpisode({ season: item.season_number, episode: item.episode_number })}
           />
-        ) : undefined}
-        enabled={episode !== null}
-        placeholder={{ title: t('tv.placeholderTitle'), description: t('tv.placeholderDesc') }}
-      />
+        )}
 
-      <div className="px-4 sm:px-14 max-w-[1800px] mx-auto w-full">
-        <PosterSlider title={t('common.recommended')} items={similar} kind="tv" />
+        {similar.length > 0 && (
+          <div id="similar" className="scroll-mt-[calc(var(--topbar)+72px)]">
+            <PosterSlider title={t('detail.moreLikeThis')} items={similar} kind="tv" />
+          </div>
+        )}
+        <CastRow id="cast" cast={cast} />
+        <DetailsGrid id="details" kind="tv" data={data} />
       </div>
     </div>
   )

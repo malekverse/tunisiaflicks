@@ -16,7 +16,7 @@ export type PlayerState = 'loading' | 'playing' | 'paused' | 'ended'
  * Talks to the player over postMessage (the iframe API protocol), without loading YouTube's script.
  */
 export default function YouTubeBackdrop({
-  videoKey, muted = true, play = true, loop = false, zoom = 1.2, className, onState, onProgress,
+  videoKey, muted = true, play = true, loop = false, zoom = 1.25, revealDelay = 1200, className, onState, onProgress,
 }: {
   videoKey: string
   muted?: boolean
@@ -24,6 +24,8 @@ export default function YouTubeBackdrop({
   play?: boolean
   loop?: boolean
   zoom?: number
+  /** Wait this long after playback starts before fading in: YouTube shows the title for a moment. */
+  revealDelay?: number
   className?: string
   onState?: (state: PlayerState) => void
   /** 0..1 as the video plays. */
@@ -44,10 +46,14 @@ export default function YouTubeBackdrop({
     setVisible(false)
     duration.current = 0
     lastState.current = 'loading'
+    let revealTimer: ReturnType<typeof setTimeout> | undefined
     const report = (state: PlayerState) => {
       if (state === lastState.current) return
       lastState.current = state
-      if (state === 'playing') setVisible(true)
+      if (state === 'playing') {
+        clearTimeout(revealTimer)
+        revealTimer = setTimeout(() => setVisible(true), revealDelay)
+      }
       if (state === 'ended' && !loop) setVisible(false)
       callbacks.current.onState?.(state)
     }
@@ -70,8 +76,11 @@ export default function YouTubeBackdrop({
       else if (state === 0) report('ended')
     }
     window.addEventListener('message', onMessage)
-    return () => window.removeEventListener('message', onMessage)
-  }, [videoKey, loop])
+    return () => {
+      window.removeEventListener('message', onMessage)
+      clearTimeout(revealTimer)
+    }
+  }, [videoKey, loop, revealDelay])
 
   useEffect(() => { command(muted ? 'mute' : 'unMute') }, [muted])
   useEffect(() => { command(play ? 'playVideo' : 'pauseVideo') }, [play])

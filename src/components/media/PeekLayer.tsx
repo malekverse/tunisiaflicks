@@ -114,7 +114,7 @@ function HoverPreview({ item, rect }: { item: PeekItem, rect: DOMRect }) {
         >
             <div className="relative aspect-video overflow-hidden bg-white/5">
                 <TmdbImage kind="backdrop" path={item.backdrop || item.poster} alt="" fill sizes={`${Math.round(width)}px`} className="object-cover" />
-                {trailer && <YouTubeBackdrop videoKey={trailer} loop muted={muted} zoom={1.25} onState={(state) => setPlaying(state === 'playing')} />}
+                {trailer && <YouTubeBackdrop videoKey={trailer} loop muted={muted} zoom={1.3} onState={(state) => setPlaying(state === 'playing')} />}
                 <div aria-hidden className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-[#141416] via-[#141416]/40 to-transparent" />
                 <p className="absolute bottom-2.5 start-4 end-14 line-clamp-2 font-display text-[22px] font-bold leading-tight drop-shadow-[0_2px_12px_rgb(0_0_0/0.8)]"><bdi>{item.title}</bdi></p>
                 <Link href={detailHref(item)} tabIndex={-1} aria-hidden className="absolute inset-0" />

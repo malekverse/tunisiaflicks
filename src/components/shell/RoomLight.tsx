@@ -44,7 +44,7 @@ export default function RoomLight() {
       {layers.map((layer, index) => (
         <div
           key={index}
-          className="absolute inset-0 transition-opacity duration-[1100ms] ease-out"
+          className="absolute inset-0 transition-opacity [transition-duration:1100ms] ease-out"
           style={{ backgroundImage: glow(layer.color, layer.strength), opacity: index === front ? 1 : 0 }}
         />
       ))}

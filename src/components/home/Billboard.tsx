@@ -204,7 +204,7 @@ function Stage({ items, colors, enabled }: { items: BillboardItem[], colors: (st
                     videoKey={active.trailer}
                     muted={muted}
                     play={running}
-                    zoom={1.22}
+                    zoom={1.3}
                     onState={(state) => {
                         if (state === 'playing') setPlaying(true)
                         if (state === 'ended') go(index + 1)
