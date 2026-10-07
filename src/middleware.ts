@@ -13,7 +13,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // Redirect unauthenticated users to login page for protected routes
-  if (!token && req.nextUrl.pathname.startsWith('/dashboard')) {
+  if (!token && (req.nextUrl.pathname.startsWith('/dashboard') || req.nextUrl.pathname === '/profiles')) {
     const url = req.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
@@ -23,5 +23,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard', '/login', '/signup'], // Protect these routes
+  matcher: ['/dashboard', '/login', '/signup', '/profiles'], // Protect these routes
 };

@@ -57,6 +57,7 @@ export const ar: Record<TKey, string> = {
   'nav.surpriseTitle': 'خذني إلى عمل عشوائي من الأعلى تقييماً',
   'nav.login': 'دخول',
   'nav.myAccount': 'حسابي',
+  'nav.manageProfiles': 'إدارة الملفات الشخصية',
   'nav.profile': 'الملف الشخصي',
   'nav.logout': 'تسجيل الخروج',
   'nav.accountMenu': 'قائمة الحساب',

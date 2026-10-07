@@ -27,6 +27,11 @@ import {
   DropdownMenuTrigger,
 } from "@/src/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar"
+import ProfileAvatar, { KidsBadge } from '@/src/components/profiles/ProfileAvatar';
+import KidsUnlockDialog from '@/src/components/profiles/KidsUnlockDialog';
+import { forgetProfile, selectProfile, useProfiles } from '@/src/hooks/use-profiles';
+import { toast } from '@/src/hooks/use-toast';
+import type { Profile } from '@/src/lib/models/Profile';
 
 const mobileNav: { name: TKey, href: string, icon: React.ReactNode, activeIcon: React.ReactNode }[] = [
   { name: 'nav.home', href: '/', icon: <GoHome className='text-xl' />, activeIcon: <GoHomeFill className='text-xl text-red-500' /> },
@@ -63,15 +68,64 @@ const Navbar = () => {
 
   const avatarSrc = avatar || userImage || session?.user?.image || '';
 
+  // Viewer profiles: until one is picked on this device, send the user to "Who's watching?".
+  const { data: profiles, active } = useProfiles();
+  const [unlocking, setUnlocking] = useState<Profile | null>(null);
+  const needsPick = profiles?.needsPick ?? false;
+  useEffect(() => {
+    if (needsPick && !/^\/(profiles|login|signup|auth)(\/|$)/.test(pathname)) {
+      router.replace(`/profiles?next=${encodeURIComponent(pathname)}`);
+    }
+  }, [needsPick, pathname, router]);
+
+  const switchTo = async (profile: Profile) => {
+    if (!profile.kids && profiles?.locked) return setUnlocking(profile);
+    const result = await selectProfile(profile.id);
+    // Reload: every list, row and the catalogue itself depend on the profile.
+    if (result.ok) window.location.reload();
+    else if (result.needsPassword) setUnlocking(profile);
+    else toast({ title: "Error", description: result.error, variant: "destructive" });
+  };
+
+  const logOut = async () => {
+    await forgetProfile();
+    signOut();
+  };
+
+  // The owner's profile (the first) keeps the account photo.
+  const isOwner = !active || profiles?.profiles[0]?.id === active.id;
+  const accountAvatar = (className?: string) => active ? (
+    <ProfileAvatar profile={active} image={isOwner ? avatarSrc || null : null} size="md" className={className} />
+  ) : (
+    <Avatar className={className}>
+      <AvatarImage src={avatarSrc} />
+      <AvatarFallback>{session?.user?.name?.charAt(0) || 'U'}</AvatarFallback>
+    </Avatar>
+  );
+
+  const otherProfiles = profiles?.profiles.filter((profile) => profile.id !== active?.id) ?? [];
   const accountMenu = (
-    <DropdownMenuContent>
-      <DropdownMenuLabel>{t('nav.myAccount')}</DropdownMenuLabel>
+    <DropdownMenuContent align="end" className="min-w-[200px]">
+      <DropdownMenuLabel className="flex items-center gap-2">
+        {active ? <>{active.name} {active.kids && <KidsBadge />}</> : t('nav.myAccount')}
+      </DropdownMenuLabel>
       <DropdownMenuSeparator />
+      {otherProfiles.map((profile) => (
+        <DropdownMenuItem key={profile.id} onSelect={() => switchTo(profile)} className="gap-2">
+          <ProfileAvatar profile={profile} size="sm" />
+          <span className="truncate">{profile.name}</span>
+          {profile.kids && <KidsBadge className="ms-auto" />}
+        </DropdownMenuItem>
+      ))}
+      {active && !active.kids && (
+        <DropdownMenuItem onSelect={() => router.push('/profile#profiles')}>{t('nav.manageProfiles')}</DropdownMenuItem>
+      )}
+      {profiles && <DropdownMenuSeparator />}
       <DropdownMenuItem onSelect={() => router.push('/profile')}>{t('nav.profile')}</DropdownMenuItem>
       <DropdownMenuItem onSelect={() => router.push('/favorites')}>{t('nav.favorites')}</DropdownMenuItem>
       <DropdownMenuItem onSelect={() => router.push('/saved')}>{t('nav.bookmarked')}</DropdownMenuItem>
       <DropdownMenuSeparator />
-      <DropdownMenuItem onSelect={() => signOut()}>{t('nav.logout')}</DropdownMenuItem>
+      <DropdownMenuItem onSelect={logOut}>{t('nav.logout')}</DropdownMenuItem>
     </DropdownMenuContent>
   );
 
@@ -109,11 +163,9 @@ const Navbar = () => {
               {/* User Profile or Login Button */}
               {session ? (
                 <DropdownMenu>
-                  <DropdownMenuTrigger aria-label={t('nav.accountMenu')} className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500">
-                    <Avatar>
-                      <AvatarImage src={avatarSrc} />
-                      <AvatarFallback>{session.user?.name?.charAt(0) || 'U'}</AvatarFallback>
-                    </Avatar>
+                  <DropdownMenuTrigger aria-label={t('nav.accountMenu')} className="flex items-center gap-2 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500">
+                    {active?.kids && <KidsBadge />}
+                    {accountAvatar()}
                   </DropdownMenuTrigger>
                   {accountMenu}
                 </DropdownMenu>
@@ -158,10 +210,7 @@ const Navbar = () => {
             <li className="flex justify-center p-2">
               <DropdownMenu>
                 <DropdownMenuTrigger aria-label={t('nav.accountMenu')}>
-                  <Avatar className='w-5 h-5'>
-                    <AvatarImage src={avatarSrc} />
-                    <AvatarFallback>{session.user?.name?.charAt(0) || 'U'}</AvatarFallback>
-                  </Avatar>
+                  {accountAvatar(active ? 'h-5 w-5 rounded text-[10px]' : 'w-5 h-5')}
                 </DropdownMenuTrigger>
                 {accountMenu}
               </DropdownMenu>
@@ -175,6 +224,8 @@ const Navbar = () => {
           )}
         </ul>
       </div>
+
+      <KidsUnlockDialog profile={unlocking} onClose={() => setUnlocking(null)} onUnlocked={() => window.location.reload()} />
     </nav>
   );
 };

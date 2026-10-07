@@ -54,6 +54,7 @@ export const en = {
   'nav.surpriseTitle': 'Take me to a random top-rated title',
   'nav.login': 'Login',
   'nav.myAccount': 'My Account',
+  'nav.manageProfiles': 'Manage profiles',
   'nav.profile': 'Profile',
   'nav.logout': 'Log out',
   'nav.accountMenu': 'Account menu',
