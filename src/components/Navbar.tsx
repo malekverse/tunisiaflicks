@@ -10,6 +10,7 @@ import { BiSearchAlt2, BiSolidSearchAlt2, BiTv, BiSolidTv } from "react-icons/bi
 import { MdExplore, MdOutlineExplore } from "react-icons/md";
 import { GoHome, GoHomeFill } from "react-icons/go";
 import { TbMenu2 } from "react-icons/tb";
+import { GiPerspectiveDiceSixFacesRandom } from "react-icons/gi";
 import { globalStore } from '@/src/store/store';
 import SearchBar from './SearchBar';
 import { Button } from './ui/button';
@@ -88,6 +89,10 @@ const Navbar = () => {
                   <Link href="/tv" className={`${pathname.startsWith("/tv") ? "text-red-500" : "text-gray-300"} hover:bg-zinc-700 hover:text-white px-3 py-2 rounded-xl text-sm font-medium`}>
                     TV Shows
                   </Link>
+                  {/* Plain <a>: a fresh random pick on every click (no prefetch / router cache). */}
+                  <a href="/surprise" title="Take me to a random top-rated title" className="flex items-center gap-1.5 text-gray-300 hover:bg-zinc-700 hover:text-white px-3 py-2 rounded-xl text-sm font-medium">
+                    <GiPerspectiveDiceSixFacesRandom className="text-base" /> Surprise me
+                  </a>
                 </div>
               </div>
             </div>

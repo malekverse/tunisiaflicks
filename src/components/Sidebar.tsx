@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { FaCog } from 'react-icons/fa';
 import { FiSun, FiMoon } from 'react-icons/fi';
-import { GiTunisia } from 'react-icons/gi';
+import { GiTunisia, GiPerspectiveDiceSixFacesRandom } from 'react-icons/gi';
 import { IoClose } from 'react-icons/io5';
 import {
     MdHome, MdOutlineHome,
@@ -68,6 +68,16 @@ function SidebarContent({ expanded, onNavigate }: { expanded: boolean; onNavigat
                         </Link>
                     );
                 })}
+                {/* Plain <a>: a fresh random pick on every click (no prefetch / router cache). */}
+                <a
+                    href="/surprise"
+                    title={expanded ? undefined : 'Surprise me'}
+                    onClick={onNavigate}
+                    className={`${itemBase} ${layout} text-gray-300 hover:text-white hover:bg-zinc-800`}
+                >
+                    <GiPerspectiveDiceSixFacesRandom className={ICON} />
+                    {label('Surprise me')}
+                </a>
             </nav>
 
             <div className="mt-auto flex flex-col gap-1 px-2 py-2">
