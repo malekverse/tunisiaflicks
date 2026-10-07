@@ -42,6 +42,17 @@ export default async function TunisianPage({ searchParams }: { searchParams: { t
         </div>
       </div>
 
+      <Link
+        href='/tunisian/cinema'
+        className='mb-6 flex items-center justify-between gap-4 rounded-2xl bg-gradient-to-r from-red-600 to-red-900 px-5 py-4 text-white transition hover:brightness-110'
+      >
+        <span>
+          <span className='block font-semibold'>🇹🇳 {t('tnCinema.title')}</span>
+          <span className='block text-sm text-white/80'>{t('tnCinema.teaser')}</span>
+        </span>
+        <span aria-hidden className='text-2xl rtl:-scale-x-100'>→</span>
+      </Link>
+
       {titles === null ? (
         <p className='text-gray-400'>{t('tunisian.failed')}</p>
       ) : visible.length === 0 ? (

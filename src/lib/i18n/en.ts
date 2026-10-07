@@ -690,6 +690,19 @@ export const en = {
   'swipe.notFound': 'Room not found',
   'swipe.notFoundText': 'The code may be wrong, or the room expired (rooms last 24 hours).',
   'mood.swipe': 'Decide together',
+
+  // Tunisian cinema spotlight
+  'tnCinema.title': 'Tunisian cinema',
+  'tnCinema.badge': 'Spotlight',
+  'tnCinema.intro': 'From the classics of the golden age to today\'s festival winners: the films, series and faces of Tunisian cinema.',
+  'tnCinema.teaser': 'New films, classics and the stars of Tunisian cinema',
+  'tnCinema.catalogue': 'Browse the Tunisian catalogue',
+  'tnCinema.featured': 'Featured: {title}',
+  'tnCinema.recent': 'New Tunisian films',
+  'tnCinema.loved': 'Most loved',
+  'tnCinema.stars': 'Tunisian stars',
+  'tnCinema.classics': 'Classics (before 2000)',
+  'tnCinema.series': 'Tunisian series',
 } satisfies Record<string, string>
 
 export type TKey = keyof typeof en

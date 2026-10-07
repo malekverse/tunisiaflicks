@@ -692,4 +692,17 @@ export const ar: Record<TKey, string> = {
   'swipe.notFound': 'الغرفة غير موجودة',
   'swipe.notFoundText': 'قد يكون الرمز خاطئًا أو انتهت صلاحية الغرفة (تدوم الغرف 24 ساعة).',
   'mood.swipe': 'قرّروا معًا',
+
+  // Tunisian cinema spotlight
+  'tnCinema.title': 'السينما التونسية',
+  'tnCinema.badge': 'تحت الأضواء',
+  'tnCinema.intro': 'من كلاسيكيات العصر الذهبي إلى المتوّجين في المهرجانات اليوم: أفلام السينما التونسية ومسلسلاتها ووجوهها.',
+  'tnCinema.teaser': 'أفلام جديدة وكلاسيكيات ونجوم السينما التونسية',
+  'tnCinema.catalogue': 'تصفّح الكتالوج التونسي',
+  'tnCinema.featured': 'مختار: {title}',
+  'tnCinema.recent': 'أفلام تونسية جديدة',
+  'tnCinema.loved': 'الأكثر حبًّا',
+  'tnCinema.stars': 'نجوم تونسيون',
+  'tnCinema.classics': 'كلاسيكيات (قبل 2000)',
+  'tnCinema.series': 'مسلسلات تونسية',
 }
