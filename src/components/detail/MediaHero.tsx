@@ -15,6 +15,7 @@ import { upcomingRelease } from '@/src/lib/calendar'
 import { toast } from '@/src/hooks/use-toast'
 import { cn } from '@/src/lib/utils'
 import { useI18n } from '@/src/components/I18nProvider'
+import { isArabicScript } from '@/src/lib/i18n'
 import TmdbImage from '@/src/components/TmdbImage'
 
 function Backdrops({ backdrops, fallback, title }: { backdrops: { file_path: string }[], fallback?: string | null, title: string }) {
@@ -120,7 +121,7 @@ export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFav
     const [showAllCast, setShowAllCast] = useState(false)
     const allCast: any[] = data.credits?.cast ?? []
     const cast = allCast.slice(0, showAllCast ? 24 : 7)
-    const genres = (data.genres ?? []).map((item: any) => item.name).join(locale === 'ar' ? '، ' : ', ')
+    const genres = (data.genres ?? []).map((item: any) => item.name).join(isArabicScript(locale) ? '، ' : ', ')
     const startDate: string = (kind === 'tv' ? data.first_air_date : data.release_date) || ''
     const endYear = kind === 'tv' && data.last_air_date ? data.last_air_date.substring(0, 4) : ''
     const years = kind === 'tv'

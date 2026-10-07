@@ -1,5 +1,5 @@
 // Server-side TMDB helper. The API key only ever lives on the server (TMDB_API_KEY).
-import type { Locale } from '@/src/lib/i18n'
+import { isArabicScript, type Locale } from '@/src/lib/i18n'
 
 const BASE_URL = 'https://api.themoviedb.org/3'
 
@@ -49,7 +49,7 @@ export async function tmdbFetchSafe<T = any>(path: string, params: Params = {}, 
 }
 
 /** TMDB `language` for the UI locale (genre names, overviews...). */
-export const tmdbLanguage = (locale: Locale) => (locale === 'ar' ? 'ar' : 'en-US')
+export const tmdbLanguage = (locale: Locale) => (isArabicScript(locale) ? 'ar' : 'en-US')
 
 /**
  * Overlays translated text fields (e.g. an Arabic `overview`) on an English TMDB object. TMDB

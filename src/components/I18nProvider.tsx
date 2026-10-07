@@ -2,7 +2,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  LOCALE_COOKIE, createTranslator, dateLocale, dirOf,
+  LOCALE_COOKIE, createTranslator, dateLocale, dirOf, htmlLang,
   type Dir, type Locale, type TKey, type TVars, type Translate,
 } from '@/src/lib/i18n'
 
@@ -33,7 +33,7 @@ export function I18nProvider({ locale: initialLocale, children }: { locale: Loca
 
   const setLocale = useCallback((next: Locale) => {
     document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=${ONE_YEAR}; samesite=lax`
-    document.documentElement.lang = next
+    document.documentElement.lang = htmlLang(next)
     document.documentElement.dir = dirOf(next)
     setLocaleState(next)
     router.refresh()

@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { FaPlay, FaStar } from 'react-icons/fa6'
 import TmdbImage from '@/src/components/TmdbImage'
 import { getLocale, getT } from '@/src/lib/i18n/server'
-import { dateLocale } from '@/src/lib/i18n'
+import { dateLocale, isArabicScript } from '@/src/lib/i18n'
 import type { PickOfTheDay as Pick } from '@/src/lib/pick-of-the-day'
 
 /** Home page banner: today's pick, with its backdrop, logo, tagline and a Watch now button. */
@@ -19,7 +19,7 @@ export default function PickOfTheDay({ pick }: { pick: Pick | null }) {
   const length = kind === 'movie'
     ? data.runtime ? t('pick.runtime', { hours: Math.floor(data.runtime / 60), minutes: data.runtime % 60 }) : ''
     : data.number_of_seasons > 1 ? t('pick.seasons', { count: data.number_of_seasons }) : data.number_of_seasons === 1 ? t('pick.oneSeason') : ''
-  const genres = (data.genres ?? []).slice(0, 2).map((genre: any) => genre.name).join(locale === 'ar' ? '، ' : ', ')
+  const genres = (data.genres ?? []).slice(0, 2).map((genre: any) => genre.name).join(isArabicScript(locale) ? '، ' : ', ')
   const href = `/${kind}/${data.id}`
   const today = new Date(`${pick.date}T12:00:00Z`).toLocaleDateString(dateLocale(locale), { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })
 

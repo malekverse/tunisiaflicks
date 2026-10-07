@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import MovieDetail from '@/src/components/detail/MovieDetail'
 import { TmdbError, tmdbFetch, tmdbFetchSafe, withTranslatedFields } from '@/src/lib/tmdb'
 import { getLocale } from '@/src/lib/i18n/server'
+import { isArabicScript } from '@/src/lib/i18n'
 import KidsBlocked from '@/src/components/profiles/KidsBlocked'
 import { filterKidSafe, isKidSafe } from '@/src/lib/kids'
 import { getKidsMode } from '@/src/lib/profiles'
@@ -40,7 +41,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function MoviePage({ params }: Props) {
   // Arabic UI: TMDB's Arabic overview and genre names where they exist; titles stay as they are.
-  const arabic = getLocale() === 'ar'
+  const arabic = isArabicScript(getLocale())
   const [movie, recommendations, translated, kids] = await Promise.all([
     getMovie(params.id),
     tmdbFetchSafe(`movie/${params.id}/recommendations`),

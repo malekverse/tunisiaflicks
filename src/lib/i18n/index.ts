@@ -2,27 +2,34 @@
 // a cookie so server components and the root layout (<html lang dir>) can read it on every request.
 import { en, type TKey } from './en'
 import { ar } from './ar'
+import { tn } from './tn'
 
 export type { TKey }
-export type Locale = 'en' | 'ar'
+/** English, Modern Standard Arabic, and Tunisian Arabic (Derja). */
+export type Locale = 'en' | 'ar' | 'tn'
 export type Dir = 'ltr' | 'rtl'
 export type TVars = Record<string, string | number>
 export type Translate = (key: TKey, vars?: TVars) => string
 
-export const LOCALES: Locale[] = ['en', 'ar']
+export const LOCALES: Locale[] = ['en', 'ar', 'tn']
 export const DEFAULT_LOCALE: Locale = 'en'
 export const LOCALE_COOKIE = 'tf-locale'
 
-const dictionaries: Record<Locale, Record<TKey, string>> = { en, ar }
+// Derja only overrides what it translates; the rest comes from Arabic, then English.
+const dictionaries: Record<Locale, Partial<Record<TKey, string>>> = { en, ar, tn: { ...ar, ...tn } }
 
-export const isLocale = (value: unknown): value is Locale => value === 'en' || value === 'ar'
-export const dirOf = (locale: Locale): Dir => (locale === 'ar' ? 'rtl' : 'ltr')
+export const isLocale = (value: unknown): value is Locale => value === 'en' || value === 'ar' || value === 'tn'
+/** Arabic and Derja: right-to-left, Arabic font, Arabic TMDB data. */
+export const isArabicScript = (locale: Locale) => locale !== 'en'
+export const dirOf = (locale: Locale): Dir => (isArabicScript(locale) ? 'rtl' : 'ltr')
+/** BCP 47 tag for <html lang>. */
+export const htmlLang = (locale: Locale) => (locale === 'tn' ? 'ar-TN' : locale)
 
 /**
  * Locale for `Intl` / `toLocaleDateString`. Arabic uses Tunisian month names with Latin digits
  * (`-u-nu-latn`); English keeps the browser default, as before.
  */
-export const dateLocale = (locale: Locale): string | undefined => (locale === 'ar' ? 'ar-TN-u-nu-latn' : undefined)
+export const dateLocale = (locale: Locale): string | undefined => (isArabicScript(locale) ? 'ar-TN-u-nu-latn' : undefined)
 
 /** `t('key', { name })` replaces `{name}` placeholders; a missing translation falls back to English. */
 export function createTranslator(locale: Locale): Translate {

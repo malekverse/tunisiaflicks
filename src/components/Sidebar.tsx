@@ -22,9 +22,12 @@ import {
 
 import { globalStore } from '@/src/store/store';
 import { useI18n } from '@/src/components/I18nProvider';
-import type { TKey } from '@/src/lib/i18n';
+import { LOCALES, htmlLang, type Locale, type TKey } from '@/src/lib/i18n';
 
 const ICON = 'text-xl shrink-0';
+
+// Each language's name in that language.
+const LANGUAGE_NAMES: Record<Locale, string> = { en: 'English', ar: 'العربية', tn: 'تونسي' };
 
 const sidebarElem: { title: TKey, DefIcon: React.ReactNode, OutIcon: React.ReactNode, path: string }[] = [
     { title: 'nav.home', DefIcon: <MdHome className={ICON} />, OutIcon: <MdOutlineHome className={ICON} />, path: '/' },
@@ -45,6 +48,7 @@ function SidebarContent({ expanded, onNavigate }: { expanded: boolean; onNavigat
     const pathname = usePathname();
     const { setTheme, resolvedTheme } = useTheme();
     const { t, locale, setLocale } = useI18n();
+    const nextLocale = LOCALES[(LOCALES.indexOf(locale) + 1) % LOCALES.length];
     const [mounted, setMounted] = useState(false);
     useEffect(() => setMounted(true), []);
 
@@ -106,17 +110,17 @@ function SidebarContent({ expanded, onNavigate }: { expanded: boolean; onNavigat
                     {isDark ? <FiSun className={ICON} /> : <FiMoon className={ICON} />}
                     {label(isDark ? t('nav.lightMode') : t('nav.darkMode'))}
                 </button>
-                {/* Language: shows the language you'd switch to, in that language. */}
+                {/* Language: cycles English → عربي → تونسي, showing the next one in its own language. */}
                 <button
                     type="button"
-                    lang={locale === 'ar' ? 'en' : 'ar'}
-                    title={expanded ? undefined : t('lang.switchTo')}
-                    aria-label={t('lang.switchToAria')}
-                    onClick={() => setLocale(locale === 'ar' ? 'en' : 'ar')}
+                    lang={htmlLang(nextLocale)}
+                    title={expanded ? undefined : LANGUAGE_NAMES[nextLocale]}
+                    aria-label={`${t('lang.label')}: ${LANGUAGE_NAMES[nextLocale]}`}
+                    onClick={() => setLocale(nextLocale)}
                     className={`${itemBase} ${layout} text-gray-300 hover:text-white hover:bg-zinc-800`}
                 >
                     <IoLanguage className={ICON} />
-                    {label(t('lang.switchTo'))}
+                    {label(LANGUAGE_NAMES[nextLocale])}
                 </button>
             </div>
         </>

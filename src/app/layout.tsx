@@ -13,7 +13,7 @@ import { Toaster } from "@/src/components/ui/toaster";
 import ServiceWorkerRegister from "@/src/components/ServiceWorkerRegister";
 import DailyPushTrigger from "@/src/components/DailyPushTrigger";
 import { I18nProvider } from "@/src/components/I18nProvider";
-import { dirOf } from "@/src/lib/i18n";
+import { dirOf, htmlLang, isArabicScript } from "@/src/lib/i18n";
 import { getLocale } from "@/src/lib/i18n/server";
 
 import type { Viewport } from 'next'
@@ -105,13 +105,13 @@ export default function RootLayout({
   // in the right language and direction.
   const locale = getLocale();
   return (
-    <html lang={locale} dir={dirOf(locale)} suppressHydrationWarning>
+    <html lang={htmlLang(locale)} dir={dirOf(locale)} suppressHydrationWarning>
       <head>
         {/* Almost every picture comes from TMDB: open that connection while the HTML is parsed. */}
         <link rel="preconnect" href="https://image.tmdb.org" />
         <link rel="dns-prefetch" href="https://image.tmdb.org" />
       </head>
-      <body className={`${locale === 'ar' ? cairo.className : inter.className} transition-colors duration-300`}>
+      <body className={`${isArabicScript(locale) ? cairo.className : inter.className} transition-colors duration-300`}>
         <I18nProvider locale={locale}>
           <SessionProvider>
             <Providers>

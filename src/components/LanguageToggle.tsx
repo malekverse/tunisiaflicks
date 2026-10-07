@@ -1,14 +1,15 @@
 "use client"
 import React from 'react'
 import { useI18n } from '@/src/components/I18nProvider'
-import type { Locale } from '@/src/lib/i18n'
+import { htmlLang, type Locale } from '@/src/lib/i18n'
 
 const OPTIONS: { value: Locale, label: string }[] = [
   { value: 'en', label: 'EN' },
   { value: 'ar', label: 'عربي' },
+  { value: 'tn', label: 'تونسي' },
 ]
 
-/** EN / عربي switch for the desktop navbar (the mobile drawer has its own row in the Sidebar). */
+/** EN / عربي / تونسي switch for the desktop navbar (the mobile drawer has its own row in the Sidebar). */
 export default function LanguageToggle() {
   const { locale, setLocale, t } = useI18n()
 
@@ -18,7 +19,7 @@ export default function LanguageToggle() {
         <button
           key={option.value}
           type="button"
-          lang={option.value}
+          lang={htmlLang(option.value)}
           aria-pressed={locale === option.value}
           onClick={() => locale !== option.value && setLocale(option.value)}
           className={`rounded-lg px-2.5 py-1 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${locale === option.value

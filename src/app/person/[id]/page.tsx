@@ -5,7 +5,7 @@ import TmdbImage from '@/src/components/TmdbImage'
 import MediaGrid from '@/src/components/MediaGrid'
 import { PosterSlider } from '@/src/components/Sliders'
 import { TmdbError, tmdbFetch, tmdbFetchSafe, withTranslatedFields } from '@/src/lib/tmdb'
-import { createTranslator, type Locale, type TKey } from '@/src/lib/i18n'
+import { createTranslator, isArabicScript, type Locale, type TKey } from '@/src/lib/i18n'
 import { getLocale } from '@/src/lib/i18n/server'
 import { filterKidSafe } from '@/src/lib/kids'
 import { getKidsMode } from '@/src/lib/profiles'
@@ -55,7 +55,7 @@ function age(birthday: string, deathday?: string | null) {
 }
 
 const formatDate = (value: string, locale: Locale) =>
-  new Date(value).toLocaleDateString(locale === 'ar' ? 'ar-TN-u-nu-latn' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+  new Date(value).toLocaleDateString(isArabicScript(locale) ? 'ar-TN-u-nu-latn' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!isValidId(params.id)) return {}
@@ -77,7 +77,7 @@ export default async function PersonPage({ params }: Props) {
   // Arabic UI: TMDB's Arabic biography when there is one (most people only have an English one).
   const [english, translated, kids] = await Promise.all([
     getPerson(params.id),
-    locale === 'ar' && isValidId(params.id) ? tmdbFetchSafe(`person/${params.id}`, { language: 'ar' }) : null,
+    isArabicScript(locale) && isValidId(params.id) ? tmdbFetchSafe(`person/${params.id}`, { language: 'ar' }) : null,
     getKidsMode(),
   ])
   const person = withTranslatedFields(english, translated, ['biography'])

@@ -32,8 +32,6 @@ export const en = {
 
   // Language switch
   'lang.label': 'Language',
-  'lang.switchTo': 'العربية',
-  'lang.switchToAria': 'Switch to Arabic',
 
   // Navbar / sidebar
   'nav.home': 'Home',

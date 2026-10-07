@@ -35,8 +35,6 @@ export const ar: Record<TKey, string> = {
 
   // Language switch
   'lang.label': 'اللغة',
-  'lang.switchTo': 'English',
-  'lang.switchToAria': 'التبديل إلى الإنجليزية',
 
   // Navbar / sidebar
   'nav.home': 'الرئيسية',

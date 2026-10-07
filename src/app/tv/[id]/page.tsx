@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import TvDetail from '@/src/components/detail/TvDetail'
 import { TmdbError, tmdbFetch, tmdbFetchSafe, withTranslatedFields } from '@/src/lib/tmdb'
 import { getLocale } from '@/src/lib/i18n/server'
+import { isArabicScript } from '@/src/lib/i18n'
 import KidsBlocked from '@/src/components/profiles/KidsBlocked'
 import { filterKidSafe, isKidSafe } from '@/src/lib/kids'
 import { getKidsMode } from '@/src/lib/profiles'
@@ -49,7 +50,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function TvPage({ params, searchParams }: Props) {
   // Arabic UI: TMDB's Arabic overview, genre and season names where they exist; titles stay as they are.
-  const arabic = getLocale() === 'ar'
+  const arabic = isArabicScript(getLocale())
   const [show, recommendations, translated, kids] = await Promise.all([
     getShow(params.id),
     tmdbFetchSafe(`tv/${params.id}/recommendations`),
