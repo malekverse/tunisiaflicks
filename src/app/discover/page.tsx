@@ -12,7 +12,16 @@ import { getKidsMode } from '@/src/lib/profiles'
 export const dynamic = 'force-dynamic'
 export const generateMetadata = () => ({ title: `${getT()('discover.title')} | TunisiaFlicks` })
 
-type SearchParams = { page?: string, type?: string, genre?: string, year?: string, rating?: string, sort?: string }
+type SearchParams = { page?: string, type?: string, genre?: string, year?: string, rating?: string, sort?: string, runtime?: string, family?: string }
+
+/** Runtime filter (episode length for TV): under 90 min, under 2 h, or a 2.5 h+ epic. */
+function runtimeParams(kind: 'movie' | 'tv', runtime?: string): Record<string, number> {
+  const floor = kind === 'movie' ? 60 : 15
+  if (runtime === '90') return kind === 'movie' ? { 'with_runtime.gte': floor, 'with_runtime.lte': 95 } : { 'with_runtime.gte': floor, 'with_runtime.lte': 30 }
+  if (runtime === '120') return kind === 'movie' ? { 'with_runtime.gte': floor, 'with_runtime.lte': 120 } : { 'with_runtime.gte': floor, 'with_runtime.lte': 50 }
+  if (runtime === 'epic') return kind === 'movie' ? { 'with_runtime.gte': 150 } : { 'with_runtime.gte': 55 }
+  return {}
+}
 
 // Only well-formed values reach TMDB; anything else is ignored.
 function parseFilters(searchParams: SearchParams) {
@@ -24,6 +33,8 @@ function parseFilters(searchParams: SearchParams) {
     year,
     rating: ['6', '7', '8'].includes(searchParams.rating ?? '') ? searchParams.rating : undefined,
     sort: ['top', 'newest'].includes(searchParams.sort ?? '') ? searchParams.sort! : 'popular',
+    runtime: ['90', '120', 'epic'].includes(searchParams.runtime ?? '') ? searchParams.runtime : undefined,
+    family: searchParams.family === '1' ? '1' : undefined,
   }
 }
 
@@ -50,11 +61,15 @@ export default async function DiscoverPage({ searchParams }: { searchParams: Sea
     with_genres: filters.genre,
     ...(filters.year ? { [kind === 'movie' ? 'primary_release_year' : 'first_air_date_year']: filters.year } : {}),
     'vote_average.gte': filters.rating,
+    // "I have 90 minutes": TMDB lists unknown runtimes as 0, so short filters also need a floor.
+    ...runtimeParams(kind, filters.runtime),
   }
   const kids = await getKidsMode()
+  // "Family-friendly" uses the same rating rules as Kids profiles.
+  const familyOnly = kids || filters.family === '1'
 
   const [{ results, totalPages, failed }, genreList] = await Promise.all([
-    getList(`discover/${kind}`, page, kids ? kidsDiscoverParams(kind, params) : params),
+    getList(`discover/${kind}`, page, familyOnly ? kidsDiscoverParams(kind, params) : params),
     tmdbFetchSafe<{ genres: { id: number, name: string }[] }>(`genre/${kind}/list`, { language: tmdbLanguage(locale) }, 86400),
   ])
 

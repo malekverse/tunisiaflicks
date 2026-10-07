@@ -4,7 +4,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useT } from '@/src/components/I18nProvider'
 import type { TKey } from '@/src/lib/i18n'
 
-export type DiscoverFilterValues = { genre?: string, year?: string, rating?: string, sort: string }
+export type DiscoverFilterValues = { genre?: string, year?: string, rating?: string, sort: string, runtime?: string, family?: string }
 
 const SORTS: { value: string, label: TKey }[] = [
   { value: 'popular', label: 'filters.popular' },
@@ -13,6 +13,12 @@ const SORTS: { value: string, label: TKey }[] = [
 ]
 
 const RATINGS = ['6', '7', '8']
+
+const RUNTIMES: { value: string, label: TKey }[] = [
+  { value: '90', label: 'filters.runtime90' },
+  { value: '120', label: 'filters.runtime120' },
+  { value: 'epic', label: 'filters.runtimeEpic' },
+]
 
 const selectClass =
   'h-10 rounded-xl bg-zinc-800 text-gray-200 text-sm ps-3 pe-8 border border-transparent hover:bg-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500'
@@ -35,7 +41,7 @@ export default function DiscoverFilters({ genres, values }: { genres: { id: numb
     router.push(`${pathname}?${params.toString()}`)
   }
 
-  const active = [values.genre, values.year, values.rating].filter(Boolean).length + (values.sort !== 'popular' ? 1 : 0)
+  const active = [values.genre, values.year, values.rating, values.runtime, values.family].filter(Boolean).length + (values.sort !== 'popular' ? 1 : 0)
 
   return (
     <div className="flex flex-wrap items-center gap-2 mb-6" role="group" aria-label={t('filters.aria')}>
@@ -51,6 +57,18 @@ export default function DiscoverFilters({ genres, values }: { genres: { id: numb
         <option value="">{t('filters.anyRating')}</option>
         {RATINGS.map((rating) => <option key={rating} value={rating}>{t('filters.minStars', { rating })}</option>)}
       </select>
+      <select aria-label={t('filters.runtime')} className={selectClass} value={values.runtime ?? ''} onChange={(e) => update('runtime', e.target.value)}>
+        <option value="">{t('filters.anyRuntime')}</option>
+        {RUNTIMES.map((option) => <option key={option.value} value={option.value}>{t(option.label)}</option>)}
+      </select>
+      <button
+        type="button"
+        aria-pressed={values.family === '1'}
+        onClick={() => update('family', values.family === '1' ? '' : '1')}
+        className={`h-10 rounded-xl px-3 text-sm font-medium transition-colors ${values.family === '1' ? 'bg-red-500 text-white' : 'bg-zinc-800 text-gray-200 hover:bg-zinc-700'}`}
+      >
+        {t('filters.family')}
+      </button>
       <select aria-label={t('filters.sortBy')} className={selectClass} value={values.sort} onChange={(e) => update('sort', e.target.value === 'popular' ? '' : e.target.value)}>
         {SORTS.map((option) => <option key={option.value} value={option.value}>{t(option.label)}</option>)}
       </select>

@@ -1,6 +1,7 @@
 import BecauseYouWatched from '@/src/components/BecauseYouWatched'
 import ContinueWatching from '@/src/components/ContinueWatching'
 import Genres from '@/src/components/Genres'
+import MoodChips from '@/src/components/MoodChips'
 import { HeroSlider, PosterSlider } from '@/src/components/Sliders'
 import getMovies from './(movies)/actions'
 import { getT } from '@/src/lib/i18n/server'
@@ -17,6 +18,7 @@ export default async function MainPage() {
   return (
     <div className='w-full max-w-[1800px] px-4 sm:px-14 space-y-6'>
       <Genres />
+      <MoodChips />
       {/* Signed-in users only; both render nothing for guests. */}
       <ContinueWatching />
       <BecauseYouWatched />
