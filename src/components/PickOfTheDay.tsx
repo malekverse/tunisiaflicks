@@ -75,7 +75,7 @@ export default function PickOfTheDay({ pick }: { pick: Pick | null }) {
             {length && <span>{length}</span>}
             {genres.length > 0 && <span className="text-white/55">{genres.join(' / ')}</span>}
           </p>
-          {data.tagline && <p className="text-pretty text-lg leading-snug text-white/90 md:text-xl">“{data.tagline}”</p>}
+          {data.tagline && <p dir="auto" className="text-pretty text-lg leading-snug text-white/90 md:text-xl">“{data.tagline}”</p>}
           <p className="line-clamp-3 max-w-[60ch] text-sm leading-relaxed text-white/65 md:text-[15px]">{data.overview}</p>
           <div className="mt-1 flex flex-wrap gap-3">
             <Button asChild size="lg">

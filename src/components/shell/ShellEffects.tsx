@@ -1,4 +1,5 @@
 "use client"
+import { useEffect } from 'react'
 import { useLibrarySync } from '@/src/store/library'
 import { useProfileGate } from './use-shell-account'
 
@@ -9,5 +10,7 @@ import { useProfileGate } from './use-shell-account'
 export default function ShellEffects() {
   useProfileGate()
   useLibrarySync()
+  // Marks the page as interactive (handy for automated checks and CSS that needs JS).
+  useEffect(() => { document.documentElement.dataset.hydrated = 'true' }, [])
   return null
 }

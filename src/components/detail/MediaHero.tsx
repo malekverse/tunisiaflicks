@@ -188,7 +188,7 @@ export default function MediaHero({ kind, data, playLabel, onPlay }: MediaHeroPr
                         {genres.length > 0 && <span className="text-white/60">{genres.join(isArabicScript(locale) ? '، ' : ' / ')}</span>}
                     </p>
 
-                    {data.tagline && <p className="mt-4 animate-focus-in text-pretty text-lg leading-snug text-white/90 [animation-delay:130ms]">“{data.tagline}”</p>}
+                    {data.tagline && <p dir="auto" className="mt-4 animate-focus-in text-pretty text-lg leading-snug text-white/90 [animation-delay:130ms]">“{data.tagline}”</p>}
                     {data.overview && (
                         <p className={cn('mt-3 line-clamp-4 max-w-[62ch] animate-focus-in text-[15px] leading-relaxed text-white/70 transition-opacity duration-700 [animation-delay:170ms] md:line-clamp-3', playing && 'md:opacity-0')}>
                             {data.overview}

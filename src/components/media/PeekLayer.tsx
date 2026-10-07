@@ -92,10 +92,15 @@ function HoverPreview({ item, rect }: { item: PeekItem, rect: DOMRect }) {
     }, [autoplay, item.kind, item.id])
 
     const margin = 16
+    // Stay clear of the desktop rail (on the start side: left, or right in Arabic).
+    const rail = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rail')) || 0
+    const rtl = document.documentElement.dir === 'rtl'
+    const minLeft = margin + (rtl ? 0 : rail)
+    const maxRight = window.innerWidth - margin - (rtl ? rail : 0)
     const width = Math.min(Math.max(rect.width * 2.05, 300), 380)
     const mediaHeight = (width * 9) / 16
     const estimatedHeight = mediaHeight + 168
-    const left = Math.min(Math.max(rect.left + rect.width / 2 - width / 2, margin), window.innerWidth - width - margin)
+    const left = Math.min(Math.max(rect.left + rect.width / 2 - width / 2, minLeft), maxRight - width)
     const top = Math.min(Math.max(rect.top + rect.height * 0.38 - mediaHeight / 2, 76), window.innerHeight - estimatedHeight - margin)
     const origin = `${rect.left + rect.width / 2 - left}px ${rect.top + rect.height / 2 - top}px`
 
