@@ -576,6 +576,39 @@ export const en = {
   'account.deleteForever': 'Delete forever',
   'account.deleting': 'Deleting...',
   'account.deleted': 'Your account has been deleted',
+
+  // Search: people, recent searches
+  'search.placeholderPeople': 'Search titles or people',
+  'search.recent': 'Recent searches',
+  'search.clearRecent': 'Clear',
+  'search.removeRecent': 'Remove "{query}" from recent searches',
+  'search.seeAll': 'See all results for "{query}"',
+  'search.actor': 'Actor',
+  'search.director': 'Director',
+  'search.people': 'People',
+
+  // Runtime/family filters, mood chips, release countdown
+  'filters.runtime': 'Length',
+  'filters.anyRuntime': 'Any length',
+  'filters.runtime90': 'Under 90 min',
+  'filters.runtime120': 'Under 2 hours',
+  'filters.runtimeEpic': 'Epic (2.5h+)',
+  'filters.family': 'Family-friendly',
+  'mood.title': 'Tonight:',
+  'mood.short': 'Under 90 min',
+  'mood.family': 'Family night',
+  'mood.epic': 'Long watch',
+  'mood.new': 'Just released',
+  'mood.bingeable': 'Short episodes',
+  'countdown.releasesIn': 'Releases in',
+  'countdown.outToday': 'Out today',
+  'countdown.nextEpisodeIn': 'Next episode {episode} in',
+  'countdown.nextEpisodeToday': 'New episode {episode} today',
+  'countdown.days': 'days',
+  'countdown.hours': 'hours',
+  'countdown.minutes': 'min',
+  'countdown.addToCalendar': 'Add to calendar:',
+  'countdown.appleOutlook': 'Apple / Outlook',
 } satisfies Record<string, string>
 
 export type TKey = keyof typeof en

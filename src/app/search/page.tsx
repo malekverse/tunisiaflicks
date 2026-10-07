@@ -4,6 +4,8 @@ import { searchMovies } from './actions';
 import MediaGrid from '@/src/components/MediaGrid';
 import PaginationComponent from '@/src/components/PaginationComponent';
 import { useT } from '@/src/components/I18nProvider';
+import Link from 'next/link';
+import { addRecentSearch } from '@/src/lib/recent-searches';
 
 export default function Page({ searchParams }: { searchParams: { q?: string } }) {
   const t = useT();
@@ -48,6 +50,7 @@ export default function Page({ searchParams }: { searchParams: { q?: string } })
         if (cancelled) return;
         setResults(searchResults.results ?? []);
         setTotalPages(searchResults.total_pages || 1);
+        if (page === 1 && (searchResults.results ?? []).length) addRecentSearch(debouncedQuery);
       })
       .catch((error) => {
         if (cancelled) return;
@@ -116,10 +119,32 @@ export default function Page({ searchParams }: { searchParams: { q?: string } })
             <p className='text-gray-400 text-center py-10'>{t('search.typeSomething')}</p>
           ) : loading && results.length === 0 ? (
             <p className='text-gray-400 text-center py-10'>{t('search.searching')}</p>
-          ) : results.length === 0 ? (
+          ) : results.filter((item) => item.media_type !== 'person' || item.profile_path).length === 0 ? (
             <p className='text-gray-400 text-center py-10'>{t('search.noResultsFor', { query: debouncedQuery })}</p>
           ) : (
             <div className={loading ? 'opacity-60 transition-opacity' : 'transition-opacity'}>
+              {/* People (actors, directors) first, as a row of portraits. */}
+              {results.some((item) => item.media_type === 'person' && item.profile_path) && (
+                <section aria-label={t('search.people')} className='mb-8'>
+                  <h2 className='text-xl font-semibold mb-3'>{t('search.people')}</h2>
+                  <div className='flex gap-4 overflow-x-auto no-scrollbar pb-2'>
+                    {results.filter((item) => item.media_type === 'person' && item.profile_path).map((person) => (
+                      <Link key={person.id} href={`/person/${person.id}`} className='group w-28 shrink-0 text-center'>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`https://image.tmdb.org/t/p/w185${person.profile_path}`}
+                          alt={person.name}
+                          loading='lazy'
+                          className='mx-auto h-28 w-28 rounded-full object-cover bg-zinc-800 ring-2 ring-transparent transition group-hover:ring-red-500'
+                          style={{ objectPosition: '0 25%' }}
+                        />
+                        <bdi className='mt-2 block truncate text-sm font-medium'>{person.name}</bdi>
+                        <span className='block text-xs text-gray-500'>{person.known_for_department === 'Directing' ? t('search.director') : t('search.actor')}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+              )}
               <MediaGrid items={results} showTypeBadge />
             </div>
           )}
