@@ -48,7 +48,8 @@ export default function LoginPage() {
       if (result?.error) {
         setError(result.error === 'CredentialsSignin' ? t('auth.invalidCredentials') : result.error);
       } else {
-        router.push('/');
+        // "Who's watching?" (it goes straight on when the account has a single profile).
+        router.push('/profiles');
         router.refresh();
       }
     } catch (error) {
