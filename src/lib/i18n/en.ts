@@ -609,6 +609,10 @@ export const en = {
   'countdown.minutes': 'min',
   'countdown.addToCalendar': 'Add to calendar:',
   'countdown.appleOutlook': 'Apple / Outlook',
+
+  // Cinema mode
+  'stream.lightsOff': 'Lights off',
+  'stream.lightsOn': 'Lights on',
 } satisfies Record<string, string>
 
 export type TKey = keyof typeof en

@@ -5,18 +5,20 @@ import StreamSection from '@/src/components/detail/StreamSection'
 import { PosterSlider } from '@/src/components/Sliders'
 import DownloadDialog from '@/src/components/detail/DownloadDialog'
 import { useMediaLists } from '@/src/hooks/use-media-lists'
+import { ambientStyle, useAmbientColor } from '@/src/hooks/use-ambient-color'
 import { getStreamProviders } from '@/src/lib/stream-providers'
 import { useT } from '@/src/components/I18nProvider'
 
 export default function MovieDetail({ id, data, similar }: { id: string, data: any, similar: any[] }) {
   const t = useT()
   const lists = useMediaLists({ id, title: data.title, poster_path: data.poster_path, media_type: 'movie' })
+  const ambient = useAmbientColor(data.poster_path)
 
   const streamServices = getStreamProviders('movie', id)
   const imdbId: string | undefined = data.imdb_id || data.external_ids?.imdb_id || undefined
 
   return (
-    <div className="w-full min-w-0 space-y-8 pb-8 -mt-4">
+    <div className="w-full min-w-0 space-y-8 pb-8 -mt-4" {...ambientStyle(ambient)}>
       <MediaHero
         kind="movie"
         data={data}

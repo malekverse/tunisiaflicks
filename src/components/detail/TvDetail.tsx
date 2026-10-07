@@ -4,6 +4,7 @@ import MediaHero from '@/src/components/detail/MediaHero'
 import StreamSection from '@/src/components/detail/StreamSection'
 import { PosterSlider } from '@/src/components/Sliders'
 import { useMediaLists } from '@/src/hooks/use-media-lists'
+import { ambientStyle, useAmbientColor } from '@/src/hooks/use-ambient-color'
 import { toast } from '@/src/hooks/use-toast'
 import DownloadDialog from '@/src/components/detail/DownloadDialog'
 import { getSeasonDetails } from '@/src/app/tv/[id]/actions'
@@ -24,6 +25,7 @@ export default function TvDetail({ id, data, similar, resume }: {
 }) {
   const t = useT()
   const lists = useMediaLists({ id, title: data.name, poster_path: data.poster_path, media_type: 'tv' })
+  const ambient = useAmbientColor(data.poster_path)
 
   const seasons: Season[] = useMemo(() => data.seasons ?? [], [data.seasons])
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null)
@@ -97,7 +99,7 @@ export default function TvDetail({ id, data, similar, resume }: {
   const imdbId: string | undefined = data.external_ids?.imdb_id || undefined
 
   return (
-    <div className="w-full min-w-0 space-y-8 pb-8 -mt-4">
+    <div className="w-full min-w-0 space-y-8 pb-8 -mt-4" {...ambientStyle(ambient)}>
       <MediaHero
         kind="tv"
         data={data}

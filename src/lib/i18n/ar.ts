@@ -611,4 +611,8 @@ export const ar: Record<TKey, string> = {
   'countdown.minutes': 'دقيقة',
   'countdown.addToCalendar': 'أضف إلى التقويم:',
   'countdown.appleOutlook': 'Apple / Outlook',
+
+  // Cinema mode
+  'stream.lightsOff': 'إطفاء الأضواء',
+  'stream.lightsOn': 'تشغيل الأضواء',
 }

@@ -165,6 +165,12 @@ export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFav
                 <div className="absolute inset-x-0 bottom-0 h-1/2 md:h-2/6 bg-gradient-to-t from-[#0d0c0f] to-transparent" />
                 <div className="hidden md:block absolute inset-y-0 start-0 w-1/2 bg-gradient-to-r rtl:bg-gradient-to-l from-[#0d0c0f] to-transparent" />
             </div>
+            {/* Ambient mode: a wash of the poster's colour rising from the bottom of the hero. */}
+            <div
+                aria-hidden
+                className="tf-ambient-glow pointer-events-none absolute inset-0"
+                style={{ background: 'radial-gradient(ellipse 80% 55% at 25% 100%, rgb(var(--tf-ambient) / 0.32), transparent 70%)' }}
+            />
 
             <div className="relative z-10 flex flex-col min-h-[560px] md:min-h-[640px] px-5 md:px-10 pt-8 pb-10">
                 {logo && (
@@ -182,17 +188,24 @@ export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFav
 
                 <div className="mt-auto pt-40 md:pt-64 flex flex-col md:flex-row items-center md:items-end gap-6">
                     {data.poster_path && (
-                        <div className="relative w-36 md:w-48 aspect-[2/3] rounded-xl overflow-hidden shadow-2xl shadow-black shrink-0">
-                            <TmdbImage
-                                kind="poster"
-                                path={data.poster_path}
-                                fill
-                                sizes="(min-width: 768px) 192px, 144px"
-                                preview="w92"
-                                priority
-                                className="object-cover"
-                                alt={t('hero.posterAlt', { title })}
+                        <div className="relative w-36 md:w-48 shrink-0">
+                            <div
+                                aria-hidden
+                                className="tf-ambient-glow absolute inset-2 rounded-xl blur-2xl"
+                                style={{ background: 'rgb(var(--tf-ambient) / 0.75)' }}
                             />
+                            <div className="relative aspect-[2/3] rounded-xl overflow-hidden shadow-2xl shadow-black">
+                                <TmdbImage
+                                    kind="poster"
+                                    path={data.poster_path}
+                                    fill
+                                    sizes="(min-width: 768px) 192px, 144px"
+                                    preview="w92"
+                                    priority
+                                    className="object-cover"
+                                    alt={t('hero.posterAlt', { title })}
+                                />
+                            </div>
                         </div>
                     )}
 
