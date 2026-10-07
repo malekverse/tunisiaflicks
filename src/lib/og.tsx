@@ -7,8 +7,8 @@ import { ImageResponse } from 'next/og'
 export const OG_SIZE = { width: 1200, height: 630 }
 export const SITE_HOST = 'tunisiaflicks.vercel.app'
 
-const RED = '#ef4444'
-const BG = '#0d0c0f'
+const RED = '#FF2414'
+const BG = '#000000'
 
 // Inter (bold + regular) from Google Fonts, fetched once per server instance. Satori needs TTF/OTF:
 // Google serves TTF when the request carries no browser User-Agent.
@@ -93,7 +93,7 @@ export async function renderShareCard(card: ShareCard) {
           <img src={card.backdrop} alt="" width={1200} height={630} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: 1200, height: 630, objectFit: 'cover' }} />
         )}
         {/* Readability: dark on the left where the text sits, lighter on the right. */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', background: 'linear-gradient(90deg, rgba(13,12,15,0.97) 0%, rgba(13,12,15,0.88) 45%, rgba(13,12,15,0.45) 100%)' }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', background: 'linear-gradient(90deg, rgba(0,0,0,0.97) 0%, rgba(0,0,0,0.88) 45%, rgba(0,0,0,0.45) 100%)' }} />
 
         <div style={{ display: 'flex', width: '100%', height: '100%', padding: '56px 64px', gap: 48, position: 'relative' }}>
           {card.poster && (
@@ -163,7 +163,7 @@ export async function renderListCard({ title, owner, count, posters }: { title: 
 
   return asJpeg(new ImageResponse(
     (
-      <div style={{ width: '100%', height: '100%', display: 'flex', background: `radial-gradient(circle at 85% 20%, rgba(239,68,68,0.35), ${BG} 60%)`, ...fontStyle(fontList), color: 'white', padding: '56px 64px', gap: 48 }}>
+      <div style={{ width: '100%', height: '100%', display: 'flex', background: `radial-gradient(circle at 85% 20%, rgba(255,36,20,0.32), ${BG} 60%)`, ...fontStyle(fontList), color: 'white', padding: '56px 64px', gap: 48 }}>
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, justifyContent: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 24, fontWeight: 800, letterSpacing: 4, color: RED }}>
             <div style={{ display: 'flex', width: 12, height: 12, borderRadius: 3, background: RED }} />
@@ -237,7 +237,7 @@ export async function renderWrappedCard(data: WrappedCardData, format: 'og' | 's
 
   return asJpeg(new ImageResponse(
     (
-      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', ...family, color: 'white', padding: story ? '96px 80px' : '52px 64px', background: 'linear-gradient(135deg, #dc2626 0%, #7f1d1d 45%, #0d0c0f 100%)' }}>
+      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', ...family, color: 'white', padding: story ? '96px 80px' : '52px 64px', background: 'linear-gradient(135deg, #E50F05 0%, #7F120E 45%, #000000 100%)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: story ? 34 : 22, fontWeight: 800, letterSpacing: 4, color: '#fecaca' }}>
           <div style={{ display: 'flex', width: story ? 18 : 12, height: story ? 18 : 12, borderRadius: 4, background: 'white' }} />
           TUNISIAFLICKS  ·  WRAPPED
