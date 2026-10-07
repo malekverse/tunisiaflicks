@@ -49,6 +49,8 @@ export const en = {
   'nav.recent': 'Recent',
   'nav.favorites': 'Favorites',
   'nav.bookmarked': 'Bookmarked',
+  'nav.myLists': 'My Lists',
+  'nav.myYear': 'My Year',
   'nav.settings': 'Settings',
   'nav.surprise': 'Surprise me',
   'nav.surpriseTitle': 'Take me to a random top-rated title',

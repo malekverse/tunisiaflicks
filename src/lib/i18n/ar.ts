@@ -52,6 +52,8 @@ export const ar: Record<TKey, string> = {
   'nav.recent': 'شوهد مؤخراً',
   'nav.favorites': 'المفضلة',
   'nav.bookmarked': 'المحفوظات',
+  'nav.myLists': 'قوائمي',
+  'nav.myYear': 'سنتي',
   'nav.settings': 'الإعدادات',
   'nav.surprise': 'فاجئني',
   'nav.surpriseTitle': 'خذني إلى عمل عشوائي من الأعلى تقييماً',
