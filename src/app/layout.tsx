@@ -8,6 +8,7 @@ import Navbar from "@/src/components/Navbar";
 import Sidebar from "@/src/components/Sidebar";
 import { SessionProvider } from "@/src/components/SessionProvider";
 import { Toaster } from "@/src/components/ui/toaster";
+import ServiceWorkerRegister from "@/src/components/ServiceWorkerRegister";
 
 import type { Viewport } from 'next'
 
@@ -71,11 +72,21 @@ export const metadata: Metadata = {
     },
   },
   category: 'Entertainment',
+  // Installable app (see app/manifest.ts): iOS home-screen icon and standalone mode.
+  icons: {
+    apple: '/icons/apple-touch-icon.png',
+  },
+  appleWebApp: {
+    capable: true,
+    title: 'TunisiaFlicks',
+    statusBarStyle: 'black-translucent',
+  },
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  themeColor: '#000000',
 };
 
 
@@ -102,6 +113,7 @@ export default function RootLayout({
         <Toaster />
         <SpeedInsights />
         <Analytics />
+        <ServiceWorkerRegister />
       </body>
     </html>
   );
