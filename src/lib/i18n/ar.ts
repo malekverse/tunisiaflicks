@@ -705,4 +705,22 @@ export const ar: Record<TKey, string> = {
   'tnCinema.stars': 'نجوم تونسيون',
   'tnCinema.classics': 'كلاسيكيات (قبل 2000)',
   'tnCinema.series': 'مسلسلات تونسية',
+
+  // Ramadan hub
+  'footer.explore': 'استكشف',
+  'ramadan.title': 'مسلسلات رمضان',
+  'ramadan.badge': 'ركن رمضان',
+  'ramadan.mubarak': 'رمضان مبارك!',
+  'ramadan.intro': 'أكبر موسم تلفزيوني في السنة: مسلسلات رمضان هذا العام، وأنجح المسلسلات التونسية والعربية في رمضانات سابقة.',
+  'ramadan.day': 'اليوم {day} من رمضان',
+  'ramadan.startsAround': 'من المتوقع أن يبدأ رمضان {year} حوالي {date}.',
+  'ramadan.moonNote': 'يتحدد التاريخ الدقيق برؤية الهلال.',
+  'ramadan.streamTunisian': 'شاهد المسلسلات التونسية',
+  'ramadan.arabNow': 'المسلسلات العربية في رمضان هذا العام',
+  'ramadan.arabOf': 'مسلسلات رمضان {year} العربية',
+  'ramadan.tunisianNow': 'المسلسلات التونسية في رمضان هذا العام',
+  'ramadan.tunisianOf': 'مسلسلات رمضان {year} التونسية',
+  'ramadan.bannerBefore': 'يفصلنا {days} يومًا عن رمضان',
+  'ramadan.bannerDuring': 'رمضان مبارك، اليوم {day}',
+  'ramadan.bannerText': 'مسلسلات الموسم وكلاسيكيات رمضان',
 }

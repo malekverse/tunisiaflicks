@@ -15,6 +15,14 @@ const COLUMNS: { heading: TKey, links: { href: string, label: TKey }[] }[] = [
     ],
   },
   {
+    heading: 'footer.explore',
+    links: [
+      { href: '/swipe', label: 'swipe.title' },
+      { href: '/tunisian/cinema', label: 'tnCinema.title' },
+      { href: '/ramadan', label: 'ramadan.title' },
+    ],
+  },
+  {
     heading: 'footer.site',
     links: [
       { href: '/about', label: 'footer.about' },
@@ -38,7 +46,7 @@ export default function Footer() {
     // Bottom padding on mobile clears the fixed bottom navigation bar.
     <footer aria-label={t('footer.aria')} className="mt-8 border-t border-gray-200 bg-gray-50 text-gray-600 dark:border-zinc-900 dark:bg-black dark:text-gray-400 pb-20 sm:pb-0">
       <div className="mx-auto w-full max-w-[1800px] px-4 sm:px-14 py-10">
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-[2fr_1fr_1fr_1fr]">
+        <div className="grid grid-cols-2 gap-8 md:grid-cols-[2fr_1fr_1fr_1fr_1fr]">
           <div className="col-span-2 md:col-span-1">
             <Link href="/" aria-label={t('nav.homeAria')} className="inline-flex items-center gap-3">
               <Image src="/A.svg" alt="" width={40} height={35} className="h-8 w-auto" />

@@ -3,6 +3,7 @@ import ContinueWatching from '@/src/components/ContinueWatching'
 import Genres from '@/src/components/Genres'
 import MoodChips from '@/src/components/MoodChips'
 import PickOfTheDay from '@/src/components/PickOfTheDay'
+import RamadanBanner from '@/src/components/ramadan/RamadanBanner'
 import { PushPrompt } from '@/src/components/PushSettings'
 import { HeroSlider, PosterSlider } from '@/src/components/Sliders'
 import getMovies from './(movies)/actions'
@@ -29,6 +30,8 @@ export default async function MainPage() {
     <div className='w-full max-w-[1800px] px-4 sm:px-14 space-y-6'>
       <Genres />
       <MoodChips />
+      {/* Seasonal: only in the weeks before Ramadan and during it. */}
+      <RamadanBanner />
       <PickOfTheDay pick={pick} />
       {/* Installed app only: invite to get the pick as a notification. */}
       <PushPrompt />

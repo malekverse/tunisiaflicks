@@ -703,6 +703,24 @@ export const en = {
   'tnCinema.stars': 'Tunisian stars',
   'tnCinema.classics': 'Classics (before 2000)',
   'tnCinema.series': 'Tunisian series',
+
+  // Ramadan hub
+  'footer.explore': 'Explore',
+  'ramadan.title': 'Ramadan series',
+  'ramadan.badge': 'Ramadan hub',
+  'ramadan.mubarak': 'Ramadan Mubarak!',
+  'ramadan.intro': 'The biggest TV season of the year: this Ramadan\'s series, and the Tunisian and Arab hits of past Ramadans.',
+  'ramadan.day': 'Day {day} of Ramadan',
+  'ramadan.startsAround': 'Ramadan {year} is expected to start around {date}.',
+  'ramadan.moonNote': 'The exact date depends on the sighting of the moon.',
+  'ramadan.streamTunisian': 'Watch Tunisian series',
+  'ramadan.arabNow': 'This Ramadan\'s Arab series',
+  'ramadan.arabOf': 'Arab series of Ramadan {year}',
+  'ramadan.tunisianNow': 'This Ramadan\'s Tunisian series',
+  'ramadan.tunisianOf': 'Tunisian series of Ramadan {year}',
+  'ramadan.bannerBefore': 'Ramadan is {days} days away',
+  'ramadan.bannerDuring': 'Ramadan Mubarak, day {day}',
+  'ramadan.bannerText': 'This season\'s series and the Ramadan classics',
 } satisfies Record<string, string>
 
 export type TKey = keyof typeof en
