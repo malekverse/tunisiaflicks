@@ -859,4 +859,22 @@ export const ar: Record<TKey, string> = {
   'tunisian.subtitle': 'مسلسلات وأفلام صُنعت في تونس، من مفضّلات رمضان إلى أحدث الإصدارات.',
   'tunisian.typeSwitch': 'عرض',
   'tunisian.count': 'العناوين: {count}',
+
+  // Clips feed
+  'clips.title': 'مقاطع',
+  'clips.description': 'إعلانات الأعمال الرائجة اليوم، مقطعاً تلو الآخر.',
+  'clips.soundOn': 'اضغط لتشغيل الصوت',
+  'clips.mute': 'كتم الصوت',
+  'clips.unmute': 'تشغيل الصوت',
+  'clips.watch': 'شاهد الآن',
+  'clips.pause': 'إيقاف مؤقت',
+  'clips.play': 'تشغيل',
+  'clips.tapToPlay': 'اضغط للتشغيل',
+  'clips.caughtUp': 'شاهدت كل شيء',
+  'clips.caughtUpText': 'هذه إعلانات اليوم. تصل إعلانات جديدة كلما راجت أعمال جديدة.',
+  'clips.browse': 'تابع التصفح',
+  'clips.backToTop': 'العودة إلى المقطع الأول',
+  'clips.unavailable': 'المقاطع غير متاحة حالياً. حاول بعد قليل.',
+  'clips.position': 'المقطع {current} من {total}',
+  'clips.hint': 'اسحب للأعلى للمقطع التالي',
 }

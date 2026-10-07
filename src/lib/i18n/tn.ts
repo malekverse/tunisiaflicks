@@ -459,4 +459,22 @@ export const tn: Partial<Record<TKey, string>> = {
   'tunisian.subtitle': 'مسلسلات وأفلام تونسية، من متاع رمضان لين الجديد.',
   'tunisian.typeSwitch': 'ورّي',
   'tunisian.count': '{count} عنوان',
+
+  // Clips feed
+  'clips.title': 'كليبات',
+  'clips.description': 'برومووات اللي ماشي اليوم، واحد بواحد.',
+  'clips.soundOn': 'إضغط باش تسمع',
+  'clips.mute': 'سكّت',
+  'clips.unmute': 'شعّل الصوت',
+  'clips.watch': 'تفرّج توّا',
+  'clips.pause': 'وقّف',
+  'clips.play': 'شغّل',
+  'clips.tapToPlay': 'إضغط باش يخدم',
+  'clips.caughtUp': 'شفت كل شي',
+  'clips.caughtUpText': 'هاذوما برومووات اليوم. يجيو جدد كي يبداو حاجات أخرين يمشيو.',
+  'clips.browse': 'كمّل تفرّج',
+  'clips.backToTop': 'إرجع للكليب الأول',
+  'clips.unavailable': 'الكليبات مش خدامة توّا. عاود بعد شوية.',
+  'clips.position': 'كليب {current} من {total}',
+  'clips.hint': 'إسحب لفوق للي بعدو',
 }

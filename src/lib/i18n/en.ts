@@ -857,6 +857,24 @@ export const en = {
   'tunisian.subtitle': 'Series and films made in Tunisia, from Ramadan favourites to the latest releases.',
   'tunisian.typeSwitch': 'Show',
   'tunisian.count': '{count} titles',
+
+  // Clips feed
+  'clips.title': 'Clips',
+  'clips.description': "Today's trending trailers, one swipe at a time.",
+  'clips.soundOn': 'Tap for sound',
+  'clips.mute': 'Mute',
+  'clips.unmute': 'Sound on',
+  'clips.watch': 'Watch now',
+  'clips.pause': 'Pause',
+  'clips.play': 'Play',
+  'clips.tapToPlay': 'Tap to play',
+  'clips.caughtUp': "You're all caught up",
+  'clips.caughtUpText': "That's today's trailers. New ones arrive as new titles start trending.",
+  'clips.browse': 'Keep browsing',
+  'clips.backToTop': 'Back to the first clip',
+  'clips.unavailable': 'Clips are taking a break. Try again in a moment.',
+  'clips.position': 'Clip {current} of {total}',
+  'clips.hint': 'Swipe up for the next one',
 } satisfies Record<string, string>
 
 export type TKey = keyof typeof en
