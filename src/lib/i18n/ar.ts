@@ -833,4 +833,25 @@ export const ar: Record<TKey, string> = {
   'person.as': 'بدور {character}',
   'person.noDate': 'التاريخ لم يُعلن بعد',
   'person.showAll': 'عرض الكل ({count})',
+
+  // Browse pages
+  'discover.subtitle': 'كل الأفلام والمسلسلات، مصفّاة على ذوقك.',
+  'topRated.subtitle': 'الأعلى تقييماً على الإطلاق، بآلاف الأصوات.',
+  'upcoming.subtitle': 'ما سيصل إلى السينما قريباً. فعّل التذكير وسنخبرك عند صدوره.',
+  'upcoming.outNow': 'متاح الآن',
+  'upcoming.today': 'اليوم',
+  'upcoming.tomorrow': 'غداً',
+  'upcoming.inDays': 'بعد {count} أيام',
+  'genre.subtitle': 'الأكثر شعبية الآن في هذا النوع.',
+  'browse.typeSwitch': 'أفلام أو مسلسلات',
+
+  // Search page
+  'search.clear': 'مسح البحث',
+  'search.filterAll': 'الكل',
+  'search.filterAria': 'عرض نتائج من نوع',
+  'search.resultsCount': 'النتائج: {count}',
+  'search.emptyTitle': 'اعثر على ما ستشاهده لاحقاً',
+  'search.emptyText': 'ابحث بالعنوان أو اسم الممثل أو المخرج.',
+  'search.noResultsTitle': 'لا توجد نتائج',
+  'search.noResultsHint': 'تحقق من الإملاء أو جرّب العنوان الأصلي.',
 }

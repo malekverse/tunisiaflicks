@@ -831,6 +831,27 @@ export const en = {
   'person.as': 'as {character}',
   'person.noDate': 'Date to be announced',
   'person.showAll': 'Show all {count}',
+
+  // Browse pages
+  'discover.subtitle': 'Every movie and show, filtered your way.',
+  'topRated.subtitle': 'The highest-rated titles of all time, by thousands of votes.',
+  'upcoming.subtitle': "What reaches cinemas next. Turn on a reminder and we'll tell you when it's out.",
+  'upcoming.outNow': 'Out now',
+  'upcoming.today': 'Today',
+  'upcoming.tomorrow': 'Tomorrow',
+  'upcoming.inDays': 'In {count} days',
+  'genre.subtitle': 'The most popular {kind} in this genre right now.',
+  'browse.typeSwitch': 'Movies or TV shows',
+
+  // Search page
+  'search.clear': 'Clear search',
+  'search.filterAll': 'All',
+  'search.filterAria': 'Show results of type',
+  'search.resultsCount': '{count} results',
+  'search.emptyTitle': 'Find your next watch',
+  'search.emptyText': 'Search by title, actor or director.',
+  'search.noResultsTitle': 'Nothing found',
+  'search.noResultsHint': 'Check the spelling, or try the original title.',
 } satisfies Record<string, string>
 
 export type TKey = keyof typeof en

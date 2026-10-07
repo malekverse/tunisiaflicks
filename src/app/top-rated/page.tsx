@@ -1,5 +1,8 @@
-import Link from 'next/link'
-import MediaGrid from '@/src/components/MediaGrid'
+import PosterCard from '@/src/components/PosterCard'
+import { EmptyState, GRID_CLASS } from '@/src/components/MediaGrid'
+import PageHeader from '@/src/components/browse/PageHeader'
+import SegmentedLinks from '@/src/components/browse/SegmentedLinks'
+import { cardProps } from '@/src/lib/card-props'
 import PageNav from '@/src/components/PageNav'
 import { getList, parsePage } from '@/src/lib/lists'
 import { getT } from '@/src/lib/i18n/server'
@@ -18,20 +21,38 @@ export default async function TopRatedPage({ searchParams }: { searchParams: { p
     : await getList(`${kind}/top_rated`, page)
   const t = getT()
 
-  const tab = (active: boolean) =>
-    `px-4 py-2 rounded-xl text-sm font-medium ${active ? 'bg-red-500 text-white' : 'bg-zinc-800 text-gray-300 hover:bg-zinc-600 hover:text-white'}`
+  const offset = (page - 1) * 20
 
   return (
-    <div className='w-full max-w-[1800px] px-4 sm:px-6'>
-      <div className='flex flex-wrap items-center justify-between gap-3 mb-6'>
-        <h1 className='text-3xl sm:text-4xl font-bold'>{t('topRated.title')}</h1>
-        <div className='flex gap-2'>
-          <Link href='/top-rated' className={tab(kind === 'movie')}>{t('common.movies')}</Link>
-          <Link href='/top-rated?type=tv' className={tab(kind === 'tv')}>{t('common.tvShows')}</Link>
-        </div>
+    <div className="pb-10">
+      <PageHeader title={t('topRated.title')} subtitle={t('topRated.subtitle')}>
+        <SegmentedLinks
+          label={t('browse.typeSwitch')}
+          items={[
+            { href: '/top-rated', label: t('common.movies'), active: kind === 'movie' },
+            { href: '/top-rated?type=tv', label: t('common.tvShows'), active: kind === 'tv' },
+          ]}
+        />
+      </PageHeader>
+      <div className="page-x">
+        {failed ? <EmptyState>{t('common.listFailed')}</EmptyState> : (
+          <ol className={GRID_CLASS}>
+            {results.map((item: any, index: number) => (
+              <li key={item.id}>
+                <PosterCard
+                  {...cardProps(item, kind)}
+                  overlay={
+                    <span className="absolute start-2 top-2 grid h-8 min-w-8 place-items-center rounded-full bg-black/70 px-2 font-display text-[15px] font-extrabold text-white ring-1 ring-white/15 backdrop-blur-md">
+                      {offset + index + 1}
+                    </span>
+                  }
+                />
+              </li>
+            ))}
+          </ol>
+        )}
+        <PageNav currentPage={page} totalPages={totalPages} />
       </div>
-      {failed ? <p className='text-gray-400'>{t('common.listFailed')}</p> : <MediaGrid items={results} kind={kind} />}
-      <PageNav currentPage={page} totalPages={totalPages} />
     </div>
   )
 }

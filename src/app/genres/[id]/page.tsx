@@ -1,4 +1,6 @@
-import MediaGrid from '@/src/components/MediaGrid'
+import MediaGrid, { EmptyState } from '@/src/components/MediaGrid'
+import PageHeader from '@/src/components/browse/PageHeader'
+import SegmentedLinks from '@/src/components/browse/SegmentedLinks'
 import PageNav from '@/src/components/PageNav'
 import { getList, parsePage } from '@/src/lib/lists'
 import { tmdbFetchSafe, tmdbLanguage } from '@/src/lib/tmdb'
@@ -22,13 +24,22 @@ export default async function GenrePage({ params, searchParams }: { params: { id
   ])
   const genreName = genres?.genres.find((genre) => String(genre.id) === params.id)?.name
 
+  const kindLabel = t(kind === 'tv' ? 'common.tvShows' : 'common.movies')
   return (
-    <div className='w-full max-w-[1800px] px-4 sm:px-6'>
-      <h1 className='text-3xl sm:text-4xl font-bold mb-6'>
-        {t('genre.heading', { genre: genreName ?? t('genre.fallback'), kind: t(kind === 'tv' ? 'common.tvShows' : 'common.movies') })}
-      </h1>
-      {failed ? <p className='text-gray-400'>{t('genre.failed')}</p> : <MediaGrid items={results} kind={kind} />}
-      <PageNav currentPage={page} totalPages={totalPages} />
+    <div className="pb-10">
+      <PageHeader title={genreName ?? t('genre.fallback')} subtitle={t('genre.subtitle', { kind: kindLabel })}>
+        <SegmentedLinks
+          label={t('browse.typeSwitch')}
+          items={[
+            { href: `/genres/${params.id}`, label: t('common.movies'), active: kind === 'movie' },
+            { href: `/genres/${params.id}?type=tv`, label: t('common.tvShows'), active: kind === 'tv' },
+          ]}
+        />
+      </PageHeader>
+      <div className="page-x">
+        {failed ? <EmptyState>{t('genre.failed')}</EmptyState> : <MediaGrid items={results} kind={kind} />}
+        <PageNav currentPage={page} totalPages={totalPages} />
+      </div>
     </div>
   )
 }

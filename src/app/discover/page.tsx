@@ -1,6 +1,7 @@
-import Link from 'next/link'
 import DiscoverFilters from '@/src/components/DiscoverFilters'
-import MediaGrid from '@/src/components/MediaGrid'
+import MediaGrid, { EmptyState } from '@/src/components/MediaGrid'
+import PageHeader from '@/src/components/browse/PageHeader'
+import SegmentedLinks from '@/src/components/browse/SegmentedLinks'
 import PageNav from '@/src/components/PageNav'
 import { getList, parsePage } from '@/src/lib/lists'
 import { tmdbFetchSafe, tmdbLanguage } from '@/src/lib/tmdb'
@@ -73,26 +74,27 @@ export default async function DiscoverPage({ searchParams }: { searchParams: Sea
     tmdbFetchSafe<{ genres: { id: number, name: string }[] }>(`genre/${kind}/list`, { language: tmdbLanguage(locale) }, 86400),
   ])
 
-  const tab = (active: boolean) =>
-    `px-4 py-2 rounded-xl text-sm font-medium ${active ? 'bg-red-500 text-white' : 'bg-zinc-800 text-gray-300 hover:bg-zinc-600 hover:text-white'}`
-
   return (
-    <div className='w-full max-w-[1800px] px-4 sm:px-6'>
-      <div className='flex flex-wrap items-center justify-between gap-3 mb-4'>
-        <h1 className='text-3xl sm:text-4xl font-bold'>{t('discover.title')}</h1>
-        <div className='flex gap-2'>
-          {/* Switching type resets the filters: genre ids differ between movies and TV. */}
-          <Link href='/discover' className={tab(kind === 'movie')}>{t('common.movies')}</Link>
-          <Link href='/discover?type=tv' className={tab(kind === 'tv')}>{t('common.tvShows')}</Link>
-        </div>
-      </div>
+    <div className="pb-10">
+      <PageHeader title={t('discover.title')} subtitle={t('discover.subtitle')}>
+        {/* Switching type resets the filters: genre ids differ between movies and TV. */}
+        <SegmentedLinks
+          label={t('browse.typeSwitch')}
+          items={[
+            { href: '/discover', label: t('common.movies'), active: kind === 'movie' },
+            { href: '/discover?type=tv', label: t('common.tvShows'), active: kind === 'tv' },
+          ]}
+        />
+      </PageHeader>
       <DiscoverFilters genres={genreList?.genres ?? []} values={filters} />
-      {failed
-        ? <p className='text-gray-400'>{t('common.listFailed')}</p>
-        : results.length === 0
-          ? <p className='text-gray-400 py-10 text-center'>{t('discover.noMatch')}</p>
-          : <MediaGrid items={results} kind={kind} />}
-      <PageNav currentPage={page} totalPages={totalPages} />
+      <div className="page-x mt-8">
+        {failed
+          ? <EmptyState>{t('common.listFailed')}</EmptyState>
+          : results.length === 0
+            ? <EmptyState>{t('discover.noMatch')}</EmptyState>
+            : <MediaGrid items={results} kind={kind} />}
+        <PageNav currentPage={page} totalPages={totalPages} />
+      </div>
     </div>
   )
 }

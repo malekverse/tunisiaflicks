@@ -433,4 +433,25 @@ export const tn: Partial<Record<TKey, string>> = {
   'person.as': 'في دور {character}',
   'person.noDate': 'التاريخ مازال ما تعلنش',
   'person.showAll': 'ورّي الكل ({count})',
+
+  // Browse pages
+  'discover.subtitle': 'الأفلام والمسلسلات الكل، على كيفك.',
+  'topRated.subtitle': 'الأحسن تقييم في التاريخ، بآلاف الأصوات.',
+  'upcoming.subtitle': 'شنوّة جاي للسينما. شعّل التذكير ونقولولك كي يخرج.',
+  'upcoming.outNow': 'خرج توّا',
+  'upcoming.today': 'اليوم',
+  'upcoming.tomorrow': 'غدوة',
+  'upcoming.inDays': 'بعد {count} أيام',
+  'genre.subtitle': 'اللي ماشي برشا توّا في النوع هذا.',
+  'browse.typeSwitch': 'أفلام ولا مسلسلات',
+
+  // Search page
+  'search.clear': 'فسّخ البحث',
+  'search.filterAll': 'الكل',
+  'search.filterAria': 'ورّي النتائج متاع',
+  'search.resultsCount': '{count} نتيجة',
+  'search.emptyTitle': 'لقى شنوّة باش تتفرّج',
+  'search.emptyText': 'لوّج بالعنوان ولا بالممثل ولا بالمخرج.',
+  'search.noResultsTitle': 'ما لقينا شي',
+  'search.noResultsHint': 'ثبّت في الكتيبة ولا جرّب العنوان الأصلي.',
 }
