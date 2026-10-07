@@ -1,13 +1,19 @@
 import Link from 'next/link';
+import { Home, Search } from 'lucide-react';
+import StatusScreen from '@/src/components/info/StatusScreen';
+import { Button } from '@/src/components/ui/button';
 import { getT } from '@/src/lib/i18n/server';
 
 export default function NotFound() {
   const t = getT();
   return (
-    <div className='flex flex-col justify-center items-center gap-2 w-full py-24 text-center'>
-      <div className='text-7xl text-red-500 font-bold'>404</div>
-      <div>{t('notFound.message')}</div>
-      <Link href='/' className='mt-4 text-sm text-gray-400 hover:text-white underline'>{t('notFound.home')}</Link>
-    </div>
+    <StatusScreen big="404" title={t('notFound.message')} text={t('notFound.hint')}>
+      <Button asChild size="lg" className="px-8">
+        <Link href="/"><Home aria-hidden className="h-[18px] w-[18px]" />{t('notFound.home')}</Link>
+      </Button>
+      <Button asChild size="lg" variant="secondary">
+        <Link href="/search"><Search aria-hidden className="h-[18px] w-[18px]" />{t('nav.search')}</Link>
+      </Button>
+    </StatusScreen>
   );
 }

@@ -1,8 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { Link2Off } from 'lucide-react'
 import { getT } from '@/src/lib/i18n/server'
 import { verifyEmailToken } from '@/src/lib/verification'
 import ResendVerificationButton from '@/src/components/ResendVerificationButton'
+import AuthShell from '@/src/components/auth/AuthShell'
+import AuthHeader from '@/src/components/auth/AuthHeader'
+import { StateIcon, SuccessCheck } from '@/src/components/auth/fields'
+import { Button } from '@/src/components/ui/button'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,20 +21,28 @@ export default async function VerifyEmailPage({ searchParams }: { searchParams: 
   const success = result !== 'invalid'
 
   return (
-    <div className="flex w-full justify-center px-4 py-10">
-      <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-lg dark:border-zinc-800 dark:bg-black">
-        <div className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full text-2xl ${success ? 'bg-green-600/15 text-green-500' : 'bg-red-600/15 text-red-500'}`}>
-          {success ? '✓' : '!'}
-        </div>
-        <h1 className="text-2xl font-bold">{t(success ? 'verify.successTitle' : 'verify.invalidTitle')}</h1>
-        <p className="mt-3 text-gray-600 dark:text-gray-400">
-          {t(result === 'verified' ? 'verify.successDesc' : result === 'already' ? 'verify.alreadyDesc' : 'verify.invalidDesc')}
-        </p>
-        <div className="mt-6 flex flex-col items-center gap-3">
-          {!success && <ResendVerificationButton />}
-          <Link href="/" className="text-sm text-red-500 hover:underline">{t('kids.backHome')}</Link>
-        </div>
+    <AuthShell>
+      <div role={success ? 'status' : undefined}>
+        {success
+          ? <SuccessCheck className="mb-6" />
+          : <StateIcon className="mb-6"><Link2Off className="h-7 w-7" strokeWidth={1.8} /></StateIcon>}
+        <AuthHeader
+          title={t(success ? 'verify.successTitle' : 'verify.invalidTitle')}
+          subtitle={t(result === 'verified' ? 'verify.successDesc' : result === 'already' ? 'verify.alreadyDesc' : 'verify.invalidDesc')}
+        />
+        {success ? (
+          <Button asChild size="lg" className="w-full">
+            <Link href="/">{t('kids.backHome')}</Link>
+          </Button>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <ResendVerificationButton />
+            <Link href="/" className="mx-auto rounded-md text-[14px] font-medium text-white/60 underline-offset-4 outline-none transition-colors hover:text-white hover:underline focus-visible:underline">
+              {t('kids.backHome')}
+            </Link>
+          </div>
+        )}
       </div>
-    </div>
+    </AuthShell>
   )
 }

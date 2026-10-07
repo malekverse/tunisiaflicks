@@ -12,9 +12,13 @@ export function generateMetadata(): Metadata {
 export default function DmcaPage() {
   const t = getT()
   return (
-    <LegalPage page="dmca">
-      <section id="notice" className="mt-10 rounded-2xl border border-gray-200 p-5 sm:p-6 dark:border-zinc-800">
-        <h2 className="mb-4 text-xl font-semibold">{t('dmca.formTitle')}</h2>
+    <LegalPage page="dmca" extra={{ id: 'notice', label: t('dmca.formTitle') }}>
+      <section
+        id="notice"
+        aria-labelledby="notice-title"
+        className="mt-14 scroll-mt-[calc(var(--topbar)+32px)] rounded-[22px] bg-white/[0.04] p-5 ring-1 ring-inset ring-white/[0.07] sm:p-8"
+      >
+        <h2 id="notice-title" className="mb-6 font-display text-[24px] font-bold leading-tight text-white sm:text-[28px]">{t('dmca.formTitle')}</h2>
         <ContactForm kind="dmca" />
       </section>
     </LegalPage>

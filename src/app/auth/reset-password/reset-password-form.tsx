@@ -1,49 +1,75 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { AnimatePresence, m } from 'framer-motion';
+import { Link2Off } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
-import { Input } from '@/src/components/ui/input';
-import { Label } from '@/src/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/src/components/ui/card';
-import { AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/src/components/ui/alert';
-import { motion } from 'framer-motion';
 import { useT } from '@/src/components/I18nProvider';
-import { translateApiMessage } from '@/src/lib/i18n';
+import { translateApiMessage, type TKey } from '@/src/lib/i18n';
+import { EASE_OUT } from '@/src/lib/motion';
+import AuthHeader from '@/src/components/auth/AuthHeader';
+import PasswordRule from '@/src/components/auth/PasswordRule';
+import { Field, FormNotice, PasswordInput, StateIcon, SubmitButton, SuccessCheck, focusFirst } from '@/src/components/auth/fields';
 
-export default function ResetPasswordForm() {
+const MIN_PASSWORD = 8;
+const REDIRECT_MS = 3000;
+
+type Problem = { key: TKey } | { text: string };
+
+const swap = {
+  initial: { opacity: 0, y: 8, filter: 'blur(4px)' },
+  animate: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.32, ease: EASE_OUT } },
+  exit: { opacity: 0, y: -6, filter: 'blur(4px)', transition: { duration: 0.16, ease: EASE_OUT } },
+};
+
+/** New password form for the link in the reset email (`token` comes from its ?token=). */
+export default function ResetPasswordForm({ token }: { token: string | null }) {
   const router = useRouter();
   const t = useT();
-  const searchParams = useSearchParams();
-  const token = searchParams.get('token');
-  
+
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [errors, setErrors] = useState<{ password?: TKey, confirmPassword?: TKey }>({});
+  const [problem, setProblem] = useState<Problem | null>(null);
+  const [done, setDone] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const redirect = useRef<ReturnType<typeof setTimeout>>();
 
-  useEffect(() => {
-    if (!token) {
-      setError(t('auth.invalidToken'));
-    }
-  }, [token, t]);
+  useEffect(() => () => clearTimeout(redirect.current), []);
+
+  // No token in the link: nothing to reset, offer a fresh link instead.
+  if (!token) {
+    return (
+      <div>
+        <StateIcon className="mb-6"><Link2Off className="h-7 w-7" strokeWidth={1.8} /></StateIcon>
+        <AuthHeader title={t('verify.invalidTitle')} subtitle={t('auth.invalidToken')} />
+        <Button asChild size="lg" className="w-full">
+          <Link href="/auth/forgot-password">{t('auth.requestNewLink')}</Link>
+        </Button>
+        <p className="mt-7 text-center text-[14px] text-white/55">
+          {t('auth.rememberPassword')}{' '}
+          <Link href="/login" className="font-medium text-white underline-offset-4 outline-none hover:underline focus-visible:underline">
+            {t('nav.signIn')}
+          </Link>
+        </p>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(null);
-    
-    // Validate passwords
-    if (password !== confirmPassword) {
-      setError(t('auth.passwordMismatch'));
-      return;
-    }
+    if (isLoading) return;
+    setProblem(null);
 
-    if (password.length < 8) {
-      setError(t('auth.passwordTooShort'));
+    // Validate passwords
+    const found: typeof errors = {};
+    if (password.length < MIN_PASSWORD) found.password = 'auth.passwordTooShort';
+    if (password !== confirmPassword) found.confirmPassword = 'auth.passwordMismatch';
+    setErrors(found);
+    if (Object.keys(found).length) {
+      focusFirst(Object.keys(found));
       return;
     }
 
@@ -59,102 +85,96 @@ export default function ResetPasswordForm() {
       const data = await response.json();
 
       if (response.ok) {
-        setSuccess(t('auth.resetSuccess'));
+        setDone(true);
         // Clear the form fields after successful submission
         setPassword('');
         setConfirmPassword('');
-        
+
         // Redirect to login page after 3 seconds
-        setTimeout(() => {
+        redirect.current = setTimeout(() => {
           router.push('/login');
-        }, 3000);
+        }, REDIRECT_MS);
       } else {
-        setError(translateApiMessage(t, data.message) || t('auth.genericError'));
+        const message = translateApiMessage(t, data.message);
+        setProblem(message ? { text: message } : { key: 'auth.genericError' });
       }
     } catch (error) {
       console.error('Reset password error:', error);
-      setError(t('common.unexpectedError'));
+      setProblem({ key: 'common.unexpectedError' });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const clear = (field: keyof typeof errors) => setErrors((current) => (current[field] ? { ...current, [field]: undefined } : current));
+
   return (
-    <div className="flex items-center justify-center min-h-[50vh]">
-      <motion.div
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <Card className="w-[350px] bg-black border border-gray-600 shadow-lg shadow-gray-600/20">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-red-600">{t('auth.resetTitle')}</CardTitle>
-            <CardDescription className="text-white/80">
-              {t('auth.resetDesc')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit}>
-              <div className="grid w-full items-center gap-4">
-                <div className="flex flex-col space-y-1.5">
-                  <Label htmlFor="password" className="text-white">
-                    {t('auth.newPassword')}
-                  </Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    disabled={!token || isLoading}
-                    className="bg-black border-gray-600 text-white placeholder:text-white/50 focus:border-red-600 focus:ring-red-600"
-                  />
-                </div>
-                <div className="flex flex-col space-y-1.5">
-                  <Label htmlFor="confirmPassword" className="text-white">
-                    {t('auth.confirmPassword')}
-                  </Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    disabled={!token || isLoading}
-                    className="bg-black border-gray-600 text-white placeholder:text-white/50 focus:border-red-600 focus:ring-red-600"
-                  />
-                </div>
-              </div>
-              {error && (
-                <Alert variant="destructive" className="mt-4 bg-red-600/10 border-red-600/50">
-                  <AlertCircle className="h-4 w-4 text-red-600" />
-                  <AlertDescription className="text-red-600">{error}</AlertDescription>
-                </Alert>
-              )}
-              {success && (
-                <Alert className="mt-4 bg-green-600/10 border-green-600/50">
-                  <AlertDescription className="text-green-600">{success}</AlertDescription>
-                </Alert>
-              )}
-              <Button
-                type="submit"
-                className="w-full mt-4 bg-red-600 text-white hover:bg-red-700 transition-all duration-300"
-                disabled={!token || isLoading}
+    <AnimatePresence mode="wait" initial={false}>
+      {done ? (
+        <m.div key="done" {...swap} role="status">
+          <SuccessCheck className="mb-6" />
+          <AuthHeader title={t('auth.resetDone')} subtitle={t('auth.resetSuccess')} />
+          <Button asChild size="lg" className="w-full">
+            <Link href="/login">{t('nav.signIn')}</Link>
+          </Button>
+          <p className="mt-4 text-center text-[13px] text-white/50">{t('auth.redirecting')}</p>
+        </m.div>
+      ) : (
+        <m.div key="form" {...swap}>
+          <AuthHeader title={t('auth.resetHeading')} subtitle={t('auth.resetDesc')} />
+          <form onSubmit={handleSubmit} noValidate className="flex flex-col">
+            <div className="space-y-4">
+              <Field
+                id="password"
+                label={t('auth.newPassword')}
+                error={errors.password && t(errors.password)}
+                hint={<PasswordRule met={password.length >= MIN_PASSWORD} label={t('auth.passwordHint')} />}
               >
-                {isLoading ? t('auth.resetting') : t('auth.resetTitle')}
-              </Button>
-            </form>
-          </CardContent>
-          <CardFooter className="flex justify-center">
-            <p className="text-sm text-white/80">
-              {t('auth.rememberPassword')}{' '}
-              <Link href="/login" className="text-red-600 hover:underline">
-                {t('auth.login')}
-              </Link>
-            </p>
-          </CardFooter>
-        </Card>
-      </motion.div>
-    </div>
+                {(a11y) => (
+                  <PasswordInput
+                    {...a11y}
+                    name="password"
+                    autoComplete="new-password"
+                    enterKeyHint="next"
+                    minLength={MIN_PASSWORD}
+                    value={password}
+                    onChange={(e) => { setPassword(e.target.value); clear('password'); }}
+                    required
+                    disabled={isLoading}
+                  />
+                )}
+              </Field>
+              <Field id="confirmPassword" label={t('auth.confirmPassword')} error={errors.confirmPassword && t(errors.confirmPassword)}>
+                {(a11y) => (
+                  <PasswordInput
+                    {...a11y}
+                    name="confirmPassword"
+                    autoComplete="new-password"
+                    enterKeyHint="done"
+                    value={confirmPassword}
+                    onChange={(e) => { setConfirmPassword(e.target.value); clear('confirmPassword'); }}
+                    required
+                    disabled={isLoading}
+                  />
+                )}
+              </Field>
+            </div>
+
+            <FormNotice message={problem && ('key' in problem ? t(problem.key) : problem.text)} className="pt-5" />
+
+            <SubmitButton loading={isLoading} loadingText={t('auth.resetting')} className="mt-6 w-full">
+              {t('auth.resetSubmit')}
+            </SubmitButton>
+          </form>
+
+          <p className="mt-7 text-center text-[14px] text-white/55">
+            {t('auth.rememberPassword')}{' '}
+            <Link href="/login" className="font-medium text-white underline-offset-4 outline-none hover:underline focus-visible:underline">
+              {t('nav.signIn')}
+            </Link>
+          </p>
+        </m.div>
+      )}
+    </AnimatePresence>
   );
 }

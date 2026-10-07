@@ -1,6 +1,6 @@
 "use client"
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Bookmark, Heart, LogOut, Settings, Users } from 'lucide-react'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -16,10 +16,13 @@ import { useShellAccount } from './use-shell-account'
 export default function AccountMenu() {
   const t = useT()
   const router = useRouter()
+  const pathname = usePathname()
   const account = useShellAccount()
 
   if (account.status === 'loading') return <span aria-hidden className="h-9 w-9 rounded-full bg-white/[0.06]" />
   if (!account.signedIn) {
+    // On the sign-in pages themselves the form is the call to action.
+    if (/^\/(login|signup|auth)(\/|$)/.test(pathname)) return null
     return (
       <Button asChild size="sm" className="px-5">
         <Link href="/login">{t('nav.signIn')}</Link>
