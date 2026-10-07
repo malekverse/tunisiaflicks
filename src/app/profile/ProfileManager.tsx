@@ -53,7 +53,7 @@ function KidsToggle({ checked, onChange, disabled }: { checked: boolean, onChang
         onClick={() => onChange(!checked)}
         className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${checked ? 'bg-red-500' : 'bg-gray-500'}`}
       >
-        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${checked ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+        <span className={`absolute left-0 top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${checked ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
       </button>
       <span>
         Kids profile
@@ -177,6 +177,7 @@ export default function ProfileManager() {
 
   const create = async (event: React.FormEvent) => {
     event.preventDefault()
+    if (!newName.trim()) return
     setBusy(true)
     try {
       await send('/api/profiles', 'POST', { name: newName, color: newColor, kids: newKids })

@@ -2,17 +2,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ObjectId } from 'mongodb'
 import clientPromise from '@/src/lib/mongodb'
-import { getActiveProfile, newProfile, requireGrownUpProfile, toProfilesResponse } from '@/src/lib/profiles'
-import { MAX_PROFILES, PROFILE_COLORS, cleanProfileName } from '@/src/lib/models/Profile'
+import { getActiveProfile, newProfile, profileCookieOptions, requireGrownUpProfile, toProfilesResponse, type ActiveProfile } from '@/src/lib/profiles'
+import { MAX_PROFILES, PROFILE_COLORS, PROFILE_COOKIE, cleanProfileName } from '@/src/lib/models/Profile'
 
 export const dynamic = 'force-dynamic'
+
+// A lone profile is used without a cookie; pin it, so adding a second profile doesn't leave this
+// device with "no profile picked".
+function pinImplicitProfile(response: NextResponse, active: ActiveProfile) {
+  if (active.profile && active.cookie !== 'valid') {
+    response.cookies.set(PROFILE_COOKIE, active.profile.id, profileCookieOptions)
+  }
+  return response
+}
 
 export async function GET() {
   const active = await getActiveProfile()
   if (!active) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  return NextResponse.json(toProfilesResponse(active), { headers: { 'Cache-Control': 'private, no-store' } })
+  return pinImplicitProfile(
+    NextResponse.json(toProfilesResponse(active), { headers: { 'Cache-Control': 'private, no-store' } }),
+    active
+  )
 }
 
 export async function POST(request: NextRequest) {
@@ -42,5 +54,5 @@ export async function POST(request: NextRequest) {
   }
 
   const { createdAt, ...created } = profile
-  return NextResponse.json({ profile: created }, { status: 201 })
+  return pinImplicitProfile(NextResponse.json({ profile: created }, { status: 201 }), active)
 }
