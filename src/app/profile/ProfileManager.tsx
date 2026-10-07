@@ -9,6 +9,18 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from '@/src/hooks/use-toast'
 import { useProfiles } from '@/src/hooks/use-profiles'
 import { MAX_PROFILES, MAX_PROFILE_NAME, PROFILE_COLORS, type Profile } from '@/src/lib/models/Profile'
+import { useT } from '@/src/components/I18nProvider'
+import type { TKey, Translate } from '@/src/lib/i18n'
+
+// The profiles API answers in English; these are the messages a user can trigger from this page.
+const API_ERRORS: Record<string, TKey> = {
+  'Keep at least one grown-up profile': 'profiles.keepGrownUp',
+  'You already have a profile with that name': 'profiles.duplicateName',
+  'Profile names need 1 to 20 characters': 'profiles.badName',
+  [`An account can have up to ${MAX_PROFILES} profiles`]: 'profiles.tooMany',
+}
+const errorText = (t: Translate, error: unknown) =>
+  t(API_ERRORS[(error as Error)?.message] ?? 'profiles.genericError', { max: MAX_PROFILES })
 
 async function send(url: string, method: string, body?: unknown) {
   const response = await fetch(url, {
@@ -24,15 +36,16 @@ async function send(url: string, method: string, body?: unknown) {
 }
 
 function ColorPicker({ value, onChange }: { value: string, onChange: (color: string) => void }) {
+  const t = useT()
   return (
-    <div role="radiogroup" aria-label="Avatar colour" className="flex flex-wrap gap-2">
+    <div role="radiogroup" aria-label={t('profiles.avatarColour')} className="flex flex-wrap gap-2">
       {PROFILE_COLORS.map((color) => (
         <button
           key={color}
           type="button"
           role="radio"
           aria-checked={value === color}
-          aria-label={`Colour ${color}`}
+          aria-label={t('profiles.colour', { color })}
           onClick={() => onChange(color)}
           className={`h-7 w-7 rounded-full ring-offset-2 ring-offset-white transition-transform hover:scale-110 dark:ring-offset-gray-900 ${value === color ? 'ring-2 ring-black dark:ring-white' : ''}`}
           style={{ backgroundColor: color }}
@@ -43,6 +56,7 @@ function ColorPicker({ value, onChange }: { value: string, onChange: (color: str
 }
 
 function KidsToggle({ checked, onChange, disabled }: { checked: boolean, onChange: (kids: boolean) => void, disabled?: boolean }) {
+  const t = useT()
   return (
     <label className={`flex items-center gap-3 text-sm ${disabled ? 'opacity-50' : 'cursor-pointer'}`}>
       <button
@@ -53,11 +67,11 @@ function KidsToggle({ checked, onChange, disabled }: { checked: boolean, onChang
         onClick={() => onChange(!checked)}
         className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${checked ? 'bg-red-500' : 'bg-gray-500'}`}
       >
-        <span className={`absolute left-0 top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${checked ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+        <span className={`absolute start-0 top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${checked ? 'translate-x-[22px] rtl:-translate-x-[22px]' : 'translate-x-0.5 rtl:-translate-x-0.5'}`} />
       </button>
       <span>
-        Kids profile
-        <span className="block text-xs text-gray-400">Only G / PG movies and kids&apos; TV, and a password to switch away.</span>
+        {t('profiles.kidsProfile')}
+        <span className="block text-xs text-gray-400">{t('profiles.kidsProfileDesc')}</span>
       </span>
     </label>
   )
@@ -73,6 +87,7 @@ function ProfileCard({ profile, isActive, isOwner, onlyGrownUp, onChanged, onDel
 }) {
   const [name, setName] = useState(profile.name)
   const [saving, setSaving] = useState(false)
+  const t = useT()
   useEffect(() => setName(profile.name), [profile.name])
 
   const update = async (patch: Partial<Profile>) => {
@@ -81,7 +96,7 @@ function ProfileCard({ profile, isActive, isOwner, onlyGrownUp, onChanged, onDel
       await send(`/api/profiles/${profile.id}`, 'PATCH', patch)
       onChanged(isActive && patch.kids !== undefined)
     } catch (error) {
-      toast({ title: 'Error', description: (error as Error).message, variant: 'destructive' })
+      toast({ title: t('common.error'), description: errorText(t, error), variant: 'destructive' })
       setName(profile.name)
     } finally {
       setSaving(false)
@@ -102,13 +117,13 @@ function ProfileCard({ profile, isActive, isOwner, onlyGrownUp, onChanged, onDel
               if (renamed) update({ name })
             }}
           >
-            <Input aria-label={`Name of ${profile.name}`} value={name} maxLength={MAX_PROFILE_NAME} onChange={(event) => setName(event.target.value)} />
-            {renamed && <Button type="submit" disabled={saving} className="bg-red-600 text-white hover:bg-red-700">Save</Button>}
+            <Input aria-label={t('profiles.nameOf', { name: profile.name })} value={name} maxLength={MAX_PROFILE_NAME} onChange={(event) => setName(event.target.value)} />
+            {renamed && <Button type="submit" disabled={saving} className="bg-red-600 text-white hover:bg-red-700">{t('profiles.save')}</Button>}
           </form>
           <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400">
-            {isActive && <span className="rounded-md bg-red-500/15 px-1.5 py-0.5 font-semibold text-red-500">Watching now</span>}
-            {isOwner && <span>Account owner</span>}
-            {profile.kids && <KidsBadge />}
+            {isActive && <span className="rounded-md bg-red-500/15 px-1.5 py-0.5 font-semibold text-red-500">{t('profiles.watchingNow')}</span>}
+            {isOwner && <span>{t('profiles.owner')}</span>}
+            {profile.kids && <KidsBadge label={t('profiles.kidsBadge')} />}
           </div>
           <ColorPicker value={profile.color} onChange={(color) => color !== profile.color && update({ color })} />
           <KidsToggle
@@ -121,8 +136,8 @@ function ProfileCard({ profile, isActive, isOwner, onlyGrownUp, onChanged, onDel
           type="button"
           variant="ghost"
           size="icon"
-          aria-label={`Delete ${profile.name}`}
-          title={onlyGrownUp && !profile.kids ? 'Keep at least one grown-up profile' : `Delete ${profile.name}`}
+          aria-label={t('profiles.delete', { name: profile.name })}
+          title={onlyGrownUp && !profile.kids ? t('profiles.keepGrownUp') : t('profiles.delete', { name: profile.name })}
           disabled={onlyGrownUp && !profile.kids}
           onClick={onDelete}
           className="text-gray-400 hover:bg-red-500/10 hover:text-red-500"
@@ -142,6 +157,7 @@ export default function ProfileManager() {
   const [newColor, setNewColor] = useState<string>(PROFILE_COLORS[1])
   const [newKids, setNewKids] = useState(false)
   const [busy, setBusy] = useState(false)
+  const t = useT()
 
   if (!data) return null
   const profiles = data.profiles
@@ -149,10 +165,8 @@ export default function ProfileManager() {
 
   const header = (
     <div className="mb-4">
-      <h2 className="text-2xl font-bold">Profiles</h2>
-      <p className="text-sm text-gray-400">
-        Up to {MAX_PROFILES} people can share this account. Each profile has its own favorites, bookmarks, watch history and recommendations.
-      </p>
+      <h2 className="text-2xl font-bold">{t('profiles.title')}</h2>
+      <p className="text-sm text-gray-400">{t('profiles.intro', { max: MAX_PROFILES })}</p>
     </div>
   )
 
@@ -162,8 +176,8 @@ export default function ProfileManager() {
         {header}
         <div className="flex flex-col items-start gap-3 rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 sm:flex-row sm:items-center">
           <FaLock className="text-2xl text-gray-400" />
-          <p className="flex-1 text-sm">Switch to a grown-up profile to add, edit or delete profiles.</p>
-          <Link href="/profiles"><Button className="bg-red-600 text-white hover:bg-red-700">Switch profile</Button></Link>
+          <p className="flex-1 text-sm">{t('profiles.locked')}</p>
+          <Link href="/profiles"><Button className="bg-red-600 text-white hover:bg-red-700">{t('profiles.switchProfile')}</Button></Link>
         </div>
       </section>
     )
@@ -181,13 +195,13 @@ export default function ProfileManager() {
     setBusy(true)
     try {
       await send('/api/profiles', 'POST', { name: newName, color: newColor, kids: newKids })
-      toast({ title: 'Profile added', description: `${newName.trim()} can now pick their profile on "Who's watching?"` })
+      toast({ title: t('profiles.added'), description: t('profiles.addedDesc', { name: newName.trim() }) })
       setNewName('')
       setNewKids(false)
       setNewColor(PROFILE_COLORS[(profiles.length + 2) % PROFILE_COLORS.length])
       reload()
     } catch (error) {
-      toast({ title: 'Error', description: (error as Error).message, variant: 'destructive' })
+      toast({ title: t('common.error'), description: errorText(t, error), variant: 'destructive' })
     } finally {
       setBusy(false)
     }
@@ -198,12 +212,12 @@ export default function ProfileManager() {
     setBusy(true)
     try {
       await send(`/api/profiles/${deleting.id}`, 'DELETE')
-      toast({ title: 'Profile deleted', description: `${deleting.name} and their lists were removed` })
+      toast({ title: t('profiles.deleted'), description: t('profiles.deletedDesc', { name: deleting.name }) })
       if (deleting.id === active.id) return window.location.assign('/profiles')
       setDeleting(null)
       reload()
     } catch (error) {
-      toast({ title: 'Error', description: (error as Error).message, variant: 'destructive' })
+      toast({ title: t('common.error'), description: errorText(t, error), variant: 'destructive' })
     } finally {
       setBusy(false)
     }
@@ -228,15 +242,15 @@ export default function ProfileManager() {
         {profiles.length < MAX_PROFILES && (
           <li className="rounded-xl border-2 border-dashed border-gray-300 p-4 dark:border-gray-700">
             <form onSubmit={create} className="space-y-3">
-              <h3 className="font-semibold">Add a profile</h3>
+              <h3 className="font-semibold">{t('profiles.addAProfile')}</h3>
               <div className="flex items-center gap-4">
                 <ProfileAvatar profile={{ name: newName.trim() || '+', color: newColor }} size="md" className="h-14 w-14 text-2xl" />
-                <Input aria-label="New profile name" placeholder="Name" value={newName} maxLength={MAX_PROFILE_NAME} onChange={(event) => setNewName(event.target.value)} />
+                <Input aria-label={t('profiles.newName')} placeholder={t('profiles.name')} value={newName} maxLength={MAX_PROFILE_NAME} onChange={(event) => setNewName(event.target.value)} />
               </div>
               <ColorPicker value={newColor} onChange={setNewColor} />
               <KidsToggle checked={newKids} onChange={setNewKids} />
               <Button type="submit" disabled={busy || !newName.trim()} className="w-full bg-red-600 text-white hover:bg-red-700">
-                Add profile
+                {t('profiles.addProfile')}
               </Button>
             </form>
           </li>
@@ -246,14 +260,12 @@ export default function ProfileManager() {
       <Dialog open={deleting !== null} onOpenChange={(open) => !open && setDeleting(null)}>
         <DialogContent className="max-w-sm bg-black border border-gray-700 text-white">
           <DialogHeader>
-            <DialogTitle>Delete {deleting?.name}?</DialogTitle>
-            <DialogDescription className="text-white/70">
-              Their favorites, bookmarks, watch history and Continue Watching will be removed for good.
-            </DialogDescription>
+            <DialogTitle>{t('profiles.deleteTitle', { name: deleting?.name ?? '' })}</DialogTitle>
+            <DialogDescription className="text-white/70">{t('profiles.deleteDesc')}</DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
-            <Button variant="ghost" onClick={() => setDeleting(null)}>Cancel</Button>
-            <Button variant="destructive" disabled={busy} onClick={confirmDelete}>Delete profile</Button>
+            <Button variant="ghost" onClick={() => setDeleting(null)}>{t('profiles.cancel')}</Button>
+            <Button variant="destructive" disabled={busy} onClick={confirmDelete}>{t('profiles.deleteConfirm')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

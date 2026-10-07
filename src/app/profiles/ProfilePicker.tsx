@@ -8,12 +8,14 @@ import KidsUnlockDialog from '@/src/components/profiles/KidsUnlockDialog'
 import { Button } from '@/src/components/ui/button'
 import { toast } from '@/src/hooks/use-toast'
 import { safeNext, selectProfile } from '@/src/hooks/use-profiles'
+import { useT } from '@/src/components/I18nProvider'
 import { MAX_PROFILES, type Profile, type ProfilesResponse } from '@/src/lib/models/Profile'
 
 export default function ProfilePicker({ initial, ownerImage, next }: { initial: ProfilesResponse, ownerImage: string | null, next?: string }) {
   const { profiles, activeId, locked } = initial
   const [unlocking, setUnlocking] = useState<Profile | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
+  const t = useT()
 
   const active = profiles.find((profile) => profile.id === activeId)
   const canManage = Boolean(active && !active.kids)
@@ -31,8 +33,8 @@ export default function ProfilePicker({ initial, ownerImage, next }: { initial: 
     if (result.ok) return enter()
     setBusy(null)
     if (result.needsPassword) setUnlocking(profile)
-    else toast({ title: 'Error', description: result.error, variant: 'destructive' })
-  }, [locked, enter])
+    else toast({ title: t('common.error'), description: t('profiles.switchFailed'), variant: 'destructive' })
+  }, [locked, enter, t])
 
   // Nothing to choose between: go straight in.
   const single = profiles.length === 1 && !locked ? profiles[0] : null
@@ -40,7 +42,7 @@ export default function ProfilePicker({ initial, ownerImage, next }: { initial: 
     if (single) pick(single)
   }, [single, pick])
 
-  if (single) return <p className="text-gray-400 py-10">Loading…</p>
+  if (single) return <p className="text-gray-400 py-10">{t('common.loading')}</p>
 
   return (
     <div className="flex w-full flex-col items-center justify-center px-4 py-10 sm:py-16">
@@ -50,7 +52,7 @@ export default function ProfilePicker({ initial, ownerImage, next }: { initial: 
         transition={{ duration: 0.4 }}
         className="mb-8 text-3xl font-bold sm:mb-12 sm:text-5xl"
       >
-        Who&apos;s watching?
+        {t('profiles.whoIsWatching')}
       </motion.h1>
 
       <ul className="flex flex-wrap justify-center gap-5 sm:gap-8">
@@ -65,14 +67,14 @@ export default function ProfilePicker({ initial, ownerImage, next }: { initial: 
               <span className={`relative rounded-xl ring-offset-4 ring-offset-white transition-all dark:ring-offset-[#0d0c0f] group-hover:ring-4 group-hover:ring-gray-400 group-focus-visible:ring-4 group-focus-visible:ring-red-500 dark:group-hover:ring-white ${profile.id === activeId ? 'ring-2 ring-red-500' : ''} ${busy === profile.id ? 'animate-pulse' : ''}`}>
                 <ProfileAvatar profile={profile} image={index === 0 ? ownerImage : null} size="lg" />
                 {!profile.kids && locked && (
-                  <span className="absolute bottom-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs text-white">
-                    <FaLock aria-label="Needs the account password" />
+                  <span className="absolute bottom-1.5 end-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs text-white">
+                    <FaLock aria-label={t('profiles.needsPassword')} />
                   </span>
                 )}
               </span>
               <span className="flex flex-col items-center gap-1">
                 <span className="max-w-full truncate text-sm text-gray-500 transition-colors group-hover:text-black dark:text-gray-400 dark:group-hover:text-white sm:text-base">{profile.name}</span>
-                {profile.kids && <KidsBadge />}
+                {profile.kids && <KidsBadge label={t('profiles.kidsBadge')} />}
               </span>
             </button>
           </motion.li>
@@ -84,7 +86,7 @@ export default function ProfilePicker({ initial, ownerImage, next }: { initial: 
               <span className="flex h-24 w-24 items-center justify-center rounded-xl border-2 border-dashed border-gray-500 text-3xl text-gray-500 transition-colors group-hover:border-red-500 group-hover:text-red-500 sm:h-32 sm:w-32">
                 <FaPlus />
               </span>
-              <span className="text-sm text-gray-500 group-hover:text-red-500 sm:text-base">Add profile</span>
+              <span className="text-sm text-gray-500 group-hover:text-red-500 sm:text-base">{t('profiles.addProfile')}</span>
             </Link>
           </li>
         )}
@@ -93,7 +95,7 @@ export default function ProfilePicker({ initial, ownerImage, next }: { initial: 
       {canManage && (
         <Link href="/profile#profiles" className="mt-10 sm:mt-14">
           <Button variant="outline" className="border-gray-500 px-6 uppercase tracking-widest text-gray-500 hover:border-red-500 hover:bg-transparent hover:text-red-500">
-            Manage profiles
+            {t('profiles.manage')}
           </Button>
         </Link>
       )}

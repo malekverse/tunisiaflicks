@@ -28,10 +28,11 @@ export default function ProfileAvatar({ profile, image, size = 'md', className }
   )
 }
 
-export function KidsBadge({ className }: { className?: string }) {
+/** `label` is the translated "Kids" (this component is shared by server and client code). */
+export function KidsBadge({ label = 'Kids', className }: { label?: string, className?: string }) {
   return (
     <span className={cn('rounded-md bg-gradient-to-r from-amber-400 to-pink-500 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white', className)}>
-      Kids
+      {label}
     </span>
   )
 }

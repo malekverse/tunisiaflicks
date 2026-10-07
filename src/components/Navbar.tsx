@@ -84,7 +84,7 @@ const Navbar = () => {
     // Reload: every list, row and the catalogue itself depend on the profile.
     if (result.ok) window.location.reload();
     else if (result.needsPassword) setUnlocking(profile);
-    else toast({ title: "Error", description: result.error, variant: "destructive" });
+    else toast({ title: t('common.error'), description: t('profiles.switchFailed'), variant: "destructive" });
   };
 
   const logOut = async () => {
@@ -107,14 +107,14 @@ const Navbar = () => {
   const accountMenu = (
     <DropdownMenuContent align="end" className="min-w-[200px]">
       <DropdownMenuLabel className="flex items-center gap-2">
-        {active ? <>{active.name} {active.kids && <KidsBadge />}</> : t('nav.myAccount')}
+        {active ? <>{active.name} {active.kids && <KidsBadge label={t('profiles.kidsBadge')} />}</> : t('nav.myAccount')}
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
       {otherProfiles.map((profile) => (
         <DropdownMenuItem key={profile.id} onSelect={() => switchTo(profile)} className="gap-2">
           <ProfileAvatar profile={profile} size="sm" />
           <span className="truncate">{profile.name}</span>
-          {profile.kids && <KidsBadge className="ms-auto" />}
+          {profile.kids && <KidsBadge label={t('profiles.kidsBadge')} className="ms-auto" />}
         </DropdownMenuItem>
       ))}
       {active && !active.kids && (
@@ -164,7 +164,7 @@ const Navbar = () => {
               {session ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger aria-label={t('nav.accountMenu')} className="flex items-center gap-2 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500">
-                    {active?.kids && <KidsBadge />}
+                    {active?.kids && <KidsBadge label={t('profiles.kidsBadge')} />}
                     {accountAvatar()}
                   </DropdownMenuTrigger>
                   {accountMenu}

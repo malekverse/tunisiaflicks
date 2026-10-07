@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function TunisianDetailPage({ params }: Props) {
   // The Tunisian catalogue has no age ratings, so Kids profiles can't be offered it.
-  if (await getKidsMode()) return <KidsBlocked what={'The Tunisian catalogue'} />
+  if (await getKidsMode()) return <KidsBlocked what='tunisian' />
   const detail = await getTunisianDetail(slugOf(params))
   const t = getT()
   if (detail === null) notFound()
