@@ -14,7 +14,7 @@ export default async function UpcomingPage({ searchParams }: { searchParams: { p
   return (
     <div className='w-full max-w-[1800px] px-4 sm:px-6'>
       <h1 className='text-3xl sm:text-4xl font-bold mb-6'>{t('upcoming.title')}</h1>
-      {failed ? <p className='text-gray-400'>{t('upcoming.failed')}</p> : <MediaGrid items={results} kind='movie' />}
+      {failed ? <p className='text-gray-400'>{t('upcoming.failed')}</p> : <MediaGrid items={results} kind='movie' notify />}
       <PageNav currentPage={page} totalPages={totalPages} />
     </div>
   )

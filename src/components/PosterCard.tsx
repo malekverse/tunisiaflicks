@@ -6,6 +6,7 @@ import { Skeleton } from './ui/skeleton';
 import { MediaContextMenu, MediaOptionsMenu } from './MediaActions';
 import { useHoverTrailer } from '@/src/hooks/use-hover-trailer';
 import { useT } from './I18nProvider';
+import FollowButton from './FollowButton';
 
 export type PosterCardProps = {
     posterImg?: string | null
@@ -22,6 +23,8 @@ export type PosterCardProps = {
     showTypeBadge?: boolean
     /** Right-click / "..." menu (favorites, bookmarks, share). Off for non-TMDB items. */
     actions?: boolean
+    /** Show a "Notify me" bell (upcoming movies). */
+    notify?: boolean
 }
 
 const FALLBACK_POSTER = '/404.png'
@@ -79,7 +82,7 @@ function TrailerPreview({ youtubeKey }: { youtubeKey: string }) {
 
 export default function PosterCard({
     posterImg, title, voteAverage, releaseDate, link, externalImg, id,
-    mediaType = 'movie', showTypeBadge = false, actions = true,
+    mediaType = 'movie', showTypeBadge = false, actions = true, notify = false,
 }: PosterCardProps) {
     const t = useT()
     const displayVoteAverage = voteAverage ? voteAverage.toString().substring(0, 3) : t('common.notAvailable')
@@ -135,6 +138,9 @@ export default function PosterCard({
             <div className='sm:hidden absolute z-30 start-0 top-0 scale-50 origin-top-left rtl:origin-top-right'>
                 <MediaOptionsMenu {...meta} voteAverage={voteAverage} />
             </div>
+            {notify && itemId && (
+                <FollowButton variant='card' mediaType={mediaType} id={itemId} title={title} className='absolute z-30 end-2 top-2' />
+            )}
         </div>
     )
 }

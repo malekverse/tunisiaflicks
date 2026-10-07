@@ -9,6 +9,7 @@ import { FaBookmark, FaShareAlt } from "react-icons/fa"
 import { HiOutlineArrowsExpand } from "react-icons/hi"
 import { Button } from '@/src/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/src/components/ui/dialog'
+import FollowButton from '@/src/components/FollowButton'
 import { toast } from '@/src/hooks/use-toast'
 import { cn } from '@/src/lib/utils'
 import { useI18n } from '@/src/components/I18nProvider'
@@ -91,6 +92,10 @@ export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFav
     const years = kind === 'tv'
         ? `${startDate.substring(0, 4)} – ${data.status === 'Ended' || data.status === 'Canceled' ? endYear : t('hero.present')}`
         : startDate.substring(0, 4)
+    // Alerts only make sense for a movie that isn't out yet, or a show that's still running.
+    const followable = kind === 'tv'
+        ? data.status !== 'Ended' && data.status !== 'Canceled'
+        : !data.release_date || data.release_date > new Date().toISOString().slice(0, 10)
 
     const trailer = useMemo(() => {
         const videos: any[] = (data.videos?.results ?? []).filter((video: any) => video.site === 'YouTube')
@@ -223,6 +228,7 @@ export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFav
                                 </Button>
                             </div>
                             <div className="flex items-center gap-3">
+                                {followable && data.id && <FollowButton mediaType={kind} id={String(data.id)} title={title} />}
                                 <RoundButton icon={<FaHeart className="w-5 h-5" />} label={isFavorite ? t('hero.removeFavorites') : t('hero.addFavorites')} active={isFavorite} onClick={onToggleFavorite} />
                                 <RoundButton icon={<FaBookmark className="w-5 h-5" />} label={isSaved ? t('hero.removeSaved') : t('hero.saveForLater')} active={isSaved} onClick={onToggleSaved} />
                                 <RoundButton icon={<FaShareAlt className="w-5 h-5" />} label={t('hero.share')} onClick={share} />
