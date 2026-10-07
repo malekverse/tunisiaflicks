@@ -16,6 +16,7 @@ import SearchBar from './SearchBar';
 import LanguageToggle from './LanguageToggle';
 import { useT } from './I18nProvider';
 import type { TKey } from '@/src/lib/i18n';
+import NotificationBell from './NotificationBell';
 import { Button } from './ui/button';
 import {
   DropdownMenu,
@@ -104,6 +105,7 @@ const Navbar = () => {
             {!pathname.startsWith("/search") ? <SearchBar /> : <div className="flex-1" />}
             <div className="flex items-center gap-3">
               <LanguageToggle />
+              <NotificationBell />
               {/* User Profile or Login Button */}
               {session ? (
                 <DropdownMenu>
@@ -129,9 +131,13 @@ const Navbar = () => {
           <button type="button" aria-label={t('nav.openMenu')} onClick={() => setMobileMenuOpen(true)} className="text-white">
             <TbMenu2 className='text-2xl' />
           </button>
-          <Link href="/" className='flex flex-1 justify-center pe-8'>
+          <Link href="/" className='flex flex-1 justify-center'>
             <Image src="/TunisiaFlicks.svg" alt="TunisiaFlicks" width={160} height={21} className="h-6 w-auto" priority />
           </Link>
+          {/* Same width as the menu button, so the logo stays centred. */}
+          <div className='w-8 flex justify-end'>
+            <NotificationBell className='p-1' />
+          </div>
         </div>
       </div>
 
