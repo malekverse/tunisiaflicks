@@ -1,98 +1,108 @@
 'use client';
-import React, { useState, useEffect } from "react";
-import { useRouter } from 'next/navigation';
-import { searchMovies } from '@//src/app/search/actions';
+import React, { useState, useEffect, useRef } from "react";
+import { useRouter, usePathname } from 'next/navigation';
+import { searchMovies } from '@/src/app/search/actions';
 import routes from '@/src/routes/client/routes';
-import Image from "next/image";
 import Link from "next/link";
 
+const MAX_RESULTS = 8;
+
 const SearchBar = () => {
-    const router = useRouter(); // Initialize the router
+    const router = useRouter();
+    const pathname = usePathname();
+    const containerRef = useRef<HTMLDivElement>(null);
     const [query, setQuery] = useState(""); // Holds the search input
-    const [data, setData] = useState({}); // Holds the search results data
-    const [results, setResults] = useState([]); // Holds the filtered search results
-    const [loader, setLoader] = useState(true); // For loading state
-    const [adult, setAdult] = useState(false); // For adult content filter
-    const [page, setPage] = useState(1); // Current page for pagination
-    const [totalPages, setTotalPages] = useState(1); // Total pages for pagination
+    const [results, setResults] = useState<any[]>([]); // Movie / TV results shown in the dropdown
+    const [loading, setLoading] = useState(false);
     const [showResults, setShowResults] = useState(false); // Show/Hide search results
 
-    // Handle fetching search results
+    // Debounced search: wait for a pause in typing, and ignore responses to outdated queries.
     useEffect(() => {
-        async function fetchSearchData() {
-            try {
-                const searchResults = await searchMovies(query, adult, page);
-                setData(searchResults);
-                setResults(searchResults.results);
-                setTotalPages(searchResults.total_pages);
-                setLoader(false);
-                console.log(searchResults.results);
-            } catch (error) {
-                console.error("Error fetching search results:", error);
-                setLoader(false);
-            }
-        }
-
-        if (query.trim() !== "") {
-            fetchSearchData();
-            setShowResults(true); // Show results when query is non-empty
-        } else {
+        const trimmed = query.trim();
+        if (!trimmed) {
             setResults([]);
-            setShowResults(false); // Hide results when the query is empty
+            setLoading(false);
+            setShowResults(false);
+            return;
         }
-    }, [query, adult, page]);
 
-    // Handle key press events
-    const handleKeyDown = (e) => {
-        // If Enter key is pressed and query is not empty
-        if (e.key === 'Enter' && query.trim() !== '') {
-            // Navigate to search page with query
-            router.push(`/search?q=${encodeURIComponent(query.trim())}`);
-            setShowResults(false); // Hide results
-        }
-    };
+        let cancelled = false;
+        setLoading(true);
+        setShowResults(true);
+        const timeout = setTimeout(async () => {
+            try {
+                const searchResults = await searchMovies(trimmed, false, 1);
+                if (cancelled) return;
+                setResults((searchResults.results ?? [])
+                    .filter((item: any) => item.media_type === 'movie' || item.media_type === 'tv')
+                    .slice(0, MAX_RESULTS));
+            } catch (error) {
+                if (cancelled) return;
+                console.error("Error fetching search results:", error);
+                setResults([]);
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        }, 300);
 
-    // Close search results when clicking outside
+        return () => {
+            cancelled = true;
+            clearTimeout(timeout);
+        };
+    }, [query]);
+
+    // Close the dropdown when navigating somewhere else.
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (!event.target.closest("#search-container")) {
+        setShowResults(false);
+    }, [pathname]);
+
+    // Close search results when clicking outside or pressing Escape
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
                 setShowResults(false);
             }
         };
+        const handleEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setShowResults(false);
+        };
         document.addEventListener("click", handleClickOutside);
+        document.addEventListener("keydown", handleEscape);
         return () => {
             document.removeEventListener("click", handleClickOutside);
+            document.removeEventListener("keydown", handleEscape);
         };
     }, []);
 
-    const IconSearch = () => {
-        return (
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg
-                    className="h-5 w-5 text-gray-400"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    aria-hidden="true"
-                >
-                    <path
-                        fillRule="evenodd"
-                        d="M8 4a6 6 0 105.293 3.293A6.014 6.014 0 0012 8a6 6 0 00-4-5.683V4z"
-                        clipRule="evenodd"
-                    />
-                </svg>
-            </div>
-        )
-    }
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && query.trim() !== '') {
+            router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+            setShowResults(false);
+        }
+    };
 
     return (
         <div className="flex-1 flex justify-center px-2 lg:ml-6 lg:justify-center">
-            <div className="max-w-lg w-full lg:max-w-xs relative" id="search-container">
+            <div className="max-w-lg w-full lg:max-w-xs relative" ref={containerRef}>
                 <label htmlFor="search" className="sr-only">
                     Search
                 </label>
                 <div className="relative">
-                    <IconSearch />
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg
+                            className="h-5 w-5 text-gray-400"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                            aria-hidden="true"
+                        >
+                            <path
+                                fillRule="evenodd"
+                                d="M8 4a6 6 0 105.293 3.293A6.014 6.014 0 0012 8a6 6 0 00-4-5.683V4z"
+                                clipRule="evenodd"
+                            />
+                        </svg>
+                    </div>
                     <input
                         id="search"
                         name="search"
@@ -102,35 +112,40 @@ const SearchBar = () => {
                         autoComplete="off"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        onKeyDown={handleKeyDown} // Add key down event handler
-                        onFocus={() => query !== "" ? setShowResults(true) : null}
+                        onKeyDown={handleKeyDown}
+                        onFocus={() => query.trim() !== "" && setShowResults(true)}
                     />
 
                     {/* Search Results Container */}
                     {showResults && (
-                        <div className="absolute max-h-[500px] overflow-scroll top-full left-0 right-0 mt-2 bg-gray-800 dark:bg-[#121212] rounded-md shadow-lg w-full max-w-lg">
+                        <div className="absolute max-h-[500px] overflow-y-auto top-full left-0 right-0 mt-2 bg-gray-800 dark:bg-[#121212] rounded-md shadow-lg w-full max-w-lg">
                             <ul className="text-white">
                                 {results.length > 0 ? (
-                                    results.map((item, index) => (
-                                        <Link key={index} href={item.media_type === "movie" ? routes.movie(item.id) : routes.tvShow(item.id)}>
-                                            <li className="p-3 hover:bg-gray-700 dark:hover:bg-zinc-900 flex gap-5">
-                                                <Image 
-                                                    src={`https://image.tmdb.org/t/p/w300/${item.poster_path || item.backdrop_path}` || "/404Poster"} 
-                                                    alt={item.title || item.original_name} 
-                                                    width={100} 
-                                                    height={100}
-                                                    className="w-20 rounded-md" 
+                                    results.map((item) => (
+                                        <li key={`${item.media_type}-${item.id}`}>
+                                            <Link
+                                                href={item.media_type === "movie" ? routes.movie(item.id) : routes.tvShow(item.id)}
+                                                className="p-3 hover:bg-gray-700 dark:hover:bg-zinc-900 flex gap-5"
+                                            >
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img
+                                                    src={item.poster_path || item.backdrop_path ? `https://image.tmdb.org/t/p/w154${item.poster_path || item.backdrop_path}` : "/404.png"}
+                                                    alt=""
+                                                    width={80}
+                                                    height={120}
+                                                    loading="lazy"
+                                                    className="w-20 h-[120px] object-cover rounded-md bg-zinc-800"
                                                 />
-                                                <span className="">
-                                                    {item.title || item.original_name}
-                                                    <p className="text-xs opacity-80">{item.release_date || ''}</p>
-                                                    <p className="text-xs opacity-80">{item.media_type || ''}</p>
+                                                <span>
+                                                    {item.title || item.name}
+                                                    <span className="block text-xs opacity-80">{item.release_date || item.first_air_date || ''}</span>
+                                                    <span className="block text-xs opacity-80">{item.media_type === 'tv' ? 'TV Show' : 'Movie'}</span>
                                                 </span>
-                                            </li>
-                                        </Link>
+                                            </Link>
+                                        </li>
                                     ))
                                 ) : (
-                                    <li className="p-2">No results found</li>
+                                    <li className="p-2">{loading ? 'Searching…' : 'No results found'}</li>
                                 )}
                             </ul>
                         </div>
