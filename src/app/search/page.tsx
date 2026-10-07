@@ -5,6 +5,7 @@ import MediaGrid from '@/src/components/MediaGrid';
 import PaginationComponent from '@/src/components/PaginationComponent';
 import { useT } from '@/src/components/I18nProvider';
 import Link from 'next/link';
+import TmdbImage from '@/src/components/TmdbImage';
 import { addRecentSearch } from '@/src/lib/recent-searches';
 
 export default function Page({ searchParams }: { searchParams: { q?: string } }) {
@@ -130,14 +131,17 @@ export default function Page({ searchParams }: { searchParams: { q?: string } })
                   <div className='flex gap-4 overflow-x-auto no-scrollbar pb-2'>
                     {results.filter((item) => item.media_type === 'person' && item.profile_path).map((person) => (
                       <Link key={person.id} href={`/person/${person.id}`} className='group w-28 shrink-0 text-center'>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={`https://image.tmdb.org/t/p/w185${person.profile_path}`}
-                          alt={person.name}
-                          loading='lazy'
-                          className='mx-auto h-28 w-28 rounded-full object-cover bg-zinc-800 ring-2 ring-transparent transition group-hover:ring-red-500'
-                          style={{ objectPosition: '0 25%' }}
-                        />
+                        <span className='relative mx-auto block h-28 w-28 overflow-hidden rounded-full bg-zinc-800 ring-2 ring-transparent transition group-hover:ring-red-500'>
+                          <TmdbImage
+                            kind='profile'
+                            path={person.profile_path}
+                            alt={person.name}
+                            fill
+                            sizes='112px'
+                            className='object-cover'
+                            style={{ objectPosition: '0 25%' }}
+                          />
+                        </span>
                         <bdi className='mt-2 block truncate text-sm font-medium'>{person.name}</bdi>
                         <span className='block text-xs text-gray-500'>{person.known_for_department === 'Directing' ? t('search.director') : t('search.actor')}</span>
                       </Link>
