@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Check, Clapperboard, Heart, Play, Plus, Share2, Star, Volume2, VolumeX } from 'lucide-react'
+import { Check, Clapperboard, Heart, Pause, Play, Plus, Share2, Star, Volume2, VolumeX } from 'lucide-react'
 import { Button } from '@/src/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/src/components/ui/dialog'
 import FollowButton from '@/src/components/FollowButton'
@@ -59,6 +59,7 @@ export default function MediaHero({ kind, data, playLabel, onPlay }: MediaHeroPr
     const [trailerOn, setTrailerOn] = useState(false)
     const [playing, setPlaying] = useState(false)
     const [muted, setMuted] = useState(true)
+    const [paused, setPaused] = useState(false)
     const [trailerOpen, setTrailerOpen] = useState(false)
 
     const id = String(data.id)
@@ -149,7 +150,7 @@ export default function MediaHero({ kind, data, playLabel, onPlay }: MediaHeroPr
                     <YouTubeBackdrop
                         videoKey={trailer}
                         muted={muted}
-                        play={inView && !trailerOpen}
+                        play={inView && !trailerOpen && !paused}
                         zoom={1.3}
                         onState={(state) => {
                             if (state === 'playing') setPlaying(true)
@@ -224,14 +225,25 @@ export default function MediaHero({ kind, data, playLabel, onPlay }: MediaHeroPr
                 </div>
 
                 {playing && (
-                    <button
-                        type="button"
-                        onClick={() => setMuted((value) => !value)}
-                        aria-label={muted ? t('billboard.soundOn') : t('billboard.soundOff')}
-                        className="pressable glass absolute bottom-[clamp(48px,8vh,100px)] end-[var(--gutter)] hidden h-11 w-11 place-items-center rounded-full text-white animate-in fade-in duration-500 md:grid"
-                    >
-                        {muted ? <VolumeX aria-hidden className="h-5 w-5" /> : <Volume2 aria-hidden className="h-5 w-5" />}
-                    </button>
+                    <div className="absolute bottom-[clamp(48px,8vh,100px)] end-[var(--gutter)] hidden gap-2 animate-in fade-in duration-500 md:flex">
+                        <button
+                            type="button"
+                            onClick={() => setPaused((value) => !value)}
+                            aria-pressed={paused}
+                            aria-label={paused ? t('clips.play') : t('clips.pause')}
+                            className="pressable glass grid h-11 w-11 place-items-center rounded-full text-white"
+                        >
+                            {paused ? <Play aria-hidden className="ms-0.5 h-4 w-4 fill-current" /> : <Pause aria-hidden className="h-4 w-4 fill-current" />}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setMuted((value) => !value)}
+                            aria-label={muted ? t('billboard.soundOn') : t('billboard.soundOff')}
+                            className="pressable glass grid h-11 w-11 place-items-center rounded-full text-white"
+                        >
+                            {muted ? <VolumeX aria-hidden className="h-5 w-5" /> : <Volume2 aria-hidden className="h-5 w-5" />}
+                        </button>
+                    </div>
                 )}
             </div>
 

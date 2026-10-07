@@ -1,7 +1,7 @@
 "use client"
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Check, Info, Play, Plus, Star, Volume2, VolumeX } from 'lucide-react'
+import { Check, Info, Pause, Play, Plus, Star, Volume2, VolumeX } from 'lucide-react'
 import { cn } from '@/src/lib/utils'
 import TmdbImage from '@/src/components/TmdbImage'
 import YouTubeBackdrop from '@/src/components/media/YouTubeBackdrop'
@@ -114,11 +114,13 @@ function Stage({ items, colors, enabled }: { items: BillboardItem[], colors: (st
     const [muted, setMuted] = useState(true)
     const [inView, setInView] = useState(true)
     const [tabVisible, setTabVisible] = useState(true)
+    // The viewer's own pause (moving content must be pausable): stops the timer and the trailer.
+    const [userPaused, setUserPaused] = useState(false)
     const autoplay = useCanAutoplay()
     const ref = useRef<HTMLDivElement>(null)
     const timing = useRef({ index: -1, remaining: SLIDE_MS })
     const active = items[index]
-    const running = enabled && inView && tabVisible
+    const running = enabled && inView && tabVisible && !userPaused
 
     useRoomLight(colors[index], enabled)
 
@@ -261,7 +263,16 @@ function Stage({ items, colors, enabled }: { items: BillboardItem[], colors: (st
             </div>
 
             {items.length > 1 && (
-                <div className="page-x absolute inset-x-0 bottom-[clamp(84px,11vh,128px)] flex justify-end">
+                <div className="page-x absolute inset-x-0 bottom-[clamp(84px,11vh,128px)] flex items-center justify-end gap-3">
+                    <button
+                        type="button"
+                        onClick={() => setUserPaused((value) => !value)}
+                        aria-pressed={userPaused}
+                        aria-label={userPaused ? t('clips.play') : t('clips.pause')}
+                        className="pressable grid h-8 w-8 place-items-center rounded-full text-white/70 outline-none transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-red-500"
+                    >
+                        {userPaused ? <Play aria-hidden className="ms-0.5 h-3.5 w-3.5 fill-current" /> : <Pause aria-hidden className="h-3.5 w-3.5 fill-current" />}
+                    </button>
                     <div role="tablist" aria-label={t('billboard.aria')} className="flex items-center gap-1.5">
                         {items.map((item, i) => (
                             <button

@@ -7,7 +7,7 @@ export const en = {
   'common.movies': 'Movies',
   'common.tvShows': 'TV Shows',
   'common.all': 'All',
-  'common.loading': 'Loading...',
+  'common.loading': 'Loading…',
   'common.loadingAria': 'Loading',
   'common.error': 'Error',
   'common.close': 'Close',
@@ -576,7 +576,7 @@ export const en = {
   'account.deleted': 'Your account has been deleted',
 
   // Search: people, recent searches
-  'search.placeholderPeople': 'Search titles or people',
+  'search.placeholderPeople': 'Search titles or people…',
   'search.recent': 'Recent searches',
   'search.clearRecent': 'Clear',
   'search.removeRecent': 'Remove "{query}" from recent searches',
@@ -733,7 +733,7 @@ export const en = {
   'nav.createAccount': 'Create account',
   'nav.signIn': 'Sign in',
   'nav.switchProfile': 'Switch profile',
-  'search.open': 'Search titles or people',
+  'search.open': 'Search titles or people…',
   'search.shortcutHint': 'Press / to search',
   'search.trendingNow': 'Trending right now',
   'search.titles': 'Movies and shows',

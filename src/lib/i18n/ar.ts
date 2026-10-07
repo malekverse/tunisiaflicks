@@ -10,7 +10,7 @@ export const ar: Record<TKey, string> = {
   'common.movies': 'أفلام',
   'common.tvShows': 'مسلسلات',
   'common.all': 'الكل',
-  'common.loading': 'جارٍ التحميل...',
+  'common.loading': 'جارٍ التحميل…',
   'common.loadingAria': 'جارٍ التحميل',
   'common.error': 'خطأ',
   'common.close': 'إغلاق',
@@ -578,7 +578,7 @@ export const ar: Record<TKey, string> = {
   'account.deleted': 'تم حذف حسابك',
 
   // Search: people, recent searches
-  'search.placeholderPeople': 'ابحث عن عنوان أو ممثل',
+  'search.placeholderPeople': 'ابحث عن عنوان أو ممثل…',
   'search.recent': 'عمليات البحث الأخيرة',
   'search.clearRecent': 'مسح',
   'search.removeRecent': 'إزالة «{query}» من عمليات البحث الأخيرة',
@@ -735,7 +735,7 @@ export const ar: Record<TKey, string> = {
   'nav.createAccount': 'إنشاء حساب',
   'nav.signIn': 'تسجيل الدخول',
   'nav.switchProfile': 'تبديل الملف الشخصي',
-  'search.open': 'ابحث عن عمل أو شخص',
+  'search.open': 'ابحث عن عمل أو شخص…',
   'search.shortcutHint': 'اضغط / للبحث',
   'search.trendingNow': 'الأكثر رواجاً الآن',
   'search.titles': 'أفلام ومسلسلات',

@@ -59,6 +59,8 @@
 
   html {
     background: #000;
+    /* Anchor jumps and keyboard focus land below the fixed top bar, not under it. */
+    scroll-padding-top: calc(var(--topbar) + 16px);
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
