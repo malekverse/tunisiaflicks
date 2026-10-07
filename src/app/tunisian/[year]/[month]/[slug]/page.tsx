@@ -6,6 +6,7 @@ import TunisianSeasons from '@/src/components/detail/TunisianSeasons'
 import PosterCard from '@/src/components/PosterCard'
 import { GRID_CLASS } from '@/src/components/MediaGrid'
 import { getTunisianDetail, getTunisianTitles } from '@/src/lib/tunisian'
+import { getT } from '@/src/lib/i18n/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,12 +26,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function TunisianDetailPage({ params }: Props) {
   const detail = await getTunisianDetail(slugOf(params))
+  const t = getT()
   if (detail === null) notFound()
   if (detail === undefined) {
     return (
       <div className='flex flex-col items-center justify-center gap-3 w-full py-24 text-center px-4'>
-        <p className='text-gray-400'>Couldn&apos;t load this title right now. Please try again in a moment.</p>
-        <Link href='/tunisian' className='text-sm text-gray-400 hover:text-white underline'>Back to Tunisian</Link>
+        <p className='text-gray-400'>{t('tunisian.detailFailed')}</p>
+        <Link href='/tunisian' className='text-sm text-gray-400 hover:text-white underline'>{t('tunisian.back')}</Link>
       </div>
     )
   }
@@ -63,7 +65,7 @@ export default async function TunisianDetailPage({ params }: Props) {
                 <span key={badge} className='bg-red-500 px-3 py-0.5 rounded-xl text-sm'>{badge}</span>
               ))}
               {detail.kind === 'series' && episodeCount > 0 && (
-                <span className='bg-zinc-700 px-3 py-0.5 rounded-xl text-sm'>{episodeCount} episodes</span>
+                <span className='bg-zinc-700 px-3 py-0.5 rounded-xl text-sm'>{t('tv.episodeCount', { count: episodeCount })}</span>
               )}
             </div>
             {detail.description && <p className='mt-4 text-gray-300 text-center md:text-start'>{detail.description}</p>}
@@ -74,7 +76,7 @@ export default async function TunisianDetailPage({ params }: Props) {
                 rel='noopener noreferrer'
                 className='mt-6 inline-flex items-center rounded-xl bg-red-500 hover:bg-red-400 text-white px-4 py-2 text-sm font-medium'
               >
-                <FaPlay className='mr-2' /> Watch on source site
+                <FaPlay className='me-2' /> {t('tunisian.watchOnSource')}
               </a>
             )}
           </div>
@@ -86,14 +88,14 @@ export default async function TunisianDetailPage({ params }: Props) {
           {detail.seasons.length > 0 ? (
             <TunisianSeasons seasons={detail.seasons} />
           ) : (
-            <p className='text-gray-400'>No episodes are available yet.</p>
+            <p className='text-gray-400'>{t('tunisian.noEpisodes')}</p>
           )}
         </div>
       )}
 
       {more.length > 0 && (
-        <section aria-label="More Tunisian titles" className='px-4 sm:px-14 max-w-[1800px] mx-auto w-full'>
-          <h2 className='text-2xl sm:text-3xl font-semibold mb-3'>More Tunisian titles</h2>
+        <section aria-label={t('tunisian.more')} className='px-4 sm:px-14 max-w-[1800px] mx-auto w-full'>
+          <h2 className='text-2xl sm:text-3xl font-semibold mb-3'>{t('tunisian.more')}</h2>
           <div className={GRID_CLASS}>
             {more.map((title) => (
               <PosterCard

@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import MovieDetail from '@/src/components/detail/MovieDetail'
-import { TmdbError, tmdbFetch, tmdbFetchSafe } from '@/src/lib/tmdb'
+import { TmdbError, tmdbFetch, tmdbFetchSafe, withTranslatedFields } from '@/src/lib/tmdb'
+import { getLocale } from '@/src/lib/i18n/server'
 
 type Props = { params: { id: string } }
 
@@ -35,10 +36,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function MoviePage({ params }: Props) {
-  const [movie, recommendations] = await Promise.all([
+  // Arabic UI: TMDB's Arabic overview and genre names where they exist; titles stay as they are.
+  const arabic = getLocale() === 'ar'
+  const [movie, recommendations, translated] = await Promise.all([
     getMovie(params.id),
     tmdbFetchSafe(`movie/${params.id}/recommendations`),
+    arabic && isValidId(params.id) ? tmdbFetchSafe(`movie/${params.id}`, { language: 'ar' }) : null,
   ])
 
-  return <MovieDetail id={params.id} data={movie} similar={recommendations?.results ?? []} />
+  const data = withTranslatedFields(movie, translated, ['overview', 'genres'])
+  return <MovieDetail id={params.id} data={data} similar={recommendations?.results ?? []} />
 }

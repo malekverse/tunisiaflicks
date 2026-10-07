@@ -2,20 +2,23 @@ import Link from 'next/link'
 import PosterCard from '@/src/components/PosterCard'
 import { GRID_CLASS } from '@/src/components/MediaGrid'
 import { getTunisianTitles } from '@/src/lib/tunisian'
+import type { TKey } from '@/src/lib/i18n'
+import { getT } from '@/src/lib/i18n/server'
 
 // The catalogue is cached for 30 minutes (see lib/tunisian.ts); rendering per request keeps a
 // temporary outage of the source site from being frozen into a static page.
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Tunisian | TunisiaFlicks' }
+export const generateMetadata = () => ({ title: `${getT()('tunisian.metaTitle')} | TunisiaFlicks` })
 
-const TABS = [
-  { label: 'All', value: undefined },
-  { label: 'Series', value: 'series' },
-  { label: 'Movies', value: 'movie' },
-] as const
+const TABS: { label: TKey, value?: 'series' | 'movie' }[] = [
+  { label: 'common.all', value: undefined },
+  { label: 'tunisian.series', value: 'series' },
+  { label: 'tunisian.movies', value: 'movie' },
+]
 
 export default async function TunisianPage({ searchParams }: { searchParams: { type?: string } }) {
   const titles = await getTunisianTitles()
+  const t = getT()
   const type = searchParams.type === 'series' || searchParams.type === 'movie' ? searchParams.type : undefined
   const visible = titles?.filter((title) => !type || title.kind === type) ?? []
 
@@ -25,20 +28,20 @@ export default async function TunisianPage({ searchParams }: { searchParams: { t
   return (
     <div className='w-full max-w-[1800px] px-4 sm:px-6'>
       <div className='flex flex-wrap items-center justify-between gap-3 mb-6'>
-        <h1 className='text-3xl sm:text-4xl font-bold'>Tunisian Vibes</h1>
+        <h1 className='text-3xl sm:text-4xl font-bold'>{t('tunisian.title')}</h1>
         <div className='flex gap-2'>
           {TABS.map((item) => (
             <Link key={item.label} href={item.value ? `/tunisian?type=${item.value}` : '/tunisian'} className={tab(type === item.value)}>
-              {item.label}
+              {t(item.label)}
             </Link>
           ))}
         </div>
       </div>
 
       {titles === null ? (
-        <p className='text-gray-400'>Couldn&apos;t load Tunisian content right now. Please try again in a moment.</p>
+        <p className='text-gray-400'>{t('tunisian.failed')}</p>
       ) : visible.length === 0 ? (
-        <p className='text-gray-400'>Nothing here yet.</p>
+        <p className='text-gray-400'>{t('tunisian.empty')}</p>
       ) : (
         <div className={GRID_CLASS}>
           {visible.map((title) => (

@@ -10,9 +10,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/src/components/ui/alert';
 import { motion } from 'framer-motion';
+import { useT } from '@/src/components/I18nProvider';
+import { translateApiMessage } from '@/src/lib/i18n';
 
 export default function ResetPasswordForm() {
   const router = useRouter();
+  const t = useT();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   
@@ -24,9 +27,9 @@ export default function ResetPasswordForm() {
 
   useEffect(() => {
     if (!token) {
-      setError('Invalid or missing reset token');
+      setError(t('auth.invalidToken'));
     }
-  }, [token]);
+  }, [token, t]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,12 +38,12 @@ export default function ResetPasswordForm() {
     
     // Validate passwords
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('auth.passwordMismatch'));
       return;
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
+      setError(t('auth.passwordTooShort'));
       return;
     }
 
@@ -56,7 +59,7 @@ export default function ResetPasswordForm() {
       const data = await response.json();
 
       if (response.ok) {
-        setSuccess('Your password has been reset successfully');
+        setSuccess(t('auth.resetSuccess'));
         // Clear the form fields after successful submission
         setPassword('');
         setConfirmPassword('');
@@ -66,11 +69,11 @@ export default function ResetPasswordForm() {
           router.push('/login');
         }, 3000);
       } else {
-        setError(data.message || 'An error occurred. Please try again.');
+        setError(translateApiMessage(t, data.message) || t('auth.genericError'));
       }
     } catch (error) {
       console.error('Reset password error:', error);
-      setError('An unexpected error occurred. Please try again.');
+      setError(t('common.unexpectedError'));
     } finally {
       setIsLoading(false);
     }
@@ -85,9 +88,9 @@ export default function ResetPasswordForm() {
       >
         <Card className="w-[350px] bg-black border border-gray-600 shadow-lg shadow-gray-600/20">
           <CardHeader>
-            <CardTitle className="text-2xl font-bold text-red-600">Reset Password</CardTitle>
+            <CardTitle className="text-2xl font-bold text-red-600">{t('auth.resetTitle')}</CardTitle>
             <CardDescription className="text-white/80">
-              Enter your new password
+              {t('auth.resetDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -95,7 +98,7 @@ export default function ResetPasswordForm() {
               <div className="grid w-full items-center gap-4">
                 <div className="flex flex-col space-y-1.5">
                   <Label htmlFor="password" className="text-white">
-                    New Password
+                    {t('auth.newPassword')}
                   </Label>
                   <Input
                     id="password"
@@ -109,7 +112,7 @@ export default function ResetPasswordForm() {
                 </div>
                 <div className="flex flex-col space-y-1.5">
                   <Label htmlFor="confirmPassword" className="text-white">
-                    Confirm New Password
+                    {t('auth.confirmPassword')}
                   </Label>
                   <Input
                     id="confirmPassword"
@@ -138,15 +141,15 @@ export default function ResetPasswordForm() {
                 className="w-full mt-4 bg-red-600 text-white hover:bg-red-700 transition-all duration-300"
                 disabled={!token || isLoading}
               >
-                {isLoading ? 'Resetting...' : 'Reset Password'}
+                {isLoading ? t('auth.resetting') : t('auth.resetTitle')}
               </Button>
             </form>
           </CardContent>
           <CardFooter className="flex justify-center">
             <p className="text-sm text-white/80">
-              Remember your password?{' '}
+              {t('auth.rememberPassword')}{' '}
               <Link href="/login" className="text-red-600 hover:underline">
-                Login
+                {t('auth.login')}
               </Link>
             </p>
           </CardFooter>

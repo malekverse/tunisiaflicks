@@ -3,7 +3,9 @@ import { notFound } from 'next/navigation'
 import ExpandableText from '@/src/components/ExpandableText'
 import MediaGrid from '@/src/components/MediaGrid'
 import { PosterSlider } from '@/src/components/Sliders'
-import { TmdbError, tmdbFetch, tmdbFetchSafe } from '@/src/lib/tmdb'
+import { TmdbError, tmdbFetch, tmdbFetchSafe, withTranslatedFields } from '@/src/lib/tmdb'
+import { createTranslator, type Locale, type TKey } from '@/src/lib/i18n'
+import { getLocale } from '@/src/lib/i18n/server'
 
 type Props = { params: { id: string } }
 
@@ -49,8 +51,8 @@ function age(birthday: string, deathday?: string | null) {
   return years
 }
 
-const formatDate = (value: string) =>
-  new Date(value).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+const formatDate = (value: string, locale: Locale) =>
+  new Date(value).toLocaleDateString(locale === 'ar' ? 'ar-TN-u-nu-latn' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!isValidId(params.id)) return {}
@@ -67,22 +69,33 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function PersonPage({ params }: Props) {
-  const person = await getPerson(params.id)
+  const locale = getLocale()
+  const t = createTranslator(locale)
+  // Arabic UI: TMDB's Arabic biography when there is one (most people only have an English one).
+  const [english, translated] = await Promise.all([
+    getPerson(params.id),
+    locale === 'ar' && isValidId(params.id) ? tmdbFetchSafe(`person/${params.id}`, { language: 'ar' }) : null,
+  ])
+  const person = withTranslatedFields(english, translated, ['biography'])
   const credits = buildCredits(person)
+  const department = (name: string) => {
+    const key = `dept.${name}` as TKey
+    return t(key) === key ? name : t(key)
+  }
 
   // "Known for": what people actually watched (vote count), not just recent noise.
   const knownFor = [...credits].sort((a, b) => (b.vote_count ?? 0) - (a.vote_count ?? 0)).slice(0, 20)
   const filmography = [...credits].sort((a, b) => dateOf(b).localeCompare(dateOf(a)))
 
   const facts = [
-    person.known_for_department && { label: 'Known for', value: person.known_for_department },
+    person.known_for_department && { label: t('person.knownFor'), value: department(person.known_for_department) },
     person.birthday && {
-      label: 'Born',
-      value: `${formatDate(person.birthday)}${person.deathday ? '' : ` (age ${age(person.birthday)})`}`,
+      label: t('person.born'),
+      value: `${formatDate(person.birthday, locale)}${person.deathday ? '' : ` ${t('person.age', { age: age(person.birthday) })}`}`,
     },
-    person.deathday && { label: 'Died', value: `${formatDate(person.deathday)} (aged ${age(person.birthday, person.deathday)})` },
-    person.place_of_birth && { label: 'Place of birth', value: person.place_of_birth },
-    credits.length > 0 && { label: 'Credits', value: `${credits.length} titles` },
+    person.deathday && { label: t('person.died'), value: `${formatDate(person.deathday, locale)} ${t('person.aged', { age: age(person.birthday, person.deathday) })}` },
+    person.place_of_birth && { label: t('person.placeOfBirth'), value: person.place_of_birth },
+    credits.length > 0 && { label: t('person.credits'), value: t('person.titles', { count: credits.length }) },
   ].filter(Boolean) as { label: string, value: string }[]
 
   return (
@@ -108,18 +121,18 @@ export default async function PersonPage({ params }: Props) {
           )}
           {person.biography && (
             <div className="mt-6 max-w-3xl">
-              <h2 className="text-lg font-semibold mb-2">Biography</h2>
+              <h2 className="text-lg font-semibold mb-2">{t('person.biography')}</h2>
               <ExpandableText text={person.biography} />
             </div>
           )}
         </div>
       </section>
 
-      {knownFor.length > 0 && <PosterSlider title="Known For" items={knownFor} kind="mixed" />}
+      {knownFor.length > 0 && <PosterSlider title={t('person.knownForRow')} items={knownFor} kind="mixed" />}
 
       {filmography.length > 0 && (
-        <section aria-label="Filmography">
-          <h2 className="text-2xl sm:text-3xl font-semibold mb-4">Filmography</h2>
+        <section aria-label={t('person.filmography')}>
+          <h2 className="text-2xl sm:text-3xl font-semibold mb-4">{t('person.filmography')}</h2>
           <MediaGrid items={filmography} showTypeBadge />
         </section>
       )}

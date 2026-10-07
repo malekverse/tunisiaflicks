@@ -11,10 +11,12 @@ import { Card, CardContent } from '@/src/components/ui/card';
 import { toast } from '@/src/hooks/use-toast';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useI18n } from '@/src/components/I18nProvider';
 
 export default function FavoritesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t, dateLocale } = useI18n();
   const [favorites, setFavorites] = useState<ContentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -35,8 +37,8 @@ export default function FavoritesPage() {
         } catch (error) {
           console.error('Error fetching favorites:', error);
           toast({
-            title: 'Error',
-            description: 'Failed to load your favorites',
+            title: t('common.error'),
+            description: t('lists.loadFavoritesFailed'),
             variant: 'destructive',
           });
         } finally {
@@ -46,21 +48,21 @@ export default function FavoritesPage() {
     };
 
     fetchFavorites();
-  }, [status]);
+  }, [status, t]);
 
   const handleRemoveFromFavorites = async (id: string, title: string) => {
     try {
       await removeFromFavorites(id);
       setFavorites(favorites.filter(item => item.id !== id));
       toast({
-        title: 'Removed from favorites',
-        description: `${title} has been removed from your favorites`,
+        title: t('toast.removedFavorites'),
+        description: t('toast.removedFavoritesDesc', { title }),
       });
     } catch (error) {
       console.error('Failed to remove from favorites:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to remove from favorites',
+        title: t('common.error'),
+        description: t('lists.removeFavoritesFailed'),
         variant: 'destructive',
       });
     }
@@ -69,9 +71,9 @@ export default function FavoritesPage() {
   if (status === 'loading') {
     return (
       <div className="container mx-auto py-10 px-4">
-        <h1 className="text-3xl font-bold mb-6">My Favorites</h1>
+        <h1 className="text-3xl font-bold mb-6">{t('lists.favoritesTitle')}</h1>
         <div className="flex justify-center items-center h-40">
-          <p>Loading...</p>
+          <p>{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -79,11 +81,11 @@ export default function FavoritesPage() {
 
   return (
     <div className="container mx-auto py-10 px-4">
-      <h1 className="text-3xl font-bold mb-6">My Favorites</h1>
+      <h1 className="text-3xl font-bold mb-6">{t('lists.favoritesTitle')}</h1>
       
       {isLoading ? (
         <div className="flex justify-center items-center h-40">
-          <p>Loading favorites...</p>
+          <p>{t('lists.loadingFavorites')}</p>
         </div>
       ) : favorites.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -104,10 +106,10 @@ export default function FavoritesPage() {
                   <h3 className="text-xl font-bold mb-2">{item.title}</h3>
                 </Link>
                 <p className="text-gray-400 text-sm mb-2">
-                  {item.media_type === 'movie' ? 'Movie' : 'TV Show'}
+                  {item.media_type === 'movie' ? t('common.movie') : t('common.tvShow')}
                 </p>
                 <p className="text-gray-400 text-sm mb-2">
-                  Added on: {new Date(item.added_at).toLocaleDateString()}
+                  {t('lists.addedOn', { date: new Date(item.added_at).toLocaleDateString(dateLocale) })}
                 </p>
                 <div className="mt-auto pt-4">
                   <Button 
@@ -116,7 +118,7 @@ export default function FavoritesPage() {
                     className="w-full"
                     onClick={() => handleRemoveFromFavorites(item.id, item.title)}
                   >
-                    <FaTrash className="mr-2" /> Remove from Favorites
+                    <FaTrash className="me-2" /> {t('lists.removeFromFavorites')}
                   </Button>
                 </div>
               </CardContent>
@@ -126,9 +128,9 @@ export default function FavoritesPage() {
       ) : (
         <div className="text-center py-10 bg-gray-900 rounded-lg">
           <FaHeart className="mx-auto text-4xl text-gray-600 mb-4" />
-          <h3 className="text-xl font-medium mb-2">No favorites yet</h3>
+          <h3 className="text-xl font-medium mb-2">{t('lists.noFavorites')}</h3>
           <p className="text-gray-400">
-            Add movies and TV shows to your favorites by clicking the heart icon
+            {t('lists.noFavoritesHint')}
           </p>
         </div>
       )}

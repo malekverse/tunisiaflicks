@@ -1,10 +1,11 @@
 import { Skeleton } from '@/src/components/ui/skeleton'
+import { getT } from '@/src/lib/i18n/server'
 
 // Shown instantly while a server-rendered page (home, TV, lists...) is being prepared, in place of
 // the old full-screen spinner that blocked every navigation for half a second.
 export default function Loading() {
   return (
-    <div className='w-full max-w-[1800px] px-4 sm:px-14 space-y-6' aria-busy='true' aria-label='Loading'>
+    <div className='w-full max-w-[1800px] px-4 sm:px-14 space-y-6' aria-busy='true' aria-label={getT()('common.loadingAria')}>
       <div className='flex gap-3 overflow-hidden'>
         {Array.from({ length: 10 }).map((_, i) => <Skeleton key={i} className='h-9 w-24 shrink-0 rounded-xl' />)}
       </div>

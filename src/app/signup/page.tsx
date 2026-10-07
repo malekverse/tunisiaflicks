@@ -9,9 +9,12 @@ import { Label } from '@/src/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/src/components/ui/card';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
+import { useT } from '@/src/components/I18nProvider';
+import { translateApiMessage } from '@/src/lib/i18n';
 
 export default function SignUpPage() {
   const router = useRouter();
+  const t = useT();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,7 +30,7 @@ export default function SignUpPage() {
   }, [status, router]);
 
   if (status === 'loading' || status === 'authenticated') {
-    return <p className="text-gray-400 py-10">Loading...</p>; // Show a loader while checking auth state
+    return <p className="text-gray-400 py-10">{t('common.loading')}</p>; // Show a loader while checking auth state
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -46,11 +49,11 @@ export default function SignUpPage() {
         router.push('/login');
       } else {
         const data = await response.json();
-        setError(data.message || 'An error occurred during sign up');
+        setError(translateApiMessage(t, data.message) || t('auth.signUpError'));
       }
     } catch (error) {
       console.error('Signup error:', error);
-      setError('An unexpected error occurred. Please try again.');
+      setError(t('common.unexpectedError'));
     } finally {
       setIsLoading(false);
     }
@@ -65,9 +68,9 @@ export default function SignUpPage() {
       >
         <Card className="w-[350px] bg-black border border-gray-600 shadow-lg shadow-gray-600/20">
           <CardHeader>
-            <CardTitle className="text-2xl font-bold text-red-600">Sign Up</CardTitle>
+            <CardTitle className="text-2xl font-bold text-red-600">{t('auth.signUp')}</CardTitle>
             <CardDescription className="text-white/80">
-              Create a new account
+              {t('auth.signUpDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -75,7 +78,7 @@ export default function SignUpPage() {
               <div className="grid w-full items-center gap-4">
                 <div className="flex flex-col space-y-1.5">
                   <Label htmlFor="name" className="text-white">
-                    Name
+                    {t('auth.name')}
                   </Label>
                   <Input
                     id="name"
@@ -87,7 +90,7 @@ export default function SignUpPage() {
                 </div>
                 <div className="flex flex-col space-y-1.5">
                   <Label htmlFor="email" className="text-white">
-                    Email
+                    {t('auth.email')}
                   </Label>
                   <Input
                     id="email"
@@ -100,7 +103,7 @@ export default function SignUpPage() {
                 </div>
                 <div className="flex flex-col space-y-1.5">
                   <Label htmlFor="password" className="text-white">
-                    Password
+                    {t('auth.password')}
                   </Label>
                   <Input
                     id="password"
@@ -119,15 +122,15 @@ export default function SignUpPage() {
                 className="w-full mt-4 bg-red-600 text-white hover:bg-red-700 transition-all duration-300"
                 disabled={isLoading}
               >
-                {isLoading ? 'Signing up...' : 'Sign Up'}
+                {isLoading ? t('auth.signingUp') : t('auth.signUp')}
               </Button>
             </form>
           </CardContent>
           <CardFooter className="flex justify-center">
             <p className="text-sm text-white/80">
-              Already have an account?{' '}
+              {t('auth.haveAccount')}{' '}
               <Link href="/login" className="text-red-600 hover:underline">
-                Login
+                {t('auth.login')}
               </Link>
             </p>
           </CardFooter>

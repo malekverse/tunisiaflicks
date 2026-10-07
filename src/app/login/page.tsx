@@ -11,9 +11,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/src/components/ui/alert';
 import { motion } from 'framer-motion';
+import { useT } from '@/src/components/I18nProvider';
 
 export default function LoginPage() {
   const router = useRouter();
+  const t = useT();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +30,7 @@ export default function LoginPage() {
   }, [status, router]);
 
   if (status === 'loading' || status === 'authenticated') {
-    return <p className="text-gray-400 py-10">Loading...</p>; // Show a loader while checking auth state
+    return <p className="text-gray-400 py-10">{t('common.loading')}</p>; // Show a loader while checking auth state
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,14 +46,14 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError(result.error === 'CredentialsSignin' ? 'Invalid email or password.' : result.error);
+        setError(result.error === 'CredentialsSignin' ? t('auth.invalidCredentials') : result.error);
       } else {
         router.push('/');
         router.refresh();
       }
     } catch (error) {
       console.error('Login error:', error);
-      setError('An unexpected error occurred. Please try again.');
+      setError(t('common.unexpectedError'));
     } finally {
       setIsLoading(false);
     }
@@ -66,9 +68,9 @@ export default function LoginPage() {
       >
         <Card className="w-[350px] bg-black border border-gray-600 shadow-lg shadow-gray-600/20">
           <CardHeader>
-            <CardTitle className="text-2xl font-bold text-red-600">Login</CardTitle>
+            <CardTitle className="text-2xl font-bold text-red-600">{t('auth.login')}</CardTitle>
             <CardDescription className="text-white/80">
-              Enter your credentials to access your account
+              {t('auth.loginDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -76,7 +78,7 @@ export default function LoginPage() {
               <div className="grid w-full items-center gap-4">
                 <div className="flex flex-col space-y-1.5">
                   <Label htmlFor="email" className="text-white">
-                    Email
+                    {t('auth.email')}
                   </Label>
                   <Input
                     id="email"
@@ -89,7 +91,7 @@ export default function LoginPage() {
                 </div>
                 <div className="flex flex-col space-y-1.5">
                   <Label htmlFor="password" className="text-white">
-                    Password
+                    {t('auth.password')}
                   </Label>
                   <Input
                     id="password"
@@ -112,20 +114,20 @@ export default function LoginPage() {
                 className="w-full mt-4 bg-red-600 text-white hover:bg-red-700 transition-all duration-300"
                 disabled={isLoading}
               >
-                {isLoading ? 'Logging in...' : 'Login'}
+                {isLoading ? t('auth.loggingIn') : t('auth.login')}
               </Button>
             </form>
           </CardContent>
           <CardFooter className="flex flex-col space-y-2 items-center">
             <p className="text-sm text-white/80">
-              Don&apos;t have an account?{' '}
+              {t('auth.noAccount')}{' '}
               <Link href="/signup" className="text-red-600 hover:underline">
-                Sign up
+                {t('auth.signUpLink')}
               </Link>
             </p>
             <p className="text-sm text-white/80">
               <Link href="/auth/forgot-password" className="text-red-600 hover:underline">
-                Forgot your password?
+                {t('auth.forgotLink')}
               </Link>
             </p>
           </CardFooter>

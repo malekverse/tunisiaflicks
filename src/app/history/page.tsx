@@ -11,12 +11,14 @@ import { Card, CardContent } from '@/src/components/ui/card';
 import { toast } from '@/src/hooks/use-toast';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useI18n } from '@/src/components/I18nProvider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
 import { Progress } from '@/src/components/ui/progress';
 
 export default function WatchHistoryPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t, dateLocale } = useI18n();
   const [watchHistory, setWatchHistory] = useState<WatchHistoryItem[]>([]);
   const [filteredHistory, setFilteredHistory] = useState<WatchHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,8 +44,8 @@ export default function WatchHistoryPage() {
         } catch (error) {
           console.error('Error fetching watch history:', error);
           toast({
-            title: 'Error',
-            description: 'Failed to load your watch history',
+            title: t('common.error'),
+            description: t('lists.loadHistoryFailed'),
             variant: 'destructive',
           });
         } finally {
@@ -53,7 +55,7 @@ export default function WatchHistoryPage() {
     };
 
     fetchWatchHistory();
-  }, [status]);
+  }, [status, t]);
 
   // Apply filters and sorting
   useEffect(() => {
@@ -87,9 +89,9 @@ export default function WatchHistoryPage() {
   if (status === 'loading') {
     return (
       <div className="container mx-auto py-10 px-4">
-        <h1 className="text-3xl font-bold mb-6">My Watch History</h1>
+        <h1 className="text-3xl font-bold mb-6">{t('lists.historyTitle')}</h1>
         <div className="flex justify-center items-center h-40">
-          <p>Loading...</p>
+          <p>{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -97,7 +99,7 @@ export default function WatchHistoryPage() {
 
   return (
     <div className="container mx-auto py-10 px-4">
-      <h1 className="text-3xl font-bold mb-6">My Watch History</h1>
+      <h1 className="text-3xl font-bold mb-6">{t('lists.historyTitle')}</h1>
       
       {!isLoading && (
         <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -107,12 +109,12 @@ export default function WatchHistoryPage() {
               onValueChange={setMediaTypeFilter}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Filter by type" />
+                <SelectValue placeholder={t('lists.filterByType')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="movie">Movies</SelectItem>
-                <SelectItem value="tv">TV Shows</SelectItem>
+                <SelectItem value="all">{t('lists.allTypes')}</SelectItem>
+                <SelectItem value="movie">{t('common.movies')}</SelectItem>
+                <SelectItem value="tv">{t('common.tvShows')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -123,12 +125,12 @@ export default function WatchHistoryPage() {
               onValueChange={setProgressFilter}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Filter by progress" />
+                <SelectValue placeholder={t('lists.filterByProgress')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Progress</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="in-progress">In Progress</SelectItem>
+                <SelectItem value="all">{t('lists.allProgress')}</SelectItem>
+                <SelectItem value="completed">{t('lists.completed')}</SelectItem>
+                <SelectItem value="in-progress">{t('lists.inProgress')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -139,11 +141,11 @@ export default function WatchHistoryPage() {
               onValueChange={setSortOrder}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Sort by" />
+                <SelectValue placeholder={t('lists.sortBy')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="newest">Recently Watched</SelectItem>
-                <SelectItem value="oldest">Oldest First</SelectItem>
+                <SelectItem value="newest">{t('lists.recentlyWatched')}</SelectItem>
+                <SelectItem value="oldest">{t('lists.oldestFirst')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -152,7 +154,7 @@ export default function WatchHistoryPage() {
       
       {isLoading ? (
         <div className="flex justify-center items-center h-40">
-          <p>Loading watch history...</p>
+          <p>{t('lists.loadingHistory')}</p>
         </div>
       ) : filteredHistory.length > 0 ? (
         <div className="grid grid-cols-1 gap-6">
@@ -175,14 +177,17 @@ export default function WatchHistoryPage() {
                       <h3 className="text-xl font-bold mb-2">{item.title}</h3>
                     </Link>
                     <p className="text-gray-400 text-sm mb-2">
-                      {item.media_type === 'movie' ? 'Movie' : 'TV Show'}
+                      {item.media_type === 'movie' ? t('common.movie') : t('common.tvShow')}
                     </p>
                     <p className="text-gray-400 text-sm mb-2">
-                      Watched on: {new Date(item.watched_at).toLocaleDateString()} at {new Date(item.watched_at).toLocaleTimeString()}
+                      {t('lists.watchedOnAt', {
+                        date: new Date(item.watched_at).toLocaleDateString(dateLocale),
+                        time: new Date(item.watched_at).toLocaleTimeString(dateLocale),
+                      })}
                     </p>
                     <div className="mt-2">
                       <div className="flex justify-between mb-1">
-                        <span className="text-sm text-gray-400">Progress</span>
+                        <span className="text-sm text-gray-400">{t('lists.progress')}</span>
                         <span className="text-sm text-gray-400">{item.progress || 0}%</span>
                       </div>
                       <Progress value={item.progress || 0} className="h-2" />
@@ -191,7 +196,7 @@ export default function WatchHistoryPage() {
                   <div className="flex justify-end mt-4">
                     <Link href={`/${item.media_type}/${item.id}`}>
                       <Button variant="default" size="sm">
-                        <FaPlay className="mr-2" /> Watch Again
+                        <FaPlay className="me-2" /> {t('lists.watchAgain')}
                       </Button>
                     </Link>
                   </div>
@@ -203,9 +208,9 @@ export default function WatchHistoryPage() {
       ) : (
         <div className="text-center py-10 bg-gray-900 rounded-lg">
           <FaHistory className="mx-auto text-4xl text-gray-600 mb-4" />
-          <h3 className="text-xl font-medium mb-2">No watch history yet</h3>
+          <h3 className="text-xl font-medium mb-2">{t('lists.noHistoryYet')}</h3>
           <p className="text-gray-400">
-            Your watch history will appear here after you watch movies or TV shows
+            {t('lists.noHistoryHint')}
           </p>
         </div>
       )}

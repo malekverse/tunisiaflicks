@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -11,26 +11,29 @@ import { Input } from "@/src/components/ui/input"
 import { toast } from "@/src/hooks/use-toast"
 import { updateProfile } from "./actions"
 import AvatarUpload from "./AvatarUpload"
+import { useT } from "@/src/components/I18nProvider"
+import type { Translate } from "@/src/lib/i18n"
 
 const phoneRegex = new RegExp(
   /^([+]?[\s0-9]+)?(\d{3}|[(]?[0-9]+[)])?([-]?[\s]?[0-9])+$/
 )
 
-const profileFormSchema = z.object({
+// Built per language so the validation messages are translated.
+const profileFormSchema = (t: Translate) => z.object({
   name: z.string().min(2, {
-    message: "Name must be at least 2 characters.",
+    message: t("profile.nameMin"),
   }),
   email: z.string().email({
-    message: "Please enter a valid email address.",
+    message: t("profile.emailInvalid"),
   }),
   // Phone and birthdate are optional: empty is fine, but if filled they must be valid.
-  phone: z.string().refine((value) => value === "" || phoneRegex.test(value), "Invalid phone number"),
+  phone: z.string().refine((value) => value === "" || phoneRegex.test(value), t("profile.phoneInvalid")),
   birthdate: z.string().refine((date) => date === "" || new Date(date) < new Date(), {
-    message: "Birthdate must be in the past",
+    message: t("profile.birthdatePast"),
   }),
 })
 
-type ProfileFormValues = z.infer<typeof profileFormSchema>
+type ProfileFormValues = z.infer<ReturnType<typeof profileFormSchema>>
 
 interface User {
   name?: string;
@@ -43,9 +46,11 @@ interface User {
 export default function ProfileForm({ user }: { user: User }) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const t = useT()
+  const schema = useMemo(() => profileFormSchema(t), [t])
 
   const form = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileFormSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
       name: user.name || "",
       email: user.email || "",
@@ -60,14 +65,14 @@ export default function ProfileForm({ user }: { user: User }) {
     try {
       await updateProfile(data)
       toast({
-        title: "Profile updated",
-        description: "Your profile has been successfully updated.",
+        title: t("profile.updated"),
+        description: t("profile.updatedDesc"),
       })
       router.refresh()
     } catch (error) {
       toast({
-        title: "Error",
-        description: "There was a problem updating your profile.",
+        title: t("common.error"),
+        description: t("profile.updateFailed"),
         variant: "destructive",
       })
     } finally {
@@ -85,12 +90,12 @@ export default function ProfileForm({ user }: { user: User }) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Name</FormLabel>
+              <FormLabel>{t("profile.name")}</FormLabel>
               <FormControl>
-                <Input placeholder="Your name" {...field} />
+                <Input placeholder={t("profile.namePlaceholder")} {...field} />
               </FormControl>
               <FormDescription>
-                This is the name that will be displayed on your profile.
+                {t("profile.nameDesc")}
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -102,12 +107,12 @@ export default function ProfileForm({ user }: { user: User }) {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>{t("profile.email")}</FormLabel>
               <FormControl>
-                <Input placeholder="Your email" {...field} />
+                <Input placeholder={t("profile.emailPlaceholder")} {...field} />
               </FormControl>
               <FormDescription>
-                This is the email associated with your account.
+                {t("profile.emailDesc")}
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -119,12 +124,12 @@ export default function ProfileForm({ user }: { user: User }) {
           name="phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Phone Number</FormLabel>
+              <FormLabel>{t("profile.phone")}</FormLabel>
               <FormControl>
-                <Input placeholder="Your phone number" {...field} />
+                <Input placeholder={t("profile.phonePlaceholder")} {...field} />
               </FormControl>
               <FormDescription>
-                Add your phone number for additional contact options.
+                {t("profile.phoneDesc")}
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -136,12 +141,12 @@ export default function ProfileForm({ user }: { user: User }) {
           name="birthdate"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Birthdate</FormLabel>
+              <FormLabel>{t("profile.birthdate")}</FormLabel>
               <FormControl>
                 <Input type="date" {...field} />
               </FormControl>
               <FormDescription>
-                Your birthdate helps us provide age-appropriate content.
+                {t("profile.birthdateDesc")}
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -149,7 +154,7 @@ export default function ProfileForm({ user }: { user: User }) {
         />
         
         <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Updating..." : "Update Profile"}
+          {isLoading ? t("profile.updating") : t("profile.update")}
         </Button>
       </form>
     </Form>

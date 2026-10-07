@@ -11,11 +11,13 @@ import { Card, CardContent } from '@/src/components/ui/card';
 import { toast } from '@/src/hooks/use-toast';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useI18n } from '@/src/components/I18nProvider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
 
 export default function SavedItemsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t, dateLocale } = useI18n();
   const [savedItems, setSavedItems] = useState<ContentItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<ContentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,8 +42,8 @@ export default function SavedItemsPage() {
         } catch (error) {
           console.error('Error fetching saved items:', error);
           toast({
-            title: 'Error',
-            description: 'Failed to load your saved items',
+            title: t('common.error'),
+            description: t('lists.loadSavedFailed'),
             variant: 'destructive',
           });
         } finally {
@@ -51,7 +53,7 @@ export default function SavedItemsPage() {
     };
 
     fetchSavedItems();
-  }, [status]);
+  }, [status, t]);
 
   // Apply filters and sorting
   useEffect(() => {
@@ -78,14 +80,14 @@ export default function SavedItemsPage() {
       await removeFromSaved(id);
       setSavedItems(savedItems.filter(item => item.id !== id));
       toast({
-        title: 'Removed from saved items',
-        description: `${title} has been removed from your saved items`,
+        title: t('lists.removedSavedItems'),
+        description: t('lists.removedSavedItemsDesc', { title }),
       });
     } catch (error) {
       console.error('Failed to remove from saved items:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to remove from saved items',
+        title: t('common.error'),
+        description: t('lists.removeSavedItemsFailed'),
         variant: 'destructive',
       });
     }
@@ -94,9 +96,9 @@ export default function SavedItemsPage() {
   if (status === 'loading') {
     return (
       <div className="container mx-auto py-10 px-4">
-        <h1 className="text-3xl font-bold mb-6">My Saved Items</h1>
+        <h1 className="text-3xl font-bold mb-6">{t('lists.savedTitle')}</h1>
         <div className="flex justify-center items-center h-40">
-          <p>Loading...</p>
+          <p>{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -104,7 +106,7 @@ export default function SavedItemsPage() {
 
   return (
     <div className="container mx-auto py-10 px-4">
-      <h1 className="text-3xl font-bold mb-6">My Saved Items</h1>
+      <h1 className="text-3xl font-bold mb-6">{t('lists.savedTitle')}</h1>
       
       {!isLoading && (
         <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -114,12 +116,12 @@ export default function SavedItemsPage() {
               onValueChange={setMediaTypeFilter}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Filter by type" />
+                <SelectValue placeholder={t('lists.filterByType')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="movie">Movies</SelectItem>
-                <SelectItem value="tv">TV Shows</SelectItem>
+                <SelectItem value="all">{t('lists.allTypes')}</SelectItem>
+                <SelectItem value="movie">{t('common.movies')}</SelectItem>
+                <SelectItem value="tv">{t('common.tvShows')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -130,11 +132,11 @@ export default function SavedItemsPage() {
               onValueChange={setSortOrder}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Sort by" />
+                <SelectValue placeholder={t('lists.sortBy')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="newest">Newest First</SelectItem>
-                <SelectItem value="oldest">Oldest First</SelectItem>
+                <SelectItem value="newest">{t('lists.newestFirst')}</SelectItem>
+                <SelectItem value="oldest">{t('lists.oldestFirst')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -143,7 +145,7 @@ export default function SavedItemsPage() {
       
       {isLoading ? (
         <div className="flex justify-center items-center h-40">
-          <p>Loading saved items...</p>
+          <p>{t('lists.loadingSaved')}</p>
         </div>
       ) : filteredItems.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -164,10 +166,10 @@ export default function SavedItemsPage() {
                   <h3 className="text-xl font-bold mb-2">{item.title}</h3>
                 </Link>
                 <p className="text-gray-400 text-sm mb-2">
-                  {item.media_type === 'movie' ? 'Movie' : 'TV Show'}
+                  {item.media_type === 'movie' ? t('common.movie') : t('common.tvShow')}
                 </p>
                 <p className="text-gray-400 text-sm mb-2">
-                  Saved on: {new Date(item.added_at).toLocaleDateString()}
+                  {t('lists.savedOn', { date: new Date(item.added_at).toLocaleDateString(dateLocale) })}
                 </p>
                 <div className="mt-auto pt-4">
                   <Button 
@@ -176,7 +178,7 @@ export default function SavedItemsPage() {
                     className="w-full"
                     onClick={() => handleRemoveFromSaved(item.id, item.title)}
                   >
-                    <FaTrash className="mr-2" /> Remove from Saved
+                    <FaTrash className="me-2" /> {t('lists.removeFromSaved')}
                   </Button>
                 </div>
               </CardContent>
@@ -186,9 +188,9 @@ export default function SavedItemsPage() {
       ) : (
         <div className="text-center py-10 bg-gray-900 rounded-lg">
           <FaBookmark className="mx-auto text-4xl text-gray-600 mb-4" />
-          <h3 className="text-xl font-medium mb-2">No saved items yet</h3>
+          <h3 className="text-xl font-medium mb-2">{t('lists.noSavedYet')}</h3>
           <p className="text-gray-400">
-            Save movies and TV shows for later by clicking the bookmark icon
+            {t('lists.noSavedHint')}
           </p>
         </div>
       )}

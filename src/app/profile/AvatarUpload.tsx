@@ -10,6 +10,7 @@ import AvatarEditor from "react-avatar-editor";
 import { updateAvatar } from "./actions";
 import { toast } from "@/src/hooks/use-toast";
 import { globalStore } from '@/src/store/store';
+import { useT } from '@/src/components/I18nProvider';
 
 interface User {
   name?: string;
@@ -20,6 +21,7 @@ interface User {
 export default function AvatarUpload({ user }: { user: User }) {
 
   const setAvatar = globalStore((state) => state.setAvatar);
+  const t = useT();
 
   const [image, setImage] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
@@ -48,16 +50,16 @@ export default function AvatarUpload({ user }: { user: User }) {
       try {
         await updateAvatar(dataUrl);
         toast({
-          title: "Avatar updated",
-          description: "Your avatar has been successfully updated.",
+          title: t('avatar.updated'),
+          description: t('avatar.updatedDesc'),
         });
         setCurrentImage(dataUrl); // Update the current image state
         setAvatar(dataUrl)
         setIsOpen(false);
       } catch (error) {
         toast({
-          title: "Error",
-          description: "There was a problem updating your avatar.",
+          title: t('common.error'),
+          description: t('avatar.failed'),
           variant: "destructive",
         });
       }
@@ -65,13 +67,13 @@ export default function AvatarUpload({ user }: { user: User }) {
   };
 
   return (
-    <div className="flex items-center space-x-4">
+    <div className="flex items-center gap-4">
       <Avatar className="w-24 h-24">
         <AvatarImage src={currentImage} alt={user.name} /> {/* Use currentImage state */}
         <AvatarFallback>{user.name?.charAt(0)}</AvatarFallback>
       </Avatar>
       <Button variant="outline" onClick={() => document.getElementById('avatar-upload')?.click()}>
-        Change Avatar
+        {t('avatar.change')}
       </Button>
       <input
         id="avatar-upload"
@@ -83,9 +85,9 @@ export default function AvatarUpload({ user }: { user: User }) {
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Avatar</DialogTitle>
+            <DialogTitle>{t('avatar.edit')}</DialogTitle>
             <DialogDescription>
-              Adjust your avatar image. You can zoom, move, and crop the image.
+              {t('avatar.editDesc')}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center space-y-4">
@@ -110,7 +112,7 @@ export default function AvatarUpload({ user }: { user: User }) {
                 onValueChange={([value]) => setScale(value)}
               />
             </div>
-            <Button onClick={handleSave}>Save Avatar</Button>
+            <Button onClick={handleSave}>{t('avatar.save')}</Button>
           </div>
         </DialogContent>
       </Dialog>

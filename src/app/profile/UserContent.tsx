@@ -11,8 +11,17 @@ import { FaHeart, FaBookmark, FaHistory, FaTrash } from 'react-icons/fa';
 import { Button } from '@/src/components/ui/button';
 import { removeFromFavorites, removeFromSaved } from '@/src/lib/user-content';
 import { toast } from '@/src/hooks/use-toast';
+import { useI18n } from '@/src/components/I18nProvider';
+import type { TKey } from '@/src/lib/i18n';
+
+const LOAD_FAILED: Record<string, TKey> = {
+  favorites: 'lists.loadFavoritesFailed',
+  saved: 'lists.loadSavedFailed',
+  history: 'lists.loadHistoryFailed',
+};
 
 export default function UserContent() {
+  const { t, dateLocale } = useI18n();
   const [activeTab, setActiveTab] = useState('favorites');
   const [favorites, setFavorites] = useState<ContentItem[]>([]);
   const [savedItems, setSavedItems] = useState<ContentItem[]>([]);
@@ -36,8 +45,8 @@ export default function UserContent() {
       } catch (error) {
         console.error(`Error fetching ${activeTab}:`, error);
         toast({
-          title: 'Error',
-          description: `Failed to load your ${activeTab}`,
+          title: t('common.error'),
+          description: t(LOAD_FAILED[activeTab]),
           variant: 'destructive',
         });
       } finally {
@@ -46,21 +55,21 @@ export default function UserContent() {
     };
 
     fetchUserContent();
-  }, [activeTab]);
+  }, [activeTab, t]);
 
   const handleRemoveFromFavorites = async (id: string, title: string) => {
     try {
       await removeFromFavorites(id);
       setFavorites(favorites.filter(item => item.id !== id));
       toast({
-        title: 'Removed from favorites',
-        description: `${title} has been removed from your favorites`,
+        title: t('toast.removedFavorites'),
+        description: t('toast.removedFavoritesDesc', { title }),
       });
     } catch (error) {
       console.error('Failed to remove from favorites:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to remove from favorites',
+        title: t('common.error'),
+        description: t('lists.removeFavoritesFailed'),
         variant: 'destructive',
       });
     }
@@ -71,23 +80,23 @@ export default function UserContent() {
       await removeFromSaved(id);
       setSavedItems(savedItems.filter(item => item.id !== id));
       toast({
-        title: 'Removed from saved',
-        description: `${title} has been removed from your saved list`,
+        title: t('toast.removedSaved'),
+        description: t('toast.removedSavedDesc', { title }),
       });
     } catch (error) {
       console.error('Failed to remove from saved:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to remove from saved',
+        title: t('common.error'),
+        description: t('lists.removeSavedFailed'),
         variant: 'destructive',
       });
     }
   };
 
   const renderContentItem = (item: ContentItem, listType: string) => {
-    const date = new Date(item.added_at).toLocaleDateString();
-    const watchedDate = item.hasOwnProperty('watched_at') 
-      ? new Date((item as WatchHistoryItem).watched_at).toLocaleDateString() 
+    const date = new Date(item.added_at).toLocaleDateString(dateLocale);
+    const watchedDate = item.hasOwnProperty('watched_at')
+      ? new Date((item as WatchHistoryItem).watched_at).toLocaleDateString(dateLocale)
       : null;
     
     return (
@@ -110,21 +119,21 @@ export default function UserContent() {
                   <h3 className="text-xl font-bold mb-2">{item.title}</h3>
                 </Link>
                 <p className="text-gray-400 text-sm mb-2">
-                  {item.media_type === 'movie' ? 'Movie' : 'TV Show'}
+                  {item.media_type === 'movie' ? t('common.movie') : t('common.tvShow')}
                 </p>
                 {watchedDate && (
                   <p className="text-gray-400 text-sm mb-2">
-                    Watched on: {watchedDate}
+                    {t('lists.watchedOn', { date: watchedDate })}
                     {(item as WatchHistoryItem).progress && (
-                      <span className="ml-2">
-                        ({(item as WatchHistoryItem).progress}% completed)
+                      <span className="ms-2">
+                        {t('lists.percentCompleted', { progress: (item as WatchHistoryItem).progress ?? 0 })}
                       </span>
                     )}
                   </p>
                 )}
                 {!watchedDate && (
                   <p className="text-gray-400 text-sm mb-2">
-                    Added on: {date}
+                    {t('lists.addedOn', { date })}
                   </p>
                 )}
               </div>
@@ -135,7 +144,7 @@ export default function UserContent() {
                     size="sm" 
                     onClick={() => handleRemoveFromFavorites(item.id, item.title)}
                   >
-                    <FaTrash className="mr-2" /> Remove
+                    <FaTrash className="me-2" /> {t('lists.remove')}
                   </Button>
                 )}
                 {listType === 'saved' && (
@@ -144,13 +153,13 @@ export default function UserContent() {
                     size="sm" 
                     onClick={() => handleRemoveFromSaved(item.id, item.title)}
                   >
-                    <FaTrash className="mr-2" /> Remove
+                    <FaTrash className="me-2" /> {t('lists.remove')}
                   </Button>
                 )}
                 {listType === 'history' && (
                   <Link href={`/${item.media_type}/${item.id}`}>
                     <Button variant="default" size="sm">
-                      Watch Again
+                      {t('lists.watchAgain')}
                     </Button>
                   </Link>
                 )}
@@ -164,34 +173,34 @@ export default function UserContent() {
 
   return (
     <div className="mt-8">
-      <h2 className="text-2xl font-bold mb-6">My Content</h2>
+      <h2 className="text-2xl font-bold mb-6">{t('profile.myContent')}</h2>
       
       <Tabs defaultValue="favorites" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3 mb-8">
           <TabsTrigger value="favorites" className="flex items-center">
-            <FaHeart className="mr-2" /> Favorites
+            <FaHeart className="me-2" /> {t('profile.tabFavorites')}
           </TabsTrigger>
           <TabsTrigger value="saved" className="flex items-center">
-            <FaBookmark className="mr-2" /> Saved
+            <FaBookmark className="me-2" /> {t('profile.tabSaved')}
           </TabsTrigger>
           <TabsTrigger value="history" className="flex items-center">
-            <FaHistory className="mr-2" /> Watch History
+            <FaHistory className="me-2" /> {t('profile.tabHistory')}
           </TabsTrigger>
         </TabsList>
         
         <TabsContent value="favorites">
           {isLoading ? (
             <div className="flex justify-center items-center h-40">
-              <p>Loading favorites...</p>
+              <p>{t('lists.loadingFavorites')}</p>
             </div>
           ) : favorites.length > 0 ? (
             favorites.map(item => renderContentItem(item, 'favorites'))
           ) : (
             <div className="text-center py-10 bg-gray-900 rounded-lg">
               <FaHeart className="mx-auto text-4xl text-gray-600 mb-4" />
-              <h3 className="text-xl font-medium mb-2">No favorites yet</h3>
+              <h3 className="text-xl font-medium mb-2">{t('lists.noFavorites')}</h3>
               <p className="text-gray-400">
-                Add movies and TV shows to your favorites by clicking the heart icon
+                {t('lists.noFavoritesHint')}
               </p>
             </div>
           )}
@@ -200,16 +209,16 @@ export default function UserContent() {
         <TabsContent value="saved">
           {isLoading ? (
             <div className="flex justify-center items-center h-40">
-              <p>Loading saved items...</p>
+              <p>{t('lists.loadingSaved')}</p>
             </div>
           ) : savedItems.length > 0 ? (
             savedItems.map(item => renderContentItem(item, 'saved'))
           ) : (
             <div className="text-center py-10 bg-gray-900 rounded-lg">
               <FaBookmark className="mx-auto text-4xl text-gray-600 mb-4" />
-              <h3 className="text-xl font-medium mb-2">No saved items</h3>
+              <h3 className="text-xl font-medium mb-2">{t('lists.noSaved')}</h3>
               <p className="text-gray-400">
-                Save movies and TV shows for later by clicking the bookmark icon
+                {t('lists.noSavedHint')}
               </p>
             </div>
           )}
@@ -218,16 +227,16 @@ export default function UserContent() {
         <TabsContent value="history">
           {isLoading ? (
             <div className="flex justify-center items-center h-40">
-              <p>Loading watch history...</p>
+              <p>{t('lists.loadingHistory')}</p>
             </div>
           ) : watchHistory.length > 0 ? (
             watchHistory.map(item => renderContentItem(item, 'history'))
           ) : (
             <div className="text-center py-10 bg-gray-900 rounded-lg">
               <FaHistory className="mx-auto text-4xl text-gray-600 mb-4" />
-              <h3 className="text-xl font-medium mb-2">No watch history</h3>
+              <h3 className="text-xl font-medium mb-2">{t('lists.noHistory')}</h3>
               <p className="text-gray-400">
-                Your watch history will appear here after you watch movies or TV shows
+                {t('lists.noHistoryHint')}
               </p>
             </div>
           )}

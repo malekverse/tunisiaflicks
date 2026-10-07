@@ -3,10 +3,12 @@ import DiscoverFilters from '@/src/components/DiscoverFilters'
 import MediaGrid from '@/src/components/MediaGrid'
 import PageNav from '@/src/components/PageNav'
 import { getList, parsePage } from '@/src/lib/lists'
-import { tmdbFetchSafe } from '@/src/lib/tmdb'
+import { tmdbFetchSafe, tmdbLanguage } from '@/src/lib/tmdb'
+import { createTranslator } from '@/src/lib/i18n'
+import { getLocale, getT } from '@/src/lib/i18n/server'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Discover | TunisiaFlicks' }
+export const generateMetadata = () => ({ title: `${getT()('discover.title')} | TunisiaFlicks` })
 
 type SearchParams = { page?: string, type?: string, genre?: string, year?: string, rating?: string, sort?: string }
 
@@ -27,6 +29,8 @@ export default async function DiscoverPage({ searchParams }: { searchParams: Sea
   const page = parsePage(searchParams.page)
   const kind = searchParams.type === 'tv' ? 'tv' : 'movie'
   const filters = parseFilters(searchParams)
+  const locale = getLocale()
+  const t = createTranslator(locale)
 
   const dateField = kind === 'movie' ? 'primary_release_date' : 'first_air_date'
   const today = new Date().toISOString().slice(0, 10)
@@ -46,7 +50,7 @@ export default async function DiscoverPage({ searchParams }: { searchParams: Sea
       ...(filters.year ? { [kind === 'movie' ? 'primary_release_year' : 'first_air_date_year']: filters.year } : {}),
       'vote_average.gte': filters.rating,
     }),
-    tmdbFetchSafe<{ genres: { id: number, name: string }[] }>(`genre/${kind}/list`, {}, 86400),
+    tmdbFetchSafe<{ genres: { id: number, name: string }[] }>(`genre/${kind}/list`, { language: tmdbLanguage(locale) }, 86400),
   ])
 
   const tab = (active: boolean) =>
@@ -55,18 +59,18 @@ export default async function DiscoverPage({ searchParams }: { searchParams: Sea
   return (
     <div className='w-full max-w-[1800px] px-4 sm:px-6'>
       <div className='flex flex-wrap items-center justify-between gap-3 mb-4'>
-        <h1 className='text-3xl sm:text-4xl font-bold'>Discover</h1>
+        <h1 className='text-3xl sm:text-4xl font-bold'>{t('discover.title')}</h1>
         <div className='flex gap-2'>
           {/* Switching type resets the filters: genre ids differ between movies and TV. */}
-          <Link href='/discover' className={tab(kind === 'movie')}>Movies</Link>
-          <Link href='/discover?type=tv' className={tab(kind === 'tv')}>TV Shows</Link>
+          <Link href='/discover' className={tab(kind === 'movie')}>{t('common.movies')}</Link>
+          <Link href='/discover?type=tv' className={tab(kind === 'tv')}>{t('common.tvShows')}</Link>
         </div>
       </div>
       <DiscoverFilters genres={genreList?.genres ?? []} values={filters} />
       {failed
-        ? <p className='text-gray-400'>Couldn&apos;t load this list right now. Please try again in a moment.</p>
+        ? <p className='text-gray-400'>{t('common.listFailed')}</p>
         : results.length === 0
-          ? <p className='text-gray-400 py-10 text-center'>Nothing matches these filters. Try widening them.</p>
+          ? <p className='text-gray-400 py-10 text-center'>{t('discover.noMatch')}</p>
           : <MediaGrid items={results} kind={kind} />}
       <PageNav currentPage={page} totalPages={totalPages} />
     </div>

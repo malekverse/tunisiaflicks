@@ -3,8 +3,10 @@ import React, { useEffect, useState } from 'react'
 import { searchMovies } from './actions';
 import MediaGrid from '@/src/components/MediaGrid';
 import PaginationComponent from '@/src/components/PaginationComponent';
+import { useT } from '@/src/components/I18nProvider';
 
 export default function Page({ searchParams }: { searchParams: { q?: string } }) {
+  const t = useT();
   const [query, setQuery] = useState(searchParams.q || "");
   const [debouncedQuery, setDebouncedQuery] = useState(query);
   const [results, setResults] = useState<any[]>([]);
@@ -74,10 +76,10 @@ export default function Page({ searchParams }: { searchParams: { q?: string } })
         {/* search bar */}
         <div className="w-full">
           <label htmlFor="search" className="sr-only">
-            Search
+            {t('search.label')}
           </label>
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
               <svg
                 className="h-5 w-5 text-gray-400"
                 xmlns="http://www.w3.org/2000/svg"
@@ -95,8 +97,8 @@ export default function Page({ searchParams }: { searchParams: { q?: string } })
             <input
               id="search"
               name="search"
-              className="transition-all duration-75 ease-in-out block w-full pl-10 pr-3 py-2 border border-transparent rounded-md leading-5 bg-gray-700 dark:bg-[#1a161f] text-gray-300 dark:text-white placeholder-gray-400 focus:outline-none focus:bg-white dark:focus:bg-[#1a161f] focus:border-white dark:focus:border-gray-500 focus:ring-white focus:text-gray-900 sm:text-sm"
-              placeholder="Search movies and TV shows"
+              className="transition-all duration-75 ease-in-out block w-full ps-10 pe-3 py-2 border border-transparent rounded-md leading-5 bg-gray-700 dark:bg-[#1a161f] text-gray-300 dark:text-white placeholder-gray-400 focus:outline-none focus:bg-white dark:focus:bg-[#1a161f] focus:border-white dark:focus:border-gray-500 focus:ring-white focus:text-gray-900 sm:text-sm"
+              placeholder={t('search.placeholderFull')}
               autoComplete="off"
               type="search"
               value={query}
@@ -109,13 +111,13 @@ export default function Page({ searchParams }: { searchParams: { q?: string } })
         {/* Content */}
         <div className='mt-5'>
           {failed ? (
-            <p className='text-gray-400 text-center py-10'>Search is unavailable right now. Please try again in a moment.</p>
+            <p className='text-gray-400 text-center py-10'>{t('search.unavailable')}</p>
           ) : !debouncedQuery ? (
-            <p className='text-gray-400 text-center py-10'>Type something to search.</p>
+            <p className='text-gray-400 text-center py-10'>{t('search.typeSomething')}</p>
           ) : loading && results.length === 0 ? (
-            <p className='text-gray-400 text-center py-10'>Searching…</p>
+            <p className='text-gray-400 text-center py-10'>{t('search.searching')}</p>
           ) : results.length === 0 ? (
-            <p className='text-gray-400 text-center py-10'>No results for &ldquo;{debouncedQuery}&rdquo;.</p>
+            <p className='text-gray-400 text-center py-10'>{t('search.noResultsFor', { query: debouncedQuery })}</p>
           ) : (
             <div className={loading ? 'opacity-60 transition-opacity' : 'transition-opacity'}>
               <MediaGrid items={results} showTypeBadge />
