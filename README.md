@@ -1,36 +1,37 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# TunisiaFlicks
 
-## Getting Started
+Movies and TV shows browser built with [Next.js](https://nextjs.org/) (App Router), Tailwind CSS and TMDB data.
 
-First, run the development server:
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+Create a `.env.local` (never commit it):
 
-## Learn More
+| Variable | Used for |
+| --- | --- |
+| `TMDB_API_KEY` | TMDB data. Server-side only; it is never sent to the browser. |
+| `MONGODB_URI` | Users and their favorites / bookmarks / history. |
+| `NEXTAUTH_SECRET` | Signs the session cookie. |
+| `NEXTAUTH_URL` | Public URL of the site (e.g. `http://localhost:3000`). |
+| `NEXT_PUBLIC_APP_URL` | Base URL used in e-mail links. |
+| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS`, `FROM_EMAIL` | Password-reset e-mails. |
 
-To learn more about Next.js, take a look at the following resources:
+## Project layout
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `src/app` – routes. Home, TV, Discover, Top Rated, Upcoming, genres and the movie / TV detail pages are server components that fetch from TMDB through `src/lib/tmdb.ts`.
+- `src/components` – shared UI. `Sidebar` + `Navbar` + `layout.tsx` form the page shell (the sidebar is part of the flex layout, so the content resizes with it). `PosterCard`, `MovieBackdropCard`, `Sliders` and `MediaGrid` render titles; `detail/` holds the movie / TV detail building blocks.
+- `src/lib` – TMDB helper, list helpers, auth, Mongo and user-content client helpers.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+## Scripts
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+- `npm run dev` – development server
+- `npm run build` / `npm start` – production build and server
+- `npm run lint` – ESLint

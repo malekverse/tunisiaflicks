@@ -23,19 +23,6 @@ const nextConfig = {
     ],
     // domains: ['image.tmdb.org', 'flagsapi.com'],
   },
-  async headers() {
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          {
-            key: 'Large-Allocation',
-            value: 'true',
-          },
-        ],
-      },
-    ]
-  },
 }
 
 module.exports = nextConfig
