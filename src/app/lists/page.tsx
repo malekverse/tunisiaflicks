@@ -7,18 +7,20 @@ import { MdPlaylistAdd } from 'react-icons/md'
 import { Button } from '@/src/components/ui/button'
 import { toast } from '@/src/hooks/use-toast'
 import type { PublicList } from '@/src/lib/lists-db'
-
-const poster = (path: string | null) => (path ? `https://image.tmdb.org/t/p/w185${path}` : null)
+import TmdbImage from '@/src/components/TmdbImage'
 
 /** 2x2 poster collage used as a list's cover. */
 function Collage({ list }: { list: PublicList }) {
-  const posters = list.items.map((item) => poster(item.poster_path)).filter(Boolean).slice(0, 4) as string[]
+  const posters = list.items.map((item) => item.poster_path).filter(Boolean).slice(0, 4) as string[]
   return (
     <div className="grid grid-cols-2 aspect-[4/3] w-full overflow-hidden rounded-xl bg-zinc-800">
       {posters.length === 0
         ? <div className="col-span-2 flex items-center justify-center text-gray-500 text-sm">Empty list</div>
-        // eslint-disable-next-line @next/next/no-img-element
-        : posters.map((src) => <img key={src} src={src} alt="" loading="lazy" className="h-full w-full object-cover" />)}
+        : posters.map((path) => (
+          <div key={path} className="relative h-full w-full">
+            <TmdbImage kind="poster" path={path} alt="" fill sizes="(min-width: 640px) 160px, 25vw" className="object-cover" />
+          </div>
+        ))}
     </div>
   )
 }

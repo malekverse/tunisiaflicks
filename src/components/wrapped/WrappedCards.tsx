@@ -1,7 +1,16 @@
 import Link from 'next/link'
 import { formatHours, type WrappedStats } from '@/src/lib/wrapped'
 
-const poster = (path: string | null | undefined, size = 'w342') => (path ? `https://image.tmdb.org/t/p/${size}${path}` : '/404.png')
+import TmdbImage from '@/src/components/TmdbImage'
+
+/** A poster in a fixed-width box (Tailwind width + 2:3 ratio), shimmer while it loads. */
+function Poster({ path, alt, box, sizes }: { path?: string | null, alt: string, box: string, sizes: string }) {
+  return (
+    <div className={`relative ${box} aspect-[2/3] shrink-0 overflow-hidden rounded-xl shadow-lg bg-zinc-800`}>
+      <TmdbImage kind="poster" path={path} alt={alt} fill sizes={sizes} className="object-cover" />
+    </div>
+  )
+}
 
 const card = 'relative overflow-hidden rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-black/30'
 
@@ -76,8 +85,7 @@ export default function WrappedCards({ stats, isCurrentYear }: { stats: WrappedS
       {/* Top show */}
       {stats.topShow && (
         <Link href={`/tv/${stats.topShow.id}`} className={`${card} bg-gradient-to-br from-sky-600 via-blue-800 to-zinc-950 flex gap-5 items-center hover:brightness-110 transition`}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={poster(stats.topShow.poster_path)} alt={stats.topShow.title} className="w-28 sm:w-32 aspect-[2/3] rounded-xl object-cover shadow-lg" />
+          <Poster path={stats.topShow.poster_path} alt={stats.topShow.title} box="w-28 sm:w-32" sizes="128px" />
           <div className="min-w-0">
             <p className="text-sm font-semibold text-sky-100">Your most-watched show</p>
             <p className="mt-2 text-2xl sm:text-3xl font-black leading-tight">{stats.topShow.title}</p>
@@ -89,8 +97,7 @@ export default function WrappedCards({ stats, isCurrentYear }: { stats: WrappedS
       {/* Top movie */}
       {stats.topMovie && (
         <Link href={`/movie/${stats.topMovie.id}`} className={`${card} bg-gradient-to-br from-amber-500 via-orange-700 to-zinc-950 flex gap-5 items-center hover:brightness-110 transition`}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={poster(stats.topMovie.poster_path)} alt={stats.topMovie.title} className="w-28 sm:w-32 aspect-[2/3] rounded-xl object-cover shadow-lg" />
+          <Poster path={stats.topMovie.poster_path} alt={stats.topMovie.title} box="w-28 sm:w-32" sizes="128px" />
           <div className="min-w-0">
             <p className="text-sm font-semibold text-amber-100">Your highest-rated pick</p>
             <p className="mt-2 text-2xl sm:text-3xl font-black leading-tight">{stats.topMovie.title}</p>
@@ -102,8 +109,7 @@ export default function WrappedCards({ stats, isCurrentYear }: { stats: WrappedS
       {/* First watch */}
       {stats.firstWatch && (
         <Link href={`/${stats.firstWatch.media_type}/${stats.firstWatch.id}`} className={`${card} bg-gradient-to-br from-zinc-700 to-zinc-950 flex gap-5 items-center hover:brightness-110 transition`}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={poster(stats.firstWatch.poster_path)} alt={stats.firstWatch.title} className="w-24 aspect-[2/3] rounded-xl object-cover shadow-lg" />
+          <Poster path={stats.firstWatch.poster_path} alt={stats.firstWatch.title} box="w-24" sizes="96px" />
           <div className="min-w-0">
             <p className="text-sm font-semibold text-gray-300">Your {stats.year} started with</p>
             <p className="mt-2 text-2xl font-black leading-tight">{stats.firstWatch.title}</p>
@@ -127,8 +133,9 @@ export default function WrappedCards({ stats, isCurrentYear }: { stats: WrappedS
           <p className="text-sm font-semibold text-gray-300 mb-4">Your {stats.year} in posters</p>
           <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 gap-2">
             {stats.posters.map((path) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img key={path} src={poster(path, 'w185')} alt="" loading="lazy" className="aspect-[2/3] w-full rounded-lg object-cover" />
+              <div key={path} className="relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-zinc-800">
+                <TmdbImage kind="poster" path={path} alt="" fill sizes="(min-width: 1024px) 8vw, (min-width: 640px) 16vw, 25vw" className="object-cover" />
+              </div>
             ))}
           </div>
         </section>

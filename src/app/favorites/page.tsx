@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getFavorites, removeFromFavorites } from '@/src/lib/user-content';
 import { ContentItem } from '@/src/lib/models/UserContent';
-import Image from 'next/image';
+import TmdbImage from '@/src/components/TmdbImage';
 import Link from 'next/link';
 import { FaHeart, FaTrash } from 'react-icons/fa';
 import { Button } from '@/src/components/ui/button';
@@ -93,10 +93,12 @@ export default function FavoritesPage() {
             <Card key={item.id} className="overflow-hidden bg-gray-900 border-gray-800 h-full flex flex-col">
               <div className="relative pt-[150%]">
                 <Link href={`/${item.media_type}/${item.id}`}>
-                  <Image 
-                    src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : '/404.png'}
+                  <TmdbImage
+                    kind="poster"
+                    path={item.poster_path}
                     alt={item.title}
                     fill
+                    sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                     className="object-cover"
                   />
                 </Link>

@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from 'next/navigation';
 import { searchMovies } from '@/src/app/search/actions';
+import TmdbImage from '@/src/components/TmdbImage'
 import routes from '@/src/routes/client/routes';
 import Link from "next/link";
 import { useT } from './I18nProvider';
@@ -129,15 +130,16 @@ const SearchBar = () => {
                                                 href={item.media_type === "movie" ? routes.movie(item.id) : routes.tvShow(item.id)}
                                                 className="p-3 hover:bg-gray-700 dark:hover:bg-zinc-900 flex gap-5"
                                             >
-                                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                <img
-                                                    src={item.poster_path || item.backdrop_path ? `https://image.tmdb.org/t/p/w154${item.poster_path || item.backdrop_path}` : "/404.png"}
-                                                    alt=""
-                                                    width={80}
-                                                    height={120}
-                                                    loading="lazy"
-                                                    className="w-20 h-[120px] object-cover rounded-md bg-zinc-800"
-                                                />
+                                                <span className="relative block w-20 h-[120px] shrink-0 rounded-md overflow-hidden bg-zinc-800">
+                                                    <TmdbImage
+                                                        kind="poster"
+                                                        path={item.poster_path || item.backdrop_path}
+                                                        alt=""
+                                                        fill
+                                                        sizes="80px"
+                                                        className="object-cover"
+                                                    />
+                                                </span>
                                                 <span>
                                                     <bdi>{item.title || item.name}</bdi>
                                                     <span className="block text-xs opacity-80">{item.release_date || item.first_air_date || ''}</span>

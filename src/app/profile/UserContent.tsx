@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/src/components/ui/ta
 import { Card, CardContent } from '@/src/components/ui/card';
 import { getFavorites, getSavedItems, getWatchHistory } from '@/src/lib/user-content';
 import { ContentItem, WatchHistoryItem } from '@/src/lib/models/UserContent';
-import Image from 'next/image';
+import TmdbImage from '@/src/components/TmdbImage';
 import Link from 'next/link';
 import { FaHeart, FaBookmark, FaHistory, FaTrash } from 'react-icons/fa';
 import { Button } from '@/src/components/ui/button';
@@ -105,10 +105,12 @@ export default function UserContent() {
           <div className="flex flex-col md:flex-row">
             <div className="relative w-full md:w-1/4 h-48 md:h-auto">
               <Link href={`/${item.media_type}/${item.id}`}>
-                <Image 
-                  src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : '/404.png'}
+                <TmdbImage
+                  kind="poster"
+                  path={item.poster_path}
                   alt={item.title}
                   fill
+                  sizes="(min-width: 768px) 25vw, 100vw"
                   className="object-cover"
                 />
               </Link>

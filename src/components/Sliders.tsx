@@ -56,9 +56,11 @@ export function HeroSlider({ title, href, items, kind = 'movie', loading }: { ti
                         ? Array.from({ length: 6 }).map((_, index) => (
                             <CarouselItem key={index} className={heroItemClass}><BackdropSkeleton /></CarouselItem>
                         ))
-                        : list.map((item) => (
+                        : list.map((item, index) => (
                             <CarouselItem key={item.id} className={heroItemClass}>
                                 <MovieBackdropCard
+                                    // The first cards are the first thing on screen: load them first.
+                                    priority={index < 3}
                                     backdropImg={item.backdrop_path}
                                     voteAverage={item.vote_average?.toFixed?.(1) ?? item.vote_average}
                                     title={item.title || item.name}

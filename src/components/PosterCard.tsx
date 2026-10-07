@@ -6,6 +6,7 @@ import { Skeleton } from './ui/skeleton';
 import { MediaContextMenu, MediaOptionsMenu } from './MediaActions';
 import { useHoverTrailer } from '@/src/hooks/use-hover-trailer';
 import { useT } from './I18nProvider';
+import TmdbImage from './TmdbImage';
 import FollowButton from './FollowButton';
 
 export type PosterCardProps = {
@@ -28,6 +29,8 @@ export type PosterCardProps = {
 }
 
 const FALLBACK_POSTER = '/404.png'
+// Cards are ~145-250px wide (carousels and grids).
+const POSTER_SIZES = '(min-width: 640px) 200px, 160px'
 
 /**
  * The poster card used across carousels and grids. It fills its parent's width and keeps a 2:3
@@ -87,7 +90,6 @@ export default function PosterCard({
     const t = useT()
     const displayVoteAverage = voteAverage ? voteAverage.toString().substring(0, 3) : t('common.notAvailable')
     const itemId = id || (link ? link.split('/').pop() : '')
-    const src = !posterImg ? FALLBACK_POSTER : externalImg ? posterImg : `https://image.tmdb.org/t/p/w342${posterImg}`
     const hasRating = voteAverage !== undefined && voteAverage !== null
     // Hover previews only for TMDB titles (not external items like the Tunisian catalogue).
     const { trailerKey, onMouseEnter, onMouseLeave } = useHoverTrailer(actions && !externalImg, mediaType, itemId)
@@ -98,15 +100,28 @@ export default function PosterCard({
     const card = (
         <Wrapper {...(link ? { href: link } : {})} {...linkProps} title={title} className='block' onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
             <div className='w-full aspect-[2/3] rounded-xl overflow-hidden z-0 relative bg-zinc-800'>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                    src={src}
-                    alt={title}
-                    loading="lazy"
-                    decoding="async"
-                    draggable={false}
-                    className='absolute inset-0 w-full h-full object-cover'
-                />
+                {externalImg ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                        src={posterImg || FALLBACK_POSTER}
+                        alt={title}
+                        loading="lazy"
+                        decoding="async"
+                        draggable={false}
+                        className='absolute inset-0 w-full h-full object-cover'
+                    />
+                ) : (
+                    <TmdbImage
+                        kind='poster'
+                        path={posterImg}
+                        fallback={FALLBACK_POSTER}
+                        alt={title}
+                        fill
+                        sizes={POSTER_SIZES}
+                        draggable={false}
+                        className='object-cover'
+                    />
+                )}
                 {trailerKey && <TrailerPreview youtubeKey={trailerKey} />}
                 <div className='absolute inset-0 z-10 bg-black opacity-10 transition-opacity ease-in-out duration-700 hover:opacity-0' />
                 {hasRating &&

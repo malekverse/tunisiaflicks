@@ -1,5 +1,6 @@
 "use client"
 import React, { useEffect, useMemo, useState } from 'react'
+import TmdbImage from '@/src/components/TmdbImage'
 import { useRouter } from 'next/navigation'
 import { IoClose } from 'react-icons/io5'
 import { FaChevronLeft, FaChevronRight, FaPlus, FaCheck } from 'react-icons/fa'
@@ -14,7 +15,6 @@ type Item = PublicList['items'][number]
 type Candidate = { id: string, media_type: 'movie' | 'tv', title: string, poster_path: string | null, year?: string }
 
 const keyOf = (item: { media_type: string, id: string | number }) => `${item.media_type}-${item.id}`
-const thumb = (path: string | null) => (path ? `https://image.tmdb.org/t/p/w92${path}` : '/404.png')
 const routeOf = (item: Item) => `/${item.media_type}/${item.id}`
 
 /** Owner view of a list: edit details, add/remove/reorder titles, delete. */
@@ -170,8 +170,9 @@ export default function ListEditor({ initial }: { initial: PublicList }) {
               const added = inList.has(keyOf(item))
               return (
                 <li key={keyOf(item)} className="flex items-center gap-3 p-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={thumb(item.poster_path)} alt="" className="h-14 w-10 rounded object-cover bg-zinc-800" />
+                  <span className="relative block h-14 w-10 shrink-0 rounded overflow-hidden bg-zinc-800">
+                    <TmdbImage kind="poster" path={item.poster_path} alt="" fill sizes="40px" className="object-cover" />
+                  </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-white">{item.title}</p>
                     <p className="text-xs text-gray-500">{item.media_type === 'tv' ? 'TV Show' : 'Movie'}{item.year ? ` · ${item.year}` : ''}</p>
@@ -202,8 +203,9 @@ export default function ListEditor({ initial }: { initial: PublicList }) {
                   title={`Add ${item.title}`}
                   className="group relative shrink-0 w-[72px] overflow-hidden rounded-lg"
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={thumb(item.poster_path)} alt={item.title} className="aspect-[2/3] w-full object-cover" />
+                  <span className="relative block aspect-[2/3] w-full bg-zinc-800">
+                    <TmdbImage kind="poster" path={item.poster_path} alt={item.title} fill sizes="72px" className="object-cover" />
+                  </span>
                   <span className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100 text-white"><FaPlus /></span>
                 </button>
               ))}

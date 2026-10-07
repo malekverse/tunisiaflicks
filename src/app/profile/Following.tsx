@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
+import TmdbImage from '@/src/components/TmdbImage';
 import Link from 'next/link';
 import { FaBell, FaTrash } from 'react-icons/fa';
 import { Card, CardContent } from '@/src/components/ui/card';
@@ -77,9 +77,10 @@ export default function Following() {
           {items.map((item) => (
             <Card key={`${item.media_type}-${item.id}`} className="overflow-hidden bg-gray-900 border-gray-800">
               <CardContent className="p-0 flex">
-                <Link href={`/${item.media_type}/${item.id}`} className="relative w-20 shrink-0 aspect-[2/3]">
-                  <Image
-                    src={item.poster_path ? `https://image.tmdb.org/t/p/w185${item.poster_path}` : '/404.png'}
+                <Link href={`/${item.media_type}/${item.id}`} className="relative w-20 shrink-0 aspect-[2/3] bg-zinc-800">
+                  <TmdbImage
+                    kind="poster"
+                    path={item.poster_path}
                     alt={item.title}
                     fill
                     sizes="80px"

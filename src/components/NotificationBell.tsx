@@ -12,6 +12,7 @@ import {
     DropdownMenuTrigger,
 } from '@/src/components/ui/dropdown-menu'
 import { cn } from '@/src/lib/utils'
+import TmdbImage from '@/src/components/TmdbImage'
 import { useI18n } from '@/src/components/I18nProvider'
 import type { Translate } from '@/src/lib/i18n'
 import type { NotificationItem } from '@/src/lib/models/Follow'
@@ -110,13 +111,9 @@ export default function NotificationBell({ className }: { className?: string }) 
                                 onSelect={() => router.push(`/${item.media_type}/${item.tmdbId}`)}
                                 className="flex gap-3 items-start cursor-pointer"
                             >
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                    src={item.poster_path ? `https://image.tmdb.org/t/p/w92${item.poster_path}` : '/404.png'}
-                                    alt=""
-                                    loading="lazy"
-                                    className="w-10 aspect-[2/3] object-cover rounded shrink-0"
-                                />
+                                <span className="relative block w-10 aspect-[2/3] rounded overflow-hidden shrink-0 bg-zinc-800">
+                                    <TmdbImage kind="poster" path={item.poster_path} alt="" fill sizes="40px" className="object-cover" />
+                                </span>
                                 <div className="min-w-0 flex-1">
                                     <p className="font-semibold leading-tight line-clamp-2">{item.title}</p>
                                     <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{describe(item, t)}</p>
