@@ -11,7 +11,7 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: '/',
     display: 'standalone',
     orientation: 'any',
-    background_color: '#0d0c0f',
+    background_color: '#000000',
     theme_color: '#000000',
     categories: ['entertainment'],
     icons: [
@@ -23,6 +23,7 @@ export default function manifest(): MetadataRoute.Manifest {
     shortcuts: [
       { name: 'Discover', url: '/discover', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] },
       { name: 'TV Shows', url: '/tv', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] },
+      { name: 'Clips', url: '/clips', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] },
       { name: 'Surprise me', url: '/surprise', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] },
     ],
   }
