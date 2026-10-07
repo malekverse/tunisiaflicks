@@ -4,12 +4,14 @@ import { useRouter, usePathname } from 'next/navigation';
 import { searchMovies } from '@/src/app/search/actions';
 import routes from '@/src/routes/client/routes';
 import Link from "next/link";
+import { useT } from './I18nProvider';
 
 const MAX_RESULTS = 8;
 
 const SearchBar = () => {
     const router = useRouter();
     const pathname = usePathname();
+    const t = useT();
     const containerRef = useRef<HTMLDivElement>(null);
     const [query, setQuery] = useState(""); // Holds the search input
     const [results, setResults] = useState<any[]>([]); // Movie / TV results shown in the dropdown
@@ -82,13 +84,13 @@ const SearchBar = () => {
     };
 
     return (
-        <div className="flex-1 flex justify-center px-2 lg:ml-6 lg:justify-center">
+        <div className="flex-1 flex justify-center px-2 lg:ms-6 lg:justify-center">
             <div className="max-w-lg w-full lg:max-w-xs relative" ref={containerRef}>
                 <label htmlFor="search" className="sr-only">
-                    Search
+                    {t('search.label')}
                 </label>
                 <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
                         <svg
                             className="h-5 w-5 text-gray-400"
                             xmlns="http://www.w3.org/2000/svg"
@@ -106,8 +108,8 @@ const SearchBar = () => {
                     <input
                         id="search"
                         name="search"
-                        className="transition-all duration-75 ease-in-out block w-full pl-10 pr-3 py-2 border border-transparent rounded-md leading-5 bg-gray-700 dark:bg-[#0d0c0f] text-gray-300 dark:text-white placeholder-gray-400 focus:outline-none focus:bg-white dark:focus:bg-[#1a161f] focus:border-white dark:focus:border-gray-500 focus:ring-white focus:text-gray-900 sm:text-sm"
-                        placeholder="Search"
+                        className="transition-all duration-75 ease-in-out block w-full ps-10 pe-3 py-2 border border-transparent rounded-md leading-5 bg-gray-700 dark:bg-[#0d0c0f] text-gray-300 dark:text-white placeholder-gray-400 focus:outline-none focus:bg-white dark:focus:bg-[#1a161f] focus:border-white dark:focus:border-gray-500 focus:ring-white focus:text-gray-900 sm:text-sm"
+                        placeholder={t('search.placeholder')}
                         type="search"
                         autoComplete="off"
                         value={query}
@@ -139,13 +141,13 @@ const SearchBar = () => {
                                                 <span>
                                                     {item.title || item.name}
                                                     <span className="block text-xs opacity-80">{item.release_date || item.first_air_date || ''}</span>
-                                                    <span className="block text-xs opacity-80">{item.media_type === 'tv' ? 'TV Show' : 'Movie'}</span>
+                                                    <span className="block text-xs opacity-80">{item.media_type === 'tv' ? t('common.tvShow') : t('common.movie')}</span>
                                                 </span>
                                             </Link>
                                         </li>
                                     ))
                                 ) : (
-                                    <li className="p-2">{loading ? 'Searching…' : 'No results found'}</li>
+                                    <li className="p-2">{loading ? t('search.searching') : t('search.noResults')}</li>
                                 )}
                             </ul>
                         </div>

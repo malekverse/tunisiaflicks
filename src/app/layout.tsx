@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from 'next/font/google';
+import { Cairo, Inter } from 'next/font/google';
 import "./globals.css";
 import { Providers } from './providers'
 import { SpeedInsights } from '@vercel/speed-insights/next';
@@ -9,10 +9,15 @@ import Sidebar from "@/src/components/Sidebar";
 import { SessionProvider } from "@/src/components/SessionProvider";
 import { Toaster } from "@/src/components/ui/toaster";
 import ServiceWorkerRegister from "@/src/components/ServiceWorkerRegister";
+import { I18nProvider } from "@/src/components/I18nProvider";
+import { dirOf } from "@/src/lib/i18n";
+import { getLocale } from "@/src/lib/i18n/server";
 
 import type { Viewport } from 'next'
 
 const inter = Inter({ subsets: ["latin"] });
+// Arabic UI font (Inter has no Arabic glyphs). Not preloaded: only fetched when the Arabic UI is on.
+const cairo = Cairo({ subsets: ["arabic", "latin"], preload: false });
 
 export const metadata: Metadata = {
   title: 'TunisiaFlicks',
@@ -95,22 +100,27 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // The UI language comes from a cookie (see LanguageToggle), so the very first HTML is already
+  // in the right language and direction.
+  const locale = getLocale();
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} transition-colors duration-300`}>
-        <SessionProvider>
-          <Providers>
-            <Navbar />
-            {/* Navbar is fixed; the sidebar and <main> share one flex row below it. */}
-            <div className="bg-white text-black flex min-h-screen pt-14 sm:pt-16 dark:bg-[#0d0c0f] dark:text-white">
-              <Sidebar />
-              <main role="main" className="flex-1 min-w-0 flex justify-center pt-4 pb-20 sm:pb-8">
-                {children}
-              </main>
-            </div>
-          </Providers>
-        </SessionProvider>
-        <Toaster />
+    <html lang={locale} dir={dirOf(locale)} suppressHydrationWarning>
+      <body className={`${locale === 'ar' ? cairo.className : inter.className} transition-colors duration-300`}>
+        <I18nProvider locale={locale}>
+          <SessionProvider>
+            <Providers>
+              <Navbar />
+              {/* Navbar is fixed; the sidebar and <main> share one flex row below it. */}
+              <div className="bg-white text-black flex min-h-screen pt-14 sm:pt-16 dark:bg-[#0d0c0f] dark:text-white">
+                <Sidebar />
+                <main role="main" className="flex-1 min-w-0 flex justify-center pt-4 pb-20 sm:pb-8">
+                  {children}
+                </main>
+              </div>
+            </Providers>
+          </SessionProvider>
+          <Toaster />
+        </I18nProvider>
         <SpeedInsights />
         <Analytics />
         <ServiceWorkerRegister />
