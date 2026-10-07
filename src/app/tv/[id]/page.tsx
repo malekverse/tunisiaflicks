@@ -39,10 +39,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description: show.overview || undefined,
+    // The share image comes from ./opengraph-image.tsx (branded card); setting `images` here would override it.
     openGraph: {
       title,
       description: show.overview || undefined,
-      images: show.backdrop_path ? [`https://image.tmdb.org/t/p/w780${show.backdrop_path}`] : undefined,
     },
   }
 }

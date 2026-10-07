@@ -32,13 +32,11 @@ export const metadata: Metadata = {
     telephone: false,
   },
   metadataBase: new URL('https://tunisiaflicks.vercel.app'),
-  alternates: {
-    canonical: '/',
-  },
+  // No site-wide canonical / og:url: inherited by every route, they told Google and Facebook that
+  // each movie/show page was a duplicate of the homepage. Pages now default to their own URL.
   openGraph: {
     title: 'TunisiaFlicks - Free Movies and TV Shows',
     description: 'Stream the latest movies and TV shows for free, without ads, on TunisiaFlicks. High-quality entertainment at your fingertips.',
-    url: 'https://tunisiaflicks.vercel.app',
     siteName: 'TunisiaFlicks',
     images: [
       {

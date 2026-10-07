@@ -63,9 +63,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${person.name} | TunisiaFlicks`,
     description: person.biography ? person.biography.slice(0, 200) : `Movies and TV shows with ${person.name}.`,
+    // The share image comes from ./opengraph-image.tsx (branded card); setting `images` here would override it.
     openGraph: {
       title: person.name,
-      images: person.profile_path ? [`https://image.tmdb.org/t/p/w500${person.profile_path}`] : undefined,
     },
   }
 }
