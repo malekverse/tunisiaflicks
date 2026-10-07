@@ -65,6 +65,11 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async jwt({ token, user }) {
+      // next-auth copies the user's picture into the token before this callback runs. Uploaded
+      // avatars are data URLs (up to ~700 KB), and a Google sign-in passes the full database user,
+      // so the session cookie would balloon until Vercel rejects every request (494). The picture
+      // is never needed here (the UI loads it from /api/user): always drop it.
+      delete token.picture;
       if (user) {
         // Only include essential data in the token
         token.id = user.id;
