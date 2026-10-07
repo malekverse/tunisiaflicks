@@ -103,6 +103,11 @@ export default function RootLayout({
   const locale = getLocale();
   return (
     <html lang={locale} dir={dirOf(locale)} suppressHydrationWarning>
+      <head>
+        {/* Almost every picture comes from TMDB: open that connection while the HTML is parsed. */}
+        <link rel="preconnect" href="https://image.tmdb.org" />
+        <link rel="dns-prefetch" href="https://image.tmdb.org" />
+      </head>
       <body className={`${locale === 'ar' ? cairo.className : inter.className} transition-colors duration-300`}>
         <I18nProvider locale={locale}>
           <SessionProvider>

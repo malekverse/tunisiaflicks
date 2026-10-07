@@ -9,6 +9,11 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    // srcset widths. TMDB pictures go through a custom loader (src/components/TmdbImage.tsx) that
+    // maps each width to a TMDB size, so these mirror TMDB's sizes: the browser never downloads a
+    // bigger file than the slot needs.
+    imageSizes: [45, 92, 154, 185, 300, 342, 500],
+    deviceSizes: [640, 780, 1080, 1280, 1920],
     remotePatterns: [
       {
         protocol: 'https',
