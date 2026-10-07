@@ -1,38 +1,30 @@
 "use client"
 
-import { useToast } from "@/src/hooks/use-toast"
+import { Toaster as Sonner } from "sonner"
 import { useDir } from "@/src/components/I18nProvider"
-import {
-  Toast,
-  ToastClose,
-  ToastDescription,
-  ToastProvider,
-  ToastTitle,
-  ToastViewport,
-} from "@/src/components/ui/toast"
 
+/**
+ * Glass toasts at the bottom centre: above the tab bar on phones, low on desktop. Sonner pauses
+ * them while the tab is hidden and lets them be swiped away.
+ */
 export function Toaster() {
-  const { toasts } = useToast()
-  // Toasts sit at the end edge, so they are swiped away towards it.
-  const swipeDirection = useDir() === "rtl" ? "left" : "right"
-
   return (
-    <ToastProvider swipeDirection={swipeDirection}>
-      {toasts.map(function ({ id, title, description, action, ...props }) {
-        return (
-          <Toast key={id} {...props}>
-            <div className="grid gap-1">
-              {title && <ToastTitle>{title}</ToastTitle>}
-              {description && (
-                <ToastDescription>{description}</ToastDescription>
-              )}
-            </div>
-            {action}
-            <ToastClose />
-          </Toast>
-        )
-      })}
-      <ToastViewport />
-    </ToastProvider>
+    <Sonner
+      theme="dark"
+      dir={useDir()}
+      position="bottom-center"
+      offset={24}
+      mobileOffset={{ bottom: 'calc(96px + env(safe-area-inset-bottom, 0px))' }}
+      visibleToasts={3}
+      duration={3500}
+      toastOptions={{
+        classNames: {
+          toast: 'glass-strong !rounded-[18px] !border-white/10 !text-white !shadow-[0_18px_50px_-12px_rgb(0_0_0/0.9)] !font-sans',
+          title: '!text-[14px] !font-semibold',
+          description: '!text-[13px] !text-white/65',
+          error: '[&_[data-icon]]:!text-red-500',
+        },
+      }}
+    />
   )
 }

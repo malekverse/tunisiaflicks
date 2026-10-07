@@ -1,12 +1,13 @@
 "use client"
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { canAutoplay } from '@/src/hooks/use-autoplay'
 
 const HOVER_DELAY_MS = 900
 
 // One lookup per title per page load, shared by every card showing it.
 const keyCache = new Map<string, Promise<string | null>>()
 
-function fetchTrailerKey(type: 'movie' | 'tv', id: string) {
+export function fetchTrailerKey(type: 'movie' | 'tv', id: string) {
   const cacheKey = `${type}-${id}`
   let pending = keyCache.get(cacheKey)
   if (!pending) {
@@ -19,15 +20,6 @@ function fetchTrailerKey(type: 'movie' | 'tv', id: string) {
   return pending
 }
 
-// Only real mouse users get previews: not touch screens, not reduced-motion, not data-saver.
-function previewsAllowed() {
-  if (typeof window === 'undefined' || !window.matchMedia) return false
-  const connection = (navigator as any).connection
-  return window.matchMedia('(hover: hover) and (pointer: fine)').matches
-    && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    && !connection?.saveData
-}
-
 /**
  * Muted trailer preview after hovering a card for a moment. Returns the YouTube key to show
  * (null when not hovering / no trailer) plus the mouse handlers to put on the card.
@@ -38,7 +30,7 @@ export function useHoverTrailer(enabled: boolean, type: 'movie' | 'tv', id?: str
   const hovering = useRef(false)
 
   const onMouseEnter = useCallback(() => {
-    if (!enabled || !id || !/^\d+$/.test(id) || !previewsAllowed()) return
+    if (!enabled || !id || !/^\d+$/.test(id) || !canAutoplay()) return
     hovering.current = true
     clearTimeout(timer.current)
     timer.current = setTimeout(async () => {

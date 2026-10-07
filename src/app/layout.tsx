@@ -1,12 +1,18 @@
 import type { Metadata } from "next";
-import { Cairo, Inter } from 'next/font/google';
+import { Alexandria, Bricolage_Grotesque, Readex_Pro } from 'next/font/google';
+import NextTopLoader from 'nextjs-toploader';
 import "./globals.css";
-import { Providers } from './providers'
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from '@vercel/analytics/react';
-import Navbar from "@/src/components/Navbar";
-import Sidebar from "@/src/components/Sidebar";
 import Footer from "@/src/components/Footer";
+import Rail from "@/src/components/shell/Rail";
+import TopBar from "@/src/components/shell/TopBar";
+import TabBar from "@/src/components/shell/TabBar";
+import RoomLight from "@/src/components/shell/RoomLight";
+import ShellEffects from "@/src/components/shell/ShellEffects";
+import MotionProvider from "@/src/components/shell/MotionProvider";
+import SearchPaletteHost from "@/src/components/search/SearchPaletteHost";
+import PeekLayer from "@/src/components/media/PeekLayer";
 import VerifyEmailBanner from "@/src/components/VerifyEmailBanner";
 import { SessionProvider } from "@/src/components/SessionProvider";
 import { Toaster } from "@/src/components/ui/toaster";
@@ -14,14 +20,17 @@ import ServiceWorkerRegister from "@/src/components/ServiceWorkerRegister";
 import DailyPushTrigger from "@/src/components/DailyPushTrigger";
 import ErrorReporter from "@/src/components/ErrorReporter";
 import { I18nProvider } from "@/src/components/I18nProvider";
-import { dirOf, htmlLang, isArabicScript } from "@/src/lib/i18n";
-import { getLocale } from "@/src/lib/i18n/server";
+import { dirOf, htmlLang } from "@/src/lib/i18n";
+import { getLocale, getT } from "@/src/lib/i18n/server";
 
 import type { Viewport } from 'next'
 
-const inter = Inter({ subsets: ["latin"] });
-// Arabic UI font (Inter has no Arabic glyphs). Not preloaded: only fetched when the Arabic UI is on.
-const cairo = Cairo({ subsets: ["arabic", "latin"], preload: false });
+// Type: Readex Pro for the interface (it covers Latin and Arabic, so every language reads alike),
+// Bricolage Grotesque, condensed, for Latin titles, and Alexandria for Arabic titles. The Arabic
+// files carry a unicode-range, so browsers only download them when Arabic text is on the page.
+const text = Readex_Pro({ subsets: ['latin'], variable: '--font-text', display: 'swap' });
+const display = Bricolage_Grotesque({ subsets: ['latin'], axes: ['opsz', 'wdth'], variable: '--font-display', display: 'swap' });
+const displayArabic = Alexandria({ subsets: ['arabic'], variable: '--font-display-ar', display: 'swap', preload: false });
 
 export const metadata: Metadata = {
   title: 'TunisiaFlicks',
@@ -93,7 +102,12 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  // Paint under the notch and home indicator; fixed bars pad themselves with env(safe-area-*).
+  viewportFit: 'cover',
+  // Android: the keyboard shrinks the layout, like on iOS.
+  interactiveWidget: 'resizes-content',
   themeColor: '#000000',
+  colorScheme: 'dark',
 };
 
 
@@ -102,37 +116,49 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // The UI language comes from a cookie (see LanguageToggle), so the very first HTML is already
+  // The UI language comes from a cookie (see LanguageSwitch), so the very first HTML is already
   // in the right language and direction.
   const locale = getLocale();
+  const t = getT();
   return (
-    <html lang={htmlLang(locale)} dir={dirOf(locale)} suppressHydrationWarning>
+    <html
+      lang={htmlLang(locale)}
+      dir={dirOf(locale)}
+      className={`dark ${text.variable} ${display.variable} ${displayArabic.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         {/* Almost every picture comes from TMDB: open that connection while the HTML is parsed. */}
         <link rel="preconnect" href="https://image.tmdb.org" />
         <link rel="dns-prefetch" href="https://image.tmdb.org" />
       </head>
-      <body className={`${isArabicScript(locale) ? cairo.className : inter.className} transition-colors duration-300`}>
+      <body>
+        <NextTopLoader color="#FF2414" height={2} showSpinner={false} shadow={false} easing="cubic-bezier(0.23, 1, 0.32, 1)" speed={260} />
+        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:start-3 focus:top-3 focus:z-[100] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-black">
+          {t('nav.skipToContent')}
+        </a>
         <I18nProvider locale={locale}>
           <SessionProvider>
-            <Providers>
-              <Navbar />
-              {/* Navbar is fixed; the sidebar and <main> share one flex row below it. */}
-              <div className="bg-white text-black flex min-h-screen pt-14 sm:pt-16 dark:bg-[#0d0c0f] dark:text-white">
-                <Sidebar />
-                {/* Content column: the page, then the footer (both beside the sidebar). */}
-                <div className="flex-1 min-w-0 flex flex-col">
-                  <VerifyEmailBanner />
-                  <main role="main" className="flex-1 min-w-0 flex justify-center pt-4 pb-4">
-                    {children}
-                  </main>
-                  <Footer />
-                </div>
+            <MotionProvider>
+              <RoomLight />
+              <Rail />
+              <TopBar />
+              <ShellEffects />
+              <div className="relative flex min-h-dvh flex-col">
+                <VerifyEmailBanner />
+                <main id="main" role="main" className="flex-1 min-w-0">
+                  {children}
+                </main>
+                <Footer />
               </div>
-            </Providers>
+              <TabBar />
+              <SearchPaletteHost />
+              <PeekLayer />
+            </MotionProvider>
           </SessionProvider>
           <Toaster />
         </I18nProvider>
+        <div aria-hidden className="tf-grain" />
         <SpeedInsights />
         <Analytics />
         <ServiceWorkerRegister />

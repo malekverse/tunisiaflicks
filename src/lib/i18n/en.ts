@@ -719,6 +719,64 @@ export const en = {
   'ramadan.bannerBefore': 'Ramadan is {days} days away',
   'ramadan.bannerDuring': 'Ramadan Mubarak, day {day}',
   'ramadan.bannerText': 'This season\'s series and the Ramadan classics',
+
+  // App shell (rail, tab bar, menu sheet, search palette)
+  'nav.clips': 'Clips',
+  'nav.you': 'You',
+  'nav.browse': 'Browse',
+  'nav.library': 'Your library',
+  'nav.more': 'More to explore',
+  'nav.ramadan': 'Ramadan',
+  'nav.tabs': 'Main navigation',
+  'nav.signInTitle': 'Make it yours',
+  'nav.signInText': 'Sign in to keep your lists, history and alerts on every device.',
+  'nav.createAccount': 'Create account',
+  'nav.signIn': 'Sign in',
+  'nav.switchProfile': 'Switch profile',
+  'search.open': 'Search titles or people',
+  'search.shortcutHint': 'Press / to search',
+  'search.trendingNow': 'Trending right now',
+  'search.titles': 'Movies and shows',
+  'search.openPage': 'Open the full search',
+  'search.navigateHint': 'to move',
+  'search.selectHint': 'to open',
+  'search.closeHint': 'to close',
+
+  // Accessibility
+  'nav.skipToContent': 'Skip to content',
+
+  // Home billboard
+  'billboard.aria': 'Featured today',
+  'billboard.play': 'Play',
+  'billboard.myList': 'My list',
+  'billboard.inMyList': 'In my list',
+  'billboard.soundOn': 'Turn sound on',
+  'billboard.soundOff': 'Mute',
+  'billboard.show': 'Show {title}',
+  'billboard.rank': '#{rank} trending today',
+  'billboard.slideOf': '{current} of {total}',
+
+  // Peek: hover preview card and quick-view sheet
+  'peek.moreInfo': 'More info',
+  'peek.favorite': 'Love it',
+  'peek.unfavorite': 'Remove from favorites',
+  'peek.share': 'Share',
+  'peek.details': 'Details',
+  'peek.preview': 'Preview of {title}',
+
+  // Rows
+  'common.seeAll': 'See all',
+  'row.previous': 'Previous titles',
+  'row.next': 'More titles',
+
+  // Home rows
+  'home.top10Site': 'Top 10 on TunisiaFlicks this week',
+  'home.top10World': 'Top 10 this week',
+  'home.top10WorldNote': 'Trending around the world',
+  'home.top10SiteNote': 'What people here watched the most',
+  'home.rank': 'Number {rank}',
+  'home.resume': 'Resume',
+  'home.resumeTitle': 'Resume {title}',
 } satisfies Record<string, string>
 
 export type TKey = keyof typeof en

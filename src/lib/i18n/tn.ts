@@ -321,4 +321,62 @@ export const tn: Partial<Record<TKey, string>> = {
   'profiles.manage': 'نظّم البروفيلات',
   'profiles.kidsBadge': 'صغار',
   'profiles.watchingNow': 'يتفرّج توّا',
+
+  // App shell (rail, tab bar, menu sheet, search palette)
+  'nav.clips': 'كليبات',
+  'nav.you': 'إنتِ',
+  'nav.browse': 'تفرّج',
+  'nav.library': 'المكتبة متاعك',
+  'nav.more': 'حاجات أخرين',
+  'nav.ramadan': 'رمضان',
+  'nav.tabs': 'التنقل',
+  'nav.signInTitle': 'خلّيه على كيفك',
+  'nav.signInText': 'أدخل باش تلقى القوايم متاعك والتاريخ والتنبيهات في كل جهاز.',
+  'nav.createAccount': 'اعمل كونت',
+  'nav.signIn': 'أدخل',
+  'nav.switchProfile': 'بدّل البروفيل',
+  'search.open': 'لوّج على فيلم ولا ممثّل',
+  'search.shortcutHint': 'إضغط / باش تلوّج',
+  'search.trendingNow': 'اللي ماشي توّا',
+  'search.titles': 'أفلام ومسلسلات',
+  'search.openPage': 'حلّ صفحة البحث',
+  'search.navigateHint': 'باش تتحرّك',
+  'search.selectHint': 'باش تحلّ',
+  'search.closeHint': 'باش تسكّر',
+
+  // Accessibility
+  'nav.skipToContent': 'إمشي للمحتوى',
+
+  // Home billboard
+  'billboard.aria': 'مختارات اليوم',
+  'billboard.play': 'شغّل',
+  'billboard.myList': 'القايمة متاعي',
+  'billboard.inMyList': 'في القايمة متاعي',
+  'billboard.soundOn': 'شعّل الصوت',
+  'billboard.soundOff': 'سكّت الصوت',
+  'billboard.show': 'ورّيني {title}',
+  'billboard.rank': '#{rank} في اللي ماشي اليوم',
+  'billboard.slideOf': '{current} من {total}',
+
+  // Peek: hover preview card and quick-view sheet
+  'peek.moreInfo': 'زيد تفاصيل',
+  'peek.favorite': 'عجبني',
+  'peek.unfavorite': 'نحّيه من اللي يعجبوني',
+  'peek.share': 'بارتاجي',
+  'peek.details': 'التفاصيل',
+  'peek.preview': 'لمحة على {title}',
+
+  // Rows
+  'common.seeAll': 'شوف الكل',
+  'row.previous': 'اللي قبل',
+  'row.next': 'زيد',
+
+  // Home rows
+  'home.top10Site': 'أحسن 10 في TunisiaFlicks الجمعة هاذي',
+  'home.top10World': 'أحسن 10 الجمعة هاذي',
+  'home.top10WorldNote': 'اللي ماشي في الدنيا الكل',
+  'home.top10SiteNote': 'اللي تفرّجو فيه الناس هوني أكثر حاجة',
+  'home.rank': 'نومرو {rank}',
+  'home.resume': 'كمّل',
+  'home.resumeTitle': 'كمّل {title}',
 }

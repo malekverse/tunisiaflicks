@@ -721,4 +721,62 @@ export const ar: Record<TKey, string> = {
   'ramadan.bannerBefore': 'يفصلنا {days} يومًا عن رمضان',
   'ramadan.bannerDuring': 'رمضان مبارك، اليوم {day}',
   'ramadan.bannerText': 'مسلسلات الموسم وكلاسيكيات رمضان',
+
+  // App shell (rail, tab bar, menu sheet, search palette)
+  'nav.clips': 'مقاطع',
+  'nav.you': 'أنت',
+  'nav.browse': 'تصفّح',
+  'nav.library': 'مكتبتك',
+  'nav.more': 'المزيد لاكتشافه',
+  'nav.ramadan': 'رمضان',
+  'nav.tabs': 'التنقل الرئيسي',
+  'nav.signInTitle': 'اجعله على ذوقك',
+  'nav.signInText': 'سجّل الدخول لتحتفظ بقوائمك وسجلّك وتنبيهاتك على كل أجهزتك.',
+  'nav.createAccount': 'إنشاء حساب',
+  'nav.signIn': 'تسجيل الدخول',
+  'nav.switchProfile': 'تبديل الملف الشخصي',
+  'search.open': 'ابحث عن عمل أو شخص',
+  'search.shortcutHint': 'اضغط / للبحث',
+  'search.trendingNow': 'الأكثر رواجاً الآن',
+  'search.titles': 'أفلام ومسلسلات',
+  'search.openPage': 'افتح صفحة البحث',
+  'search.navigateHint': 'للتنقل',
+  'search.selectHint': 'للفتح',
+  'search.closeHint': 'للإغلاق',
+
+  // Accessibility
+  'nav.skipToContent': 'انتقل إلى المحتوى',
+
+  // Home billboard
+  'billboard.aria': 'مختارات اليوم',
+  'billboard.play': 'تشغيل',
+  'billboard.myList': 'قائمتي',
+  'billboard.inMyList': 'في قائمتي',
+  'billboard.soundOn': 'تشغيل الصوت',
+  'billboard.soundOff': 'كتم الصوت',
+  'billboard.show': 'اعرض {title}',
+  'billboard.rank': '#{rank} في الرائج اليوم',
+  'billboard.slideOf': '{current} من {total}',
+
+  // Peek: hover preview card and quick-view sheet
+  'peek.moreInfo': 'المزيد من المعلومات',
+  'peek.favorite': 'أعجبني',
+  'peek.unfavorite': 'إزالة من المفضلة',
+  'peek.share': 'مشاركة',
+  'peek.details': 'التفاصيل',
+  'peek.preview': 'معاينة {title}',
+
+  // Rows
+  'common.seeAll': 'عرض الكل',
+  'row.previous': 'العناوين السابقة',
+  'row.next': 'المزيد من العناوين',
+
+  // Home rows
+  'home.top10Site': 'أفضل 10 على TunisiaFlicks هذا الأسبوع',
+  'home.top10World': 'أفضل 10 هذا الأسبوع',
+  'home.top10WorldNote': 'الأكثر رواجاً حول العالم',
+  'home.top10SiteNote': 'ما شاهده الناس هنا أكثر من غيره',
+  'home.rank': 'رقم {rank}',
+  'home.resume': 'استئناف',
+  'home.resumeTitle': 'استئناف {title}',
 }

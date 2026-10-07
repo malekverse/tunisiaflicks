@@ -24,11 +24,9 @@ import {
     DropdownMenuSubTrigger,
     DropdownMenuTrigger,
 } from "@/src/components/ui/dropdown-menu"
-import { IoMdStar } from "react-icons/io";
-import { FaHeart, FaBookmark, FaShareAlt, FaFacebook, FaWhatsapp, FaTelegram } from "react-icons/fa";
+import { Bookmark, Copy, Ellipsis, Heart, Share2, Star } from "lucide-react";
+import { FaFacebook, FaWhatsapp, FaTelegram } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
-import { LuCopy } from "react-icons/lu";
-import { SlOptions } from "react-icons/sl";
 import { Button } from './ui/button';
 import { toast } from '@/src/hooks/use-toast';
 import { addToFavorites, saveForLater } from '@/src/lib/user-content';
@@ -89,28 +87,28 @@ function useMediaActions({ id, title, posterPath, mediaType }: MediaMeta) {
 }
 
 /** Right-click (desktop) / long-press (touch) menu wrapped around a card. */
-export function MediaContextMenu({ children, ...meta }: MediaMeta & { children: React.ReactNode }) {
+export function MediaContextMenu({ children, disabled, ...meta }: MediaMeta & { children: React.ReactNode, disabled?: boolean }) {
     const actions = useMediaActions(meta)
     const t = useT()
     return (
         <ContextMenu>
-            <ContextMenuTrigger asChild>
+            <ContextMenuTrigger asChild disabled={disabled}>
                 {children}
             </ContextMenuTrigger>
             <ContextMenuContent>
                 <ContextMenuLabel className='font-bold text-base'><bdi>{meta.title}</bdi></ContextMenuLabel>
                 <ContextMenuSeparator />
-                <ContextMenuItem onSelect={actions.favorite}><FaHeart className='me-2' />{t('card.addFavorites')}</ContextMenuItem>
-                <ContextMenuItem onSelect={actions.bookmark}><FaBookmark className='me-2' />{t('card.addBookmarks')}</ContextMenuItem>
+                <ContextMenuItem onSelect={actions.favorite}><Heart className='me-2.5 h-4 w-4 text-white/60' />{t('card.addFavorites')}</ContextMenuItem>
+                <ContextMenuItem onSelect={actions.bookmark}><Bookmark className='me-2.5 h-4 w-4 text-white/60' />{t('card.addBookmarks')}</ContextMenuItem>
                 <ContextMenuSub>
-                    <ContextMenuSubTrigger><FaShareAlt className='me-2' />{t('card.share')}</ContextMenuSubTrigger>
+                    <ContextMenuSubTrigger><Share2 className='me-2.5 h-4 w-4 text-white/60' />{t('card.share')}</ContextMenuSubTrigger>
                     <ContextMenuSubContent>
-                        <ContextMenuItem onSelect={actions.facebook}><FaFacebook className='me-2' />Facebook</ContextMenuItem>
-                        <ContextMenuItem onSelect={actions.x}><FaXTwitter className='me-2' />X</ContextMenuItem>
-                        <ContextMenuItem onSelect={actions.telegram}><FaTelegram className='me-2' />Telegram</ContextMenuItem>
-                        <ContextMenuItem onSelect={actions.whatsapp}><FaWhatsapp className='me-2' />WhatsApp</ContextMenuItem>
+                        <ContextMenuItem onSelect={actions.facebook}><FaFacebook className='me-2.5 text-white/60' />Facebook</ContextMenuItem>
+                        <ContextMenuItem onSelect={actions.x}><FaXTwitter className='me-2.5 text-white/60' />X</ContextMenuItem>
+                        <ContextMenuItem onSelect={actions.telegram}><FaTelegram className='me-2.5 text-white/60' />Telegram</ContextMenuItem>
+                        <ContextMenuItem onSelect={actions.whatsapp}><FaWhatsapp className='me-2.5 text-white/60' />WhatsApp</ContextMenuItem>
                         <ContextMenuSeparator />
-                        <ContextMenuItem onSelect={actions.copy}><LuCopy className='me-2' />{t('card.copyLink')}</ContextMenuItem>
+                        <ContextMenuItem onSelect={actions.copy}><Copy className='me-2.5 h-4 w-4 text-white/60' />{t('card.copyLink')}</ContextMenuItem>
                     </ContextMenuSubContent>
                 </ContextMenuSub>
             </ContextMenuContent>
@@ -126,34 +124,34 @@ export function MediaOptionsMenu({ voteAverage, ...meta }: MediaMeta & { voteAve
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button aria-label={t('card.optionsFor', { title: meta.title })} className='bg-gray-900 outline-none rounded-2xl scale-110'>
-                    <SlOptions className='text-white scale-150' />
+                <Button size="icon-sm" variant="secondary" aria-label={t('card.optionsFor', { title: meta.title })}>
+                    <Ellipsis className='h-4 w-4' />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
                 <DropdownMenuLabel className='font-bold text-base'><bdi>{meta.title}</bdi></DropdownMenuLabel>
                 {voteAverage !== undefined && (
                     <DropdownMenuLabel className='-mt-3 -ms-1'>
-                        <span className='rounded-xl scale-75 sm:scale-100'>
-                            <IoMdStar className='inline-block me-1 text-yellow-400' />
-                            <span className="inline-block bbc-text-shadow p-0 text-xs">{displayVoteAverage}</span>
+                        <span className='inline-flex items-center gap-1 text-xs text-white/70'>
+                            <Star className='h-3 w-3 fill-star text-star' />
+                            {displayVoteAverage}
                         </span>
                     </DropdownMenuLabel>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                    <DropdownMenuItem onSelect={actions.favorite}><FaHeart className='me-2' />{t('card.addFavorites')}</DropdownMenuItem>
-                    <DropdownMenuItem onSelect={actions.bookmark}><FaBookmark className='me-2' />{t('card.addBookmarks')}</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={actions.favorite}><Heart className='me-2.5 h-4 w-4 text-white/60' />{t('card.addFavorites')}</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={actions.bookmark}><Bookmark className='me-2.5 h-4 w-4 text-white/60' />{t('card.addBookmarks')}</DropdownMenuItem>
                     <DropdownMenuSub>
-                        <DropdownMenuSubTrigger><FaShareAlt className='me-2' />{t('card.share')}</DropdownMenuSubTrigger>
+                        <DropdownMenuSubTrigger><Share2 className='me-2.5 h-4 w-4 text-white/60' />{t('card.share')}</DropdownMenuSubTrigger>
                         <DropdownMenuPortal>
                             <DropdownMenuSubContent>
-                                <DropdownMenuItem onSelect={actions.facebook}><FaFacebook className='me-2' />Facebook</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={actions.x}><FaXTwitter className='me-2' />X</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={actions.telegram}><FaTelegram className='me-2' />Telegram</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={actions.whatsapp}><FaWhatsapp className='me-2' />WhatsApp</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={actions.facebook}><FaFacebook className='me-2.5 text-white/60' />Facebook</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={actions.x}><FaXTwitter className='me-2.5 text-white/60' />X</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={actions.telegram}><FaTelegram className='me-2.5 text-white/60' />Telegram</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={actions.whatsapp}><FaWhatsapp className='me-2.5 text-white/60' />WhatsApp</DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onSelect={actions.copy}><LuCopy className='me-2' />{t('card.copyLink')}</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={actions.copy}><Copy className='me-2.5 h-4 w-4 text-white/60' />{t('card.copyLink')}</DropdownMenuItem>
                             </DropdownMenuSubContent>
                         </DropdownMenuPortal>
                     </DropdownMenuSub>

@@ -19,3 +19,25 @@ export async function searchMovies(query: string, adult: boolean = false, page: 
   }
   return tmdbFetch('search/multi', { query: q, page, include_adult: adult }, 60)
 }
+
+export type TrendingSuggestion = { id: number, media_type: 'movie' | 'tv', title: string, year: string, poster_path: string | null, backdrop_path: string | null }
+
+/** What the search palette suggests before anything is typed: today's trending titles. */
+export async function getTrendingSuggestions(): Promise<TrendingSuggestion[]> {
+  const kids = await getKidsMode()
+  try {
+    const data = await tmdbFetch('trending/all/day', {}, 3600)
+    let results: any[] = (data.results ?? []).filter((item: any) => item.media_type === 'movie' || item.media_type === 'tv')
+    if (kids) results = await filterKidSafe(results)
+    return results.slice(0, 8).map((item) => ({
+      id: item.id,
+      media_type: item.media_type,
+      title: item.title || item.name,
+      year: (item.release_date || item.first_air_date || '').slice(0, 4),
+      poster_path: item.poster_path ?? null,
+      backdrop_path: item.backdrop_path ?? null,
+    }))
+  } catch {
+    return []
+  }
+}

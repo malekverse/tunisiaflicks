@@ -6,7 +6,7 @@ import { Drawer as DrawerPrimitive } from "vaul"
 import { cn } from "@/src/lib/utils"
 
 const Drawer = ({
-  shouldScaleBackground = true,
+  shouldScaleBackground = false,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) => (
   <DrawerPrimitive.Root
@@ -28,7 +28,7 @@ const DrawerOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DrawerPrimitive.Overlay
     ref={ref}
-    className={cn("fixed inset-0 z-50 bg-black/80", className)}
+    className={cn("fixed inset-0 z-[60] bg-black/60", className)}
     {...props}
   />
 ))
@@ -43,12 +43,13 @@ const DrawerContent = React.forwardRef<
     <DrawerPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background",
+        // A sheet of dark glass. The bottom padding keeps content clear of the home indicator.
+        "glass-strong fixed inset-x-0 bottom-0 z-[60] mt-24 flex max-h-[92dvh] flex-col rounded-t-[28px] border-x-0 border-b-0 pb-[env(safe-area-inset-bottom)] text-white outline-none shadow-[0_-20px_60px_-10px_rgb(0_0_0/0.8)]",
         className
       )}
       {...props}
     >
-      <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
+      <div aria-hidden className="mx-auto mt-2.5 h-1.5 w-11 shrink-0 rounded-full bg-white/25" />
       {children}
     </DrawerPrimitive.Content>
   </DrawerPortal>

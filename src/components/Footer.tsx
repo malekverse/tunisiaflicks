@@ -17,6 +17,7 @@ const COLUMNS: { heading: TKey, links: { href: string, label: TKey }[] }[] = [
   {
     heading: 'footer.explore',
     links: [
+      { href: '/clips', label: 'nav.clips' },
       { href: '/swipe', label: 'swipe.title' },
       { href: '/tunisian/cinema', label: 'tnCinema.title' },
       { href: '/ramadan', label: 'ramadan.title' },
@@ -39,40 +40,40 @@ const COLUMNS: { heading: TKey, links: { href: string, label: TKey }[] }[] = [
   },
 ]
 
-/** Site footer: sits under the page content, beside the sidebar (it lives in the content column). */
+/** Site footer: quiet, low-contrast, out of the way of the pictures. */
 export default function Footer() {
   const t = getT()
   return (
-    // Bottom padding on mobile clears the fixed bottom navigation bar.
-    <footer aria-label={t('footer.aria')} className="mt-8 border-t border-gray-200 bg-gray-50 text-gray-600 dark:border-zinc-900 dark:bg-black dark:text-gray-400 pb-20 sm:pb-0">
-      <div className="mx-auto w-full max-w-[1800px] px-4 sm:px-14 py-10">
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-[2fr_1fr_1fr_1fr_1fr]">
+    // Bottom padding on phones clears the floating tab bar.
+    <footer aria-label={t('footer.aria')} className="page-x pb-tabbar mt-16 text-white/50">
+      <div className="border-t border-white/[0.07] py-12">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-10 md:grid-cols-[1.6fr_repeat(4,1fr)]">
           <div className="col-span-2 md:col-span-1">
             <Link href="/" aria-label={t('nav.homeAria')} className="inline-flex items-center gap-3">
-              <Image src="/A.svg" alt="" width={40} height={35} className="h-8 w-auto" />
-              <span className="text-lg font-bold text-gray-900 dark:text-white">TunisiaFlicks</span>
+              <Image src="/A.svg" alt="" width={36} height={31} className="h-8 w-auto drop-shadow-[0_0_18px_rgb(255_16_0/0.4)]" />
+              <Image src="/TunisiaFlicks.svg" alt="TunisiaFlicks" width={150} height={20} className="h-[18px] w-auto" />
             </Link>
-            <p className="mt-3 max-w-sm text-sm">{t('footer.tagline')}</p>
+            <p className="mt-4 max-w-xs text-sm leading-relaxed">{t('footer.tagline')}</p>
           </div>
           {COLUMNS.map((column) => (
             <nav key={column.heading} aria-label={t(column.heading)}>
-              <h2 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">{t(column.heading)}</h2>
-              <ul className="space-y-2 text-sm">
+              <h2 className="mb-3 text-[13px] font-semibold text-white/85">{t(column.heading)}</h2>
+              <ul className="space-y-2.5 text-sm">
                 {column.links.map((link) => (
                   <li key={link.href}>
-                    <Link href={link.href} className="hover:text-red-500 transition-colors">{t(link.label)}</Link>
+                    <Link href={link.href} className="transition-colors duration-200 hover:text-white">{t(link.label)}</Link>
                   </li>
                 ))}
               </ul>
             </nav>
           ))}
         </div>
-        <div className="mt-10 flex flex-col gap-2 border-t border-gray-200 pt-6 text-xs dark:border-zinc-900 md:flex-row md:items-center md:justify-between">
+        <div className="mt-12 flex flex-col gap-3 text-xs md:flex-row md:items-end md:justify-between">
           <p>{t('footer.rights', { year: new Date().getFullYear() })}</p>
-          <div className="space-y-1 md:text-end">
+          <div className="max-w-xl space-y-1 md:text-end">
             <p>{t('footer.noHosting')}</p>
             <p>
-              <a href="https://www.themoviedb.org" target="_blank" rel="noopener noreferrer" className="hover:text-red-500">{t('footer.tmdb')}</a>
+              <a href="https://www.themoviedb.org" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-white">{t('footer.tmdb')}</a>
             </p>
           </div>
         </div>

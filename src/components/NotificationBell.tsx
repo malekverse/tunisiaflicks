@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { FaBell, FaRegBell } from 'react-icons/fa'
+import { Bell } from 'lucide-react'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -87,45 +87,47 @@ export default function NotificationBell({ className }: { className?: string }) 
             <DropdownMenuTrigger
                 aria-label={label}
                 title={label}
-                className={cn("relative p-2 rounded-full text-gray-300 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500", className)}
+                className={cn("pressable relative grid h-10 w-10 place-items-center rounded-full text-white/75 outline-none transition-colors hover:bg-white/[0.08] hover:text-white focus-visible:ring-2 focus-visible:ring-red-500 data-[state=open]:bg-white/[0.1] data-[state=open]:text-white", className)}
             >
-                {unread > 0 ? <FaBell className="text-xl" /> : <FaRegBell className="text-xl" />}
+                <Bell aria-hidden className="h-[21px] w-[21px]" strokeWidth={1.9} />
                 {unread > 0 && (
-                    <span className="absolute top-0.5 end-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-[18px] text-center">
+                    <span className="absolute end-1 top-1 grid h-[17px] min-w-[17px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-black">
                         {unread > 9 ? '9+' : unread}
                     </span>
                 )}
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
-                <DropdownMenuLabel>{t('alerts.menuTitle')}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
+            <DropdownMenuContent align="end" sideOffset={10} className="w-[340px] max-w-[calc(100vw-1.5rem)] p-0">
+                <DropdownMenuLabel className="px-4 pb-2 pt-3.5 text-[15px] font-semibold">{t('alerts.menuTitle')}</DropdownMenuLabel>
                 {items.length === 0 ? (
-                    <p className="px-2 py-4 text-sm text-gray-400 text-center">
-                        {t('alerts.empty')}
-                    </p>
+                    <div className="flex flex-col items-center gap-2 px-6 pb-8 pt-4 text-center">
+                        <span className="grid h-12 w-12 place-items-center rounded-full bg-white/[0.06]">
+                            <Bell aria-hidden className="h-5 w-5 text-white/50" />
+                        </span>
+                        <p className="text-sm text-white/55">{t('alerts.empty')}</p>
+                    </div>
                 ) : (
-                    <div className="max-h-96 overflow-y-auto">
+                    <div className="max-h-[420px] overflow-y-auto overscroll-contain px-1.5 pb-1.5">
                         {items.map((item) => (
                             <DropdownMenuItem
                                 key={item.id}
                                 onSelect={() => router.push(`/${item.media_type}/${item.tmdbId}`)}
-                                className="flex gap-3 items-start cursor-pointer"
+                                className="flex cursor-pointer items-start gap-3 rounded-xl p-2.5"
                             >
-                                <span className="relative block w-10 aspect-[2/3] rounded overflow-hidden shrink-0 bg-zinc-800">
-                                    <TmdbImage kind="poster" path={item.poster_path} alt="" fill sizes="40px" className="object-cover" />
+                                <span className="relative block aspect-[2/3] w-11 shrink-0 overflow-hidden rounded-md bg-white/5">
+                                    <TmdbImage kind="poster" path={item.poster_path} alt="" fill sizes="44px" className="object-cover" />
                                 </span>
                                 <div className="min-w-0 flex-1">
-                                    <p className="font-semibold leading-tight line-clamp-2">{item.title}</p>
-                                    <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{describe(item, t)}</p>
-                                    <p className="text-[11px] text-gray-500 mt-0.5">{timeAgo(item.created_at, dateLocale)}</p>
+                                    <p className="line-clamp-2 font-medium leading-snug">{item.title}</p>
+                                    <p className="mt-0.5 line-clamp-2 text-xs text-white/60">{describe(item, t)}</p>
+                                    <p className="mt-1 text-[11px] text-white/40">{timeAgo(item.created_at, dateLocale)}</p>
                                 </div>
-                                {!item.read && <span className="mt-1 w-2 h-2 rounded-full bg-red-500 shrink-0" aria-label={t('alerts.unread')} />}
+                                {!item.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-red-500 shadow-[0_0_8px_rgb(255_36_20)]" aria-label={t('alerts.unread')} />}
                             </DropdownMenuItem>
                         ))}
                     </div>
                 )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => router.push('/profile#following')} className="justify-center text-sm cursor-pointer">
+                <DropdownMenuSeparator className="my-0" />
+                <DropdownMenuItem onSelect={() => router.push('/profile#following')} className="m-1.5 cursor-pointer justify-center rounded-xl text-sm text-white/70">
                     {t('alerts.manage')}
                 </DropdownMenuItem>
             </DropdownMenuContent>
