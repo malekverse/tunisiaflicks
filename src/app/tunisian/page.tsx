@@ -1,79 +1,60 @@
-"use client";
-import React, { useState, useEffect } from 'react'
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/src/components/ui/carousel"
-// import Link from 'next/link';
-import { useRouter } from 'next/navigation'
-import MoviePosterCard, { SkeletonLoader as PosterSkeletonLoader } from '@/src/components/MoviePosterCard'
-// import routes from '@/src/routes/client/routes';
+import Link from 'next/link'
+import PosterCard from '@/src/components/PosterCard'
+import { GRID_CLASS } from '@/src/components/MediaGrid'
+import { getTunisianTitles } from '@/src/lib/tunisian'
 
-export default function Page() {
-  const router = useRouter()
+// The catalogue is cached for 30 minutes (see lib/tunisian.ts); rendering per request keeps a
+// temporary outage of the source site from being frozen into a static page.
+export const dynamic = 'force-dynamic'
+export const metadata = { title: 'Tunisian | TunisiaFlicks' }
 
-  type TunisianData = {
-    title: string;
-    image: string;
-    link: string;
-  };
+const TABS = [
+  { label: 'All', value: undefined },
+  { label: 'Series', value: 'series' },
+  { label: 'Movies', value: 'movie' },
+] as const
 
-  const [tunisianData, setTunisianData] = useState<TunisianData[]>();
-  const [loader, setLoader] = useState(true)
+export default async function TunisianPage({ searchParams }: { searchParams: { type?: string } }) {
+  const titles = await getTunisianTitles()
+  const type = searchParams.type === 'series' || searchParams.type === 'movie' ? searchParams.type : undefined
+  const visible = titles?.filter((title) => !type || title.kind === type) ?? []
 
-  useEffect(() => {
-    async function fetchData(){
-        const response = await fetch('/api/tunisian');
-        const data = await response.json();
-        console.log(data);
-        setTunisianData(data.results)
-        setLoader(false)
-    }
-    fetchData();
-  }, []);
+  const tab = (active: boolean) =>
+    `px-4 py-2 rounded-xl text-sm font-medium ${active ? 'bg-red-500 text-white' : 'bg-zinc-800 text-gray-300 hover:bg-zinc-600 hover:text-white'}`
 
-  const SmallSkeleton = () => {
-    return (
-      <Carousel className='w-full sm:w-[90%] lg:w-[96%] xl:w-[97%]'>
-        <CarouselContent>
-          {Array.from({ length: 10 }).map((_, index) => (
-            <CarouselItem key={index} className="transition-transform ease-in-out duration-400 select-none basis-[145px]
-      md:basis-[167px] my-4 p-0 ml-4 hover:scale-110 hover:z-10">
-              <PosterSkeletonLoader />
-            </CarouselItem>))}
-        </CarouselContent>
-      </Carousel>
-    )
-  }
-
-  const getEpisodes = (link, router) => {
-    router.push(`/tunisian/episodes?link=${encodeURIComponent(link)}`)
-  }
-
-  const SmallSliders = ({ data }: { data: any }) => {
-    return (
-      <div className='ml-5'>
-        <p className='text-2xl sm:text-3xl font-semibold mb-3'>Tunisian Vibes</p>
-        <div className='flex flex-wrap'>
-          {
-            tunisianData && data?.map((movie, index) => {
-              return (
-                <div key={index} className="transition-transform ease-in-out duration-400 select-none w-[200px]
-               md:basis-[167px] my-4 p-0 ml-4 hover:scale-110 hover:z-10 ">
-                  <div onClick={() => getEpisodes(movie.link, router)}>
-                    <MoviePosterCard key={index} posterImg={movie.image} title={movie.title} externalImg={true} />
-                  </div>
-                </div>
-              )
-            })
-          }
+  return (
+    <div className='w-full max-w-[1800px] px-4 sm:px-6'>
+      <div className='flex flex-wrap items-center justify-between gap-3 mb-6'>
+        <h1 className='text-3xl sm:text-4xl font-bold'>Tunisian Vibes</h1>
+        <div className='flex gap-2'>
+          {TABS.map((item) => (
+            <Link key={item.label} href={item.value ? `/tunisian?type=${item.value}` : '/tunisian'} className={tab(type === item.value)}>
+              {item.label}
+            </Link>
+          ))}
         </div>
       </div>
-    )
-  }
 
-    
-  return (
-    <div>
-       {loader ?
-        <SmallSkeleton /> : <SmallSliders data={tunisianData} />}
+      {titles === null ? (
+        <p className='text-gray-400'>Couldn&apos;t load Tunisian content right now. Please try again in a moment.</p>
+      ) : visible.length === 0 ? (
+        <p className='text-gray-400'>Nothing here yet.</p>
+      ) : (
+        <div className={GRID_CLASS}>
+          {visible.map((title) => (
+            <div key={title.slug} className='transition-transform ease-in-out duration-300 hover:scale-105 hover:z-10'>
+              <PosterCard
+                posterImg={title.poster}
+                title={title.title}
+                releaseDate={title.published}
+                externalImg
+                actions={false}
+                link={`/tunisian/${title.slug}`}
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
-  );
+  )
 }
