@@ -13,8 +13,7 @@ import FollowButton from '@/src/components/FollowButton'
 import { toast } from '@/src/hooks/use-toast'
 import { cn } from '@/src/lib/utils'
 import { useI18n } from '@/src/components/I18nProvider'
-
-const TMDB = 'https://image.tmdb.org/t/p'
+import TmdbImage from '@/src/components/TmdbImage'
 
 function Backdrops({ backdrops, fallback, title }: { backdrops: { file_path: string }[], fallback?: string | null, title: string }) {
     const { t, dir } = useI18n()
@@ -22,25 +21,58 @@ function Backdrops({ backdrops, fallback, title }: { backdrops: { file_path: str
         const paths = backdrops.slice(0, 8).map((item) => item.file_path)
         return paths.length > 0 ? paths : fallback ? [fallback] : []
     }, [backdrops, fallback])
+    // The first backdrop gets all the bandwidth. The others are downloaded (hidden) once it is on
+    // screen, and only join the carousel when fully loaded: autoplay never slides to a black frame.
+    const [firstShown, setFirstShown] = useState(false)
+    const [ready, setReady] = useState<Set<string>>(() => new Set())
+    const shown = slides.filter((path, index) => index === 0 || ready.has(path))
+    // One at a time, so they never compete with the poster and cast photos.
+    const pending = firstShown ? slides.slice(1).filter((path) => !ready.has(path)).slice(0, 1) : []
+
     const plugins = useMemo(() => [Autoplay({ delay: 4000 })], [])
-    const [emblaRef] = useEmblaCarousel({ loop: slides.length > 1, direction: dir }, plugins)
+    // Embla watches its slides and re-initialises as loaded ones are added.
+    const [emblaRef] = useEmblaCarousel({ loop: shown.length > 1, direction: dir }, plugins)
 
     return (
-        <div className="overflow-hidden h-full" ref={emblaRef}>
-            <div className="flex h-full touch-pan-y">
-                {slides.map((path, index) => (
-                    <div className="min-w-0 flex-[0_0_100%] h-full" key={path}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                            src={`${TMDB}/w1280${path}`}
-                            alt={index === 0 ? t('hero.backdropAlt', { title }) : ''}
-                            loading={index === 0 ? 'eager' : 'lazy'}
-                            className="w-full h-full object-cover object-top"
+        <>
+            <div className="overflow-hidden h-full" ref={emblaRef}>
+                <div className="flex h-full touch-pan-y">
+                    {shown.map((path, index) => (
+                        <div className="relative min-w-0 flex-[0_0_100%] h-full" key={path}>
+                            <TmdbImage
+                                kind="backdrop"
+                                path={path}
+                                fill
+                                sizes="100vw"
+                                alt={index === 0 ? t('hero.backdropAlt', { title }) : ''}
+                                // A tiny blurred copy shows instantly, the sharp one fades in over it.
+                                preview={index === 0 ? 'w300' : undefined}
+                                shimmer={false}
+                                priority={index === 0}
+                                onReady={index === 0 ? () => setFirstShown(true) : undefined}
+                                className="object-cover object-top"
+                            />
+                        </div>
+                    ))}
+                </div>
+            </div>
+            {/* Same srcset/sizes as the slides, so the browser picks the same file and caches it. */}
+            <div hidden aria-hidden>
+                {pending.map((path) => (
+                    <div className="relative w-full h-full" key={path}>
+                        <TmdbImage
+                            kind="backdrop"
+                            path={path}
+                            fill
+                            sizes="100vw"
+                            alt=""
+                            loading="eager"
+                            onReady={() => setReady((current) => new Set(current).add(path))}
                         />
                     </div>
                 ))}
             </div>
-        </div>
+        </>
     )
 }
 
@@ -131,25 +163,32 @@ export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFav
 
             <div className="relative z-10 flex flex-col min-h-[560px] md:min-h-[640px] px-5 md:px-10 pt-8 pb-10">
                 {logo && (
-                    <Image
-                        src={`${TMDB}/w500${logo.file_path}`}
+                    <TmdbImage
+                        kind="logo"
+                        path={logo.file_path}
                         className="w-32 md:w-48 h-auto max-h-24 object-contain object-left rtl:object-right"
                         width={500}
                         height={200}
+                        sizes="(min-width: 768px) 192px, 128px"
+                        loading="eager"
                         alt={t('hero.logoAlt', { title })}
-                        priority
                     />
                 )}
 
                 <div className="mt-auto pt-40 md:pt-64 flex flex-col md:flex-row items-center md:items-end gap-6">
                     {data.poster_path && (
-                        <Image
-                            src={`${TMDB}/w500${data.poster_path}`}
-                            className="w-36 md:w-48 h-auto rounded-xl shadow-2xl shadow-black shrink-0"
-                            width={500}
-                            height={750}
-                            alt={t('hero.posterAlt', { title })}
-                        />
+                        <div className="relative w-36 md:w-48 aspect-[2/3] rounded-xl overflow-hidden shadow-2xl shadow-black shrink-0">
+                            <TmdbImage
+                                kind="poster"
+                                path={data.poster_path}
+                                fill
+                                sizes="(min-width: 768px) 192px, 144px"
+                                preview="w92"
+                                priority
+                                className="object-cover"
+                                alt={t('hero.posterAlt', { title })}
+                            />
+                        </div>
                     )}
 
                     <div className="flex flex-col items-center md:items-start min-w-0 max-w-3xl">
@@ -158,7 +197,7 @@ export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFav
                             {(data.origin_country ?? []).length > 0 && (
                                 <div className="flex gap-1">
                                     {data.origin_country.map((country: string) => (
-                                        <Image key={country} src={`https://flagsapi.com/${country}/flat/32.png`} width={32} height={32} alt={country} />
+                                        <Image key={country} src={`https://flagsapi.com/${country}/flat/32.png`} width={32} height={32} alt={country} unoptimized />
                                     ))}
                                 </div>
                             )}
@@ -182,13 +221,16 @@ export default function MediaHero({ kind, data, isFavorite, isSaved, onToggleFav
                                             key={person.credit_id ?? person.id}
                                             href={`/person/${person.id}`}
                                             title={person.character ? t('hero.castAs', { name: person.name, character: person.character }) : person.name}
-                                            className="rounded-full transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                                            className="block rounded-full bg-zinc-800 transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                                         >
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img
-                                                src={person.profile_path ? `${TMDB}/w185${person.profile_path}` : '/actor.png'}
+                                            <TmdbImage
+                                                kind="profile"
+                                                path={person.profile_path}
+                                                fallback="/actor.png"
+                                                width={56}
+                                                height={56}
+                                                sizes="56px"
                                                 alt={person.name}
-                                                loading="lazy"
                                                 className="w-12 h-12 md:w-14 md:h-14 object-cover rounded-full hover:ring-2 hover:ring-red-500"
                                                 style={{ objectPosition: '0 30%' }}
                                             />

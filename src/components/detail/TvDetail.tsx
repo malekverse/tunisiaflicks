@@ -9,6 +9,7 @@ import DownloadDialog from '@/src/components/detail/DownloadDialog'
 import { getSeasonDetails } from '@/src/app/tv/[id]/actions'
 import { getStreamProviders } from '@/src/lib/stream-providers'
 import { cn } from '@/src/lib/utils'
+import TmdbImage from '@/src/components/TmdbImage'
 import { useT } from '@/src/components/I18nProvider'
 
 type Season = { id: number, season_number: number, name: string, poster_path: string | null, episode_count: number }
@@ -123,10 +124,9 @@ export default function TvDetail({ id, data, similar, resume }: {
                     selectedSeason === season.season_number && "ring-2 ring-red-500"
                   )}
                 >
-                  <div className="aspect-[2/3] rounded-xl overflow-hidden bg-zinc-800">
+                  <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-zinc-800">
                     {season.poster_path && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={`https://image.tmdb.org/t/p/w342${season.poster_path}`} alt={season.name} loading="lazy" className="w-full h-full object-cover" />
+                      <TmdbImage kind="poster" path={season.poster_path} alt={season.name} fill sizes="(min-width: 640px) 144px, 112px" className="object-cover" />
                     )}
                   </div>
                   <p className="mt-1 px-1 text-sm font-semibold truncate">{season.name}</p>
@@ -156,10 +156,9 @@ export default function TvDetail({ id, data, similar, resume }: {
                       isSelected && "ring-2 ring-red-500 scale-[1.03]"
                     )}
                   >
-                    <div className="aspect-video rounded-md overflow-hidden bg-zinc-800">
+                    <div className="relative aspect-video rounded-md overflow-hidden bg-zinc-800">
                       {item.still_path && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={`https://image.tmdb.org/t/p/w300${item.still_path}`} alt="" loading="lazy" className="w-full h-full object-cover" />
+                        <TmdbImage kind="still" path={item.still_path} alt="" fill sizes="(min-width: 640px) 256px, 208px" className="object-cover" />
                       )}
                     </div>
                     <p className="mt-1 px-1 font-semibold text-sm">{t('tv.episodeTitle', { number: item.episode_number, name: item.name })}</p>

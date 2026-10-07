@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ExpandableText from '@/src/components/ExpandableText'
+import TmdbImage from '@/src/components/TmdbImage'
 import MediaGrid from '@/src/components/MediaGrid'
 import { PosterSlider } from '@/src/components/Sliders'
 import { TmdbError, tmdbFetch, tmdbFetchSafe, withTranslatedFields } from '@/src/lib/tmdb'
@@ -107,12 +108,19 @@ export default async function PersonPage({ params }: Props) {
   return (
     <div className="w-full max-w-[1800px] px-4 sm:px-14 space-y-10 pb-8">
       <section className="flex flex-col md:flex-row gap-6 md:gap-10 items-center md:items-start">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={person.profile_path ? `https://image.tmdb.org/t/p/w500${person.profile_path}` : '/actor.png'}
-          alt={person.name}
-          className="w-48 md:w-64 aspect-[2/3] object-cover rounded-xl shadow-2xl shadow-black/40 shrink-0 bg-zinc-800"
-        />
+        <div className="relative w-48 md:w-64 aspect-[2/3] rounded-xl overflow-hidden shadow-2xl shadow-black/40 shrink-0 bg-zinc-800">
+          <TmdbImage
+            kind="profile"
+            path={person.profile_path}
+            fallback="/actor.png"
+            alt={person.name}
+            fill
+            sizes="(min-width: 768px) 256px, 192px"
+            preview="w45"
+            priority
+            className="object-cover"
+          />
+        </div>
         <div className="min-w-0 flex-1 w-full">
           <h1 className="text-3xl md:text-4xl font-bold text-center md:text-start">{person.name}</h1>
           {facts.length > 0 && (
