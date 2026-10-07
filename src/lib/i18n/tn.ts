@@ -454,4 +454,9 @@ export const tn: Partial<Record<TKey, string>> = {
   'search.emptyText': 'لوّج بالعنوان ولا بالممثل ولا بالمخرج.',
   'search.noResultsTitle': 'ما لقينا شي',
   'search.noResultsHint': 'ثبّت في الكتيبة ولا جرّب العنوان الأصلي.',
+
+  // Tunisian hub
+  'tunisian.subtitle': 'مسلسلات وأفلام تونسية، من متاع رمضان لين الجديد.',
+  'tunisian.typeSwitch': 'ورّي',
+  'tunisian.count': '{count} عنوان',
 }

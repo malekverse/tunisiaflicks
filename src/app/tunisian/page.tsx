@@ -1,6 +1,10 @@
 import Link from 'next/link'
+import { ChevronRight } from 'lucide-react'
 import PosterCard from '@/src/components/PosterCard'
-import { GRID_CLASS } from '@/src/components/MediaGrid'
+import { EmptyState, GRID_CLASS } from '@/src/components/MediaGrid'
+import SegmentedLinks from '@/src/components/browse/SegmentedLinks'
+import TunisiaMark from '@/src/components/tunisian/TunisiaMark'
+import RoomTint from '@/src/components/shell/RoomTint'
 import KidsBlocked from '@/src/components/profiles/KidsBlocked'
 import { getKidsMode } from '@/src/lib/profiles'
 import { getTunisianTitles } from '@/src/lib/tunisian'
@@ -18,6 +22,10 @@ const TABS: { label: TKey, value?: 'series' | 'movie' }[] = [
   { label: 'tunisian.movies', value: 'movie' },
 ]
 
+// The flag's red, a touch deeper: the room glows Tunisian here.
+const TUNISIAN_RED = '231 0 19'
+
+/** Made in Tunisia: the catalogue of Tunisian series and films, under the crescent and star. */
 export default async function TunisianPage({ searchParams }: { searchParams: { type?: string } }) {
   // The Tunisian catalogue has no age ratings, so Kids profiles can't be offered it.
   if (await getKidsMode()) return <KidsBlocked what='tunisian' />
@@ -26,53 +34,65 @@ export default async function TunisianPage({ searchParams }: { searchParams: { t
   const type = searchParams.type === 'series' || searchParams.type === 'movie' ? searchParams.type : undefined
   const visible = titles?.filter((title) => !type || title.kind === type) ?? []
 
-  const tab = (active: boolean) =>
-    `px-4 py-2 rounded-xl text-sm font-medium ${active ? 'bg-red-500 text-white' : 'bg-zinc-800 text-gray-300 hover:bg-zinc-600 hover:text-white'}`
-
   return (
-    <div className='w-full max-w-[1800px] px-4 sm:px-6'>
-      <div className='flex flex-wrap items-center justify-between gap-3 mb-6'>
-        <h1 className='text-3xl sm:text-4xl font-bold'>{t('tunisian.title')}</h1>
-        <div className='flex gap-2'>
-          {TABS.map((item) => (
-            <Link key={item.label} href={item.value ? `/tunisian?type=${item.value}` : '/tunisian'} className={tab(type === item.value)}>
-              {t(item.label)}
-            </Link>
-          ))}
+    <div className="pb-10">
+      <RoomTint color={TUNISIAN_RED} />
+      <header className="page-x page-top relative isolate overflow-hidden pb-8">
+        <TunisiaMark className="pointer-events-none absolute -end-24 -top-10 -z-10 h-[420px] w-[420px] text-red-600/[0.13] sm:-end-10 sm:h-[560px] sm:w-[560px]" />
+        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div className="animate-focus-in">
+            <h1 className="font-display text-[clamp(40px,6.5vw,92px)] font-extrabold leading-[0.92]">{t('tunisian.title')}</h1>
+            <p className="mt-3 max-w-[56ch] text-[15px] text-white/60">{t('tunisian.subtitle')}</p>
+          </div>
+          <SegmentedLinks
+            label={t('tunisian.typeSwitch')}
+            items={TABS.map((item) => ({
+              href: item.value ? `/tunisian?type=${item.value}` : '/tunisian',
+              label: t(item.label),
+              active: type === item.value,
+            }))}
+          />
         </div>
-      </div>
 
-      <Link
-        href='/tunisian/cinema'
-        className='mb-6 flex items-center justify-between gap-4 rounded-2xl bg-gradient-to-r from-red-600 to-red-900 px-5 py-4 text-white transition hover:brightness-110'
-      >
-        <span>
-          <span className='block font-semibold'>🇹🇳 {t('tnCinema.title')}</span>
-          <span className='block text-sm text-white/80'>{t('tnCinema.teaser')}</span>
-        </span>
-        <span aria-hidden className='text-2xl rtl:-scale-x-100'>→</span>
-      </Link>
+        <Link
+          href="/tunisian/cinema"
+          className="group pressable mt-8 flex items-center gap-4 overflow-hidden rounded-[22px] bg-gradient-to-r from-red-600/30 via-red-600/10 to-transparent p-4 ring-1 ring-red-500/25 transition-colors hover:ring-red-500/50 sm:p-5 rtl:bg-gradient-to-l"
+        >
+          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-red-600 text-white shadow-[0_0_30px_rgb(229_15_5/0.5)]">
+            <TunisiaMark className="h-10 w-10" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-display text-xl font-bold">{t('tnCinema.title')}</span>
+            <span className="block text-sm text-white/65">{t('tnCinema.teaser')}</span>
+          </span>
+          <ChevronRight aria-hidden className="h-5 w-5 shrink-0 text-white/60 transition-transform duration-200 group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" />
+        </Link>
+      </header>
 
-      {titles === null ? (
-        <p className='text-gray-400'>{t('tunisian.failed')}</p>
-      ) : visible.length === 0 ? (
-        <p className='text-gray-400'>{t('tunisian.empty')}</p>
-      ) : (
-        <div className={GRID_CLASS}>
-          {visible.map((title) => (
-            <div key={title.slug} className='transition-transform ease-in-out duration-300 hover:scale-105 hover:z-10'>
-              <PosterCard
-                posterImg={title.poster}
-                title={title.title}
-                releaseDate={title.published}
-                externalImg
-                actions={false}
-                link={`/tunisian/${title.slug}`}
-              />
+      <div className="page-x">
+        {titles === null ? (
+          <EmptyState>{t('tunisian.failed')}</EmptyState>
+        ) : visible.length === 0 ? (
+          <EmptyState>{t('tunisian.empty')}</EmptyState>
+        ) : (
+          <>
+            <p className="mb-5 text-[13px] text-white/45">{t('tunisian.count', { count: visible.length })}</p>
+            <div className={GRID_CLASS}>
+              {visible.map((title) => (
+                <PosterCard
+                  key={title.slug}
+                  posterImg={title.poster}
+                  title={title.title}
+                  releaseDate={title.published}
+                  externalImg
+                  actions={false}
+                  link={`/tunisian/${title.slug}`}
+                />
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          </>
+        )}
+      </div>
     </div>
   )
 }

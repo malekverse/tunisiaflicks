@@ -1,6 +1,7 @@
 "use client"
 import React, { useEffect, useState } from 'react'
-import { useT } from '@/src/components/I18nProvider'
+import NumberFlow from '@number-flow/react'
+import { useI18n } from '@/src/components/I18nProvider'
 
 type Parts = { days: number, hours: number, minutes: number }
 
@@ -14,7 +15,7 @@ function remaining(start: string): Parts | null {
 
 /** Live days / hours / minutes until Ramadan begins. Client-only (depends on the clock). */
 export default function RamadanCountdown({ start }: { start: string }) {
-  const t = useT()
+  const { t, dir } = useI18n()
   const [parts, setParts] = useState<Parts | null | undefined>(undefined)
   useEffect(() => {
     const tick = () => setParts(remaining(start))
@@ -24,11 +25,11 @@ export default function RamadanCountdown({ start }: { start: string }) {
   }, [start])
   if (!parts) return null
   return (
-    <div className="flex gap-2" role="timer" aria-live="off">
+    <div className="flex gap-2.5" role="timer" aria-live="off" dir="ltr">
       {([['days', parts.days], ['hours', parts.hours], ['minutes', parts.minutes]] as const).map(([name, value]) => (
-        <span key={name} className="flex min-w-[4rem] flex-col items-center rounded-xl bg-white/10 px-3 py-2 ring-1 ring-white/15">
-          <span className="text-3xl font-bold tabular-nums">{value}</span>
-          <span className="text-[11px] uppercase text-amber-100/80">{t(`countdown.${name}`)}</span>
+        <span key={name} className="flex min-w-[5rem] flex-col items-center rounded-2xl bg-amber-200/[0.08] px-4 py-3 ring-1 ring-amber-200/20 backdrop-blur-md">
+          <NumberFlow value={value} className="font-display text-[40px] font-extrabold leading-none tabular-nums text-amber-50" />
+          <span className="mt-1.5 text-[12px] text-amber-100/70" dir={dir}>{t(`countdown.${name}`)}</span>
         </span>
       ))}
     </div>

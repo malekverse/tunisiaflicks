@@ -852,6 +852,11 @@ export const en = {
   'search.emptyText': 'Search by title, actor or director.',
   'search.noResultsTitle': 'Nothing found',
   'search.noResultsHint': 'Check the spelling, or try the original title.',
+
+  // Tunisian hub
+  'tunisian.subtitle': 'Series and films made in Tunisia, from Ramadan favourites to the latest releases.',
+  'tunisian.typeSwitch': 'Show',
+  'tunisian.count': '{count} titles',
 } satisfies Record<string, string>
 
 export type TKey = keyof typeof en

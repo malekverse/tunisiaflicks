@@ -854,4 +854,9 @@ export const ar: Record<TKey, string> = {
   'search.emptyText': 'ابحث بالعنوان أو اسم الممثل أو المخرج.',
   'search.noResultsTitle': 'لا توجد نتائج',
   'search.noResultsHint': 'تحقق من الإملاء أو جرّب العنوان الأصلي.',
+
+  // Tunisian hub
+  'tunisian.subtitle': 'مسلسلات وأفلام صُنعت في تونس، من مفضّلات رمضان إلى أحدث الإصدارات.',
+  'tunisian.typeSwitch': 'عرض',
+  'tunisian.count': 'العناوين: {count}',
 }

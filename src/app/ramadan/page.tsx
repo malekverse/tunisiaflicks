@@ -1,6 +1,9 @@
 import Link from 'next/link'
+import { MoonStar, Play } from 'lucide-react'
 import { PosterSlider } from '@/src/components/Sliders'
 import RamadanCountdown from '@/src/components/ramadan/RamadanCountdown'
+import RoomTint from '@/src/components/shell/RoomTint'
+import { Button } from '@/src/components/ui/button'
 import { getKidsMode } from '@/src/lib/profiles'
 import { getLocale, getT } from '@/src/lib/i18n/server'
 import { dateLocale } from '@/src/lib/i18n'
@@ -12,6 +15,9 @@ export function generateMetadata() {
   const t = getT()
   return { title: `${t('ramadan.title')} | TunisiaFlicks`, description: t('ramadan.intro') }
 }
+
+// Lantern gold: during Ramadan the room is lit warm.
+const LANTERN = '245 190 80'
 
 /** Ramadan hub: countdown / "day N", then each Ramadan's Tunisian and Arab series. */
 export default async function RamadanPage() {
@@ -27,32 +33,36 @@ export default async function RamadanPage() {
     latest ? arabRamadanSeries(latest.year, locale, kids) : Promise.resolve([]),
   ])
   const formatDate = (date: string) =>
-    new Date(`${date}T12:00:00Z`).toLocaleDateString(dateLocale(locale), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+    new Date(`${date}T12:00:00Z`).toLocaleDateString(dateLocale(locale) ?? 'en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
   const isNow = (year: number) => status?.phase === 'during' && status.year === year
 
   return (
-    <div className="w-full max-w-[1800px] px-4 sm:px-14 space-y-8 pb-8">
-      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1b1036] via-[#2a1450] to-[#0d0c0f] p-6 text-white md:p-10">
-        {/* Crescent and sparkle: emoji, so nothing extra loads. */}
-        <span aria-hidden className="pointer-events-none absolute -end-6 -top-10 text-[10rem] leading-none opacity-20 md:text-[14rem]">🌙</span>
-        <span aria-hidden className="pointer-events-none absolute end-40 top-6 text-2xl opacity-40">✨</span>
-        <div className="relative max-w-2xl space-y-4">
-          <p className="w-fit rounded-full bg-amber-400/90 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#1b1036]">{t('ramadan.badge')}</p>
-          <h1 className="text-3xl font-bold md:text-5xl">{status?.phase === 'during' ? t('ramadan.mubarak') : t('ramadan.title')}</h1>
-          <p className="text-amber-50/80">{t('ramadan.intro')}</p>
+    <div className="space-y-12 pb-10">
+      <RoomTint color={LANTERN} />
+      <section className="page-x page-top relative isolate overflow-hidden pb-4">
+        {/* The crescent, glowing like a lantern behind the title. */}
+        <div aria-hidden className="pointer-events-none absolute -end-16 top-6 -z-10 sm:end-4">
+          <div className="absolute inset-10 rounded-full bg-amber-300/25 blur-3xl" />
+          <MoonStar className="relative h-[260px] w-[260px] text-amber-200/25 sm:h-[380px] sm:w-[380px]" strokeWidth={0.6} />
+        </div>
+        <div className="max-w-2xl space-y-5">
+          <h1 className="animate-focus-in font-display text-[clamp(40px,6.5vw,92px)] font-extrabold leading-[0.92] text-amber-50">
+            {status?.phase === 'during' ? t('ramadan.mubarak') : t('ramadan.title')}
+          </h1>
+          <p className="max-w-[56ch] animate-focus-in text-[15px] leading-relaxed text-amber-50/70 [animation-delay:60ms]">{t('ramadan.intro')}</p>
           {status?.phase === 'during' && (
-            <p className="text-xl font-semibold text-amber-300">{t('ramadan.day', { day: status.day })}</p>
+            <p className="animate-focus-in font-display text-3xl font-bold text-amber-300 [animation-delay:120ms]">{t('ramadan.day', { day: status.day })}</p>
           )}
           {status?.phase === 'before' && (
-            <div className="space-y-3">
-              <p className="text-amber-100">{t('ramadan.startsAround', { year: status.year, date: formatDate(status.start) })}</p>
+            <div className="animate-focus-in space-y-3 [animation-delay:120ms]">
+              <p className="text-amber-100/90">{t('ramadan.startsAround', { year: status.year, date: formatDate(status.start) })}</p>
               <RamadanCountdown start={status.start} />
-              <p className="text-xs text-amber-100/60">{t('ramadan.moonNote')}</p>
+              <p className="text-xs text-amber-100/50">{t('ramadan.moonNote')}</p>
             </div>
           )}
-          <Link href="/tunisian?type=series" className="inline-block rounded-md bg-red-500 px-4 py-2 text-sm font-semibold hover:bg-red-400">
-            {t('ramadan.streamTunisian')}
-          </Link>
+          <Button asChild size="lg" className="animate-focus-in [animation-delay:180ms]">
+            <Link href="/tunisian?type=series"><Play aria-hidden className="h-5 w-5 fill-current rtl:-scale-x-100" />{t('ramadan.streamTunisian')}</Link>
+          </Button>
         </div>
       </section>
 
