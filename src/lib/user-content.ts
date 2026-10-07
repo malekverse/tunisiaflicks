@@ -45,6 +45,11 @@ export async function getWatchHistory() {
   return getUserContent('history');
 }
 
+// Remove an item from watch history (e.g. "remove from Continue Watching")
+export async function removeFromWatchHistory(itemId: string) {
+  return removeFromUserContent('history', itemId);
+}
+
 // Generic function to add an item to a user content list
 async function addToUserContent(type: 'favorites' | 'saved' | 'history', item: ContentItem) {
   try {

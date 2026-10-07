@@ -22,7 +22,7 @@ export default function MovieDetail({ id, data, similar }: { id: string, data: a
         isSaved={lists.isSaved}
         onToggleFavorite={lists.toggleFavorite}
         onToggleSaved={lists.toggleSaved}
-        onWatch={lists.markWatched}
+        onWatch={() => lists.markWatched()}
       />
       <StreamSection
         services={streamServices}

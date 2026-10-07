@@ -13,7 +13,13 @@ import { cn } from '@/src/lib/utils'
 type Season = { id: number, season_number: number, name: string, poster_path: string | null, episode_count: number }
 type Episode = { id: number, name: string, season_number: number, episode_number: number, still_path: string | null, overview: string }
 
-export default function TvDetail({ id, data, similar }: { id: string, data: any, similar: any[] }) {
+export default function TvDetail({ id, data, similar, resume }: {
+  id: string
+  data: any
+  similar: any[]
+  /** Episode to reopen (from "Continue Watching" links: /tv/:id?s=&e=). */
+  resume?: { season: number, episode: number }
+}) {
   const lists = useMediaLists({ id, title: data.name, poster_path: data.poster_path, media_type: 'tv' })
 
   const seasons: Season[] = data.seasons ?? []
@@ -42,16 +48,31 @@ export default function TvDetail({ id, data, similar }: { id: string, data: any,
     }
   }, [id])
 
-  // Start with the first real season (skipping "Specials") so there are episodes to pick right away.
+  // Open the resumed season (from a "Continue Watching" link) or else the first real season
+  // (skipping "Specials"), so there are episodes to pick right away.
   useEffect(() => {
-    const first = seasons.find((season) => season.season_number > 0) ?? seasons[0]
-    if (first) loadSeason(first.season_number, false)
+    const resumable = resume && seasons.some((season) => season.season_number === resume.season)
+    const start = resumable ? resume.season : (seasons.find((season) => season.season_number > 0) ?? seasons[0])?.season_number
+    if (start === undefined) return
+
+    loadSeason(start, false).then(() => {
+      if (!resumable) return
+      setEpisode({ season: resume.season, episode: resume.episode })
+      toast({ title: "Welcome back", description: `Resuming S${resume.season}:E${resume.episode}`, duration: 3000 })
+      // Let the enabled player render first. setTimeout (not requestAnimationFrame, which stalls
+      // in background tabs); jump instantly when hidden, since a smooth scroll can't animate there.
+      setTimeout(() => {
+        document.getElementById('streamSection')?.scrollIntoView({
+          behavior: document.visibilityState === 'visible' ? 'smooth' : 'instant',
+        })
+      }, 150)
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
   const pickEpisode = (item: Episode) => {
     setEpisode({ season: item.season_number, episode: item.episode_number })
-    lists.markWatched()
+    lists.markWatched({ season: item.season_number, episode: item.episode_number })
     toast({
       title: "Episode Selected",
       description: `Now watching S${item.season_number}:E${item.episode_number} - ${item.name}`,
@@ -72,7 +93,7 @@ export default function TvDetail({ id, data, similar }: { id: string, data: any,
         isSaved={lists.isSaved}
         onToggleFavorite={lists.toggleFavorite}
         onToggleSaved={lists.toggleSaved}
-        onWatch={lists.markWatched}
+        onWatch={() => lists.markWatched()}
       />
 
       <div className="px-4 sm:px-14 max-w-[1800px] mx-auto w-full space-y-8">

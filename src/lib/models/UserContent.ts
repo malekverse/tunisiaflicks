@@ -6,6 +6,8 @@ export interface ContentItem {
   poster_path?: string; // Poster image path
   media_type: 'movie' | 'tv'; // Type of content (movie or TV show)
   added_at: Date;      // When the item was added to the list
+  season?: number;     // For TV history: the season last watched (enables "continue watching")
+  episode?: number;    // For TV history: the episode last watched
 }
 
 export interface UserFavorites {

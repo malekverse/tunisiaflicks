@@ -84,10 +84,13 @@ export function useMediaLists({ id, title, poster_path, media_type }: MediaInfo)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requireLogin, isSaved, id, title, poster_path, media_type])
 
-  /** Records the title in the watch history (signed-in users only; guests can still watch). */
-  const markWatched = useCallback(() => {
+  /**
+   * Records the title in the watch history (signed-in users only; guests can still watch).
+   * For TV, pass the episode so "Continue Watching" can resume it.
+   */
+  const markWatched = useCallback((episodeInfo?: { season: number, episode: number }) => {
     if (!session || !title) return false
-    addToWatchHistory(item()).catch((error) => console.error('Failed to add to watch history:', error))
+    addToWatchHistory({ ...item(), ...episodeInfo }).catch((error) => console.error('Failed to add to watch history:', error))
     return true
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, id, title, poster_path, media_type])

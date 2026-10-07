@@ -1,3 +1,4 @@
+import ContinueWatching from '@/src/components/ContinueWatching'
 import Genres from '@/src/components/Genres'
 import { HeroSlider, PosterSlider } from '@/src/components/Sliders'
 import getMovies from './(movies)/actions'
@@ -12,6 +13,8 @@ export default async function MainPage() {
   return (
     <div className='w-full max-w-[1800px] px-4 sm:px-14 space-y-6'>
       <Genres />
+      {/* Signed-in users only; renders nothing for guests. */}
+      <ContinueWatching />
       <HeroSlider title='Trending Movies' href='/discover' items={data.TrendingMovies?.results} />
       <PosterSlider title='Popular Movies' items={data.popularMovies?.results} />
       <PosterSlider title='Top Rated Movies' href='/top-rated' items={data.topRatedMovies?.results} />

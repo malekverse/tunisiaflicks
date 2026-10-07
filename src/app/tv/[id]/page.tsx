@@ -3,9 +3,18 @@ import { notFound } from 'next/navigation'
 import TvDetail from '@/src/components/detail/TvDetail'
 import { TmdbError, tmdbFetch, tmdbFetchSafe } from '@/src/lib/tmdb'
 
-type Props = { params: { id: string } }
+type Props = { params: { id: string }, searchParams?: { s?: string, e?: string } }
 
 const isValidId = (id: string) => /^\d+$/.test(id)
+
+// `?s=2&e=5` reopens that episode (used by "Continue Watching"). Ignored unless both are valid.
+function parseResume(searchParams: Props['searchParams']) {
+  const season = Number(searchParams?.s)
+  const episode = Number(searchParams?.e)
+  return Number.isInteger(season) && season >= 0 && Number.isInteger(episode) && episode >= 1
+    ? { season, episode }
+    : undefined
+}
 
 async function getShow(id: string) {
   if (!isValidId(id)) notFound()
@@ -34,11 +43,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default async function TvPage({ params }: Props) {
+export default async function TvPage({ params, searchParams }: Props) {
   const [show, recommendations] = await Promise.all([
     getShow(params.id),
     tmdbFetchSafe(`tv/${params.id}/recommendations`),
   ])
 
-  return <TvDetail id={params.id} data={show} similar={recommendations?.results ?? []} />
+  return <TvDetail id={params.id} data={show} similar={recommendations?.results ?? []} resume={parseResume(searchParams)} />
 }

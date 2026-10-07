@@ -89,6 +89,11 @@ export async function POST(request: NextRequest) {
       if (item.progress) {
         (contentItem as WatchHistoryItem).progress = item.progress;
       }
+      // TV: remember the episode so "Continue Watching" can resume it.
+      if (Number.isInteger(item.season) && Number.isInteger(item.episode)) {
+        contentItem.season = item.season;
+        contentItem.episode = item.episode;
+      }
     }
 
     // Update or insert the item in the user's content list
