@@ -1,74 +1,35 @@
 "use client";
 
-import React, { useRef, useEffect } from 'react';
-import { Button } from '../ui/button';
+import React, { useRef } from 'react';
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
-function HorizontalScroller({ children }: any) {
+function HorizontalScroller({ children }: { children: React.ReactNode }) {
     const menuRef = useRef<HTMLDivElement>(null);
 
     const scroll = (direction: 'left' | 'right') => {
-        if (menuRef.current) {
-            const scrollAmount = 200; // Amount of pixels to scroll by
-            if (direction === 'left') {
-                menuRef.current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-            } else if (direction === 'right') {
-                menuRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-            }
-        }
+        menuRef.current?.scrollBy({ left: direction === 'left' ? -240 : 240, behavior: 'smooth' });
     };
 
-    const handleWheel = (event: WheelEvent) => {
-        if (menuRef.current) {
-            const scrollAmount = 100; // Amount of pixels to scroll by on wheel
-            if (event.deltaY < 0) {
-                menuRef.current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-            } else if (event.deltaY > 0) {
-                menuRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-            }
-
-            // Prevent the outer page from scrolling when the mouse is over the HorizontalScroller
-            event.preventDefault();
-        }
-    };
-
-    useEffect(() => {
-        const menuElement = menuRef.current;
-        if (menuElement) {
-            menuElement.addEventListener('wheel', handleWheel, { passive: false });
-        }
-
-        return () => {
-            if (menuElement) {
-                menuElement.removeEventListener('wheel', handleWheel);
-            }
-        };
-    }, []);
+    const arrow = "absolute top-1/2 -translate-y-1/2 z-10 p-2 rounded-full text-zinc-700 dark:text-white hover:text-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500";
 
     return (
         <div className="relative flex overflow-hidden">
-            <Button
-                variant='link'
-                className="bg-transparent absolute top-1/2 left-0 transform -translate-y-1/2 p-2 focus:outline-none text-white"
-                onClick={() => scroll('left')}
-            >
+            <button type="button" aria-label="Scroll left" className={`${arrow} left-0`} onClick={() => scroll('left')}>
                 <FaChevronLeft />
-            </Button>
+            </button>
 
+            {/* Swipe on touch, shift+wheel / trackpad on desktop, arrows everywhere. The wheel is
+                deliberately not hijacked, so the page keeps scrolling when the pointer is over it. */}
             <div
                 ref={menuRef}
-                className="overflow-auto whitespace-nowrap gap-3 flex w-full mx-8 no-scrollbar"
+                className="overflow-x-auto whitespace-nowrap gap-3 flex w-full mx-8 no-scrollbar"
             >
                 {children}
             </div>
 
-            <Button
-                variant='link'
-                className="bg-transparent absolute top-1/2 right-0 transform -translate-y-1/2 p-2 focus:outline-none text-white"
-                onClick={() => scroll('right')}
-            >
+            <button type="button" aria-label="Scroll right" className={`${arrow} right-0`} onClick={() => scroll('right')}>
                 <FaChevronRight />
-            </Button>
+            </button>
         </div>
     );
 }

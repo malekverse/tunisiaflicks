@@ -1,0 +1,108 @@
+"use client"
+import React from 'react'
+import Link from 'next/link'
+import { FaLongArrowAltRight } from "react-icons/fa"
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/src/components/ui/carousel"
+import PosterCard, { SkeletonLoader as PosterSkeleton } from '@/src/components/PosterCard'
+import MovieBackdropCard, { SkeletonLoader as BackdropSkeleton } from '@/src/components/MovieBackdropCard'
+import routes from '@/src/routes/client/routes'
+
+type Kind = 'movie' | 'tv'
+
+const heroItemClass = `transition-transform ease-in-out duration-300 select-none basis-[300px] sm:basis-[400px] lg:basis-[500px]
+    my-4 pl-0 ml-4 hover:scale-105 hover:z-10 shadow-black shadow-2xl`
+const posterItemClass = `transition-transform ease-in-out duration-300 select-none basis-[145px] md:basis-[167px]
+    my-4 p-0 ml-4 hover:scale-105 hover:z-10`
+
+const toRoute = (kind: Kind, id: number | string) => (kind === 'tv' ? routes.tvShow(String(id)) : routes.movie(String(id)))
+
+function SectionHeader({ title, href }: { title: string, href?: string }) {
+    return (
+        <div className='flex justify-between items-end w-full'>
+            <h2 className='text-2xl sm:text-3xl font-semibold mb-3'>{title}</h2>
+            {href &&
+                <Link href={href} className='text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-white mb-3'>
+                    <span className='text-sm font-light mr-2'>See More</span>
+                    <FaLongArrowAltRight className='inline-block' />
+                </Link>
+            }
+        </div>
+    )
+}
+
+function Arrows() {
+    return (
+        <div className='hidden sm:block'>
+            <CarouselPrevious />
+            <CarouselNext />
+        </div>
+    )
+}
+
+/** Big backdrop slider (trending). Autoplays. */
+export function HeroSlider({ title, href, items, kind = 'movie', loading }: { title: string, href?: string, items?: any[], kind?: Kind, loading?: boolean }) {
+    const list = (items ?? []).filter((item) => item?.backdrop_path)
+    if (!loading && list.length === 0) return null
+
+    return (
+        <section aria-label={title} className='w-full'>
+            <SectionHeader title={title} href={href} />
+            <Carousel autoplay={loading ? undefined : 5000} className='w-full'>
+                <CarouselContent>
+                    {loading
+                        ? Array.from({ length: 6 }).map((_, index) => (
+                            <CarouselItem key={index} className={heroItemClass}><BackdropSkeleton /></CarouselItem>
+                        ))
+                        : list.map((item) => (
+                            <CarouselItem key={item.id} className={heroItemClass}>
+                                <MovieBackdropCard
+                                    backdropImg={item.backdrop_path}
+                                    voteAverage={item.vote_average?.toFixed?.(1) ?? item.vote_average}
+                                    title={item.title || item.name}
+                                    releaseDate={item.release_date || item.first_air_date}
+                                    adult={item.adult}
+                                    mediaType={kind}
+                                    link={toRoute(kind, item.id)}
+                                />
+                            </CarouselItem>
+                        ))}
+                </CarouselContent>
+                {!loading && <Arrows />}
+            </Carousel>
+        </section>
+    )
+}
+
+/** Row of poster cards. */
+export function PosterSlider({ title, href, items, kind = 'movie', loading }: { title: string, href?: string, items?: any[], kind?: Kind, loading?: boolean }) {
+    const list = items ?? []
+    if (!loading && list.length === 0) return null
+
+    return (
+        <section aria-label={title} className='w-full'>
+            <SectionHeader title={title} href={href} />
+            <Carousel className='w-full'>
+                <CarouselContent>
+                    {loading
+                        ? Array.from({ length: 10 }).map((_, index) => (
+                            <CarouselItem key={index} className={posterItemClass}><PosterSkeleton /></CarouselItem>
+                        ))
+                        : list.map((item) => (
+                            <CarouselItem key={item.id} className={posterItemClass}>
+                                <PosterCard
+                                    posterImg={item.poster_path}
+                                    voteAverage={item.vote_average}
+                                    title={item.title || item.name}
+                                    releaseDate={item.release_date || item.first_air_date}
+                                    adult={item.adult}
+                                    mediaType={kind}
+                                    link={toRoute(kind, item.id)}
+                                />
+                            </CarouselItem>
+                        ))}
+                </CarouselContent>
+                {!loading && <Arrows />}
+            </Carousel>
+        </section>
+    )
+}

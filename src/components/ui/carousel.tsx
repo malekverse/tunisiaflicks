@@ -4,6 +4,7 @@ import * as React from "react"
 import useEmblaCarousel, {
   type UseEmblaCarouselType,
 } from "embla-carousel-react"
+import Autoplay from "embla-carousel-autoplay"
 import { IoIosArrowForward, IoIosArrowBack } from "react-icons/io";
 
 import { cn } from "@/src/lib/utils"
@@ -19,6 +20,8 @@ type CarouselProps = {
   plugins?: CarouselPlugin
   orientation?: "horizontal" | "vertical"
   setApi?: (api: CarouselApi) => void
+  /** Autoplay delay in ms. The plugin is created once, so the carousel isn't re-initialised on every render. */
+  autoplay?: number
 }
 
 type CarouselContextProps = {
@@ -51,13 +54,19 @@ const Carousel = React.forwardRef<
       orientation = "horizontal",
       opts,
       setApi,
-      plugins,
+      plugins: pluginsProp,
+      autoplay,
       className,
       children,
       ...props
     },
     ref
   ) => {
+    const plugins = React.useMemo(
+      () => (autoplay ? [Autoplay({ delay: autoplay }), ...(pluginsProp ?? [])] : pluginsProp),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [autoplay]
+    )
     const [carouselRef, api] = useEmblaCarousel(
       {
         ...opts,
@@ -116,6 +125,7 @@ const Carousel = React.forwardRef<
       api.on("select", onSelect)
 
       return () => {
+        api?.off("reInit", onSelect)
         api?.off("select", onSelect)
       }
     }, [api, onSelect])

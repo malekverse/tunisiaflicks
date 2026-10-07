@@ -1,47 +1,28 @@
-import React, { useState, useEffect } from 'react'
+import Link from 'next/link';
 import HorizontalScroller from './custom/HorizontalScroller';
 import { Button } from './ui/button';
-import Link from 'next/link';
-import { Skeleton } from './ui/skeleton';
+import { tmdbFetchSafe } from '@/src/lib/tmdb';
 
-export default function Genres({ type }: { type?: any }) {
-
-    const [data, setData] = useState(null);
-    const [loader, setLoader] = useState(true);
-
-    React.useEffect(() => {
-        fetch(`https://api.themoviedb.org/3/genre/${type === "tv" ? "tv" : "movie" }/list?api_key=b5d2609c326586f7f753f77b085a0b31&language=en-US`)
-            .then(response => response.json())
-            .then(data => {
-                console.log(data)
-                setData(data.genres);
-                setLoader(false);
-            })
-            .catch(error => {
-                console.log(error);
-            });
-    }, []);
+// Server component: the genre list is fetched on the server (cached for a day), so the TMDB key
+// never reaches the browser and the bar renders with the page instead of popping in later.
+export default async function Genres({ type }: { type?: 'tv' | 'movie' }) {
+    const data = await tmdbFetchSafe<{ genres: { id: number, name: string }[] }>(
+        `genre/${type === 'tv' ? 'tv' : 'movie'}/list`, {}, 86400
+    );
+    const genres = data?.genres ?? [];
+    if (genres.length === 0) return null;
 
     return (
-
         // genres bar
         <div className='max-w-full grid'>
-            <HorizontalScroller className='flex overflow-hidden'>
-                {loader ?
-                    Array.from({ length: 13 }).map((_, index) => {
-                        return <Skeleton key={index} className='w-full h-9' />
-                    })
-                    :
-                    data.map((genre) => {
-                        return (
-                            <Link href={`/genres/${genre.id}`} key={genre.id} className="">
-                                <Button className="px-4 py-2 bg-zinc-800 text-white hover:bg-zinc-500 rounded-xl">
-                                    {genre.name}
-                                </Button>
-                            </Link>
-                        );
-                    })}
-
+            <HorizontalScroller>
+                {genres.map((genre) => (
+                    <Link href={`/genres/${genre.id}${type === 'tv' ? '?type=tv' : ''}`} key={genre.id}>
+                        <Button className="px-4 py-2 bg-zinc-800 text-white hover:bg-zinc-500 rounded-xl">
+                            {genre.name}
+                        </Button>
+                    </Link>
+                ))}
             </HorizontalScroller>
         </div>
     )
