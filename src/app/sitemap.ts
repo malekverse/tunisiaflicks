@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next'
 import { SITE_HOST } from '@/src/lib/seo'
 import { tmdbFetchSafe } from '@/src/lib/tmdb'
 import { getTunisianTitles } from '@/src/lib/tunisian'
+import { activeMoments, MOMENT_IDS } from '@/src/lib/moments'
 
 // /sitemap.xml: tells search engines which pages exist. Rebuilt at most once a day.
 export const revalidate = 86400
@@ -40,6 +41,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry('/discover', 0.8, 'daily'),
     entry('/top-rated', 0.7, 'weekly'),
     entry('/upcoming', 0.7, 'daily'),
+    entry('/ramadan', 0.7, 'weekly'),
+    // The moments on now rank higher than the ones out of season.
+    ...MOMENT_IDS.filter((id) => id !== 'ramadan').map((id) => entry(`/moments/${id}`, activeMoments(false).some((moment) => moment.id === id) ? 0.7 : 0.3, 'daily')),
     ...(movieGenres?.genres ?? []).map((genre) => entry(`/genres/${genre.id}`, 0.5, 'weekly')),
     ...(tvGenres?.genres ?? []).map((genre) => entry(`/genres/${genre.id}?type=tv`, 0.5, 'weekly')),
     ...(tunisian ?? []).map((title) => entry(`/tunisian/${title.slug}`, 0.8, 'weekly')),

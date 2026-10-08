@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import BecauseYouWatched from '@/src/components/BecauseYouWatched'
 import ContinueWatching from '@/src/components/ContinueWatching'
@@ -8,6 +9,7 @@ import { HeroSlider, PosterSlider } from '@/src/components/Sliders'
 import Billboard from '@/src/components/home/Billboard'
 import ChipRail from '@/src/components/home/ChipRail'
 import Top10Row from '@/src/components/home/Top10Row'
+import { AnniversaryRow, SeasonRows, SequelRow } from '@/src/components/home/MomentRows'
 import getMovies from './(movies)/actions'
 import { getLocale, getT } from '@/src/lib/i18n/server'
 import { getKidsMode } from '@/src/lib/profiles'
@@ -48,16 +50,20 @@ export default async function MainPage() {
         {/* Signed-in users only; renders nothing for guests. */}
         <ContinueWatching />
         <Top10Row top10={top10} />
+        {/* Whatever the calendar says is on (Halloween, Eid, summer...): streamed in. */}
+        <Suspense fallback={null}><SeasonRows kids={kids} /></Suspense>
         {/* Installed app only: invite to get the pick as a notification. */}
         <PushPrompt />
         <PosterSlider title={t('home.trendingMovies')} href="/discover" items={data.TrendingMovies?.results} />
         <PickOfTheDay pick={pick} />
+        <Suspense fallback={null}><SequelRow kids={kids} /></Suspense>
         <BecauseYouWatched />
         {/* What people on the site watched this week, unless it already made the Top 10. */}
         {top10.source !== 'site' && <PosterSlider title={t('home.communityTrending')} items={community} kind="mixed" />}
         <HeroSlider title={t('home.nowPlaying')} items={data.nowPlayingMovies?.results} />
         <PosterSlider title={t('home.popularMovies')} items={data.popularMovies?.results} />
         <PosterSlider title={t('home.topRatedMovies')} href="/top-rated" items={data.topRatedMovies?.results} />
+        <Suspense fallback={null}><AnniversaryRow kids={kids} /></Suspense>
         <PosterSlider title={t('home.comingSoon')} href="/upcoming" items={data.upcomingMovies?.results} />
       </div>
     </div>

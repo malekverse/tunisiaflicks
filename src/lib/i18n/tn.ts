@@ -680,4 +680,10 @@ export const tn: Partial<Record<TKey, string>> = {
   'wrapped.ctaTitle': 'والعام متاعك كيفاش كان؟',
   'wrapped.ctaText': 'أدخل وخوذ الملخّص متاعك من TunisiaFlicks في كليك وحدة.',
   'wrapped.ctaAction': 'ورّيني العام متاعي',
+
+  // Moments (calendar, anniversaries, sequels)
+  'moment.eid-al-fitr.title': 'عيدكم مبروك',
+  'moment.eid-al-fitr.blurb': 'أفلام كوميدية وعائلية لأيام العيد.',
+  'moment.eid-al-adha.title': 'عيدكم مبروك',
+  'moment.eid-al-adha.blurb': 'أفلام كوميدية وعائلية لأيام العيد.',
 }
