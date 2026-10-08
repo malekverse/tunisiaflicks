@@ -4,7 +4,7 @@
 // row is a link; the answer buttons sit beside it, never inside it.
 import { createContext, useContext, useState } from 'react'
 import Link from 'next/link'
-import { Check, X } from 'lucide-react'
+import { Check, Film, X } from 'lucide-react'
 import { useI18n } from '@/src/components/I18nProvider'
 import TmdbImage from '@/src/components/TmdbImage'
 import { UserAvatar } from '@/src/components/social/Avatar'
@@ -95,8 +95,11 @@ function Visual({ item }: { item: NotificationItem }) {
   if (hasPoster) {
     return (
       <span className="relative block h-[60px] w-10 shrink-0">
-        <span className="absolute inset-0 overflow-hidden rounded-md bg-white/5 ring-1 ring-white/10">
-          <TmdbImage kind="poster" path={poster} alt="" fill sizes="40px" className="object-cover" />
+        <span className="absolute inset-0 grid place-items-center overflow-hidden rounded-md bg-white/5 ring-1 ring-white/10">
+          {/* A title with no poster on TMDB gets a quiet frame, not the 404 artwork. */}
+          {poster
+            ? <TmdbImage kind="poster" path={poster} alt="" fill sizes="40px" className="object-cover" />
+            : <Film aria-hidden className="h-4 w-4 text-white/40" strokeWidth={1.8} />}
         </span>
         {item.actor && <UserAvatar person={item.actor} size={24} className="absolute -bottom-1.5 -end-2 ring-2 ring-[#141416]" />}
       </span>
