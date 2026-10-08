@@ -24,6 +24,8 @@ Create a `.env.local` (never commit it):
 | `NEXT_PUBLIC_APP_URL` | Base URL used in e-mail links. |
 | `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS`, `FROM_EMAIL` | Password-reset and release-alert e-mails. |
 | `CRON_SECRET` | Protects `/api/cron/notify`. Vercel Cron sends it as `Authorization: Bearer <secret>`; without it the route refuses every request. |
+| `STREAM_PROVIDERS` | Optional. Replaces the player's sources without a code change: a JSON list, best first, of `{"name", "movie", "tv"}` URL templates using `{id}`, `{season}` and `{episode}` (see `src/lib/stream-providers.ts`). |
+| `STREAM_PROVIDERS_OFF` | Optional. Source names to switch off, comma-separated. |
 
 ### Release alerts
 
