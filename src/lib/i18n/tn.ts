@@ -686,4 +686,18 @@ export const tn: Partial<Record<TKey, string>> = {
   'moment.eid-al-fitr.blurb': 'أفلام كوميدية وعائلية لأيام العيد.',
   'moment.eid-al-adha.title': 'عيدكم مبروك',
   'moment.eid-al-adha.blurb': 'أفلام كوميدية وعائلية لأيام العيد.',
+
+  // Pick of the day: why today
+  'pick.why.sequel': '«{title}» يخرج نهار {date}: تفرّج في هذا قبل.',
+  'pick.why.sequelOut': '«{title}» في القاعات توّا: تفرّج في هذا قبل.',
+  'pick.why.newSeason': 'الموسم {season} بدا توّا.',
+  'pick.why.anniversary': 'خرج قبل {years} عام في نهار كيف اليوم.',
+  'pick.why.moment': 'اختيار الموسم: {moment}.',
+  'pick.why.binge': 'مسلسل الأحد: يستاهل عشية كاملة.',
+  'pick.why.hiddenGem': 'جوهرة الإثنين: قلال اللي شافوه، وأغلبهم حبّوه.',
+  'pick.why.classic': 'كلاسيكية الثلاثاء: فاتو عليه سنين ومازال محبوب.',
+  'pick.why.worldCinema': 'سفرة الإربعاء: فيلم من بلاصة أخرى في الدنيا.',
+  'pick.why.arabCinema': 'خميس بالعربي: من أحلى الأعمال العربية.',
+  'pick.why.crowdPleaser': 'سهرية الجمعة: فيلم جديد يعجب الناس الكل.',
+  'pick.why.family': 'سبت العايلة: حاجة تتفرّج فيها العايلة الكل.',
 }

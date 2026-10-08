@@ -1120,6 +1120,20 @@ export const en = {
   'moment.sequels.blurbMany': 'Catch up on the earlier films before the new ones come out.',
   'moment.until': 'Until {date}',
   'moment.offSeason': "Back every year. Here is this year's selection.",
+
+  // Pick of the day: why today
+  'pick.why.sequel': '{title} opens on {date}: watch this one first.',
+  'pick.why.sequelOut': '{title} is in cinemas now: watch this one first.',
+  'pick.why.newSeason': 'Season {season} has just started.',
+  'pick.why.anniversary': 'Released {years} years ago today.',
+  'pick.why.moment': 'Season pick: {moment}.',
+  'pick.why.binge': 'Sunday binge: a series worth a whole afternoon.',
+  'pick.why.hiddenGem': "Monday's hidden gem: few have seen it, most of them loved it.",
+  'pick.why.classic': "Tuesday's classic: decades old, still a favourite.",
+  'pick.why.worldCinema': 'Wednesday abroad: a film from another corner of the world.',
+  'pick.why.arabCinema': 'Thursday in Arabic: one of the best-loved Arab titles.',
+  'pick.why.crowdPleaser': 'Friday night: a recent crowd-pleaser.',
+  'pick.why.family': 'Saturday with the family: something everyone can watch.',
 } satisfies Record<string, string>
 
 export type TKey = keyof typeof en

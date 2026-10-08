@@ -1122,4 +1122,18 @@ export const ar: Record<TKey, string> = {
   'moment.sequels.blurbMany': 'شاهد الأجزاء السابقة قبل صدور الأجزاء الجديدة.',
   'moment.until': 'حتى {date}',
   'moment.offSeason': 'يعود كل عام. إليك اختيار هذا العام.',
+
+  // Pick of the day: why today
+  'pick.why.sequel': '«{title}» يصدر في {date}: شاهد هذا أولًا.',
+  'pick.why.sequelOut': '«{title}» في القاعات الآن: شاهد هذا أولًا.',
+  'pick.why.newSeason': 'الموسم {season} بدأ للتو.',
+  'pick.why.anniversary': 'صدر قبل {years} سنة في مثل هذا اليوم.',
+  'pick.why.moment': 'اختيار الموسم: {moment}.',
+  'pick.why.binge': 'مسلسل الأحد: يستحق أمسية كاملة.',
+  'pick.why.hiddenGem': 'جوهرة الاثنين: قلّة شاهدوه، وأغلبهم أحبّوه.',
+  'pick.why.classic': 'كلاسيكية الثلاثاء: مرّت عليها عقود وما زالت محبوبة.',
+  'pick.why.worldCinema': 'رحلة الأربعاء: فيلم من ركن آخر من العالم.',
+  'pick.why.arabCinema': 'خميس عربي: من أحبّ الأعمال العربية.',
+  'pick.why.crowdPleaser': 'سهرة الجمعة: فيلم حديث يحبّه الجميع.',
+  'pick.why.family': 'سبت العائلة: عمل يشاهده الجميع.',
 }

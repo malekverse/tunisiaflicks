@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Info, Play, Star } from 'lucide-react'
+import { Info, Play, Sparkles, Star } from 'lucide-react'
 import TmdbImage from '@/src/components/TmdbImage'
 import { Button } from '@/src/components/ui/button'
 import { getLocale, getT } from '@/src/lib/i18n/server'
@@ -55,6 +55,11 @@ export default function PickOfTheDay({ pick }: { pick: Pick | null }) {
             <p className="mt-1 font-display text-[clamp(30px,4vw,52px)] font-extrabold leading-[0.95] text-white">
               {weekday}
               <span className="block text-white/45">{date}</span>
+            </p>
+            {/* Why this one, today: the news, the season or the day of the week. */}
+            <p className="mt-3 flex items-start gap-2 text-[15px] font-medium leading-snug text-white/85">
+              <Sparkles aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+              <span>{pick.why}</span>
             </p>
           </div>
           {logo ? (

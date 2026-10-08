@@ -60,7 +60,8 @@ export async function runDailyPickPush({ deadline = Date.now() + 20_000, force =
       if (!pick) { payloads.set(locale, null); continue }
       const t = createTranslator(locale)
       const title = pick.data.title || pick.data.name || ''
-      const text: string = pick.data.tagline || pick.data.overview || ''
+      // Why it's today's pick says more than a tagline.
+      const text: string = pick.why || pick.data.tagline || pick.data.overview || ''
       payloads.set(locale, {
         title: t('push.pickTitle', { title }),
         body: text.length > 140 ? `${text.slice(0, 137)}…` : text,
