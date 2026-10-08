@@ -273,6 +273,44 @@ describe('release alerts: the e-mail switch, the budget and Kids', { skip: !HAS_
       await d.collection('rateLimits').deleteOne({ _id: key })
     }
   })
+
+  test('an adult title never reaches a device bound to a Kids profile', async () => {
+    // Nothing leaves the machine: the push service call is replaced by a recorder.
+    const webpush = (await import('web-push')).default
+    const vapid = webpush.generateVAPIDKeys()
+    const original = webpush.sendNotification
+    const reached = []
+    process.env.VAPID_PUBLIC_KEY = vapid.publicKey
+    process.env.VAPID_PRIVATE_KEY = vapid.privateKey
+    webpush.sendNotification = async (subscription) => {
+      reached.push(subscription.endpoint)
+      return { statusCode: 201 }
+    }
+    try {
+      const { pushToUser, pushCollection } = await import('@/src/lib/push')
+      const userId = 'unit-kids-push'
+      const device = (name, kids) => ({
+        _id: `unit-kids-push-${name}`, endpoint: `https://push.example.test/${name}`, keys: { p256dh: 'p', auth: 'a' },
+        userId, profileId: `profile-${name}`, profileKids: kids, topics: ['alerts'], locale: 'en', created_at: new Date(),
+      })
+      const subscriptions = await pushCollection()
+      await subscriptions.deleteMany({ userId })
+      await subscriptions.insertMany([device('grown-up', false), device('kids', true)])
+      const payload = () => ({ title: 'Out now', body: 'Fight Club', url: '/movie/550' })
+
+      await pushToUser(userId, payload, 'alerts', { kidSafe: false })
+      assert.deepEqual(reached, ['https://push.example.test/grown-up'], 'adult title: grown-up devices only')
+
+      reached.length = 0
+      await pushToUser(userId, payload, 'alerts', { kidSafe: true })
+      assert.deepEqual(reached.sort(), ['https://push.example.test/grown-up', 'https://push.example.test/kids'], 'kid-safe title: every device')
+      await subscriptions.deleteMany({ userId })
+    } finally {
+      webpush.sendNotification = original
+      delete process.env.VAPID_PUBLIC_KEY
+      delete process.env.VAPID_PRIVATE_KEY
+    }
+  })
 })
 
 // ---- The weekly digest ------------------------------------------------------------------------
@@ -380,8 +418,10 @@ describe('digest: what goes in, and in which order', () => {
     assert.equal(new Set(hrefs).size, hrefs.length, 'no title twice')
     assert.ok(!hrefs.includes('/movie/1017'), 'the hero is not repeated')
     assert.ok(digest.sections.every((section) => (section.rows ?? section.tiles).length <= 3))
-    assert.match(digest.subject, /and 1 more you follow have news$/)
+    assert.match(digest.subject, /and one more you follow have news$/, 'two followed titles: "one more", never "1 more"')
     assert.ok(digest.subject.length <= 64, digest.subject)
+    const three = composeDigest({ t: createTranslator('en'), name: 'Sami', shared, personal: { ...personal, follows: [...personal.follows, { ...shared.newThisWeek[1], kind: 'movie' }] } })
+    assert.match(three.subject, /and 2 more you follow have news$/)
     assert.equal(digest.sections.find((section) => section.id === 'moment').accent, '255 120 40')
   })
 
@@ -474,9 +514,10 @@ describe('digest: the e-mail', () => {
     assert.match(email.subject, /⁨/)
   })
 
-  test('French: narrow no-break spaces before the double punctuation', async () => {
+  test('French: a no-break space before a colon, a narrow one before ; ! ? and inside « »', async () => {
     const { frenchSpacing } = await import('@/src/lib/digest/template')
-    assert.equal(frenchSpacing('Prochain envoi : vendredi ? Oui !'), 'Prochain envoi : vendredi ? Oui !')
+    assert.equal(frenchSpacing('Prochain envoi : vendredi ? Oui !'), 'Prochain envoi : vendredi ? Oui !')
+    assert.equal(frenchSpacing('Prochain envoi : vendredi'), 'Prochain envoi : vendredi', 'the colon always gets the full no-break space')
     assert.equal(frenchSpacing('« Dune »'), '« Dune »')
   })
 })

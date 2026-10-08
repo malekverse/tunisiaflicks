@@ -73,9 +73,12 @@ export function escapeHtml(value: string) {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
 }
 
-/** French typography: a narrow no-break space before : ; ! ? » and after «. */
+/** French typography: a no-break space before a colon, a narrow one before ; ! ? » and after «. */
 export function frenchSpacing(text: string) {
-  return text.replace(/[  ]([:;!?»])/g, ' $1').replace(/«[  ]/g, '« ')
+  return text
+    .replace(/[   ]:/g, ' :')
+    .replace(/[   ]([;!?»])/g, ' $1')
+    .replace(/«[   ]/g, '« ')
 }
 
 const shorten = (text: string, max: number) => (text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text)
@@ -109,9 +112,12 @@ export function absolute(appUrl: string, href: string) {
 
 type Ctx = { rtl: boolean; dir: 'rtl' | 'ltr'; start: 'left' | 'right'; end: 'left' | 'right'; appUrl: string; fr: boolean }
 
-/** A layout table: no spacing, the reading direction set on it (some clients don't inherit it). */
-const table = (ctx: Ctx, inner: string, attrs = '') =>
-  `<table role="presentation" dir="${ctx.dir}" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;mso-table-lspace:0;mso-table-rspace:0"${attrs ? ` ${attrs}` : ''}>${inner}</table>`
+/**
+ * A layout table: no spacing, the reading direction set on it (some clients don't inherit it).
+ * `style` is appended to the base style (one style attribute: a second one would be ignored).
+ */
+const table = (ctx: Ctx, inner: string, attrs = '', style = '') =>
+  `<table role="presentation" dir="${ctx.dir}" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;mso-table-lspace:0;mso-table-rspace:0${style ? `;${style}` : ''}"${attrs ? ` ${attrs}` : ''}>${inner}</table>`
 
 const text = (ctx: Ctx, value: string) => escapeHtml(ctx.fr ? frenchSpacing(value) : value)
 
@@ -197,14 +203,16 @@ function heroBlock(ctx: Ctx, hero: DigestHero) {
   const picture = wide
     ? `<tr><td style="padding:0"><a href="${href}" style="display:block;text-decoration:none"><img src="${escapeHtml(wide)}" width="${INNER}" height="${Math.round(INNER * 9 / 16)}" alt="${escapeHtml(hero.title)}" style="display:block;width:100%;max-width:${INNER}px;height:auto;border:0;border-radius:21px 21px 0 0;background-color:${tint}"></a></td></tr>`
     : ''
-  const cta = table(ctx, `<tr><td bgcolor="${RED}" style="background-color:${RED};border-radius:999px;mso-padding-alt:12px 24px"><a href="${href}" style="display:inline-block;padding:12px 24px;font-family:${FONT};font-size:15px;line-height:20px;font-weight:700;color:${WHITE};text-decoration:none;border-radius:999px">${text(ctx, hero.cta)}</a></td></tr>`, 'width="auto" style="border-collapse:separate"')
+  // A pill as wide as its label (no width on this table), the only red in the e-mail.
+  const cta = `<table role="presentation" dir="${ctx.dir}" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;mso-table-lspace:0;mso-table-rspace:0">`
+    + `<tr><td bgcolor="${RED}" style="background-color:${RED};border-radius:999px;mso-padding-alt:12px 26px"><a href="${href}" style="display:inline-block;padding:12px 26px;font-family:${FONT};font-size:15px;line-height:20px;font-weight:700;color:${WHITE};text-decoration:none;border-radius:999px">${text(ctx, hero.cta)}</a></td></tr></table>`
   const body = `<tr><td style="padding:22px 22px 24px;font-family:${FONT};text-align:${ctx.start}">`
     + `<div style="font-size:14px;line-height:20px;font-weight:600;color:${kickerColor}">${text(ctx, shorten(hero.kicker, 120))}</div>`
     + `<a href="${href}" dir="auto" style="display:block;padding-top:6px;color:${WHITE};text-decoration:none;font-size:27px;line-height:32px;font-weight:800">${escapeHtml(shorten(hero.title, 80))}</a>`
     + (hero.text ? `<div dir="auto" style="padding-top:10px;font-size:15px;line-height:23px;color:${SECONDARY}">${escapeHtml(shorten(hero.text, 220))}</div>` : '')
     + `<div style="padding-top:20px">${cta}</div>`
     + '</td></tr>'
-  return table(ctx, `${picture}${body}`, `bgcolor="${tint}" style="border-collapse:separate;background-color:${tint};border:1px solid ${edge};border-radius:22px"`)
+  return table(ctx, `${picture}${body}`, `bgcolor="${tint}"`, `border-collapse:separate;background-color:${tint};border:1px solid ${edge};border-radius:22px`)
 }
 
 /** 'Friday 9 October' style date of the edition, in the e-mail's language. */

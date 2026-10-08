@@ -111,7 +111,8 @@ export function composeDigest({ t, name, shared, personal, extra = [] }: {
   // Subject: the most personal news first.
   let subject: string
   const follows = personal.follows
-  if (follows.length > 1) subject = fit(t, 'digest.subject.follows', { title: follows[0].title, count: follows.length - 1 }, 'title')
+  if (follows.length === 2) subject = fit(t, 'digest.subject.followsOne', { title: follows[0].title }, 'title')
+  else if (follows.length > 2) subject = fit(t, 'digest.subject.follows', { title: follows[0].title, count: follows.length - 1 }, 'title')
   else if (follows.length === 1) subject = fit(t, follows[0].kind === 'tv' ? 'digest.subject.episode' : 'digest.subject.follow', { title: follows[0].title }, 'title')
   else if (personal.continueWatching.length) subject = fit(t, 'digest.subject.continue', { title: personal.continueWatching[0].title }, 'title')
   else if (shared.moment) subject = fit(t, 'digest.subject.moment', { moment: shared.moment.title }, 'moment')
