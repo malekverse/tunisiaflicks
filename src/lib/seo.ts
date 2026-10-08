@@ -7,7 +7,7 @@ type OpenGraph = NonNullable<Metadata['openGraph']>
 export const SITE_HOST = 'tunisiaflicks.vercel.app'
 export const SITE_URL = `https://${SITE_HOST}`
 export const SITE_NAME = 'TunisiaFlicks'
-export const SITE_DESCRIPTION = "Movies, TV shows and Tunisian series in one place: what's trending today, trailers, a daily Top 10, Ramadan series and release alerts, in English and Arabic."
+export const SITE_DESCRIPTION = "Movies, TV shows and Tunisian series in one place: what's trending today, trailers, a daily Top 10, Ramadan series and release alerts, in English, French and Arabic."
 
 /** Search results and previews cut descriptions after ~160 characters: end on a whole word. */
 export function clampDescription(text: string | null | undefined, max = 160): string | undefined {
@@ -43,7 +43,7 @@ export function pageMetadata({ title, description, path, card = 'home', openGrap
     openGraph: {
       siteName: SITE_NAME,
       locale: 'en_US',
-      alternateLocale: ['ar_TN'],
+      alternateLocale: ['fr_FR', 'ar_TN'],
       type: 'website',
       title,
       description: text,

@@ -2,14 +2,16 @@
 //
 // Written to match how the site actually works (TMDB metadata, third-party players and download
 // sources, no video files hosted by us). It is a sensible starting point, not legal advice: have it
-// reviewed before relying on it. Other Arabic-script locales fall back to the Arabic text.
-import type { Locale } from '@/src/lib/i18n'
+// reviewed before relying on it. The French text lives in ./legal-fr.ts; Derja falls back to the
+// Arabic text, any other language to the English one.
+import { isArabicScript, type Locale } from '@/src/lib/i18n/locales'
+import { fr } from '@/src/lib/legal-fr'
 
 export type LegalSection = { heading: string, paragraphs?: string[], bullets?: string[] }
 export type LegalDoc = { title: string, description: string, intro: string, sections: LegalSection[] }
 export type LegalPageId = 'about' | 'privacy' | 'terms' | 'dmca'
 
-export const LEGAL_UPDATED = '2026-10-07'
+export const LEGAL_UPDATED = '2026-10-08'
 
 const en: Record<LegalPageId, LegalDoc> = {
   about: {
@@ -24,6 +26,7 @@ const en: Record<LegalPageId, LegalDoc> = {
           'Trailers are YouTube videos embedded from YouTube.',
           'Video players and download sources are provided by independent third-party services. TunisiaFlicks does not host, upload or store any video files.',
           'The Tunisian catalogue is built from publicly available listings and links to the original pages.',
+          'The site speaks English, French, Arabic and Tunisian Derja. Titles and summaries follow your language where TMDB has a translation.',
         ],
       },
       {
@@ -51,6 +54,7 @@ const en: Record<LegalPageId, LegalDoc> = {
           'Account details: your name, email address, profile picture and a securely hashed password (never the password itself). If you sign in with Google we receive your name, email and profile picture from Google.',
           'Your activity on TunisiaFlicks: favorites, bookmarks, watch history, lists, profiles, followed titles and notification preferences.',
           'If you turn on notifications: the address your browser gives us to deliver them (a push subscription), your language and which notifications you chose. Turning them off deletes it.',
+          'Your interface language (English, French, Arabic or Tunisian): kept in a cookie on this device and, when you are signed in, with your account and your notification subscriptions, so that emails and notifications reach you in it.',
           'Technical data: your IP address is used briefly to protect logins and forms against abuse (rate limiting) and is not kept for longer than a day.',
           'Cookies: a session cookie to keep you signed in, and small preference cookies for your language and active profile. We do not use advertising cookies.',
           'Analytics: anonymous, cookie-free page statistics (Vercel Web Analytics) to see which pages are used.',
@@ -179,6 +183,7 @@ const ar: Record<LegalPageId, LegalDoc> = {
           'المقاطع الدعائية هي فيديوهات يوتيوب مضمّنة من يوتيوب.',
           'مشغلات الفيديو ومصادر التنزيل تقدمها خدمات خارجية مستقلة. لا يستضيف TunisiaFlicks أي ملفات فيديو ولا يرفعها ولا يخزنها.',
           'الكتالوج التونسي مبني من قوائم متاحة للعموم ويحيل إلى الصفحات الأصلية.',
+          'الموقع متاح بالإنجليزية والفرنسية والعربية والدارجة التونسية. تظهر الملخصات بلغتك عندما تتوفر لها ترجمة على TMDB.',
         ],
       },
       {
@@ -206,6 +211,7 @@ const ar: Record<LegalPageId, LegalDoc> = {
           'بيانات الحساب: اسمك وبريدك الإلكتروني وصورتك الشخصية وكلمة مرور مشفّرة بشكل آمن (وليس كلمة المرور نفسها). عند تسجيل الدخول عبر Google نتلقى منها اسمك وبريدك وصورتك.',
           'نشاطك على TunisiaFlicks: المفضلة والمحفوظات وسجل المشاهدة والقوائم والملفات الشخصية والعناوين التي تتابعها وإعدادات التنبيهات.',
           'إذا فعّلت الإشعارات: العنوان الذي يمنحه متصفحك لإيصالها (اشتراك الإشعارات)، ولغتك والإشعارات التي اخترتها. إيقافها يحذفه.',
+          'لغة الواجهة (الإنجليزية أو الفرنسية أو العربية أو التونسية): تُحفظ في ملف تعريف ارتباط على هذا الجهاز، وعند تسجيل الدخول مع حسابك واشتراكات الإشعارات، حتى تصلك الرسائل والإشعارات بها.',
           'بيانات تقنية: يُستخدم عنوان IP لفترة قصيرة لحماية تسجيل الدخول والنماذج من الإساءة (تحديد عدد المحاولات) ولا يُحتفظ به لأكثر من يوم.',
           'ملفات تعريف الارتباط: ملف جلسة لإبقائك مسجلًا، وملفات صغيرة لحفظ اللغة والملف الشخصي النشط. لا نستخدم ملفات تعريف ارتباط إعلانية.',
           'الإحصاءات: إحصاءات صفحات مجهولة الهوية وبدون ملفات تعريف ارتباط (Vercel Web Analytics) لمعرفة الصفحات المستخدمة.',
@@ -321,9 +327,9 @@ const ar: Record<LegalPageId, LegalDoc> = {
   },
 }
 
-const docs: Partial<Record<Locale, Record<LegalPageId, LegalDoc>>> = { en, ar }
+const docs: Partial<Record<Locale, Record<LegalPageId, LegalDoc>>> = { en, ar, fr }
 
-/** Arabic-script locales without their own text use the Arabic version; everything else English. */
+/** A language without its own text: Arabic for Arabic-script ones (Derja), English for the others. */
 export function getLegalDoc(page: LegalPageId, locale: Locale): LegalDoc {
-  return (docs[locale] ?? (locale === 'en' ? en : ar))[page]
+  return (docs[locale] ?? (isArabicScript(locale) ? ar : en))[page]
 }

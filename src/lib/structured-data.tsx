@@ -74,7 +74,7 @@ export function websiteJsonLd() {
     '@type': 'WebSite',
     name: 'TunisiaFlicks',
     url: SITE,
-    inLanguage: ['en', 'ar'],
+    inLanguage: ['en', 'fr', 'ar'],
     potentialAction: {
       '@type': 'SearchAction',
       target: { '@type': 'EntryPoint', urlTemplate: `${SITE}/search?q={search_term_string}` },
