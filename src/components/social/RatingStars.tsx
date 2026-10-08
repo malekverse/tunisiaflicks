@@ -76,13 +76,14 @@ export function RatingStars({ value, onChange, label, disabled }: { value: numbe
                 initial={checked ? { scale: 0.7 } : false}
                 animate={{ scale: 1 }}
                 transition={spring.pop}
-                className="grid place-items-center transition-transform duration-100 ease-out group-active:scale-90"
+                className="grid place-items-center"
               >
+                {/* The press scale lives on the star: Motion owns the wrapper's transform. */}
                 <Star
                   aria-hidden
                   strokeWidth={1.8}
                   className={cn(
-                    'h-6 w-6 transition-colors duration-150',
+                    'h-6 w-6 transition-[color,fill,opacity,transform] duration-150 ease-out group-active:scale-90',
                     filled ? 'fill-star text-star' : 'text-white/30',
                     filled && preview !== null && preview !== value && 'opacity-80',
                   )}
