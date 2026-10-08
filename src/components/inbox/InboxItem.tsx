@@ -185,7 +185,8 @@ export function InboxItem({ item, onChange }: { item: NotificationItem; onChange
               </span>
             </p>
           )}
-          {!release && item.note && <p dir="auto" className="mt-1 line-clamp-2 text-[13px] leading-snug text-white/60">{item.note}</p>}
+          {/* The note keeps its own direction (bdi) but lines up with the row, not with its script. */}
+          {!release && item.note && <p className="mt-1 line-clamp-2 text-[13px] leading-snug text-white/60"><bdi>{item.note}</bdi></p>}
           {stars !== null && <StarsReadOnly stars={stars} size={12} className="mt-1.5" />}
           {/* Relative to now: the server's render and the browser's may differ by a minute. */}
           <p suppressHydrationWarning className="mt-1 text-[11px] text-white/50">{timeAgo(item.created_at, dateLocale)}</p>
