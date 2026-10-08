@@ -798,3 +798,65 @@ function BrandCard() {
 export function renderFallbackCard() {
   return render(<BrandCard />)
 }
+
+// ---------------------------------------------------------------------------------------------
+// Social.
+
+export type ProfileCardData = {
+  name: string
+  handle: string
+  /** The profile colour, '#rrggbb'. */
+  color: string
+  initial: string
+  /** The page's photo (absolute URL), only when its owner shows it. */
+  image?: string | null
+  /** The footer's call to action, in the page's language (default English). */
+  cta?: string
+}
+
+const hexToRgb = (hex: string) => {
+  const match = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex.trim())
+  return match ? `${parseInt(match[1], 16)} ${parseInt(match[2], 16)} ${parseInt(match[3], 16)}` : ROOM_RED
+}
+
+/**
+ * Someone's page (/u/[handle]): their name, their handle and their avatar, in a room lit by their
+ * colour. Public fields only: never a poster, never what they watch.
+ */
+export async function renderProfileCard({ name, handle, color, initial, image, cta = 'See the page' }: ProfileCardData) {
+  const glow = hexToRgb(color)
+  const size = Math.min(titleSize(name) + 6, 104)
+  const letter = Array.from(initial.trim())[0] ?? '?'
+  const [title, photo, mark] = await Promise.all([
+    prepareText(clip(name, 40), { size: Math.round(size * 0.72), width: 620, bold: true }),
+    pictureData(image, 320),
+    prepareText(letter, { size: 140, width: 300, bold: true }),
+  ])
+  return render(
+    <div style={CARD}>
+      <Room glow={glow} strength={0.6} />
+      <Fill background={`radial-gradient(circle at 78% 46%, ${rgba(glow, 0.28)} 0%, ${rgba(glow, 0)} 42%)`} />
+      <div style={{ position: 'absolute', right: 110, top: 125, display: 'flex' }}>
+        {photo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={photo} alt="" width={320} height={320} style={{ width: 320, height: 320, objectFit: 'cover', borderRadius: 999, border: '4px solid rgba(255,255,255,0.12)', boxShadow: `0 40px 90px -10px ${rgba(glow, 0.55)}` }} />
+        ) : (
+          <div style={{
+            width: 320, height: 320, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backgroundColor: color, backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 100%)',
+            boxShadow: `0 40px 90px -10px ${rgba(glow, 0.55)}`, fontFamily: DISPLAY, fontWeight: 800, fontSize: 170, color: 'white',
+          }}>
+            <Text run={'text' in mark ? { text: mark.text.toUpperCase() } : mark} type={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 170, lineHeight: 1 }} />
+          </div>
+        )}
+      </div>
+      <Column width={620}>
+        <Text run={title} type={{ ...TITLE_TYPE, fontSize: size }} />
+        <div style={{ display: 'flex', marginTop: 16, fontFamily: TEXT, fontSize: 32, color: 'rgba(255,255,255,0.6)' }}>{`@${handle}`}</div>
+        <div style={{ display: 'flex', marginTop: 36 }}>
+          <Footer cta={cta} play={false} />
+        </div>
+      </Column>
+    </div>
+  )
+}
