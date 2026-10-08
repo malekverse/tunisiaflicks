@@ -1,4 +1,5 @@
-// app/profile/page.tsx
+// app/profile/page.tsx: Settings. One panel per section, with a sticky section list on desktop.
+// Other pages link to the anchors (/profile#profiles, /profile#following).
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/src/lib/auth'; // Import authOptions
 import { redirect } from 'next/navigation';
@@ -8,9 +9,14 @@ import Following from './Following';
 import ProfileManager from './ProfileManager';
 import AccountSecurity from './AccountSecurity';
 import { PushSettingsCard } from '@/src/components/PushSettings';
+import SettingsNav from '@/src/components/profile/SettingsNav';
+import SettingsSection from '@/src/components/profile/SettingsSection';
+import PlaybackSettings from '@/src/components/profile/PlaybackSettings';
 import clientPromise from '@/src/lib/mongodb';
 import { ObjectId } from 'mongodb';
 import { getT } from '@/src/lib/i18n/server';
+
+export const generateMetadata = () => ({ title: `${getT()('nav.settings')} | TunisiaFlicks` });
 
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions);
@@ -33,26 +39,45 @@ export default async function ProfilePage() {
     birthdate: userData.birthdate || '',
     image: userData.image || '',
   };
+  const t = getT();
 
   return (
-    <div className="container lg:ms-6 mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">{getT()('profile.title')}</h1>
-      <ProfileForm user={user} />
+    <div className="page-top pb-10">
+      <div className="page-x">
+        <header>
+          <h1 className="font-display text-[clamp(34px,5vw,64px)] font-extrabold leading-[0.95] text-white">{t('nav.settings')}</h1>
+          <p className="mt-2.5 text-[15px] text-white/55">{t('settings.subtitle')}</p>
+        </header>
 
-      {/* Viewer profiles ("Who's watching?") */}
-      <ProfileManager />
+        <div className="mt-7 sm:mt-10 lg:grid lg:grid-cols-[224px_minmax(0,1fr)] lg:items-start lg:gap-12 xl:grid-cols-[248px_minmax(0,1fr)] xl:gap-16">
+          <SettingsNav />
 
-      {/* User Content Section (Favorites, Saved, Watch History) */}
-      <UserContent />
+          <div className="mt-6 max-w-[880px] space-y-5 sm:space-y-6 lg:mt-0">
+            <SettingsSection id="account" title={t('settings.account')} description={t('settings.accountDesc')}>
+              <ProfileForm user={user} />
+            </SettingsSection>
 
-      {/* Release / new-episode alerts */}
-      <Following />
+            {/* Viewer profiles ("Who's watching?") */}
+            <ProfileManager />
 
-      {/* Push notifications on this device */}
-      <PushSettingsCard />
+            <SettingsSection id="playback" title={t('settings.playback')} description={t('settings.playbackDesc')}>
+              <PlaybackSettings />
+            </SettingsSection>
 
-      {/* Password, data export, account deletion */}
-      <AccountSecurity />
+            {/* Push notifications on this device */}
+            <PushSettingsCard />
+
+            {/* Release / new-episode alerts */}
+            <Following />
+
+            {/* Favorites, Saved, Watch History */}
+            <UserContent />
+
+            {/* Password (#security), data export and account deletion (#data) */}
+            <AccountSecurity />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

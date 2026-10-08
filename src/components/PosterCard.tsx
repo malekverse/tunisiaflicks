@@ -38,6 +38,8 @@ export type PosterCardProps = {
     priority?: boolean
     /** Something to lay over the poster (badges, progress...). */
     overlay?: React.ReactNode
+    /** Hover preview / long-press sheet (off where the card has its own buttons on top). */
+    peek?: boolean
     className?: string
 }
 
@@ -53,13 +55,13 @@ const POSTER_SIZES = '(min-width: 1536px) 220px, (min-width: 640px) 180px, 140px
 export default function PosterCard({
     posterImg, title, voteAverage, releaseDate, link, externalImg, id,
     mediaType = 'movie', showTypeBadge = false, actions = true, notify = false,
-    backdropImg, genreIds, overview, bare = false, priority = false, overlay, className,
+    backdropImg, genreIds, overview, bare = false, priority = false, overlay, peek: allowPeek = true, className,
 }: PosterCardProps) {
     const t = useT()
     const itemId = id || (link ? link.split('/').pop()?.split('?')[0] : '') || ''
     const rating = typeof voteAverage === 'number' ? voteAverage : parseFloat(voteAverage)
     const year = releaseDate ? releaseDate.substring(0, 4) : ''
-    const peekable = actions && !externalImg && /^\d+$/.test(itemId)
+    const peekable = allowPeek && actions && !externalImg && /^\d+$/.test(itemId)
     const coarse = useMediaQuery('(hover: none)')
     const peek = usePeekTrigger(peekable ? {
         id: itemId, kind: mediaType, title, poster: posterImg, backdrop: backdropImg,
@@ -110,7 +112,7 @@ export default function PosterCard({
             </div>
             {!bare && (
                 <div className="mt-2.5 px-0.5">
-                    <p className="truncate text-[13.5px] font-medium text-white/90 transition-colors group-hover/card:text-white"><bdi>{title}</bdi></p>
+                    <p dir="auto" className="truncate text-start text-[13.5px] font-medium text-white/90 transition-colors group-hover/card:text-white">{title}</p>
                     <p className="mt-0.5 flex items-center gap-2 text-[12px] text-white/45">
                         {year && <span>{year}</span>}
                         {Number.isFinite(rating) && rating > 0 && (

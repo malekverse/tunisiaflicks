@@ -88,84 +88,92 @@ export default function ProfileForm({ user }: { user: User }) {
     }
   }
 
+  const label = "text-[13px] font-medium text-white/70"
+  const hint = "text-[12.5px] leading-snug text-white/45"
+  const error = "text-[13px] font-normal text-red-400"
+  const input = "text-base sm:text-[15px]"
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="space-y-8">
         <AvatarUpload user={user} />
-        
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t("profile.name")}</FormLabel>
-              <FormControl>
-                <Input placeholder={t("profile.namePlaceholder")} {...field} />
-              </FormControl>
-              <FormDescription>
-                {t("profile.nameDesc")}
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t("profile.email")}</FormLabel>
-              <FormControl>
-                <Input placeholder={t("profile.emailPlaceholder")} {...field} />
-              </FormControl>
-              <FormDescription>
-                {t("profile.emailDesc")}
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t("profile.phone")}</FormLabel>
-              <FormControl>
-                <Input placeholder={t("profile.phonePlaceholder")} {...field} />
-              </FormControl>
-              <FormDescription>
-                {t("profile.phoneDesc")}
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="birthdate"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t("profile.birthdate")}</FormLabel>
-              <FormControl>
-                <Input type="date" {...field} />
-              </FormControl>
-              <FormDescription>
-                {t("profile.birthdateDesc")}
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? t("profile.updating") : t("profile.update")}
-        </Button>
+
+        <div className="grid gap-x-5 gap-y-6 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className={label}>{t("profile.name")}</FormLabel>
+                <FormControl>
+                  <Input placeholder={t("profile.namePlaceholder")} autoComplete="name" className={input} {...field} />
+                </FormControl>
+                <FormDescription className={hint}>
+                  {t("profile.nameDesc")}
+                </FormDescription>
+                <FormMessage className={error} />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className={label}>{t("profile.email")}</FormLabel>
+                <FormControl>
+                  <Input type="email" dir="ltr" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} placeholder={t("profile.emailPlaceholder")} className={`${input} rtl:text-end`} {...field} />
+                </FormControl>
+                <FormDescription className={hint}>
+                  {t("profile.emailDesc")}
+                </FormDescription>
+                <FormMessage className={error} />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className={label}>{t("profile.phone")}</FormLabel>
+                <FormControl>
+                  <Input type="tel" dir="ltr" inputMode="tel" autoComplete="tel" placeholder={t("profile.phonePlaceholder")} className={`${input} rtl:text-end`} {...field} />
+                </FormControl>
+                <FormDescription className={hint}>
+                  {t("profile.phoneDesc")}
+                </FormDescription>
+                <FormMessage className={error} />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="birthdate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className={label}>{t("profile.birthdate")}</FormLabel>
+                <FormControl>
+                  <Input type="date" autoComplete="bday" className={`${input} [&::-webkit-calendar-picker-indicator]:opacity-60`} {...field} />
+                </FormControl>
+                <FormDescription className={hint}>
+                  {t("profile.birthdateDesc")}
+                </FormDescription>
+                <FormMessage className={error} />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="flex justify-end border-t border-white/[0.07] pt-5">
+          <Button type="submit" disabled={isLoading} className="max-sm:w-full">
+            {isLoading ? t("profile.updating") : t("profile.update")}
+          </Button>
+        </div>
       </form>
     </Form>
   )
 }
-

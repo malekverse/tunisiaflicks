@@ -1,31 +1,17 @@
 "use client"
 import React, { useEffect, useState } from 'react'
-import { Bell, BellRing } from 'lucide-react'
+import { BellRing, Info, Smartphone } from 'lucide-react'
 import { Button } from '@/src/components/ui/button'
+import { Skeleton } from '@/src/components/ui/skeleton'
+import { SwitchRow } from '@/src/components/ui/switch'
+import SettingsSection, { SettingsGroup } from '@/src/components/profile/SettingsSection'
 import { useT } from '@/src/components/I18nProvider'
 import { toast } from '@/src/hooks/use-toast'
 import { usePush, type PushTopic } from '@/src/hooks/use-push'
 import type { TKey } from '@/src/lib/i18n'
 
-function Toggle({ checked, disabled, onChange, label, hint }: { checked: boolean, disabled?: boolean, onChange: (value: boolean) => void, label: string, hint: string }) {
-  return (
-    <label className="flex cursor-pointer items-start justify-between gap-4 py-2">
-      <span>
-        <span className="block font-medium">{label}</span>
-        <span className="block text-sm text-gray-500 dark:text-gray-400">{hint}</span>
-      </span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        disabled={disabled}
-        onClick={() => onChange(!checked)}
-        className={`relative mt-1 h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${checked ? 'bg-red-500' : 'bg-gray-300 dark:bg-zinc-700'}`}
-      >
-        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${checked ? 'start-[1.375rem]' : 'start-0.5'}`} />
-      </button>
-    </label>
-  )
+function Toggle({ id, checked, disabled, onChange, label, hint }: { id: string, checked: boolean, disabled?: boolean, onChange: (value: boolean) => void, label: string, hint: string }) {
+  return <SwitchRow id={id} checked={checked} disabled={disabled} onCheckedChange={onChange} label={label} hint={hint} />
 }
 
 const STATUS_MESSAGE: Partial<Record<string, TKey>> = {
@@ -34,7 +20,7 @@ const STATUS_MESSAGE: Partial<Record<string, TKey>> = {
   denied: 'push.denied',
 }
 
-/** Profile page card: which notifications this device receives. */
+/** Settings > Notifications (#notifications): which notifications this device receives. */
 export function PushSettingsCard() {
   const t = useT()
   const { status, topics, busy, update } = usePush()
@@ -48,18 +34,30 @@ export function PushSettingsCard() {
 
   const message = STATUS_MESSAGE[status]
   return (
-    <section className="mt-8 rounded-2xl border border-gray-200 p-5 dark:border-zinc-800">
-      <h2 className="flex items-center gap-2 text-xl font-semibold"><Bell aria-hidden className="h-5 w-5 text-red-500" />{t('push.title')}</h2>
-      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('push.description')}</p>
-      {status === 'loading' ? null : message ? (
-        <p className="mt-4 text-sm text-amber-600 dark:text-amber-400">{t(message)}</p>
+    <SettingsSection id="notifications" title={t('settings.notifications')} description={t('push.description')}>
+      <p className="mb-3 flex items-center gap-2 text-[13px] font-medium text-white/60">
+        <Smartphone aria-hidden className="h-4 w-4" strokeWidth={1.9} />{t('push.title')}
+      </p>
+      {status === 'loading' ? (
+        <SettingsGroup aria-busy>
+          {[0, 1].map((row) => (
+            <div key={row} className="flex items-center justify-between gap-5 py-4">
+              <div className="flex-1 space-y-2"><Skeleton className="h-4 w-1/3 rounded-full" /><Skeleton className="h-3 w-2/3 rounded-full" /></div>
+              <Skeleton className="h-[30px] w-[50px] rounded-full" />
+            </div>
+          ))}
+        </SettingsGroup>
+      ) : message ? (
+        <p className="flex items-start gap-3 rounded-2xl bg-amber-400/[0.07] p-4 text-[14px] leading-relaxed text-amber-100/85 ring-1 ring-inset ring-amber-300/15">
+          <Info aria-hidden className="mt-0.5 h-[18px] w-[18px] shrink-0 text-amber-300" />{t(message)}
+        </p>
       ) : (
-        <div className="mt-3 divide-y divide-gray-200 dark:divide-zinc-800">
-          <Toggle checked={topics.includes('pick')} disabled={busy} onChange={(on) => toggle('pick', on)} label={t('push.pickLabel')} hint={t('push.pickHint')} />
-          <Toggle checked={topics.includes('alerts')} disabled={busy} onChange={(on) => toggle('alerts', on)} label={t('push.alertsLabel')} hint={t('push.alertsHint')} />
-        </div>
+        <SettingsGroup>
+          <Toggle id="push-pick" checked={topics.includes('pick')} disabled={busy} onChange={(on) => toggle('pick', on)} label={t('push.pickLabel')} hint={t('push.pickHint')} />
+          <Toggle id="push-alerts" checked={topics.includes('alerts')} disabled={busy} onChange={(on) => toggle('alerts', on)} label={t('push.alertsLabel')} hint={t('push.alertsHint')} />
+        </SettingsGroup>
       )}
-    </section>
+    </SettingsSection>
   )
 }
 

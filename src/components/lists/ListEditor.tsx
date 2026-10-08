@@ -1,12 +1,20 @@
 "use client"
 import React, { useEffect, useMemo, useState } from 'react'
-import TmdbImage from '@/src/components/TmdbImage'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { IoClose } from 'react-icons/io5'
-import { FaChevronLeft, FaChevronRight, FaPlus, FaCheck } from 'react-icons/fa'
-import { Button } from '@/src/components/ui/button'
+import { AnimatePresence, m } from 'framer-motion'
+import { Check, ChevronLeft, ChevronRight, ListVideo, Lock, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
+import TmdbImage from '@/src/components/TmdbImage'
 import PosterCard from '@/src/components/PosterCard'
+import { EmptyState, GRID_CLASS } from '@/src/components/MediaGrid'
+import { Button } from '@/src/components/ui/button'
+import { Input } from '@/src/components/ui/input'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/src/components/ui/dialog'
+import { CardAction } from '@/src/components/library/controls'
+import ListDetailsFields from '@/src/components/library/ListDetailsForm'
+import { useT } from '@/src/components/I18nProvider'
 import { toast } from '@/src/hooks/use-toast'
+import { haptic, spring, tween } from '@/src/lib/motion'
 import { searchMovies } from '@/src/app/search/actions'
 import { getFavorites, getWatchHistory } from '@/src/lib/user-content'
 import type { PublicList } from '@/src/lib/lists-db'
@@ -20,11 +28,14 @@ const routeOf = (item: Item) => `/${item.media_type}/${item.id}`
 /** Owner view of a list: edit details, add/remove/reorder titles, delete. */
 export default function ListEditor({ initial }: { initial: PublicList }) {
   const router = useRouter()
+  const t = useT()
   const [list, setList] = useState(initial)
   const [saving, setSaving] = useState(false)
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState(initial.title)
   const [description, setDescription] = useState(initial.description)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Candidate[]>([])
@@ -33,7 +44,8 @@ export default function ListEditor({ initial }: { initial: PublicList }) {
 
   const inList = useMemo(() => new Set(list.items.map(keyOf)), [list.items])
 
-  const patch = async (body: object, success?: string) => {
+  /** Sends a change; `before` is the list to go back to if it fails (optimistic changes). */
+  const patch = async (body: object, success?: string, before?: PublicList) => {
     setSaving(true)
     try {
       const res = await fetch(`/api/lists/${list.slug}`, {
@@ -42,27 +54,38 @@ export default function ListEditor({ initial }: { initial: PublicList }) {
         body: JSON.stringify(body),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to update the list')
+      if (!res.ok) throw new Error(data.error || t('lists.updateFailed'))
       setList(data.list)
       if (success) toast({ title: success, duration: 2000 })
       router.refresh() // keep the server-rendered parts (share card, counts) in sync
       return true
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Error', description: error.message })
+      if (before) setList(before)
+      toast({ variant: 'destructive', title: t('common.error'), description: error.message })
       return false
     } finally {
       setSaving(false)
     }
   }
 
-  const add = (candidate: Candidate) => patch({ add: candidate }, `Added ${candidate.title}`)
-  const remove = (item: Item) => patch({ remove: { id: item.id, media_type: item.media_type } })
+  const add = (candidate: Candidate) => {
+    haptic(8)
+    return patch({ add: candidate }, t('lists.addedTitle', { title: candidate.title }))
+  }
+  // Removing and reordering show right away; the server's answer confirms (or undoes) them.
+  const remove = (item: Item) => {
+    const before = list
+    setList({ ...list, items: list.items.filter((other) => keyOf(other) !== keyOf(item)) })
+    patch({ remove: { id: item.id, media_type: item.media_type } }, undefined, before)
+  }
   const move = (index: number, delta: number) => {
     const target = index + delta
     if (target < 0 || target >= list.items.length) return
-    const order = list.items.map(keyOf)
-    ;[order[index], order[target]] = [order[target], order[index]]
-    patch({ order })
+    const before = list
+    const items = list.items.slice()
+    ;[items[index], items[target]] = [items[target], items[index]]
+    setList({ ...list, items })
+    patch({ order: items.map(keyOf) }, undefined, before)
   }
 
   // Search TMDB (debounced) for titles to add.
@@ -109,82 +132,90 @@ export default function ListEditor({ initial }: { initial: PublicList }) {
     })
   }, [])
 
-  const saveDetails = async () => {
-    if (await patch({ title, description }, 'List updated')) setEditing(false)
+  const openEditor = () => {
+    setTitle(list.title)
+    setDescription(list.description)
+    setEditing(true)
+  }
+
+  const saveDetails = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!title.trim()) return
+    if (await patch({ title, description }, t('lists.updated'))) setEditing(false)
   }
 
   const deleteList = async () => {
-    if (!window.confirm(`Delete "${list.title}"? This can't be undone.`)) return
-    const res = await fetch(`/api/lists/${list.slug}`, { method: 'DELETE' })
-    if (res.ok) {
-      toast({ title: 'List deleted', duration: 2000 })
+    setDeleting(true)
+    const res = await fetch(`/api/lists/${list.slug}`, { method: 'DELETE' }).catch(() => null)
+    if (res?.ok) {
+      toast({ title: t('lists.deleted'), duration: 2000 })
       router.push('/lists')
     } else {
-      toast({ variant: 'destructive', title: 'Error', description: "Couldn't delete the list" })
+      setDeleting(false)
+      toast({ variant: 'destructive', title: t('common.error'), description: t('lists.deleteFailed') })
     }
   }
 
   const freshSuggestions = suggestions.filter((item) => !inList.has(keyOf(item)))
+  const count = list.items.length
 
   return (
-    <div className="space-y-8">
-      {/* Details */}
-      <section className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4 sm:p-5 max-w-3xl">
-        {editing ? (
-          <div className="flex flex-col gap-3">
-            <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} aria-label="List title"
-              className="h-10 rounded-xl bg-zinc-800 px-3 text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500" />
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={300} rows={2} aria-label="List description"
-              className="rounded-xl bg-zinc-800 px-3 py-2 text-sm text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500" />
-            <div className="flex gap-2">
-              <Button onClick={saveDetails} disabled={saving || !title.trim()} className="bg-red-500 text-white hover:bg-red-400">Save</Button>
-              <Button variant="outline" onClick={() => { setEditing(false); setTitle(list.title); setDescription(list.description) }} className="bg-transparent text-white border-zinc-700">Cancel</Button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-gray-400">You own this list. Only people with the link can see it.</p>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setEditing(true)} className="bg-transparent text-white border-zinc-700 hover:bg-zinc-800 hover:text-white">Edit details</Button>
-              <Button variant="outline" onClick={deleteList} className="bg-transparent text-red-400 border-red-500/40 hover:bg-red-500/10 hover:text-red-300">Delete list</Button>
-            </div>
-          </div>
-        )}
+    <div className="space-y-12">
+      {/* Owner bar */}
+      <section className="flex flex-col gap-4 rounded-[22px] bg-white/[0.04] p-5 ring-1 ring-white/[0.07] sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <p className="flex items-start gap-3 text-[14px] leading-snug text-white/70">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/[0.07]"><Lock aria-hidden className="h-4 w-4 text-white/80" /></span>
+          <span className="self-center">{t('lists.ownerNote')}</span>
+        </p>
+        <div className="flex shrink-0 gap-2">
+          <Button variant="secondary" onClick={openEditor}><Pencil aria-hidden className="h-4 w-4" />{t('lists.editDetails')}</Button>
+          <Button variant="destructive" onClick={() => setConfirmingDelete(true)}><Trash2 aria-hidden className="h-4 w-4" />{t('lists.deleteList')}</Button>
+        </div>
       </section>
 
       {/* Add titles */}
       <section className="space-y-4">
-        <h2 className="text-xl font-semibold">Add titles</h2>
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search movies and TV shows to add…"
-          aria-label="Search titles to add"
-          className="h-11 w-full max-w-xl rounded-xl bg-zinc-800 px-4 text-sm text-white placeholder:text-gray-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-        />
+        <h2 className="font-display text-[21px] font-bold leading-tight text-white sm:text-[26px]">{t('lists.addTitles')}</h2>
+        <div className="relative max-w-xl">
+          <Search aria-hidden className="pointer-events-none absolute start-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-white/45" />
+          <Input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t('lists.searchPlaceholder')}
+            aria-label={t('lists.searchAria')}
+            enterKeyHint="search"
+            autoComplete="off"
+            className="h-12 rounded-full ps-11 text-base sm:text-[15px]"
+          />
+        </div>
         {query.trim() && (
-          <ul className="max-w-xl divide-y divide-zinc-800 rounded-xl bg-zinc-900 border border-zinc-800">
-            {searching && results.length === 0 && <li className="p-3 text-sm text-gray-400">Searching…</li>}
-            {!searching && results.length === 0 && <li className="p-3 text-sm text-gray-400">No results</li>}
+          <ul aria-live="polite" className="max-w-xl overflow-hidden rounded-[22px] bg-white/[0.04] p-1.5 ring-1 ring-white/[0.07]">
+            {searching && results.length === 0 && <li className="px-4 py-3 text-sm text-white/55">{t('lists.searching')}</li>}
+            {!searching && results.length === 0 && <li className="px-4 py-3 text-sm text-white/55">{t('lists.noResults')}</li>}
             {results.map((item) => {
               const added = inList.has(keyOf(item))
               return (
-                <li key={keyOf(item)} className="flex items-center gap-3 p-2">
-                  <span className="relative block h-14 w-10 shrink-0 rounded overflow-hidden bg-zinc-800">
+                <li key={keyOf(item)} className="flex items-center gap-3 rounded-2xl p-2 transition-colors hover:bg-white/[0.04]">
+                  <span className="relative block h-[60px] w-10 shrink-0 overflow-hidden rounded-md bg-white/[0.06]">
                     <TmdbImage kind="poster" path={item.poster_path} alt="" fill sizes="40px" className="object-cover" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-white">{item.title}</p>
-                    <p className="text-xs text-gray-500">{item.media_type === 'tv' ? 'TV Show' : 'Movie'}{item.year ? ` · ${item.year}` : ''}</p>
+                    <p className="truncate text-[14.5px] font-medium text-white"><bdi>{item.title}</bdi></p>
+                    <p className="mt-0.5 flex gap-x-2.5 text-[12.5px] text-white/50">
+                      <span>{t(item.media_type === 'tv' ? 'common.tvShow' : 'common.movie')}</span>
+                      {item.year && <span>{item.year}</span>}
+                    </p>
                   </div>
-                  <button
-                    type="button"
-                    disabled={added || saving}
-                    onClick={() => add(item)}
-                    className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold bg-red-500 text-white hover:bg-red-400 disabled:bg-zinc-700 disabled:text-gray-400"
-                  >
-                    {added ? <><FaCheck /> Added</> : <><FaPlus /> Add</>}
-                  </button>
+                  {added ? (
+                    <span className="inline-flex h-8 items-center gap-1.5 px-3 text-[13px] font-medium text-white/55">
+                      <Check aria-hidden className="h-4 w-4 text-red-400" strokeWidth={2.4} />{t('lists.addedShort')}
+                    </span>
+                  ) : (
+                    <Button size="sm" variant="white" disabled={saving} onClick={() => add(item)} aria-label={t('lists.addTitle', { title: item.title })}>
+                      <Plus aria-hidden className="h-4 w-4" strokeWidth={2.4} />{t('lists.add')}
+                    </Button>
+                  )}
                 </li>
               )
             })}
@@ -192,21 +223,24 @@ export default function ListEditor({ initial }: { initial: PublicList }) {
         )}
         {freshSuggestions.length > 0 && (
           <div>
-            <p className="mb-2 text-sm text-gray-400">From your favorites & history: tap to add</p>
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+            <p className="mb-3 text-[13px] text-white/55">{t('lists.suggestions')}</p>
+            <div className="no-scrollbar -mx-[var(--gutter)] flex gap-2.5 overflow-x-auto overscroll-x-contain px-[var(--gutter)] pb-1">
               {freshSuggestions.map((item) => (
                 <button
                   key={keyOf(item)}
                   type="button"
                   disabled={saving}
                   onClick={() => add(item)}
-                  title={`Add ${item.title}`}
-                  className="group relative shrink-0 w-[72px] overflow-hidden rounded-lg"
+                  aria-label={t('lists.addTitle', { title: item.title })}
+                  title={t('lists.addTitle', { title: item.title })}
+                  className="group/sug relative w-[76px] shrink-0 select-none overflow-hidden rounded-poster outline-none transition-transform duration-150 ease-out active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-red-500 disabled:opacity-50 sm:w-[84px]"
                 >
-                  <span className="relative block aspect-[2/3] w-full bg-zinc-800">
-                    <TmdbImage kind="poster" path={item.poster_path} alt={item.title} fill sizes="72px" className="object-cover" />
+                  <span className="relative block aspect-[2/3] w-full bg-white/[0.06]">
+                    <TmdbImage kind="poster" path={item.poster_path} alt="" fill sizes="84px" className="object-cover transition-[filter] duration-200 group-hover/sug:brightness-75" />
                   </span>
-                  <span className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100 text-white"><FaPlus /></span>
+                  <span aria-hidden className="glass absolute bottom-1.5 end-1.5 grid h-6 w-6 place-items-center rounded-full text-white transition-transform duration-200 ease-out group-hover/sug:scale-110">
+                    <Plus className="h-3.5 w-3.5" strokeWidth={2.6} />
+                  </span>
                 </button>
               ))}
             </div>
@@ -216,30 +250,92 @@ export default function ListEditor({ initial }: { initial: PublicList }) {
 
       {/* Items */}
       <section>
-        <h2 className="mb-4 text-xl font-semibold">{list.items.length} title{list.items.length === 1 ? '' : 's'}</h2>
-        {list.items.length === 0 ? (
-          <p className="text-gray-400">This list is empty. Search above to add your first title.</p>
+        <h2 className="mb-5 flex items-baseline gap-3 font-display text-[21px] font-bold leading-tight text-white sm:text-[26px]">
+          {t('lists.inThisList')}
+          <span className="font-sans text-[14px] font-normal text-white/45">{count === 1 ? t('library.countOne') : t('library.count', { count })}</span>
+        </h2>
+        {count === 0 ? (
+          <EmptyState icon={<ListVideo aria-hidden className="h-6 w-6" />} title={t('library.emptyList')}>
+            <p>{t('lists.emptyOwner')}</p>
+          </EmptyState>
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(145px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(167px,1fr))] gap-4">
-            {list.items.map((item, index) => (
-              <div key={keyOf(item)} className="group relative">
-                <PosterCard posterImg={item.poster_path} title={item.title} mediaType={item.media_type} link={routeOf(item)} actions={false} />
-                <span className="pointer-events-none absolute start-1.5 top-1.5 z-30 rounded-md bg-red-600 px-2 py-0.5 text-xs font-bold text-white">#{index + 1}</span>
-                <button type="button" onClick={() => remove(item)} disabled={saving} aria-label={`Remove ${item.title}`} title="Remove"
-                  className="absolute end-1.5 top-1.5 z-30 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white hover:bg-red-500 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100">
-                  <IoClose />
-                </button>
-                <div className="absolute inset-x-1.5 bottom-12 z-30 flex justify-between sm:opacity-0 sm:group-hover:opacity-100">
-                  <button type="button" onClick={() => move(index, -1)} disabled={saving || index === 0} aria-label="Move earlier" title="Move earlier"
-                    className="flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white hover:bg-red-500 disabled:opacity-30"><FaChevronLeft className="text-xs" /></button>
-                  <button type="button" onClick={() => move(index, 1)} disabled={saving || index === list.items.length - 1} aria-label="Move later" title="Move later"
-                    className="flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white hover:bg-red-500 disabled:opacity-30"><FaChevronRight className="text-xs" /></button>
-                </div>
-              </div>
-            ))}
-          </div>
+          <ol className={`${GRID_CLASS} relative`}>
+            <AnimatePresence mode="popLayout" initial={false}>
+              {list.items.map((item, index) => (
+                <m.li
+                  key={keyOf(item)}
+                  layout="position"
+                  transition={spring.ui}
+                  exit={{ opacity: 0, scale: 0.92, transition: tween.fast }}
+                  className="group/item relative"
+                >
+                  <div className="relative">
+                    <PosterCard
+                      bare
+                      posterImg={item.poster_path}
+                      title={item.title}
+                      mediaType={item.media_type}
+                      link={routeOf(item)}
+                      actions={false}
+                      overlay={<span aria-label={t('home.rank', { rank: index + 1 })} className="glass absolute start-2 top-2 min-w-[28px] rounded-full px-2 py-0.5 text-center text-[12px] font-semibold tabular-nums text-white">{index + 1}</span>}
+                    />
+                    <CardAction label={t('lists.removeTitle', { title: item.title })} onClick={() => remove(item)} disabled={saving} tone="danger" className="absolute end-0 top-0">
+                      <X aria-hidden className="h-4 w-4" strokeWidth={2.4} />
+                    </CardAction>
+                    <div className="absolute inset-x-0 bottom-0 flex justify-between">
+                      <CardAction label={t('lists.moveEarlier')} onClick={() => move(index, -1)} disabled={saving || index === 0}>
+                        <ChevronLeft aria-hidden className="h-4 w-4 rtl:rotate-180" strokeWidth={2.4} />
+                      </CardAction>
+                      <CardAction label={t('lists.moveLater')} onClick={() => move(index, 1)} disabled={saving || index === count - 1}>
+                        <ChevronRight aria-hidden className="h-4 w-4 rtl:rotate-180" strokeWidth={2.4} />
+                      </CardAction>
+                    </div>
+                  </div>
+                  <Link href={routeOf(item)} aria-hidden tabIndex={-1} className="mt-2.5 block truncate px-0.5 text-[13.5px] font-medium text-white/90 transition-colors group-hover/item:text-white">
+                    <bdi>{item.title}</bdi>
+                  </Link>
+                </m.li>
+              ))}
+            </AnimatePresence>
+          </ol>
         )}
       </section>
+
+      {/* Edit details */}
+      <Dialog open={editing} onOpenChange={(open) => !saving && setEditing(open)}>
+        <DialogContent className="max-w-md">
+          <form onSubmit={saveDetails} className="space-y-6">
+            <DialogHeader>
+              <DialogTitle className="font-display text-2xl font-bold">{t('lists.editDetails')}</DialogTitle>
+              <DialogDescription>{t('lists.ownerNote')}</DialogDescription>
+            </DialogHeader>
+            <ListDetailsFields title={title} description={description} onTitle={setTitle} onDescription={setDescription} autoFocus />
+            <DialogFooter className="gap-2">
+              <Button type="button" variant="ghost" disabled={saving} onClick={() => setEditing(false)}>{t('common.cancel')}</Button>
+              <Button type="submit" disabled={saving || !title.trim()}>{t('lists.save')}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete */}
+      <Dialog open={confirmingDelete} onOpenChange={(open) => !deleting && setConfirmingDelete(open)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <span aria-hidden className="mb-2 grid h-12 w-12 place-items-center rounded-2xl bg-red-600/15 text-red-400 max-sm:mx-auto">
+              <Trash2 className="h-5 w-5" />
+            </span>
+            <DialogTitle className="font-display text-2xl font-bold">{t('lists.deleteTitle', { title: list.title })}</DialogTitle>
+            <DialogDescription>{t('lists.deleteDesc')}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="ghost" disabled={deleting} onClick={() => setConfirmingDelete(false)}>{t('common.cancel')}</Button>
+            <Button type="button" variant="destructive" disabled={deleting} onClick={deleteList}>
+              <Trash2 aria-hidden className="h-4 w-4" />{t('lists.deleteList')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

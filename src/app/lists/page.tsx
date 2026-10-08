@@ -3,44 +3,39 @@ import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { MdPlaylistAdd } from 'react-icons/md'
+import { ListVideo, Plus } from 'lucide-react'
 import { Button } from '@/src/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/src/components/ui/dialog'
+import { Skeleton } from '@/src/components/ui/skeleton'
+import { EmptyState } from '@/src/components/MediaGrid'
+import { useT } from '@/src/components/I18nProvider'
+import LibraryHeader from '@/src/components/library/LibraryHeader'
+import SignInInvite from '@/src/components/library/SignInInvite'
+import ListCover from '@/src/components/library/ListCover'
+import ListDetailsFields from '@/src/components/library/ListDetailsForm'
 import { toast } from '@/src/hooks/use-toast'
 import type { PublicList } from '@/src/lib/lists-db'
-import TmdbImage from '@/src/components/TmdbImage'
 
-/** 2x2 poster collage used as a list's cover. */
-function Collage({ list }: { list: PublicList }) {
-  const posters = list.items.map((item) => item.poster_path).filter(Boolean).slice(0, 4) as string[]
-  return (
-    <div className="grid grid-cols-2 aspect-[4/3] w-full overflow-hidden rounded-xl bg-zinc-800">
-      {posters.length === 0
-        ? <div className="col-span-2 flex items-center justify-center text-gray-500 text-sm">Empty list</div>
-        : posters.map((path) => (
-          <div key={path} className="relative h-full w-full">
-            <TmdbImage kind="poster" path={path} alt="" fill sizes="(min-width: 640px) 160px, 25vw" className="object-cover" />
-          </div>
-        ))}
-    </div>
-  )
-}
+const LISTS_GRID = 'grid grid-cols-[repeat(auto-fill,minmax(158px,1fr))] gap-x-4 gap-y-7 sm:grid-cols-[repeat(auto-fill,minmax(232px,1fr))] sm:gap-x-5 sm:gap-y-9'
 
+/** "My lists": the signed-in user's shareable lists, and a dialog to start a new one. */
 export default function MyListsPage() {
   const { status } = useSession()
   const router = useRouter()
+  const t = useT()
   const [lists, setLists] = useState<PublicList[] | null>(null)
+  const [open, setOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [creating, setCreating] = useState(false)
 
   useEffect(() => {
-    if (status === 'unauthenticated') router.replace('/login')
     if (status !== 'authenticated') return
     fetch('/api/lists')
       .then((res) => (res.ok ? res.json() : { lists: [] }))
       .then((data) => setLists(data.lists ?? []))
       .catch(() => setLists([]))
-  }, [status, router])
+  }, [status])
 
   const create = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -53,62 +48,98 @@ export default function MyListsPage() {
         body: JSON.stringify({ title, description }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to create the list')
+      if (!res.ok) throw new Error(data.error || t('library.createFailed'))
       router.push(`/lists/${data.list.slug}`)
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Error', description: error.message })
+      toast({ variant: 'destructive', title: t('common.error'), description: error.message })
       setCreating(false)
     }
   }
 
+  const signedOut = status === 'unauthenticated'
+  const count = lists?.length ?? 0
+  const newList = (
+    <Button onClick={() => setOpen(true)}>
+      <Plus aria-hidden className="h-[18px] w-[18px]" strokeWidth={2.2} />
+      {t('library.newList')}
+    </Button>
+  )
+
   return (
-    <div className="w-full max-w-[1800px] px-4 sm:px-6 space-y-8">
-      <div>
-        <h1 className="text-3xl sm:text-4xl font-bold">My Lists</h1>
-        <p className="mt-2 text-gray-500 dark:text-gray-400">Make a list (&ldquo;My top 10 Tunisian series&rdquo;, &ldquo;Ramadan watchlist&rdquo;…) and share it with a link.</p>
+    <div className="page-top pb-10">
+      <LibraryHeader
+        title={t('library.listsTitle')}
+        subtitle={t('library.listsSubtitle')}
+        actions={status === 'authenticated' ? newList : null}
+      />
+
+      <div className="mt-8 sm:mt-10">
+        {signedOut ? (
+          <SignInInvite icon={ListVideo} />
+        ) : lists === null ? (
+          <div className="page-x">
+            <p className="sr-only" role="status">{t('library.loadingLists')}</p>
+            <div className={LISTS_GRID}>
+              {Array.from({ length: 4 }, (_, index) => (
+                <div key={index}>
+                  <Skeleton className="aspect-[4/3] w-full rounded-tile" />
+                  <Skeleton className="mt-3 h-4 w-2/3 rounded-full" />
+                  <Skeleton className="mt-2 h-3 w-1/4 rounded-full" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : count === 0 ? (
+          <div className="page-x">
+            <EmptyState icon={<ListVideo aria-hidden className="h-6 w-6" />} title={t('library.noLists')}>
+              <p>{t('library.noListsHint')}</p>
+              <Button className="mt-5" onClick={() => setOpen(true)}>
+                <Plus aria-hidden className="h-[18px] w-[18px]" strokeWidth={2.2} />
+                {t('library.createFirstList')}
+              </Button>
+            </EmptyState>
+          </div>
+        ) : (
+          <div className="page-x">
+            <ul className={LISTS_GRID}>
+              {lists.map((list) => (
+                <li key={list.slug}>
+                  <Link href={`/lists/${list.slug}`} className="group/cover block select-none rounded-tile outline-none [-webkit-touch-callout:none]">
+                    <div className="rounded-tile transition-[transform,box-shadow] duration-300 ease-out group-hover/cover:-translate-y-1 group-hover/cover:shadow-[0_22px_44px_-18px_rgb(0_0_0/0.9)] group-active/cover:scale-[0.98] group-focus-visible/cover:ring-2 group-focus-visible/cover:ring-red-500">
+                      <ListCover posters={list.items.map((item) => item.poster_path)} emptyLabel={t('library.emptyList')} />
+                    </div>
+                    <p className="mt-3 truncate px-0.5 text-[15px] font-semibold text-white/90 transition-colors group-hover/cover:text-white"><bdi>{list.title}</bdi></p>
+                    <p className="mt-0.5 px-0.5 text-[13px] text-white/50">
+                      {list.items.length === 1 ? t('library.countOne') : t('library.count', { count: list.items.length })}
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
-      <form onSubmit={create} className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4 sm:p-5 flex flex-col gap-3 max-w-2xl">
-        <div className="flex items-center gap-2 font-semibold text-white"><MdPlaylistAdd className="text-xl text-red-500" /> New list</div>
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          maxLength={80}
-          placeholder="List title, e.g. My top 10 Tunisian series"
-          aria-label="List title"
-          className="h-10 rounded-xl bg-zinc-800 px-3 text-sm text-white placeholder:text-gray-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-        />
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          maxLength={300}
-          rows={2}
-          placeholder="Description (optional)"
-          aria-label="List description"
-          className="rounded-xl bg-zinc-800 px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-        />
-        <div>
-          <Button type="submit" disabled={creating || !title.trim()} className="bg-red-500 text-white hover:bg-red-400">
-            {creating ? 'Creating…' : 'Create list'}
-          </Button>
-        </div>
-      </form>
-
-      {lists === null ? (
-        <p className="text-gray-400">Loading your lists…</p>
-      ) : lists.length === 0 ? (
-        <p className="text-gray-400">No lists yet. Create your first one above.</p>
-      ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-5">
-          {lists.map((list) => (
-            <Link key={list.slug} href={`/lists/${list.slug}`} className="group">
-              <div className="transition-transform group-hover:scale-[1.03]"><Collage list={list} /></div>
-              <p className="mt-2 font-semibold truncate group-hover:text-red-500">{list.title}</p>
-              <p className="text-xs text-gray-500">{list.items.length} title{list.items.length === 1 ? '' : 's'}</p>
-            </Link>
-          ))}
-        </div>
-      )}
+      <Dialog open={open} onOpenChange={(next) => !creating && setOpen(next)}>
+        <DialogContent className="max-w-md">
+          <form onSubmit={create} className="space-y-6">
+            <DialogHeader>
+              <span aria-hidden className="mb-2 grid h-12 w-12 place-items-center rounded-2xl bg-white/[0.07] ring-1 ring-inset ring-white/10 max-sm:mx-auto">
+                <ListVideo className="h-6 w-6 text-white/85" strokeWidth={1.8} />
+              </span>
+              <DialogTitle className="font-display text-2xl font-bold">{t('library.newList')}</DialogTitle>
+              <DialogDescription>{t('library.listsSubtitle')}</DialogDescription>
+            </DialogHeader>
+            <ListDetailsFields title={title} description={description} onTitle={setTitle} onDescription={setDescription} autoFocus />
+            <DialogFooter className="gap-2">
+              <Button type="button" variant="ghost" disabled={creating} onClick={() => setOpen(false)}>{t('common.cancel')}</Button>
+              <Button type="submit" disabled={creating || !title.trim()}>
+                {creating ? t('library.creating') : t('library.createList')}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

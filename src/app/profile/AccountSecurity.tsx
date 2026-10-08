@@ -1,20 +1,27 @@
 "use client"
-import React, { useState } from 'react'
+import React, { useId, useState } from 'react'
 import { signOut } from 'next-auth/react'
-import { FaDownload, FaLock, FaTrash } from 'react-icons/fa'
+import { Download, KeyRound, Trash2 } from 'lucide-react'
 import { Button } from '@/src/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/src/components/ui/dialog'
+import { Input } from '@/src/components/ui/input'
+import { Label } from '@/src/components/ui/label'
+import { Skeleton } from '@/src/components/ui/skeleton'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/src/components/ui/dialog'
+import SettingsSection from '@/src/components/profile/SettingsSection'
 import { useT } from '@/src/components/I18nProvider'
 import { useAccount } from '@/src/hooks/use-account'
 import { toast } from '@/src/hooks/use-toast'
 import { translateApiMessage } from '@/src/lib/i18n'
 
-const input = 'w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:border-zinc-700 dark:bg-[#1a161f] dark:text-white'
-const card = 'rounded-2xl border border-gray-200 p-5 dark:border-zinc-800'
+// 16px on phones: smaller text makes iOS zoom into the field.
+const input = 'text-base sm:text-[15px]'
+const label = 'text-[13px] font-medium text-white/70'
+const inner = 'rounded-[20px] bg-white/[0.03] p-5 ring-1 ring-inset'
 
-/** Password, data export and account deletion. */
+/** Settings > Security (#security: password) and Your data (#data: export, delete account). */
 export default function AccountSecurity() {
   const t = useT()
+  const id = useId()
   const { account, refresh } = useAccount()
 
   // --- password ---
@@ -82,81 +89,111 @@ export default function AccountSecurity() {
     }
   }
 
-  if (!account) return null
+  // Loading: keep both sections (and their anchors) in place.
+  if (!account) {
+    return (
+      <>
+        <SettingsSection id="security" title={t('settings.security')} description={t('settings.securityDesc')}>
+          <div aria-busy className="max-w-md space-y-4">
+            <Skeleton className="h-11 rounded-xl" /><Skeleton className="h-11 rounded-xl" /><Skeleton className="h-10 w-36 rounded-full" />
+          </div>
+        </SettingsSection>
+        <SettingsSection id="data" title={t('settings.data')} description={t('settings.dataDesc')}>
+          <div aria-busy className="grid gap-4 md:grid-cols-2">
+            <Skeleton className="h-40 rounded-[20px]" /><Skeleton className="h-40 rounded-[20px]" />
+          </div>
+        </SettingsSection>
+      </>
+    )
+  }
 
   return (
-    <section id="account" className="mt-10 scroll-mt-24">
-      <h2 className="mb-4 text-2xl font-bold">{t('account.title')}</h2>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <form onSubmit={savePassword} className={`${card} space-y-3`}>
-          <h3 className="flex items-center gap-2 font-semibold"><FaLock className="text-red-500" />{t(account.hasPassword ? 'account.changePassword' : 'account.setPassword')}</h3>
-          {!account.hasPassword && <p className="text-sm text-gray-500">{t('account.setPasswordDesc')}</p>}
+    <>
+      <SettingsSection id="security" title={t('settings.security')} description={t('settings.securityDesc')}>
+        <form onSubmit={savePassword} className="max-w-md space-y-5">
+          <h3 className="flex items-center gap-2.5 text-[15px] font-semibold text-white">
+            <KeyRound aria-hidden className="h-[18px] w-[18px] text-white/70" />
+            {t(account.hasPassword ? 'account.changePassword' : 'account.setPassword')}
+          </h3>
+          {!account.hasPassword && <p className="-mt-2 text-[14px] leading-relaxed text-white/55">{t('account.setPasswordDesc')}</p>}
           {account.hasPassword && (
-            <label className="block text-sm">
-              {t('account.currentPassword')}
-              <input type="password" autoComplete="current-password" className={`mt-1 ${input}`} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
-            </label>
+            <div className="space-y-2">
+              <Label htmlFor={`${id}-current`} className={label}>{t('account.currentPassword')}</Label>
+              <Input id={`${id}-current`} type="password" autoComplete="current-password" className={input} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+            </div>
           )}
-          <label className="block text-sm">
-            {t('auth.newPassword')}
-            <input type="password" autoComplete="new-password" className={`mt-1 ${input}`} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={8} />
-          </label>
-          <label className="block text-sm">
-            {t('auth.confirmPassword')}
-            <input type="password" autoComplete="new-password" className={`mt-1 ${input}`} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={8} />
-          </label>
-          {passwordError && <p className="text-sm text-red-500" role="alert">{passwordError}</p>}
-          <Button type="submit" disabled={savingPassword} className="bg-red-500 text-white hover:bg-red-400">
+          <div className="space-y-2">
+            <Label htmlFor={`${id}-new`} className={label}>{t('auth.newPassword')}</Label>
+            <Input id={`${id}-new`} type="password" autoComplete="new-password" className={input} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={8} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`${id}-confirm`} className={label}>{t('auth.confirmPassword')}</Label>
+            <Input id={`${id}-confirm`} type="password" autoComplete="new-password" className={input} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={8} aria-describedby={passwordError ? `${id}-password-error` : undefined} />
+            {passwordError && <p id={`${id}-password-error`} className="text-[13px] text-red-400" role="alert">{passwordError}</p>}
+          </div>
+          <Button type="submit" disabled={savingPassword} className="max-sm:w-full">
             {savingPassword ? t('form.sending') : t('account.savePassword')}
           </Button>
         </form>
+      </SettingsSection>
 
-        <div className="space-y-4">
-          <div className={card}>
-            <h3 className="flex items-center gap-2 font-semibold"><FaDownload className="text-red-500" />{t('account.exportTitle')}</h3>
-            <p className="mt-2 text-sm text-gray-500">{t('account.exportDesc')}</p>
+      <SettingsSection id="data" title={t('settings.data')} description={t('settings.dataDesc')}>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className={`${inner} flex flex-col ring-white/[0.05]`}>
+            <span className="grid h-11 w-11 place-items-center rounded-full bg-white/[0.07]"><Download aria-hidden className="h-5 w-5 text-white/85" /></span>
+            <h3 className="mt-4 text-[15px] font-semibold text-white">{t('account.exportTitle')}</h3>
+            <p className="mt-1 flex-1 text-[13.5px] leading-relaxed text-white/55">{t('account.exportDesc')}</p>
             {/* A plain link: the browser saves the JSON file (Content-Disposition: attachment). */}
-            <a href="/api/account/export" className="mt-3 inline-flex items-center gap-2 rounded-xl bg-zinc-800 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700">
-              <FaDownload /> {t('account.exportButton')}
-            </a>
+            <Button asChild variant="secondary" className="mt-5 self-start">
+              <a href="/api/account/export"><Download aria-hidden className="h-4 w-4" /> {t('account.exportButton')}</a>
+            </Button>
           </div>
 
-          <div className={`${card} border-red-500/40 dark:border-red-500/40`}>
-            <h3 className="flex items-center gap-2 font-semibold text-red-500"><FaTrash />{t('account.deleteTitle')}</h3>
-            <p className="mt-2 text-sm text-gray-500">{t('account.deleteDesc')}</p>
-            <Button type="button" variant="destructive" className="mt-3" onClick={() => { setConfirmation(''); setDeleteError(null); setDeleteOpen(true) }}>
+          <div className={`${inner} flex flex-col ring-red-500/20`}>
+            <span className="grid h-11 w-11 place-items-center rounded-full bg-red-600/15"><Trash2 aria-hidden className="h-5 w-5 text-red-400" /></span>
+            <h3 className="mt-4 text-[15px] font-semibold text-red-300">{t('account.deleteTitle')}</h3>
+            <p className="mt-1 flex-1 text-[13.5px] leading-relaxed text-white/55">{t('account.deleteDesc')}</p>
+            <Button type="button" variant="destructive" className="mt-5 self-start" onClick={() => { setConfirmation(''); setDeleteError(null); setDeleteOpen(true) }}>
               {t('account.deleteButton')}
             </Button>
           </div>
         </div>
-      </div>
+      </SettingsSection>
 
       <Dialog open={deleteOpen} onOpenChange={(open) => !deleting && setDeleteOpen(open)}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{t('account.deleteConfirmTitle')}</DialogTitle>
+            <span aria-hidden className="mb-2 grid h-12 w-12 place-items-center rounded-2xl bg-red-600/15 text-red-400 max-sm:mx-auto">
+              <Trash2 className="h-5 w-5" />
+            </span>
+            <DialogTitle className="font-display text-2xl font-bold">{t('account.deleteConfirmTitle')}</DialogTitle>
             <DialogDescription>{t('account.deleteConfirmDesc')}</DialogDescription>
           </DialogHeader>
-          <label className="block text-sm">
-            {t(account.hasPassword ? 'account.confirmWithPassword' : 'account.confirmWithEmail', { email: account.email ?? '' })}
-            <input
+          <div className="space-y-2">
+            <Label htmlFor={`${id}-confirmation`} className={label}>
+              {t(account.hasPassword ? 'account.confirmWithPassword' : 'account.confirmWithEmail', { email: account.email ?? '' })}
+            </Label>
+            <Input
+              id={`${id}-confirmation`}
               type={account.hasPassword ? 'password' : 'email'}
               dir="ltr"
-              className={`mt-1 ${input}`}
+              className={input}
               value={confirmation}
               onChange={(e) => setConfirmation(e.target.value)}
               autoComplete={account.hasPassword ? 'current-password' : 'off'}
+              aria-describedby={deleteError ? `${id}-delete-error` : undefined}
             />
-          </label>
-          {deleteError && <p className="text-sm text-red-500" role="alert">{deleteError}</p>}
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" disabled={deleting} onClick={() => setDeleteOpen(false)}>{t('common.cancel')}</Button>
+            {deleteError && <p id={`${id}-delete-error`} className="text-[13px] text-red-400" role="alert">{deleteError}</p>}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="ghost" disabled={deleting} onClick={() => setDeleteOpen(false)}>{t('common.cancel')}</Button>
             <Button type="button" variant="destructive" disabled={deleting || !confirmation} onClick={deleteAccount}>
+              <Trash2 aria-hidden className="h-4 w-4" />
               {deleting ? t('account.deleting') : t('account.deleteForever')}
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
-    </section>
+    </>
   )
 }
