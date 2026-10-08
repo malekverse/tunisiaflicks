@@ -6,9 +6,6 @@ import {
     ContextMenuItem,
     ContextMenuLabel,
     ContextMenuSeparator,
-    ContextMenuSub,
-    ContextMenuSubContent,
-    ContextMenuSubTrigger,
     ContextMenuTrigger,
 } from "@/src/components/ui/context-menu"
 import {
@@ -17,19 +14,14 @@ import {
     DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuPortal,
     DropdownMenuSeparator,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
     DropdownMenuTrigger,
 } from "@/src/components/ui/dropdown-menu"
-import { Bookmark, Copy, Ellipsis, Heart, Share2, Star } from "lucide-react";
-import { FaFacebook, FaWhatsapp, FaTelegram } from "react-icons/fa";
-import { FaXTwitter } from "react-icons/fa6";
+import { Bookmark, Ellipsis, Heart, Share2, Star } from "lucide-react";
 import { Button } from './ui/button';
 import { toast } from '@/src/hooks/use-toast';
 import { addToFavorites, saveForLater } from '@/src/lib/user-content';
+import { openShare } from '@/src/store/share-sheet';
 import { useT } from './I18nProvider';
 
 export type MediaMeta = {
@@ -60,30 +52,18 @@ function useMediaActions({ id, title, posterPath, mediaType }: MediaMeta) {
         }
     }, [id, title, posterPath, mediaType, t])
 
-    return useMemo(() => {
-        const url = () => `${window.location.origin}/${mediaType}/${id}`
-        const open = (shareUrl: string) => window.open(shareUrl, '_blank', 'noopener,noreferrer')
-        return {
-            favorite: () => save(addToFavorites,
-                { title: t('toast.addedFavorites'), description: t('toast.addedFavoritesDesc', { title }) },
-                t('toast.addFavoritesFailed')),
-            bookmark: () => save(saveForLater,
-                { title: t('toast.savedForLater'), description: t('toast.savedForLaterDesc', { title }) },
-                t('toast.saveFailed')),
-            facebook: () => open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url())}`),
-            x: () => open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url())}&text=${encodeURIComponent(title)}`),
-            telegram: () => open(`https://t.me/share/url?url=${encodeURIComponent(url())}&text=${encodeURIComponent(title)}`),
-            whatsapp: () => open(`https://wa.me/?text=${encodeURIComponent(`${title} ${url()}`)}`),
-            copy: async () => {
-                try {
-                    await navigator.clipboard.writeText(url())
-                    toast({ title: t('common.linkCopied'), description: t('common.linkCopiedDesc', { title }) })
-                } catch {
-                    toast({ variant: "destructive", title: t('common.error'), description: t('card.copyFailed') })
-                }
-            },
-        }
-    }, [save, id, title, mediaType, t])
+    return useMemo(() => ({
+        favorite: () => save(addToFavorites,
+            { title: t('toast.addedFavorites'), description: t('toast.addedFavoritesDesc', { title }) },
+            t('toast.addFavoritesFailed')),
+        bookmark: () => save(saveForLater,
+            { title: t('toast.savedForLater'), description: t('toast.savedForLaterDesc', { title }) },
+            t('toast.saveFailed')),
+        // One sheet for every way of sharing: friends, a night, a list, WhatsApp and the rest, the link.
+        share: id
+            ? () => openShare({ kind: 'title', media: { media_type: mediaType, id: String(id), title, poster_path: posterPath ?? null } })
+            : null,
+    }), [save, id, title, posterPath, mediaType, t])
 }
 
 /** Right-click (desktop) / long-press (touch) menu wrapped around a card. */
@@ -100,17 +80,9 @@ export function MediaContextMenu({ children, disabled, ...meta }: MediaMeta & { 
                 <ContextMenuSeparator />
                 <ContextMenuItem onSelect={actions.favorite}><Heart className='me-2.5 h-4 w-4 text-white/60' />{t('card.addFavorites')}</ContextMenuItem>
                 <ContextMenuItem onSelect={actions.bookmark}><Bookmark className='me-2.5 h-4 w-4 text-white/60' />{t('card.addBookmarks')}</ContextMenuItem>
-                <ContextMenuSub>
-                    <ContextMenuSubTrigger><Share2 className='me-2.5 h-4 w-4 text-white/60' />{t('card.share')}</ContextMenuSubTrigger>
-                    <ContextMenuSubContent>
-                        <ContextMenuItem onSelect={actions.facebook}><FaFacebook className='me-2.5 text-white/60' />Facebook</ContextMenuItem>
-                        <ContextMenuItem onSelect={actions.x}><FaXTwitter className='me-2.5 text-white/60' />X</ContextMenuItem>
-                        <ContextMenuItem onSelect={actions.telegram}><FaTelegram className='me-2.5 text-white/60' />Telegram</ContextMenuItem>
-                        <ContextMenuItem onSelect={actions.whatsapp}><FaWhatsapp className='me-2.5 text-white/60' />WhatsApp</ContextMenuItem>
-                        <ContextMenuSeparator />
-                        <ContextMenuItem onSelect={actions.copy}><Copy className='me-2.5 h-4 w-4 text-white/60' />{t('card.copyLink')}</ContextMenuItem>
-                    </ContextMenuSubContent>
-                </ContextMenuSub>
+                {actions.share && (
+                    <ContextMenuItem onSelect={actions.share}><Share2 className='me-2.5 h-4 w-4 text-white/60' />{t('social.share.menuItem')}</ContextMenuItem>
+                )}
             </ContextMenuContent>
         </ContextMenu>
     )
@@ -142,19 +114,9 @@ export function MediaOptionsMenu({ voteAverage, ...meta }: MediaMeta & { voteAve
                 <DropdownMenuGroup>
                     <DropdownMenuItem onSelect={actions.favorite}><Heart className='me-2.5 h-4 w-4 text-white/60' />{t('card.addFavorites')}</DropdownMenuItem>
                     <DropdownMenuItem onSelect={actions.bookmark}><Bookmark className='me-2.5 h-4 w-4 text-white/60' />{t('card.addBookmarks')}</DropdownMenuItem>
-                    <DropdownMenuSub>
-                        <DropdownMenuSubTrigger><Share2 className='me-2.5 h-4 w-4 text-white/60' />{t('card.share')}</DropdownMenuSubTrigger>
-                        <DropdownMenuPortal>
-                            <DropdownMenuSubContent>
-                                <DropdownMenuItem onSelect={actions.facebook}><FaFacebook className='me-2.5 text-white/60' />Facebook</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={actions.x}><FaXTwitter className='me-2.5 text-white/60' />X</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={actions.telegram}><FaTelegram className='me-2.5 text-white/60' />Telegram</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={actions.whatsapp}><FaWhatsapp className='me-2.5 text-white/60' />WhatsApp</DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onSelect={actions.copy}><Copy className='me-2.5 h-4 w-4 text-white/60' />{t('card.copyLink')}</DropdownMenuItem>
-                            </DropdownMenuSubContent>
-                        </DropdownMenuPortal>
-                    </DropdownMenuSub>
+                    {actions.share && (
+                        <DropdownMenuItem onSelect={actions.share}><Share2 className='me-2.5 h-4 w-4 text-white/60' />{t('social.share.menuItem')}</DropdownMenuItem>
+                    )}
                 </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
