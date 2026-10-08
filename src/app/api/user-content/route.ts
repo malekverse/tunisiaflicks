@@ -172,10 +172,11 @@ export async function DELETE(request: NextRequest) {
     const db = client.db();
     const userContentCollection = db.collection('userContent');
 
-    // Remove the item from the user's content list
+    // Remove the item from the user's content list (older entries may hold the id as a number).
+    const ids: (string | number)[] = /^[0-9]{1,9}$/.test(itemId) ? [itemId, Number(itemId)] : [itemId];
     const result = await userContentCollection.updateOne(
       { userId: userId, profileId: profileId, type: type },
-      { $pull: { items: { id: itemId } } }
+      { $pull: { items: { id: { $in: ids } } } as any }
     );
 
     if (result.modifiedCount === 0) {

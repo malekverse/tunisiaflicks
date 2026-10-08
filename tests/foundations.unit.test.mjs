@@ -109,3 +109,20 @@ test('scrubEvent and scrubBreadcrumb: a report from ?invite=abc carries no abc',
   assert.deepEqual(scrubEvent({ request: { query_string: { invite: 'abc', q: '1' } } }).request.query_string, { q: '1' })
   assert.equal(scrubBreadcrumb({ data: { url: '/x?k=secret' } }).data.url, '/x')
 })
+
+test('scrubEvent and scrubBreadcrumb: split-off queries and stack frames are scrubbed too', () => {
+  // The server SDK keeps an outgoing request's query beside a sanitized URL.
+  const crumb = scrubBreadcrumb({ category: 'http', data: { url: 'https://site/api/x', 'http.query': 'invite=abc&page=2', 'url.query': 'k=abc' } })
+  assert.equal(crumb.data['http.query'], 'page=2')
+  assert.equal(crumb.data['url.query'], '')
+  // An inline script's frame carries the page address.
+  const event = scrubEvent({
+    exception: { values: [{ type: 'TypeError', value: 'x is undefined', stacktrace: { frames: [
+      { filename: 'https://site/u/x?invite=abc', abs_path: 'https://site/u/x?invite=abc&tab=1', lineno: 1 },
+      { filename: 'app:///_next/static/chunks/main.js', lineno: 2 },
+    ] } }] },
+  })
+  assert.doesNotMatch(JSON.stringify(event), /abc/)
+  assert.equal(event.exception.values[0].stacktrace.frames[0].abs_path, 'https://site/u/x?tab=1')
+  assert.equal(event.exception.values[0].stacktrace.frames[1].filename, 'app:///_next/static/chunks/main.js')
+})

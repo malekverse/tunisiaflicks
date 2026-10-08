@@ -64,6 +64,12 @@ export async function updateProfile(
   if (!current) return { error: 'failed' }
 
   const newEmail = update.email?.trim()
+  // The login email is never blanked (that would lock the account out, with no proof asked), and is
+  // stored trimmed.
+  if (update.email !== undefined) {
+    if (newEmail) update.email = newEmail
+    else delete update.email
+  }
   const emailChanged = !!newEmail && newEmail.toLowerCase() !== String(current.email ?? '').toLowerCase()
   if (emailChanged) {
     const hasPassword = typeof current.password === 'string' && current.password.length > 0
@@ -84,6 +90,7 @@ export async function updateProfile(
     )
     if (taken) return { error: 'emailTaken' }
   }
+  if (Object.keys(update).length === 0) return { ok: true, emailChanged: false }
 
   const result = await usersCollection.updateOne(
     { _id: userId },

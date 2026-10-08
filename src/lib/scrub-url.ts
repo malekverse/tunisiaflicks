@@ -71,19 +71,28 @@ function scrubQueryValue(value: unknown): unknown {
   return value
 }
 
-/** Sentry `beforeBreadcrumb`: navigation from/to and fetch/xhr URLs lose their secrets. */
+/**
+ * Sentry `beforeBreadcrumb`: navigation from/to and fetch/xhr URLs lose their secrets, and so does
+ * the query the server SDK keeps beside a sanitized URL (data['http.query'] / data['url.query']).
+ */
 export function scrubBreadcrumb<B extends Loose>(breadcrumb: B): B {
   const data = breadcrumb.data
   if (data && typeof data === 'object') {
     for (const field of ['url', 'from', 'to']) {
       if (typeof data[field] === 'string') data[field] = scrubUrl(data[field])
     }
+    for (const field of Object.keys(data)) {
+      if (field.endsWith('.query') && typeof data[field] === 'string') data[field] = scrubQuery(data[field])
+    }
   }
   if (typeof breadcrumb.message === 'string') (breadcrumb as Loose).message = scrubText(breadcrumb.message)
   return breadcrumb
 }
 
-/** Sentry `beforeSend`: the request URL, query string, Referer, messages and breadcrumbs. */
+/**
+ * Sentry `beforeSend`: the request URL, query string, Referer, messages, stack frame file names (an
+ * inline script's frame is the page address itself) and breadcrumbs.
+ */
 export function scrubEvent<E extends Loose>(event: E): E {
   const request = event.request
   if (request && typeof request === 'object') {
@@ -99,6 +108,10 @@ export function scrubEvent<E extends Loose>(event: E): E {
   if (typeof event.message === 'string') (event as Loose).message = scrubText(event.message)
   for (const exception of event.exception?.values ?? []) {
     if (typeof exception?.value === 'string') exception.value = scrubText(exception.value)
+    for (const frame of exception?.stacktrace?.frames ?? []) {
+      if (typeof frame?.filename === 'string') frame.filename = scrubUrl(frame.filename)
+      if (typeof frame?.abs_path === 'string') frame.abs_path = scrubUrl(frame.abs_path)
+    }
   }
   const breadcrumbs = Array.isArray(event.breadcrumbs) ? event.breadcrumbs : event.breadcrumbs?.values
   if (Array.isArray(breadcrumbs)) breadcrumbs.forEach((breadcrumb: Loose) => scrubBreadcrumb(breadcrumb))
