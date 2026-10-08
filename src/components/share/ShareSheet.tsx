@@ -191,6 +191,7 @@ export default function ShareSheet({ request, open, onClose }: { request: ShareR
   const pathname = usePathname()
   const [showQr, setShowQr] = useState(false)
   const opened = useRef(pathname)
+  const content = useRef<HTMLDivElement>(null)
 
   // Leaving the page (a row's link, a sign-in) puts the sheet away.
   useEffect(() => {
@@ -250,7 +251,13 @@ export default function ShareSheet({ request, open, onClose }: { request: ShareR
   if (wide) {
     return (
       <Dialog open={open} onOpenChange={(next) => { if (!next) onClose() }}>
-        <DialogContent className="max-h-[calc(100dvh-48px)] max-w-[520px] overflow-y-auto overscroll-contain p-6">
+        <DialogContent
+          ref={content}
+          // Focus the sheet itself: the people row is still loading when it opens, so the first
+          // control would be the outside Share button, which then looks chosen. Tab goes on from here.
+          onOpenAutoFocus={(event) => { event.preventDefault(); content.current?.focus() }}
+          className="max-h-[calc(100dvh-48px)] max-w-[520px] overflow-y-auto overscroll-contain p-6 outline-none"
+        >
           <DialogTitle className="sr-only">{heading}</DialogTitle>
           <DialogDescription className="sr-only">{title}</DialogDescription>
           {body}
