@@ -28,7 +28,8 @@ function when(iso: string, dateLocale: string | undefined) {
   const at = new Date(iso)
   return {
     date: at.toLocaleDateString(dateLocale, { weekday: 'long', day: 'numeric', month: 'long' }),
-    time: at.toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' }),
+    // 'numeric' hours: '17:00' in English and French, '5:00 م' (not '05:00 م') in Arabic.
+    time: at.toLocaleTimeString(dateLocale, { hour: 'numeric', minute: '2-digit' }),
   }
 }
 
@@ -76,7 +77,7 @@ export default function DigestSettings(): JSX.Element | null {
           <SettingsGroup id="email" className={ANCHOR}>
             <NoteRow icon={<Info />}>
               <p>{t('digest.loadFailed')}</p>
-              <Button variant="secondary" size="sm" className="mt-3" onClick={() => void reload()}>
+              <Button variant="secondary" className="mt-3" onClick={() => void reload()}>
                 <RotateCw aria-hidden className="h-4 w-4" />{t('digest.retry')}
               </Button>
             </NoteRow>
@@ -105,6 +106,9 @@ export default function DigestSettings(): JSX.Element | null {
   const paused = state.enabled && state.pausedReason === 'bounced'
   const canChange = state.available && !state.locked
   const on = state.enabled && !paused
+  // Turning it on needs the digest available and a confirmed address; turning it off never does
+  // (only a TV or limited session can't change it at all).
+  const switchDisabled = state.locked || !!saving.enabled || (!on && (!state.available || unverified))
 
   const setEnabled = async (enabled: boolean) => {
     const result = await save({ enabled })
@@ -135,7 +139,7 @@ export default function DigestSettings(): JSX.Element | null {
         <SwitchRow
           id="digest-weekly"
           checked={on}
-          disabled={!canChange || !!saving.enabled || (unverified && !on)}
+          disabled={switchDisabled}
           onCheckedChange={(value) => void setEnabled(value)}
           label={t('digest.weekly.label')}
           hint={t('digest.weekly.hint')}

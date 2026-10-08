@@ -14,6 +14,13 @@ import SegmentedRadio from './SegmentedRadio'
 type Preview = { html: string; subject: string; preheader: string; thin: boolean }
 type SendState = { kind: 'idle' | 'sending' | 'sent' | 'error'; message?: string }
 
+/**
+ * The e-mail's links aim at a new window, which the sandbox (no allow-popups) refuses: a tap on a
+ * poster leaves the preview where it is, instead of loading the site, script-less and signed out,
+ * inside the frame.
+ */
+const inertLinks = (html: string) => html.replace(/<head(\s[^>]*)?>/i, (head) => `${head}<base target="_blank">`)
+
 const decode = (value: string | null) => {
   try {
     return value ? decodeURIComponent(value) : ''
@@ -65,7 +72,7 @@ export default function DigestPreviewSheet({ open, onOpenChange, locale, email, 
       const response = await fetch(`/api/digest/preview?locale=${encodeURIComponent(locale)}`, { cache: 'no-store' })
       if (!response.ok) throw new Error(String(response.status))
       setPreview({
-        html: await response.text(),
+        html: inertLinks(await response.text()),
         subject: decode(response.headers.get('x-digest-subject')),
         preheader: decode(response.headers.get('x-digest-preheader')),
         thin: response.headers.get('x-digest-thin') === '1',
@@ -162,7 +169,7 @@ export default function DigestPreviewSheet({ open, onOpenChange, locale, email, 
             <div className="absolute inset-0 grid place-items-center p-6 text-center">
               <div>
                 <p className="text-[15px] text-white/70">{t('digest.preview.failed')}</p>
-                <Button variant="secondary" size="sm" className="mt-4" onClick={() => void load()}>
+                <Button variant="secondary" className="mt-4" onClick={() => void load()}>
                   <RotateCw aria-hidden className="h-4 w-4" />{t('digest.retry')}
                 </Button>
               </div>
