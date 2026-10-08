@@ -164,13 +164,16 @@ export default function LanguageSwitch({ className, stretch = false, compact = f
                   lang={htmlLang(value)}
                   onFocus={() => setFocusIndex(index)}
                   onClick={() => (active && compact ? setOpen((current) => !current) : choose(value))}
+                  // The focus ring is drawn inside the option (an inset outline, and an inset ring on
+                  // the white pill, which covers the outline): the column around each option clips
+                  // anything outside it (that's how it folds), so a ring would show only at the corners.
                   className={cn(
-                    'relative whitespace-nowrap rounded-full font-medium outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-red-500',
+                    'group/lang relative whitespace-nowrap rounded-full font-medium outline-none transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-red-500',
                     stretch ? 'h-11 w-full px-3 text-[14px]' : 'h-8 px-3.5 text-[13px]',
                     active ? 'text-black' : 'text-white/70 hover:text-white',
                   )}
                 >
-                  {active && <m.span layoutId={`lang-pill-${id}`} transition={spring.snappy} className="absolute inset-0 rounded-full bg-white" />}
+                  {active && <m.span layoutId={`lang-pill-${id}`} transition={spring.snappy} className="absolute inset-0 rounded-full bg-white ring-red-500 ring-inset group-focus-visible/lang:ring-2" />}
                   {stretch ? (
                     <>
                       <span className="relative min-[420px]:hidden">{meta.short}</span>
