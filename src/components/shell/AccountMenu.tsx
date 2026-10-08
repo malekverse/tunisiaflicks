@@ -1,7 +1,7 @@
 "use client"
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Bookmark, Heart, LogOut, Settings, Users } from 'lucide-react'
+import { Bookmark, Heart, LogOut, Settings, TvMinimal, UserRound, Users } from 'lucide-react'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/src/components/ui/dropdown-menu'
@@ -9,15 +9,17 @@ import ProfileAvatar, { KidsBadge } from '@/src/components/profiles/ProfileAvata
 import KidsUnlockDialog from '@/src/components/profiles/KidsUnlockDialog'
 import { Button } from '@/src/components/ui/button'
 import { useT } from '@/src/components/I18nProvider'
+import { useLikelyTv } from '@/src/hooks/use-tv-mode'
 import AccountAvatar from './AccountAvatar'
 import { useShellAccount } from './use-shell-account'
 
-/** Desktop: the avatar in the top bar, with profile switching and the account shortcuts. */
+/** Desktop: the avatar in the top bar, with your page, profile switching and the account shortcuts. */
 export default function AccountMenu() {
   const t = useT()
   const router = useRouter()
   const pathname = usePathname()
   const account = useShellAccount()
+  const likelyTv = useLikelyTv()
 
   if (account.status === 'loading') return <span aria-hidden className="h-9 w-9 rounded-full bg-white/[0.06]" />
   if (!account.signedIn) {
@@ -48,6 +50,10 @@ export default function AccountMenu() {
               {active?.kids && <KidsBadge label={t('profiles.kidsBadge')} className="mt-0.5 inline-block" />}
             </span>
           </DropdownMenuLabel>
+          {/* Kids profiles have no page (nothing social reaches them). */}
+          {!active?.kids && (
+            <DropdownMenuItem onSelect={() => router.push('/me')} className="gap-3"><UserRound className="h-4 w-4 text-white/60" />{t('social.menu.yourPage')}</DropdownMenuItem>
+          )}
           {account.others.length > 0 && (
             <>
               <DropdownMenuSeparator />
@@ -67,6 +73,10 @@ export default function AccountMenu() {
           )}
           <DropdownMenuItem onSelect={() => router.push('/favorites')} className="gap-3"><Heart className="h-4 w-4 text-white/60" />{t('nav.favorites')}</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => router.push('/saved')} className="gap-3"><Bookmark className="h-4 w-4 text-white/60" />{t('nav.bookmarked')}</DropdownMenuItem>
+          {likelyTv && (
+            // A full page load: the TV shell is chosen on the server (cookie set by ?tv=1).
+            <DropdownMenuItem onSelect={() => { window.location.href = '/?tv=1' }} className="gap-3"><TvMinimal className="h-4 w-4 text-white/60" />{t('social.menu.tvMode')}</DropdownMenuItem>
+          )}
           <DropdownMenuItem onSelect={() => router.push('/profile')} className="gap-3"><Settings className="h-4 w-4 text-white/60" />{t('nav.settings')}</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={account.logOut} className="gap-3"><LogOut className="h-4 w-4 text-white/60" />{t('nav.logout')}</DropdownMenuItem>

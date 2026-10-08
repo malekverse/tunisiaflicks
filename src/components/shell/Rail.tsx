@@ -7,9 +7,13 @@ import { m } from 'framer-motion'
 import { Settings } from 'lucide-react'
 import { cn } from '@/src/lib/utils'
 import { spring } from '@/src/lib/motion'
+import { useSession } from 'next-auth/react'
 import { useI18n } from '@/src/components/I18nProvider'
-import { BROWSE, EXTRAS, LIBRARY, isActive, type NavItem } from './nav'
+import { useProfiles } from '@/src/hooks/use-profiles'
+import { BROWSE, WORLD, YOURS, activeHref, seasonalItem, visibleItems, type NavItem } from './nav'
 import type { SeasonalNav } from '@/src/lib/seasons'
+
+const SETTINGS: NavItem = { href: '/profile', label: 'nav.settings', icon: Settings }
 
 export type RailProps = {
     /** A Kids profile is in use (from the server, so grown-up items never flash). */
@@ -27,12 +31,23 @@ const CLOSE_DELAY = 180
  * The panel is always 256px wide and clipped down to the icon column while closed: unfolding is a
  * clip-path transition, which also keeps the hidden part from catching the mouse.
  */
-export default function Rail(props: RailProps = {}) {
-    // kids and seasonal are wired from the root layout; the social track puts them to use.
-    void props
+export default function Rail({ kids: kidsProp, seasonal }: RailProps = {}) {
     const pathname = usePathname()
     const { t, dir } = useI18n()
+    const { status } = useSession()
+    const { active: activeProfile } = useProfiles()
+    // The layout knows from the server; without it, the profile in use decides.
+    const kids = kidsProp ?? activeProfile?.kids ?? false
     const [open, setOpen] = useState(false)
+
+    const browse = visibleItems(BROWSE, kids)
+    const world = [
+        ...visibleItems(WORLD, kids),
+        // The calendar's slot ("Your year" only for people with a year to show).
+        ...(seasonal && (!seasonal.signedInOnly || status === 'authenticated') ? [seasonalItem(seasonal)] : []),
+    ]
+    const yours = visibleItems(YOURS, kids)
+    const lit = activeHref(pathname, [...browse, ...world, ...yours, SETTINGS])
     const timer = useRef<ReturnType<typeof setTimeout>>()
 
     const schedule = (next: boolean) => {
@@ -46,7 +61,7 @@ export default function Rail(props: RailProps = {}) {
     const collapsedClip = dir === 'rtl' ? 'inset(0 0 0 calc(100% - var(--rail)))' : 'inset(0 calc(100% - var(--rail)) 0 0)'
 
     const item = (entry: NavItem, index: number) => {
-        const active = !entry.plain && isActive(pathname, entry.href)
+        const active = !entry.plain && entry.href === lit
         const Icon = entry.icon
         const content = (
             <>
@@ -122,15 +137,15 @@ export default function Rail(props: RailProps = {}) {
                 </Link>
 
                 <nav className="no-scrollbar flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-0">
-                    {group(BROWSE)}
+                    {group(browse)}
                     <div aria-hidden className="mx-5 my-3 h-px bg-white/[0.08]" />
-                    {group(LIBRARY)}
+                    {group(world)}
                     <div aria-hidden className="mx-5 my-3 h-px bg-white/[0.08]" />
-                    {group(EXTRAS)}
+                    {group(yours)}
                 </nav>
 
                 <div className="pt-3">
-                    {item({ href: '/profile', label: 'nav.settings', icon: Settings }, index++)}
+                    {item(SETTINGS, index++)}
                 </div>
             </div>
         </aside>

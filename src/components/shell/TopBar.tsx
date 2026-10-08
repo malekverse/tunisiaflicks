@@ -6,7 +6,7 @@ import { cn } from '@/src/lib/utils'
 import { useScrollChrome } from '@/src/hooks/use-scroll-chrome'
 import { useSearchPalette } from '@/src/store/search-palette'
 import { useT } from '@/src/components/I18nProvider'
-import NotificationBell from '@/src/components/NotificationBell'
+import InboxBell from '@/src/components/inbox/InboxBell'
 import LanguageSwitch from './LanguageSwitch'
 import AccountMenu from './AccountMenu'
 
@@ -22,7 +22,7 @@ export type TopBarProps = {
  * the page scrolls. On phones it tucks away while scrolling down and returns on the way back up.
  */
 export default function TopBar(props: TopBarProps = {}) {
-  // kids and ask are wired from the root layout; the social and ai-search tracks put them to use.
+  // ask is wired from the root layout; ai-search switches the pill label with it (integration).
   void props
   const t = useT()
   const { scrolled, retracted } = useScrollChrome()
@@ -58,7 +58,7 @@ export default function TopBar(props: TopBarProps = {}) {
         <div className="flex-1" />
 
         <LanguageSwitch compact className="hidden lg:flex" />
-        <NotificationBell />
+        <InboxBell />
         <div className="hidden lg:block">
           <AccountMenu />
         </div>

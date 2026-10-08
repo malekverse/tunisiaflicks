@@ -7,7 +7,7 @@ import { cn } from '@/src/lib/utils'
 import { spring } from '@/src/lib/motion'
 import { useScrollChrome } from '@/src/hooks/use-scroll-chrome'
 import { useT } from '@/src/components/I18nProvider'
-import { TABS, isActive } from './nav'
+import { TABS, activeHref } from './nav'
 import AccountAvatar from './AccountAvatar'
 import MenuSheet from './MenuSheet'
 import { useShellAccount } from './use-shell-account'
@@ -25,9 +25,7 @@ export type TabBarProps = {
  * viewer scrolls down (the labels fade) and comes back to full size on the way up. The last tab,
  * "You", opens the menu sheet with everything else.
  */
-export default function TabBar(props: TabBarProps = {}) {
-    // kids and seasonal are wired from the root layout; the social track puts them to use.
-    void props
+export default function TabBar({ kids, seasonal }: TabBarProps = {}) {
     const t = useT()
     const pathname = usePathname()
     const { retracted } = useScrollChrome(140)
@@ -38,6 +36,10 @@ export default function TabBar(props: TabBarProps = {}) {
 
     // "Who's watching?" is a gate, not a place: no navigation there.
     if (pathname.startsWith('/profiles')) return null
+
+    const lit = activeHref(pathname, TABS)
+    // Everywhere the four tabs don't cover (a hub, the library, settings...) belongs to "You".
+    const youLit = !lit && !/^\/(profiles|login|signup|auth)(\/|$)/.test(pathname)
 
     const tab = 'relative flex h-[52px] flex-col items-center justify-center gap-[3px] rounded-[20px] outline-none focus-visible:ring-2 focus-visible:ring-red-500 pressable'
     const label = cn('relative text-[10.5px] font-medium leading-none transition-opacity duration-200', retracted && 'opacity-0')
@@ -55,7 +57,7 @@ export default function TabBar(props: TabBarProps = {}) {
                     )}
                 >
                     {TABS.map((item) => {
-                        const active = isActive(pathname, item.href)
+                        const active = item.href === lit
                         const Icon = item.icon
                         return (
                             <Link key={item.href} href={item.href} aria-current={active ? 'page' : undefined} className={cn(tab, active ? 'text-white' : 'text-white/55')}>
@@ -70,8 +72,10 @@ export default function TabBar(props: TabBarProps = {}) {
                         onClick={() => setMenuOpen(true)}
                         aria-haspopup="dialog"
                         aria-expanded={menuOpen}
-                        className={cn(tab, menuOpen ? 'text-white' : 'text-white/55')}
+                        aria-current={youLit ? 'page' : undefined}
+                        className={cn(tab, menuOpen || youLit ? 'text-white' : 'text-white/55')}
                     >
+                        {youLit && <m.span layoutId="tab-pill" transition={spring.ui} aria-hidden className="absolute inset-0 rounded-[20px] bg-white/[0.12]" />}
                         <AccountAvatar
                             active={account.active}
                             image={account.avatarSrc}
@@ -83,7 +87,7 @@ export default function TabBar(props: TabBarProps = {}) {
                     </button>
                 </div>
             </nav>
-            <MenuSheet open={menuOpen} onOpenChange={setMenuOpen} account={account} />
+            <MenuSheet open={menuOpen} onOpenChange={setMenuOpen} account={account} kids={kids} seasonal={seasonal} />
         </>
     )
 }

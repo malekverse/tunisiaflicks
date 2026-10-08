@@ -1,33 +1,54 @@
 "use client"
 import Link from 'next/link'
-import { ChevronRight, LogOut, MoonStar, Settings } from 'lucide-react'
+import { ChevronRight, LogOut, Settings, TvMinimal } from 'lucide-react'
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/src/components/ui/drawer'
 import { Button } from '@/src/components/ui/button'
 import ProfileAvatar, { KidsBadge } from '@/src/components/profiles/ProfileAvatar'
 import KidsUnlockDialog from '@/src/components/profiles/KidsUnlockDialog'
+import FriendsTile from '@/src/components/social/FriendsTile'
+import NightTile from '@/src/components/movie-night/NightTile'
 import { useT } from '@/src/components/I18nProvider'
+import { useLikelyTv } from '@/src/hooks/use-tv-mode'
 import { cn } from '@/src/lib/utils'
-import { BROWSE, EXTRAS, LIBRARY, TABS, type NavItem } from './nav'
+import type { SeasonalNav } from '@/src/lib/seasons'
+import { BROWSE, LIBRARY, TABS, WORLD, YOURS, seasonalItem, visibleItems, type NavItem } from './nav'
 import AccountAvatar from './AccountAvatar'
 import LanguageSwitch from './LanguageSwitch'
 import type { useShellAccount } from './use-shell-account'
 
-// Everything that isn't already a tab, plus the seasonal hub.
-const PLACES: NavItem[] = [
-    ...BROWSE.filter((item) => !TABS.some((tab) => tab.href === item.href)),
-    ...EXTRAS,
-    { href: '/ramadan', label: 'nav.ramadan', icon: MoonStar },
-]
+/** YOURS entries that have their own tile in the Together pair (not repeated among the places). */
+const TILE_HREFS = ['/friends', '/movie-night']
 
-/** Phones: the "You" sheet. Account and profiles on top, then every other place in the app. */
-export default function MenuSheet({ open, onOpenChange, account }: {
+/**
+ * Phones: the "You" sheet. Account and profiles on top, the Together tiles (friends, movie night),
+ * then every place that isn't a tab, the library, the language and signing out.
+ */
+export default function MenuSheet({ open, onOpenChange, account, kids: kidsProp, seasonal }: {
     open: boolean
     onOpenChange: (open: boolean) => void
     account: ReturnType<typeof useShellAccount>
+    kids?: boolean
+    seasonal?: SeasonalNav | null
 }) {
     const t = useT()
+    const likelyTv = useLikelyTv()
     const close = () => onOpenChange(false)
     const { active } = account
+    const kids = kidsProp ?? active?.kids ?? false
+
+    const yoursHrefs = YOURS.map((item) => item.href)
+    const showFriends = !kids && yoursHrefs.includes('/friends')
+    const showNight = !kids && yoursHrefs.includes('/movie-night')
+    const browseRest = visibleItems(BROWSE.filter((item) => !TABS.some((tab) => tab.href === item.href)), kids)
+    // Everything that isn't a tab: TV Shows, the world's hubs, Coming Soon, Top Rated, Surprise,
+    // whatever of YOURS has no tile and isn't the library, then the season's place.
+    const places: NavItem[] = [
+        ...browseRest.slice(0, 1),
+        ...visibleItems(WORLD, kids),
+        ...browseRest.slice(1),
+        ...visibleItems(YOURS, kids).filter((item) => !TILE_HREFS.includes(item.href) && item.href !== '/saved'),
+        ...(seasonal && (!seasonal.signedInOnly || account.signedIn) ? [seasonalItem(seasonal)] : []),
+    ]
 
     const place = (item: NavItem) => {
         const Icon = item.icon
@@ -54,17 +75,33 @@ export default function MenuSheet({ open, onOpenChange, account }: {
                     <div className="no-scrollbar overflow-y-auto overscroll-contain px-5 pb-6 pt-4">
                         {account.signedIn ? (
                             <div className="flex items-center gap-3">
-                                <AccountAvatar active={active} image={account.avatarSrc} isOwner={account.isOwner} name={account.name} className="h-12 w-12 text-lg" />
-                                <div className="min-w-0 flex-1">
-                                    <p className="truncate text-[17px] font-semibold">{active?.name ?? account.name ?? t('nav.myAccount')}</p>
-                                    {active?.kids && <KidsBadge label={t('profiles.kidsBadge')} className="inline-block" />}
-                                </div>
-                                <Link href="/profile" onClick={close} aria-label={t('nav.settings')} className="pressable grid h-11 w-11 place-items-center rounded-full bg-white/[0.07]">
+                                {kids ? (
+                                    // Kids profiles have no page: the row is just who's watching.
+                                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                                        <AccountAvatar active={active} image={account.avatarSrc} isOwner={account.isOwner} name={account.name} className="h-12 w-12 text-lg" />
+                                        <span className="min-w-0 flex-1">
+                                            <span className="block truncate text-[17px] font-semibold">{active?.name ?? account.name ?? t('nav.myAccount')}</span>
+                                            <KidsBadge label={t('profiles.kidsBadge')} className="mt-0.5 inline-block" />
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <Link href="/me" onClick={close} className="pressable -m-1.5 flex min-w-0 flex-1 items-center gap-3 rounded-2xl p-1.5 outline-none focus-visible:ring-2 focus-visible:ring-red-500">
+                                        <AccountAvatar active={active} image={account.avatarSrc} isOwner={account.isOwner} name={account.name} className="h-12 w-12 text-lg" />
+                                        <span className="min-w-0 flex-1">
+                                            <span className="block truncate text-[17px] font-semibold">{active?.name ?? account.name ?? t('nav.myAccount')}</span>
+                                            <span className="mt-0.5 flex items-center gap-1 text-[13px] text-white/60">
+                                                {t('social.menu.yourPage')}
+                                                <ChevronRight aria-hidden className="h-3.5 w-3.5 rtl:rotate-180" />
+                                            </span>
+                                        </span>
+                                    </Link>
+                                )}
+                                <Link href="/profile" onClick={close} aria-label={t('nav.settings')} className="pressable grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/[0.07]">
                                     <Settings aria-hidden className="h-5 w-5" />
                                 </Link>
                             </div>
                         ) : (
-                            <div className="rounded-3xl bg-gradient-to-br from-red-600/25 via-white/[0.05] to-transparent p-5 ring-1 ring-white/10">
+                            <div className="rounded-3xl bg-gradient-to-br from-red-600/25 via-white/[0.05] to-transparent p-5 ring-1 ring-white/10 rtl:bg-gradient-to-bl">
                                 <p className="font-display text-2xl font-bold">{t('nav.signInTitle')}</p>
                                 <p className="mt-1 text-sm text-white/70">{t('nav.signInText')}</p>
                                 <div className="mt-4 flex gap-2">
@@ -88,8 +125,18 @@ export default function MenuSheet({ open, onOpenChange, account }: {
                             </div>
                         )}
 
+                        {(showFriends || showNight) && (
+                            <div className="mt-6">
+                                <p className="mb-2 text-xs font-medium text-white/50">{t('social.together.title')}</p>
+                                <div className="grid grid-cols-2 gap-3 empty:hidden">
+                                    {showFriends && <FriendsTile signedIn={account.signedIn} onNavigate={close} />}
+                                    {showNight && <NightTile onNavigate={close} />}
+                                </div>
+                            </div>
+                        )}
+
                         <div className="mt-6 grid grid-cols-4 gap-x-2 gap-y-4">
-                            {PLACES.map(place)}
+                            {places.map(place)}
                         </div>
 
                         <p className="mb-2 mt-7 text-xs font-medium text-white/50">{t('nav.library')}</p>
@@ -113,6 +160,14 @@ export default function MenuSheet({ open, onOpenChange, account }: {
 
                         <p className="mb-2 mt-7 text-xs font-medium text-white/50">{t('lang.label')}</p>
                         <LanguageSwitch stretch />
+
+                        {likelyTv && (
+                            <a href="/?tv=1" className="pressable mt-6 flex h-[52px] items-center gap-3 rounded-2xl bg-white/[0.05] px-4 text-[15px] outline-none focus-visible:ring-2 focus-visible:ring-red-500">
+                                <TvMinimal aria-hidden className="h-5 w-5 text-white/70" strokeWidth={1.8} />
+                                <span className="flex-1">{t('social.menu.tvMode')}</span>
+                                <ChevronRight aria-hidden className="h-4 w-4 text-white/35 rtl:rotate-180" />
+                            </a>
+                        )}
 
                         {account.signedIn && (
                             <button type="button" onClick={account.logOut} className="pressable mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-white/[0.05] text-[15px] text-white/80">
