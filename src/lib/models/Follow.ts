@@ -1,4 +1,6 @@
-// Release / new-episode alerts: what a user follows, and the notifications it produces.
+// Release / new-episode alerts: what a user follows, and the notifications it produces (the same
+// collection also holds the social inbox, see lib/notify.ts).
+import type { AvatarPerson, InboxAction, NotificationKind, ShareMedia } from '@/src/lib/social/types'
 
 export type FollowMediaType = 'movie' | 'tv'
 
@@ -60,18 +62,39 @@ export interface FollowItem {
   created_at: string
 }
 
-/** Shape returned by GET /api/notifications. */
+/**
+ * One row of the inbox, as GET /api/notifications returns it: release alerts (the legacy fields)
+ * and everything social (friends, sent titles, ratings, nights, lists, badges).
+ */
 export interface NotificationItem {
   id: string
-  media_type: FollowMediaType
-  tmdbId: string
-  title: string
-  poster_path?: string | null
-  kind: ReleaseNotification['kind']
-  episode?: ReleaseNotification['episode']
+  kind: NotificationKind
   created_at: string
   read: boolean
+  /** Where the row leads (same-site path). */
+  href: string
+  /** Who did it (the latest person, for a merged row), as their page shows them. Null when they're gone. */
+  actor?: AvatarPerson | null
+  /** How many more people are folded into this row ("Sami and 2 others"). */
+  others?: number
+  media?: ShareMedia | null
+  /** A picture instead of a poster or an avatar (a badge). */
+  image?: string | null
+  /** A note written by the sender (title_sent only). */
+  note?: string | null
+  /** The sentence, as a dictionary key; the client adds the actor's name and the title. */
+  text?: { key: string, vars?: Record<string, string | number> } | null
+  episode?: ReleaseNotification['episode']
+  action?: InboxAction | null
+  // Release alerts (movie_released, new_episode).
+  media_type?: FollowMediaType
+  tmdbId?: string
+  title?: string
+  poster_path?: string | null
 }
+
+/** The release kinds (their rows keep the original wording). */
+export const RELEASE_KINDS: readonly NotificationKind[] = ['movie_released', 'new_episode']
 
 /** "S02E05" (safe to use on the client: no server imports here). */
 export const episodeCode = ({ season, episode }: EpisodeMarker) =>
