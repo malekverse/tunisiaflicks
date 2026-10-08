@@ -46,6 +46,11 @@ export default function VisibilitySelect({ value, onChange, label, context, opti
     buttons.current[next]?.focus()
   }
 
+  // When the row is too narrow, only the longest label wraps (to two lines); the short ones keep
+  // their one line, whatever the language.
+  const labels = options.map((option) => t(name(option)))
+  const longest = labels.reduce((best, label, index) => (label.length > labels[best].length ? index : best), 0)
+
   const hintId = `${id}-hint`
   const showHint = context === 'profile' && value === 'link'
   return (
@@ -73,14 +78,15 @@ export default function VisibilitySelect({ value, onChange, label, context, opti
               onClick={() => { if (!active) onChange(option) }}
               className={cn(
                 // Each segment grows from its own label's width, so the long one ('Anyone with the
-                // link') gets the room it needs; when even that is too narrow, labels wrap to two lines.
-                'relative flex min-h-11 min-w-0 flex-auto select-none items-center justify-center gap-1.5 rounded-full px-3 py-1 text-[13.5px] font-medium leading-tight outline-none transition-colors duration-200 [-webkit-tap-highlight-color:transparent] [touch-action:manipulation] focus-visible:ring-2 focus-visible:ring-red-500',
+                // link') gets the room it needs.
+                'relative flex min-h-11 select-none items-center justify-center gap-1.5 rounded-full px-3 py-1 text-[13.5px] font-medium leading-tight outline-none transition-colors duration-200 [-webkit-tap-highlight-color:transparent] [touch-action:manipulation] focus-visible:ring-2 focus-visible:ring-red-500',
+                index === longest ? 'min-w-0 flex-auto' : 'flex-[1_0_auto] whitespace-nowrap',
                 active ? 'text-black' : 'text-white/70 hover:text-white',
               )}
             >
               {active && <m.span layoutId={`visibility-pill-${id}`} transition={spring.snappy} aria-hidden className="absolute inset-0 rounded-full bg-white" />}
               <Icon aria-hidden className="relative h-4 w-4 shrink-0" strokeWidth={2} />
-              <span className="relative text-balance text-center">{t(name(option))}</span>
+              <span className="relative text-balance text-center">{labels[index]}</span>
             </button>
           )
         })}

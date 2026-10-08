@@ -43,12 +43,16 @@ function releaseLine(item: NotificationItem, t: Translate) {
   return t('alerts.newEpisodeCode', { episode: code })
 }
 
-/** "Sami", "Sami and one other", "Sami and 3 others". */
-function actorName(item: NotificationItem, t: Translate) {
+/**
+ * "Sami", "Sami and one other", "Sami and 3 others": as text (for the link's label) and as nodes
+ * where only the name is isolated, so the phrase around it follows the interface's direction.
+ */
+function actorName(item: NotificationItem, t: Translate): { text: string; node: React.ReactNode } {
   const name = item.actor?.name ?? (typeof item.text?.vars?.name === 'string' ? item.text.vars.name : t('social.inbox.someone'))
   const others = item.others ?? 0
-  if (others <= 0) return name
-  return others === 1 ? t('social.inbox.andOne', { name }) : t('social.inbox.andOthers', { name, count: others })
+  if (others <= 0) return { text: name, node: name }
+  const key = others === 1 ? 'social.inbox.andOne' : 'social.inbox.andOthers'
+  return { text: t(key, { name, count: others }), node: richT(t, key, { name, count: others }) }
 }
 
 /** What the row's answer buttons say and do. */
@@ -108,13 +112,13 @@ export function InboxItem({ item, onChange }: { item: NotificationItem; onChange
   const [busy, setBusy] = useState(false)
   const release = isRelease(item)
   const title = item.media?.title ?? item.title ?? ''
-  const name = actorName(item, t)
+  const actor = actorName(item, t)
   const textKey = item.text?.key as TKey | undefined
-  const vars = { ...(item.text?.vars ?? {}), name, title }
+  const vars = { ...(item.text?.vars ?? {}), name: actor.text, title }
 
   const line1 = release || !textKey
     ? <strong className="font-semibold text-white"><bdi>{title}</bdi></strong>
-    : richT(t, textKey, vars, { bold: ['name', 'title'] })
+    : richT(t, textKey, { ...vars, name: actor.node }, { bold: ['name', 'title'] })
   const sentence = release || !textKey
     ? [title, releaseLine(item, t), item.episode?.name].filter(Boolean).join('. ')
     : t(textKey, vars)
@@ -180,7 +184,8 @@ export function InboxItem({ item, onChange }: { item: NotificationItem; onChange
           )}
           {!release && item.note && <p dir="auto" className="mt-1 line-clamp-2 text-[13px] leading-snug text-white/60">{item.note}</p>}
           {stars !== null && <StarsReadOnly stars={stars} size={12} className="mt-1.5" />}
-          <p className="mt-1 text-[11px] text-white/50">{timeAgo(item.created_at, dateLocale)}</p>
+          {/* Relative to now: the server's render and the browser's may differ by a minute. */}
+          <p suppressHydrationWarning className="mt-1 text-[11px] text-white/50">{timeAgo(item.created_at, dateLocale)}</p>
         </div>
         {action && pending && (
           <div className="pointer-events-auto relative z-10 mt-2.5 flex flex-wrap gap-2">
