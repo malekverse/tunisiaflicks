@@ -5,11 +5,19 @@ import { compare, hash } from 'bcrypt'
 import { authOptions } from '@/src/lib/auth'
 import clientPromise from '@/src/lib/mongodb'
 import { rateLimit, tooManyRequests } from '@/src/lib/rate-limit'
+import { denyLimitedSession, isFreshLogin } from '@/src/lib/session-scope'
 
 export const dynamic = 'force-dynamic'
 
-/** Change the password (current one required), or set a first one on a Google-only account. */
+/**
+ * Change the password (current one required), or set a first one on a Google-only account. A first
+ * password needs a sign-in from the last 10 minutes (403 {code:'reauth'}): it opens a second way
+ * into the account, so whoever sets it must have just proven they own it. Never from a TV session.
+ */
 export async function POST(request: Request) {
+  const denied = await denyLimitedSession()
+  if (denied) return denied
+
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -33,6 +41,8 @@ export async function POST(request: Request) {
     if (!currentPassword || !(await compare(currentPassword, user.password))) {
       return NextResponse.json({ error: 'wrongPassword' }, { status: 400 })
     }
+  } else if (!isFreshLogin(session)) {
+    return NextResponse.json({ error: 'reauth', code: 'reauth' }, { status: 403 })
   }
 
   await users.updateOne(

@@ -5,12 +5,18 @@ import { ObjectId } from 'mongodb'
 import clientPromise from '@/src/lib/mongodb'
 import { requireGrownUpProfile } from '@/src/lib/profiles'
 import { PROFILE_COLORS, PROFILE_COOKIE, cleanProfileName, isProfileId } from '@/src/lib/models/Profile'
+import { denyLimitedSession } from '@/src/lib/session-scope'
 
 export const dynamic = 'force-dynamic'
 
 type Params = { params: { id: string } }
 
+// A TV signed in with a code uses its one profile and never manages them (403 {code:'tv_session'}).
+
 export async function PATCH(request: NextRequest, { params }: Params) {
+  const denied = await denyLimitedSession()
+  if (denied) return denied
+
   const result = await requireGrownUpProfile()
   if ('error' in result) return result.error
   const { userId, active } = result
@@ -52,6 +58,9 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 }
 
 export async function DELETE(_request: NextRequest, { params }: Params) {
+  const denied = await denyLimitedSession()
+  if (denied) return denied
+
   const result = await requireGrownUpProfile()
   if ('error' in result) return result.error
   const { userId, active } = result

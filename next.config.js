@@ -32,6 +32,21 @@ const nextConfig = {
     // Next 14: enables src/instrumentation.ts (server-side error monitoring setup).
     instrumentationHook: true,
   },
+  async headers() {
+    // Pages whose URL carries a secret (a signed unsubscribe link, a TV pairing code) send no
+    // Referer at all; everywhere else other sites only ever see our origin, never a path with
+    // ?invite= or ?k= in it. Later rules win, so the strict ones come last.
+    const noReferrer = [{ key: 'Referrer-Policy', value: 'no-referrer' }]
+    return [
+      { source: '/:path*', headers: [{ key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' }] },
+      { source: '/unsubscribe', headers: noReferrer },
+      { source: '/unsubscribe/:path*', headers: noReferrer },
+      { source: '/api/unsubscribe', headers: noReferrer },
+      { source: '/api/unsubscribe/:path*', headers: noReferrer },
+      { source: '/activate', headers: noReferrer },
+      { source: '/activate/:path*', headers: noReferrer },
+    ]
+  },
 }
 
 // Error monitoring (Sentry, free plan) is opt-in: without NEXT_PUBLIC_SENTRY_DSN the build is

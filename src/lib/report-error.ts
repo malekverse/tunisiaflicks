@@ -1,5 +1,7 @@
 // Browser error reporting (Sentry, free plan), loaded lazily: the SDK (~70 kB) is only downloaded
 // when an error actually happens, so normal page loads pay nothing. Off without NEXT_PUBLIC_SENTRY_DSN.
+import { scrubBreadcrumb, scrubEvent } from './scrub-url'
+
 type SentryModule = typeof import('@sentry/nextjs')
 
 const DSN = process.env.NEXT_PUBLIC_SENTRY_DSN
@@ -16,6 +18,10 @@ function load() {
       // Noise from browser extensions and third-party players, not from our code.
       ignoreErrors: ['ResizeObserver loop', 'Non-Error promise rejection captured', /^Script error\.?$/],
       denyUrls: [/^chrome-extension:\/\//, /^moz-extension:\/\//, /^safari-extension:\/\//],
+      // Invite tokens, signed links and share keys ride in URLs (?invite=, ?k=...): the page
+      // address, the Referer and the breadcrumbs lose them before anything is sent.
+      beforeSend: (event) => scrubEvent(event),
+      beforeBreadcrumb: (breadcrumb) => scrubBreadcrumb(breadcrumb),
     })
     return Sentry
   }))

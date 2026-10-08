@@ -46,7 +46,10 @@ export function useShellAccount() {
   }
 }
 
-/** Until a viewer profile is picked on this device, send the user to "Who's watching?". */
+/**
+ * Until a viewer profile is picked on this device, send the user to "Who's watching?", then back
+ * to the same address, query included (an ?invite= token must survive the detour).
+ */
 export function useProfileGate() {
   const pathname = usePathname()
   const router = useRouter()
@@ -54,7 +57,7 @@ export function useProfileGate() {
   const needsPick = profiles?.needsPick ?? false
   useEffect(() => {
     if (needsPick && !/^\/(profiles|login|signup|auth)(\/|$)/.test(pathname)) {
-      router.replace(`/profiles?next=${encodeURIComponent(pathname)}`)
+      router.replace(`/profiles?next=${encodeURIComponent(pathname + window.location.search)}`)
     }
   }, [needsPick, pathname, router])
 }
