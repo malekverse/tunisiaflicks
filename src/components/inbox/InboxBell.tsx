@@ -81,17 +81,24 @@ export default function InboxBell(): JSX.Element | null {
   // A link inside it was followed: put it away.
   useEffect(() => { setOpen(false) }, [pathname])
 
+  const markAllRead = useCallback(() => {
+    version.current++
+    setUnread(0)
+    markingRead.current = fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ all: true }) })
+      .catch(() => undefined)
+      .finally(() => { markingRead.current = null })
+  }, [])
+
+  // Rows that arrive while it is open (a slow first load, a refresh on focus) are seen too.
+  useEffect(() => {
+    if (open && unread > 0 && !markingRead.current) markAllRead()
+  }, [open, unread, markAllRead])
+
   const onOpenChange = (next: boolean) => {
     setOpen(next)
     if (!next) return
     // Mark read first, then reload: the reload waits for it, so the badge can't come back stale.
-    if (unread > 0) {
-      version.current++
-      setUnread(0)
-      markingRead.current = fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ all: true }) })
-        .catch(() => undefined)
-        .finally(() => { markingRead.current = null })
-    }
+    if (unread > 0) markAllRead()
     refresh()
   }
 
