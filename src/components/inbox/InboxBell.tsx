@@ -84,13 +84,15 @@ export default function InboxBell(): JSX.Element | null {
   const onOpenChange = (next: boolean) => {
     setOpen(next)
     if (!next) return
+    // Mark read first, then reload: the reload waits for it, so the badge can't come back stale.
+    if (unread > 0) {
+      version.current++
+      setUnread(0)
+      markingRead.current = fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ all: true }) })
+        .catch(() => undefined)
+        .finally(() => { markingRead.current = null })
+    }
     refresh()
-    if (unread === 0) return
-    version.current++
-    setUnread(0)
-    markingRead.current = fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ all: true }) })
-      .catch(() => undefined)
-      .finally(() => { markingRead.current = null })
   }
 
   const onChange = (changed: NotificationItem) => {
