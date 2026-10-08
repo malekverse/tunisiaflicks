@@ -408,10 +408,10 @@ export const dramaHubs = defineStrings({
     'dramas.why.favourite.korean': 'L\'un des K-dramas les plus aimés de tous les temps.',
     'dramas.why.popular': 'L\'une des séries les plus populaires du moment.',
 
-    'dramas.forYou.resume': 'Reprendre là où vous vous êtes arrêté',
+    'dramas.forYou.resume': 'Reprendre où vous en étiez',
     'dramas.forYou.because': 'Parce que vous avez regardé {title}',
     'dramas.forYou.inviteTitle': 'Vos séries, gardées pour vous',
-    'dramas.forYou.inviteText': 'Connectez-vous et cet espace reprend là où vous vous êtes arrêté, avec des séries choisies d\'après ce que vous regardez.',
+    'dramas.forYou.inviteText': 'Connectez-vous et cet espace reprend où vous en étiez, avec des séries choisies d\'après ce que vous regardez.',
 
     'dramas.error.title': 'Les séries ne se sont pas chargées',
     'dramas.error.text': 'TMDB, d\'où viennent les séries, ne répond pas pour le moment. Réessayez dans un instant.',
