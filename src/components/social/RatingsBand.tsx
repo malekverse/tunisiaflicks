@@ -112,7 +112,8 @@ export default function RatingsBand({ id, media }: { id?: string; media: ShareMe
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <RatingStars value={mine} onChange={change} label={t('social.ratings.rateLabel', { title: media.title })} />
               {mine !== null && (
-                <Button type="button" variant="ghost" size="sm" className="h-11 px-3 text-white/70" onClick={() => change(null)}>
+                // On phones it wraps under the stars: the negative margin lines its words up with the row.
+                <Button type="button" variant="ghost" size="sm" className="-ms-3 h-11 px-3 text-white/70 sm:ms-0" onClick={() => change(null)}>
                   {t('social.ratings.clear')}
                 </Button>
               )}
