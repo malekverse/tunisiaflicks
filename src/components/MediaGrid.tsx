@@ -9,8 +9,11 @@ type Kind = 'movie' | 'tv'
 export const GRID_CLASS =
   'grid grid-cols-[repeat(auto-fill,minmax(104px,1fr))] gap-x-3 gap-y-6 sm:grid-cols-[repeat(auto-fill,minmax(150px,1fr))] sm:gap-x-4 sm:gap-y-8 2xl:grid-cols-[repeat(auto-fill,minmax(184px,1fr))]'
 
-/** An empty state that says what's going on, in the interface's voice. */
-export function EmptyState({ title, children, icon }: { title?: React.ReactNode, children?: React.ReactNode, icon?: React.ReactNode }) {
+/**
+ * An empty state that says what's going on, in the interface's voice, and (with `action`) what to
+ * do next: a button or link, set apart below the text.
+ */
+export function EmptyState({ title, children, icon, action }: { title?: React.ReactNode, children?: React.ReactNode, icon?: React.ReactNode, action?: React.ReactNode }) {
   return (
     <div className="flex flex-col items-center px-6 py-16 text-center">
       <span className="grid h-14 w-14 place-items-center rounded-full bg-white/[0.06] text-white/50">
@@ -18,6 +21,7 @@ export function EmptyState({ title, children, icon }: { title?: React.ReactNode,
       </span>
       {title && <p className="mt-4 font-display text-xl font-bold text-white">{title}</p>}
       {children && <div className="mt-1.5 max-w-sm text-sm text-white/55">{children}</div>}
+      {action && <div className="mt-5 flex flex-wrap justify-center gap-2.5">{action}</div>}
     </div>
   )
 }
