@@ -7,9 +7,9 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import {
-  FILTER_SHELVES, HUBS, HUB_IDS, REASON_ORDER, airState, belongsToHub, chooseFeatured, chooseKeywordId, compareAir,
-  hubPath, isFilterShelf, isHangulOnly, isHubId, movieBaseParams, pickHubLogo, pickHubTrailer, pluralKey, reasonFor,
-  reasonTier, rotate, rotationSeed, rowMinimum, tvBaseParams,
+  FILTER_SHELVES, HUBS, HUB_IDS, LOGO_MIN_LIGHTNESS, REASON_ORDER, airState, belongsToHub, chooseFeatured, chooseKeywordId,
+  compareAir, hubLogoCandidates, hubPath, isFilterShelf, isHangulOnly, isHubId, logoLightness, movieBaseParams, pickHubLogo,
+  pickHubTrailer, pluralKey, reasonFor, reasonTier, rotate, rotationSeed, rowMinimum, tvBaseParams,
 } from '@/src/lib/dramas-config'
 import { isYouTubeId, youtubeEmbedUrl, youtubeLiveEmbedUrl, youtubeThumb, youtubeWatchUrl } from '@/src/lib/youtube'
 import { ARAB_COUNTRY_CODES, ARAB_TMDB_COUNTRIES, arabCountryHref, arabCountryName, arabCountryOf, isArabCountry } from '@/src/lib/arab-countries'
@@ -167,6 +167,10 @@ test('hubs: Hangul-only titles, logos and trailers', () => {
   assert.deepEqual(pickHubLogo(logos.slice(0, 2), 'turkish'), { path: '/tr.png', ratio: 2 })
   assert.equal(pickHubLogo(logos.slice(0, 1), 'korean'), null, 'never Korean script')
   assert.equal(pickHubLogo([], 'turkish'), null)
+  // Every candidate, best first, so a logo too dark for the stage can give way to the next one.
+  assert.deepEqual(hubLogoCandidates(logos, 'turkish').map((logo) => logo.path), ['/en.png', '/textless.png', '/tr.png'])
+  assert.deepEqual(hubLogoCandidates(logos, 'korean').map((logo) => logo.path), ['/en.png', '/textless.png'])
+  assert.deepEqual(hubLogoCandidates([{ iso_639_1: 'en' }, null], 'korean'), [], 'no file, no logo')
 
   const videos = [
     { site: 'YouTube', key: 'teaser-en', type: 'Teaser', iso_639_1: 'en' },
@@ -178,6 +182,23 @@ test('hubs: Hangul-only titles, logos and trailers', () => {
   assert.equal(pickHubTrailer(videos, 'korean'), 'trailer-en')
   assert.equal(pickHubTrailer(videos.slice(0, 2), 'korean'), 'trailer-ko', 'a trailer before a teaser')
   assert.equal(pickHubTrailer(videos.slice(2, 4), 'korean'), null)
+})
+
+test('hubs: a logo too dark for the stage is measured as such', () => {
+  // RGBA pixels: [r, g, b, a] repeated.
+  const pixels = (rgba, count = 16) => Uint8Array.from(Array.from({ length: count }, () => rgba).flat())
+  const white = logoLightness(pixels([255, 255, 255, 255]))
+  const black = logoLightness(pixels([0, 0, 0, 255]))
+  const red = logoLightness(pixels([255, 0, 0, 255]))
+  const darkRed = logoLightness(pixels([150, 0, 0, 255]))
+  assert.ok(Math.abs(white - 1) < 1e-9)
+  assert.equal(black, 0)
+  assert.ok(white >= LOGO_MIN_LIGHTNESS && red >= LOGO_MIN_LIGHTNESS, 'white and bright colours read on the dark stage')
+  assert.ok(black < LOGO_MIN_LIGHTNESS && darkRed < LOGO_MIN_LIGHTNESS, 'black and dark logos do not')
+  // Transparent pixels don't count, whatever their colour: a white logo on a transparent black canvas is white.
+  const logo = Uint8Array.from([...pixels([255, 255, 255, 255], 4), ...pixels([0, 0, 0, 0], 60)])
+  assert.ok(logoLightness(logo) > 0.99)
+  assert.equal(logoLightness(pixels([255, 255, 255, 0])), null, 'nothing visible')
 })
 
 test('hubs: where a series is in its week', () => {

@@ -8,9 +8,9 @@ import { tunisDate, addDays } from '@/src/lib/hijri'
 import { hash } from '@/src/lib/seed'
 import { createTranslator, dateLocale, type Locale, type TKey } from '@/src/lib/i18n'
 import {
-  GRID_SIZE, HISTORICAL_FALLBACK_GENRE, HUBS, ROW_SIZE,
-  airState, belongsToHub, chooseFeatured, chooseKeywordId, compareAir, isHangulOnly, movieBaseParams, pickHubLogo,
-  pickHubTrailer, reasonFor, rotate, rotationSeed, rowMinimum, tvBaseParams,
+  GRID_SIZE, HISTORICAL_FALLBACK_GENRE, HUBS, LOGO_MIN_LIGHTNESS, ROW_SIZE,
+  airState, belongsToHub, chooseFeatured, chooseKeywordId, compareAir, hubLogoCandidates, isHangulOnly, logoLightness,
+  movieBaseParams, pickHubTrailer, reasonFor, rotate, rotationSeed, rowMinimum, tvBaseParams,
   type AirState, type DataShelf, type FeaturedReason, type HubId,
 } from '@/src/lib/dramas-config'
 
@@ -281,6 +281,44 @@ async function choosePick(hub: HubId, date: string, candidates: { id: number, re
   }
 }
 
+/** Logos already measured by this server: file path to lightness (failures aren't kept). */
+const measured = new Map<string, Promise<number | null>>()
+
+/** How light a logo is (see logoLightness), from a small rendition; null when it can't be read. */
+function measureLogo(path: string): Promise<number | null> {
+  const known = measured.get(path)
+  if (known) return known
+  const pending = (async () => {
+    try {
+      const res = await fetch(`https://image.tmdb.org/t/p/w185${path}`, { next: { revalidate: 30 * DAY }, signal: AbortSignal.timeout(4000) })
+      if (!res.ok) return null
+      const { default: sharp } = await import('sharp')
+      const pixels = await sharp(Buffer.from(await res.arrayBuffer())).ensureAlpha().resize({ width: 128 }).raw().toBuffer()
+      return logoLightness(pixels)
+    } catch {
+      return null
+    }
+  })()
+  if (measured.size >= 500) measured.clear()
+  measured.set(path, pending)
+  pending.then((value) => { if (value === null) measured.delete(path) })
+  return pending
+}
+
+/**
+ * The featured series' logo: the first candidate (see hubLogoCandidates) light enough to read on
+ * the dark stage. One that can't be measured counts as readable (most logos are white). Null
+ * when they're all too dark: the title is then set in type.
+ */
+async function legibleLogo(logos: any[] | null | undefined, hub: HubId): Promise<{ path: string, ratio: number } | null> {
+  const candidates = hubLogoCandidates(logos, hub).slice(0, 4)
+  const lightness = await Promise.all(candidates.map((logo) => measureLogo(logo.path)))
+  return candidates.find((_, index) => {
+    const value = lightness[index]
+    return value === null || value >= LOGO_MIN_LIGHTNESS
+  }) ?? null
+}
+
 function formatDay(date: string, locale: Locale) {
   return new Date(`${date}T12:00:00Z`).toLocaleDateString(dateLocale(locale) ?? 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })
 }
@@ -331,13 +369,14 @@ export const getFeatured = cache(async (hub: HubId, locale: Locale): Promise<Fea
   const index = candidates.findIndex((candidate) => candidate.id === id)
   const reason = index >= 0 ? candidates[index].reason : reasonFor(english ?? data, { today })
   const name = isHangulOnly(data.name) && english?.name ? english.name : data.name || english?.name || ''
+  const logo = await legibleLogo(data.images?.logos, hub)
   return {
     id,
     title: name,
     overview: data.overview || english?.overview || '',
     backdrop: data.backdrop_path,
     poster: data.poster_path ?? null,
-    logo: pickHubLogo(data.images?.logos, hub),
+    logo,
     trailer: pickHubTrailer(data.videos?.results, hub),
     year: (data.first_air_date || '').slice(0, 4),
     rating: data.vote_average || 0,

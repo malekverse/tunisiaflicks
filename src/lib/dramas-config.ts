@@ -141,16 +141,47 @@ export function isHangulOnly(text: string | null | undefined): boolean {
 }
 
 /**
- * The title-treatment logo: English, then textless, then (Turkish hub) Turkish. Never one in
- * Korean script, which most viewers can't read.
+ * Every usable title-treatment logo, best first: English, then textless, then (Turkish hub)
+ * Turkish. Never one in Korean script, which most viewers can't read.
  */
+export function hubLogoCandidates(logos: any[] | null | undefined, hub: HubId): { path: string, ratio: number }[] {
+  const order: (string | null)[] = hub === 'turkish' ? ['en', null, 'tr'] : ['en', null]
+  const usable = (logos ?? []).filter((item) => item?.file_path)
+  return order
+    .flatMap((language) => usable.filter((item) => (item.iso_639_1 ?? null) === language))
+    .map((logo) => ({ path: logo.file_path, ratio: logo.aspect_ratio || 3 }))
+}
+
+/** The preferred logo (see hubLogoCandidates), whatever its colour. */
 export function pickHubLogo(logos: any[] | null | undefined, hub: HubId): { path: string, ratio: number } | null {
-  const order = hub === 'turkish' ? ['en', null, 'tr'] : ['en', null]
-  for (const language of order) {
-    const logo = (logos ?? []).find((item) => (item.iso_639_1 ?? null) === language && item.file_path)
-    if (logo) return { path: logo.file_path, ratio: logo.aspect_ratio || 3 }
+  return hubLogoCandidates(logos, hub)[0] ?? null
+}
+
+/**
+ * Below this lightness a logo disappears into the dark stage (TMDB has black logos, made for
+ * light posters): the next candidate is used instead, or the title is set in type.
+ */
+export const LOGO_MIN_LIGHTNESS = 0.2
+
+const LINEAR = Array.from({ length: 256 }, (_, value) => {
+  const channel = value / 255
+  return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
+})
+
+/**
+ * How light a logo is, from its raw RGBA pixels: the mean relative luminance (0 black, 1 white)
+ * of what is visible, each pixel weighted by its opacity. Null when nothing is visible.
+ */
+export function logoLightness(rgba: Uint8Array): number | null {
+  let sum = 0
+  let weight = 0
+  for (let index = 0; index + 3 < rgba.length; index += 4) {
+    const alpha = rgba[index + 3]
+    if (alpha < 64) continue
+    sum += alpha * (0.2126 * LINEAR[rgba[index]] + 0.7152 * LINEAR[rgba[index + 1]] + 0.0722 * LINEAR[rgba[index + 2]])
+    weight += alpha
   }
-  return null
+  return weight > 0 ? sum / weight : null
 }
 
 /** The trailer: English first, then the hub's language, then any; an official trailer before a teaser. */
