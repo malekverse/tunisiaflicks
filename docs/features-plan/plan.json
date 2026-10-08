@@ -1,0 +1,587 @@
+{
+ "ownership": [
+  {
+   "track": "foundations",
+   "files": [
+    "package.json",
+    "package-lock.json",
+    ".github/workflows/ci.yml",
+    "tests/register.mjs",
+    "tests/loader-hooks.mjs",
+    "tests/stubs/**",
+    "tests/foundations.unit.test.mjs",
+    "tests/smoke.test.mjs (BASE_URL only)",
+    "src/lib/i18n/locales.ts",
+    "src/lib/i18n/translate.ts",
+    "src/lib/i18n/rich.tsx",
+    "src/lib/i18n/index.ts (re-exports)",
+    "src/lib/i18n/features/languages.ts + features/index.ts (seed, register)",
+    "src/lib/i18n/features/social.ts, badges.ts (one seed key each)",
+    "src/lib/social/types.ts (frozen contract)",
+    "src/components/ui/popover.tsx",
+    "src/components/MediaGrid.tsx (EmptyState action)",
+    "src/components/rows/Row.tsx (SectionHeader end)",
+    "src/components/library/SignInInvite.tsx",
+    "src/lib/with-timeout.ts",
+    "src/lib/session-scope.ts",
+    "src/lib/tv-mode.ts",
+    "src/lib/scrub-url.ts",
+    "src/types/next-auth.d.ts",
+    "src/app/api/user-content/route.ts (validation)",
+    "scripts/clean-user-content.mjs",
+    "src/app/profile/actions.ts",
+    "src/app/profile/ProfileForm.tsx (current-password field)",
+    "src/app/api/account/**",
+    "src/app/api/profiles/route.ts",
+    "src/app/api/profiles/[id]/route.ts (limited-session guard)",
+    "sentry.server.config.ts",
+    "sentry.edge.config.ts",
+    "src/lib/report-error.ts",
+    "next.config.js (headers)",
+    "src/components/shell/use-shell-account.ts",
+    "src/app/layout.tsx",
+    "src/middleware.ts",
+    "src/app/page.tsx",
+    "src/app/profile/page.tsx",
+    "src/components/profile/SettingsNav.tsx",
+    "src/components/PushSettings.tsx (children slot)",
+    "src/app/profile/Following.tsx (slot)",
+    "src/app/profile/AccountSecurity.tsx (slot)",
+    "src/components/shell/{Rail,TabBar,TopBar}.tsx (optional props only)",
+    "src/lib/seasons.ts (stub)",
+    "all stubs listed in the foundations brief",
+    "docs/DESIGN.md"
+   ]
+  },
+  {
+   "track": "integration",
+   "files": [
+    "src/app/layout.tsx",
+    "src/app/page.tsx",
+    "src/middleware.ts",
+    "src/app/sitemap.ts",
+    "src/app/robots.ts",
+    "README.md",
+    "docs/DESIGN.md",
+    "package.json",
+    "src/components/Footer.tsx",
+    "src/lib/share-sections.ts",
+    "src/lib/account.ts",
+    "src/app/api/profiles/[id]/route.ts",
+    "src/app/profile/page.tsx",
+    "src/components/profile/SettingsNav.tsx",
+    "src/app/profile/Following.tsx",
+    "src/lib/i18n/en.ts",
+    "src/lib/i18n/ar.ts",
+    "src/lib/i18n/tn.ts",
+    "src/lib/legal.ts (after wave 1)",
+    "src/components/shell/{nav,Rail,TabBar,MenuSheet,AccountMenu,TopBar}.tsx (after wave 1)",
+    "src/components/NotificationBell.tsx (after wave 1)",
+    ".github/workflows/cron.yml (after wave 1)",
+    "docs/SCHEDULER.md (after wave 1)",
+    "src/lib/digest/providers.ts (after wave 1)",
+    ".github/workflows/ci.yml",
+    "public/sw.js (after wave 2)",
+    "scripts/check-account-deletion.mjs"
+   ]
+  },
+  {
+   "track": "french",
+   "files": [
+    "src/lib/i18n/locales.ts (extend)",
+    "src/lib/i18n/translate.ts (extend)",
+    "src/lib/i18n/fr.ts",
+    "src/lib/i18n/format.ts",
+    "src/lib/i18n/sync-locale.ts",
+    "src/lib/i18n/index.ts",
+    "src/lib/i18n/server.ts",
+    "src/lib/i18n/features/languages.ts",
+    "src/lib/i18n/features/index.ts",
+    "src/lib/tmdb-locale.ts",
+    "src/lib/legal-fr.ts",
+    "src/lib/legal.ts",
+    "src/lib/tmdb.ts",
+    "src/lib/genres.ts",
+    "src/lib/kids.ts (fetchList language)",
+    "src/lib/billboard.ts",
+    "src/lib/clips.ts",
+    "src/lib/pick-of-the-day.ts",
+    "src/lib/top10.ts",
+    "src/lib/seo.ts",
+    "src/lib/structured-data.tsx",
+    "src/components/I18nProvider.tsx",
+    "src/components/shell/LanguageSwitch.tsx",
+    "src/components/shell/LanguageHint.tsx",
+    "src/components/profile/LanguageSettings.tsx",
+    "src/components/wrapped/labels.ts",
+    "src/components/PickOfTheDay.tsx",
+    "src/components/detail/MediaHero.tsx (tagline, imports)",
+    "src/components/detail/DetailSections.tsx (Intl names)",
+    "src/components/library/LibraryCollection.tsx",
+    "src/components/home/ChipRail.tsx (genre chips)",
+    "src/app/movie/[id]/page.tsx",
+    "src/app/tv/[id]/page.tsx",
+    "src/app/person/[id]/page.tsx",
+    "src/app/upcoming/page.tsx",
+    "src/app/discover/page.tsx",
+    "src/app/genres/[id]/page.tsx",
+    "src/app/top-rated/page.tsx",
+    "src/app/(movies)/actions.ts",
+    "src/app/tv/actions.ts",
+    "src/app/tv/page.tsx",
+    "src/app/search/actions.ts",
+    "src/app/api/recommendations/route.ts",
+    "src/app/actions/continue.ts",
+    "src/app/api/locale/route.ts",
+    "src/app/global-error.tsx",
+    "src/app/globals.css",
+    "public/offline.html",
+    "public/sw.js",
+    "P1c import moves: src/app/auth/reset-password/reset-password-form.tsx, src/app/profile/AccountSecurity.tsx, src/components/auth/ForgotPasswordForm.tsx, src/components/auth/SignupForm.tsx, src/components/ContactForm.tsx, src/components/ResendVerificationButton.tsx, src/components/swipe/SwipeLobby.tsx",
+    "scripts/check-translations.mjs",
+    "scripts/check-client-i18n.mjs",
+    "tests/french.test.mjs",
+    "tests/french.unit.test.mjs"
+   ]
+  },
+  {
+   "track": "social",
+   "files": [
+    "src/components/shell/{nav,Rail,TabBar,MenuSheet,AccountMenu,TopBar}.tsx",
+    "src/components/NotificationBell.tsx",
+    "src/components/inbox/**",
+    "src/components/social/** (except SocialPrivacySettings.tsx)",
+    "src/components/share/**",
+    "src/store/share-sheet.ts",
+    "src/lib/social/**",
+    "src/lib/notify.ts",
+    "src/lib/invites.ts",
+    "src/lib/models/Follow.ts",
+    "src/app/api/notifications/route.ts",
+    "src/app/api/social/**",
+    "src/app/api/ratings/route.ts",
+    "src/lib/push.ts",
+    "src/app/api/push/route.ts",
+    "src/hooks/use-push.ts",
+    "src/components/PushSettings.tsx",
+    "src/components/MediaActions.tsx",
+    "src/components/media/PeekLayer.tsx",
+    "src/components/profiles/KidsBlocked.tsx",
+    "src/lib/og.tsx (append renderProfileCard)",
+    "src/lib/i18n/features/social.ts",
+    "tests/social.test.mjs",
+    "tests/social.unit.test.mjs"
+   ]
+  },
+  {
+   "track": "seasons",
+   "files": [
+    "src/lib/seasons.ts",
+    "src/components/hubs/HubDoor.tsx",
+    "src/components/seasons/**",
+    "src/hooks/use-countdown.ts",
+    "src/components/ramadan/RamadanBanner.tsx (re-export)",
+    "src/app/moments/[id]/page.tsx",
+    "src/lib/i18n/features/seasons.ts",
+    "tests/seasons.unit.test.mjs"
+   ]
+  },
+  {
+   "track": "drama-hubs",
+   "files": [
+    "src/components/ui/chip.tsx",
+    "src/components/library/controls.tsx (Chip re-exports)",
+    "src/components/hubs/HubHeader.tsx",
+    "src/components/hubs/HubTile.tsx",
+    "src/components/hubs/HubShelf.tsx",
+    "src/components/ui/live-dot.tsx",
+    "src/components/media/YouTubeDialog.tsx",
+    "src/components/media/VideoTile.tsx",
+    "src/lib/youtube.ts",
+    "src/app/api/yt-thumb/[id]/[size]/route.ts",
+    "src/lib/arab-countries.ts",
+    "src/lib/dramas-config.ts",
+    "src/lib/dramas.ts",
+    "src/lib/dramas-for-you.ts",
+    "src/app/dramas/**",
+    "src/components/dramas/**",
+    "src/lib/i18n/features/drama-hubs.ts",
+    "scripts/check-drama-keywords.mjs",
+    "tests/drama-hubs.test.mjs",
+    "tests/drama-hubs.unit.test.mjs"
+   ]
+  },
+  {
+   "track": "digest",
+   "files": [
+    "src/lib/cron.ts",
+    "src/app/api/cron/notify/route.ts (auth and deadline)",
+    "src/app/api/cron/digest/route.ts",
+    ".github/workflows/cron.yml",
+    "docs/SCHEDULER.md",
+    "src/lib/digest/**",
+    "src/app/api/digest/**",
+    "src/app/api/unsubscribe/route.ts",
+    "src/app/unsubscribe/**",
+    "src/components/digest/**",
+    "src/hooks/use-digest.ts",
+    "src/lib/email.ts (additive: mail budget, bulk)",
+    "src/lib/release-alerts.ts",
+    "public/email/wordmark.png",
+    "scripts/email-assets.mjs",
+    "src/lib/i18n/features/digest.ts",
+    "tests/digest.test.mjs",
+    "tests/digest.unit.test.mjs"
+   ]
+  },
+  {
+   "track": "social-pages",
+   "files": [
+    "src/app/friends/**",
+    "src/app/u/**",
+    "src/app/me/**",
+    "src/app/notifications/**",
+    "src/components/social/{FriendsFeed,ActivityRow,PeopleList,PersonRow,AddFriendCard,ShareLinkRow,ProfileHeader,ProfileSections,SocialPrivacySettings,NotificationsView}.tsx",
+    "src/lib/social/digest.ts",
+    "bug fixes only, signatures frozen: src/lib/social/**, src/components/social/**, src/components/inbox/**, src/app/api/social/**",
+    "src/lib/i18n/features/social.ts",
+    "tests/social-pages.test.mjs"
+   ]
+  },
+  {
+   "track": "ai-search",
+   "files": [
+    "src/lib/ai-search/**",
+    "src/app/api/ai/search/route.ts",
+    "src/app/search/page.tsx",
+    "src/app/search/layout.tsx",
+    "src/app/search/ai-actions.ts",
+    "src/components/search/CommandPalette.tsx",
+    "src/components/search/ai/**",
+    "src/components/ai/AiMark.tsx",
+    "src/components/home/ChipRail.tsx",
+    "src/lib/i18n/features/ai.ts",
+    "tests/ai-search.unit.test.ts",
+    "tests/ai-search.test.mjs",
+    "scripts/ai-search-eval.mjs"
+   ]
+  },
+  {
+   "track": "movie-night",
+   "files": [
+    "src/app/movie-night/**",
+    "src/app/api/movie-night/**",
+    "src/app/api/cron/nights/route.ts",
+    "src/lib/movie-night.ts",
+    "src/lib/movie-night-rules.ts",
+    "src/lib/movie-night-format.ts",
+    "src/lib/movie-night-notify.ts",
+    "src/lib/movie-night-digest.ts",
+    "src/components/movie-night/**",
+    "src/lib/calendar.ts (additive)",
+    "src/lib/swipe.ts",
+    "src/app/api/swipe/**",
+    "src/components/swipe/{SwipeLobby,SwipeRoom,MatchMoment}.tsx",
+    "src/lib/og.tsx (append renderNightCard)",
+    "src/lib/i18n/features/movie-night.ts",
+    "tests/movie-night.test.mjs",
+    "tests/movie-night.unit.test.mts"
+   ]
+  },
+  {
+   "track": "shared-lists",
+   "files": [
+    "src/lib/lists-db.ts",
+    "src/lib/shared-lists/**",
+    "src/app/api/lists/**",
+    "src/app/lists/**",
+    "src/components/lists/**",
+    "src/components/shared-lists/**",
+    "src/hooks/{use-shared-list,use-list-sync,use-my-lists,use-library-toggle}.ts",
+    "src/components/MediaActions.tsx",
+    "src/lib/i18n/features/shared-lists.ts",
+    "tests/shared-lists.test.mjs",
+    "scripts/shared-lists-concurrency.mjs"
+   ]
+  },
+  {
+   "track": "badges",
+   "files": [
+    "src/lib/badges/**",
+    "src/lib/support.ts",
+    "src/lib/support-url.ts",
+    "src/app/api/cron/badges/route.ts",
+    "src/app/api/supporters/**",
+    "src/app/api/badges/**",
+    "src/app/badges/art/[file]/route.ts",
+    "src/app/support/**",
+    "src/components/badges/**",
+    "src/components/support/**",
+    "src/app/api/user-content/route.ts (history hooks)",
+    "src/lib/user-content.ts (tz)",
+    "src/lib/i18n/features/badges.ts",
+    "tests/badges.test.mjs",
+    "tests/badges.unit.test.mjs"
+   ]
+  },
+  {
+   "track": "arab-map",
+   "files": [
+    "src/app/arab-cinema/**",
+    "src/lib/arab-map.ts",
+    "src/lib/arab-cinema.ts",
+    "src/lib/country-cinema.ts",
+    "src/components/arab-map/**",
+    "src/app/tunisian/cinema/page.tsx",
+    "src/lib/i18n/features/arab-map.ts",
+    "tests/arab-map.test.mjs",
+    "tests/arab-map.unit.test.mjs"
+   ]
+  },
+  {
+   "track": "tunisian-tv",
+   "files": [
+    "src/app/tunisian/page.tsx",
+    "src/app/tunisian/tv/**",
+    "src/app/api/cron/tunisian-tv/route.ts",
+    "src/lib/tunisian-tv/**",
+    "src/components/tunisian-tv/**",
+    "src/components/hubs/HubShelf.tsx (Tunisian TV tile)",
+    "src/app/ramadan/page.tsx",
+    "src/lib/i18n/features/tunisian-tv.ts",
+    "tests/tunisian-tv.test.mjs",
+    "tests/tunisian-tv.unit.test.mjs",
+    "tests/fixtures/tunisian-tv/**"
+   ]
+  },
+  {
+   "track": "tv-mode",
+   "files": [
+    "src/components/tv/**",
+    "src/hooks/use-tv-mode.ts",
+    "src/lib/tv-mode.ts",
+    "src/lib/tv-pairing.ts",
+    "src/lib/tv-sessions.ts",
+    "src/lib/auth.ts (tv-pair provider, jwt/session callbacks)",
+    "src/lib/profiles.ts (canSwitchFreely scope rule)",
+    "src/app/app/page.tsx",
+    "src/app/activate/page.tsx",
+    "src/app/api/tv-mode/route.ts",
+    "src/app/api/tv/**",
+    "src/components/detail/StreamSection.tsx",
+    "public/offline.html",
+    "android-tv/**",
+    ".github/workflows/android-tv.yml",
+    "docs/TV.md",
+    "src/lib/i18n/features/tv-mode.ts",
+    "tests/tv-mode.test.mjs",
+    "tests/tv-mode.unit.test.mjs"
+   ]
+  },
+  {
+   "track": "detail-extras",
+   "files": [
+    "src/components/detail/{MediaHero,MovieDetail,TvDetail,DetailSections,SectionNav,MoreLikeThis,ExtrasSection,SoundtrackSection,ListenLinks,SeenWith}.tsx",
+    "src/components/person/{Filmography,SeenWithRow,SeenInvite}.tsx",
+    "src/app/movie/[id]/page.tsx",
+    "src/app/tv/[id]/page.tsx",
+    "src/app/person/[id]/page.tsx",
+    "src/lib/{media-assets,stream-providers,extras,variations,variations-tmdb,seen-with,deezer,soundtrack,listen-links}.ts",
+    "src/app/api/soundtrack/**",
+    "src/app/api/more-like-this/route.ts",
+    "src/app/api/seen-with/route.ts",
+    "src/hooks/{use-variation,use-seen-with,use-soundtrack}.ts",
+    "src/lib/i18n/features/detail-extras.ts",
+    "tests/detail-extras.test.mjs"
+   ]
+  }
+ ],
+ "sharedFiles": [
+  {
+   "file": "src/app/layout.tsx",
+   "owner": "foundations (wave 0) then integration",
+   "changes": "Wave 0: kids = getKidsMode(); tv = isTvMode(); inApp from the user agent containing 'TunisiaFlicksTV/'; seasonal = getSeasonalNav(kids). Add <html data-tv> and wrap in <TvModeProvider tv inApp>. When tv, <TvShell>{children}</TvShell> replaces Rail, TopBar, TabBar, Footer, PeekLayer, SearchPaletteHost and ShareSheetHost. Otherwise mount <ShareSheetHost/> after PeekLayer and <TvModeOffer/> after VerifyEmailBanner. Pass <Rail kids seasonal/>, <TabBar kids seasonal/> and <TopBar kids ask={false}/>, and put <LanguageHint/> beside <Toaster/>. After wave 1: messages={dictionaryFor(locale)} and french's generateMetadata. After wave 2: ask = aiSearchEnabled() && !kids && !tv, passed to TopBar."
+  },
+  {
+   "file": "src/app/page.tsx",
+   "owner": "foundations then integration",
+   "changes": "Wave 0: maxDuration 30. Slot 3 SeasonalBanner, slot 5 UpcomingNightCard, slot 7 FriendsRow, slot 12 HubShelf, each in Suspense fallback null. Kids skip 5, 7 and 12; TV mode skips 5, 7 and 9. After wave 1: getMovies and getTop10 get catalogueLanguage(locale)."
+  },
+  {
+   "file": "src/middleware.ts",
+   "owner": "foundations",
+   "changes": "On '/', ?tv=1 sets tf-tv=1 (1 year, lax, not httpOnly) and ?tv=0 deletes it, then redirects to '/'. getToken runs only on auth paths. Matcher: ['/', '/dashboard', '/login', '/signup', '/profiles']."
+  },
+  {
+   "file": "src/components/shell/nav.tsx",
+   "owner": "social (wave 1) then integration",
+   "changes": "After wave 1, WORLD adds {href:'/dramas', label:'dramas.nav', icon: Drama, grownUp:true}. After wave 2: WORLD adds {href:'/arab-cinema', label:'arabMap.nav', icon: Map}. YOURS becomes Friends {href:'/friends', label:'social.nav', icon: UsersRound, grownUp:true}, Movie night {href:'/movie-night', label:'movieNight.nav', icon: Popcorn, grownUp:true, kidsAlt:{href:'/swipe', label:'swipe.title', icon: HeartHandshake}}, then Library. Swipe and My Year are removed."
+  },
+  {
+   "file": "src/components/shell/TopBar.tsx",
+   "owner": "foundations props, then social, then integration",
+   "changes": "After wave 2, the pill label is t(ask ? 'ai.searchOrAsk' : 'search.open')."
+  },
+  {
+   "file": "src/app/profile/page.tsx + SettingsNav.tsx",
+   "owner": "foundations then integration",
+   "changes": "Wave 0 sets the final order with stubs: account, profiles, privacy* (SocialPrivacySettings), display (LanguageSettings), playback, notifications (PushSettingsCard with children {!kids && <DigestSettings/>}), following (Following containing <ReleaseEmailSwitch/>), library, supporter* (SupporterSettings), security (AccountSecurity with securityExtra <TvSessionsSetting/>), data. SettingsNav takes kids as a prop and gains a grownUp field, plus entries for privacy (Lock), display (Languages) and supporter (HandHeart)."
+  },
+  {
+   "file": "src/components/PushSettings.tsx, src/app/profile/Following.tsx, src/app/profile/AccountSecurity.tsx",
+   "owner": "foundations (slots) then social / integration / french",
+   "changes": "Slots only: a children prop on PushSettingsCard, a ReleaseEmailSwitch mount in Following, and a securityExtra prop on AccountSecurity."
+  },
+  {
+   "file": "src/app/api/user-content/route.ts",
+   "owner": "foundations (wave 0) then badges (wave 2)",
+   "changes": "Foundations adds write-time validation. Badges adds the recordPlay and forgetTitle hooks, wrapped in try/catch."
+  },
+  {
+   "file": "src/lib/social/types.ts",
+   "owner": "foundations (writes the frozen contract) then social",
+   "changes": "Written verbatim from the contracts. Changing a signature requires a report."
+  },
+  {
+   "file": "src/app/sitemap.ts",
+   "owner": "integration",
+   "changes": "After wave 1: the /dramas pages. After wave 2: /arab-cinema plus 21 country codes (TN excluded), /tunisian/tv plus tunisianTvSitemap().catch(() => []), /app, and /support only when supportUrl() is set. Never /u, /me, /friends, /notifications, /movie-night, /lists or /unsubscribe."
+  },
+  {
+   "file": "src/components/Footer.tsx",
+   "owner": "integration",
+   "changes": "Explore column: Turkish & K-dramas (after wave 1); Arab cinema, Tunisian TV and Movie night (after wave 2). Site column: 'Support us' only when supportUrl() is set, and 'Get the app' (/app always works as a PWA page)."
+  },
+  {
+   "file": "src/lib/share-sections.ts",
+   "owner": "integration",
+   "changes": "After wave 1: dramas-turkish, dramas-korean and the search subtitle. After wave 2: arab-cinema and tunisian-tv."
+  },
+  {
+   "file": "src/lib/account.ts",
+   "owner": "integration",
+   "changes": "Ordered pipeline. Remove 'lists' from USER_COLLECTIONS. Step 1: await shared-lists onAccountDeleted, then movie-night onAccountDeleted (cancels hosted nights). Step 2: social deleteSocialData, digest deleteDigestData, badges deleteBadgeData, tv-mode deleteTvSessions. Step 3: the generic deleteMany. Exports map other people to {handle, name}."
+  },
+  {
+   "file": "src/app/api/profiles/[id]/route.ts",
+   "owner": "foundations (guard) then integration",
+   "changes": "DELETE in order: onProfileRemovedFromLists, forgetProfileInNights, deleteSocialProfile (also unbinds push subscriptions), deleteDigestPrefs (prefs and deliveries), deleteBadgeData, revokeTvSessionsForProfile. PATCH kids=true returns 400 when the profile has a handle. Any change of the kids flag calls resetSocialVisibility(profileId)."
+  },
+  {
+   "file": "src/lib/legal.ts",
+   "owner": "french (wave 1) then integration",
+   "changes": "Paragraphs in en, ar and fr: profile pages and friends; ratings (private by default, anonymous daily average); digest; interface language; Ask/Groq; badges with a 13-month day log and its off switch; Ko-fi hash only; Tunisian TV (thumbnails through our server, video only after pressing play); hub trailers may autoplay muted from YouTube; Deezer previews; movie nights; shared lists; TV pairing and signed-in TVs. Bump LEGAL_UPDATED."
+  },
+  {
+   "file": ".github/workflows/cron.yml + docs/SCHEDULER.md",
+   "owner": "digest then integration",
+   "changes": "After wave 2, add the nights, badges and tunisian-tv jobs to the schedule list and the job choice list."
+  },
+  {
+   "file": "src/lib/digest/providers.ts",
+   "owner": "digest then integration",
+   "changes": "After wave 2, register friendsDigestProvider, nightsDigestProvider, sharedListsDigestProvider, tunisianTvDigestProvider and badgesDigestProvider."
+  },
+  {
+   "file": "src/components/MediaActions.tsx",
+   "owner": "social then shared-lists",
+   "changes": "Social replaces the Share submenu with one 'Share…' item that calls openShare. Shared-lists adds 'Add to a list…' (ListPlus) after 'Add to bookmarks', hidden for guests and Kids."
+  },
+  {
+   "file": "src/components/media/PeekLayer.tsx",
+   "owner": "social",
+   "changes": "Share closes the QuickSheet, then calls openShare after the close animation. No 5th action."
+  },
+  {
+   "file": "detail files (MediaHero, DetailSections, movie/tv/person pages)",
+   "owner": "french then detail-extras",
+   "changes": "French: tagline, Intl names, localizeDetail. Detail-extras: composition and the new sections."
+  },
+  {
+   "file": "src/components/home/ChipRail.tsx",
+   "owner": "french then ai-search",
+   "changes": "French: genreList. Ai-search: the Ask chip, the mood.new icon change, and skipping the moment that the SeasonalBanner shows."
+  },
+  {
+   "file": "src/components/hubs/HubShelf.tsx",
+   "owner": "drama-hubs then tunisian-tv",
+   "changes": "Tunisian-tv sets the Tunisian TV tile's live dot and picture."
+  },
+  {
+   "file": "src/lib/og.tsx",
+   "owner": "social then movie-night",
+   "changes": "Append-only: renderProfileCard (no posters) and renderNightCard."
+  },
+  {
+   "file": "public/offline.html + public/sw.js",
+   "owner": "french, then tv-mode (offline.html), then integration (sw.js)",
+   "changes": "French: language text and sw v3. Tv-mode: remote focus. Integration: sw VERSION v4 after wave 2."
+  },
+  {
+   "file": "src/lib/auth.ts + src/lib/profiles.ts",
+   "owner": "tv-mode (wave 2)",
+   "changes": "The tv-pair provider sets a scoped token with no loginAt, plus a tvSessions re-check in the jwt callback. canSwitchFreely returns false for a TV session pinned to a Kids profile."
+  },
+  {
+   "file": "src/lib/email.ts + src/lib/release-alerts.ts",
+   "owner": "digest (wave 1)",
+   "changes": "Shared mail:day counter and reserveMail(). Release items stamped kidSafe. Push to Kids-profile devices is skipped for adult titles."
+  },
+  {
+   "file": "package.json",
+   "owner": "foundations then integration",
+   "changes": "Wave 0: exact pins for uqr and @radix-ui/react-popover; scripts typecheck, test:unit and test:smoke. After wave 1: check:i18n."
+  },
+  {
+   "file": "README.md",
+   "owner": "integration",
+   "changes": "Env: GROQ_API_KEY, AI_SEARCH_MODELS, AI_SEARCH_OFF, AI_DAILY_CALLS, CRON_SECRETS_EXTRA, DIGEST_DAILY_LIMIT, MAIL_DAILY_LIMIT, DIGEST_ENABLED, EMAIL_TOKEN_SECRET(_PREVIOUS), SUPPORT_HASH_SECRET, SOCIAL_ACTIVITY_DELAY_MINUTES, KOFI_VERIFICATION_TOKEN, NEXT_PUBLIC_SUPPORT_URL, YOUTUBE_API_KEY, TUNISIAN_TV_CHANNELS(_OFF), NEXT_PUBLIC_ANDROID_APK_URL, SEASONS_TODAY. Note that rotating NEXTAUTH_SECRET leaves e-mail and support keys intact. The Groq org must have no payment method."
+  },
+  {
+   "file": "src/app/robots.ts",
+   "owner": "integration",
+   "changes": "Disallow /activate and /api/."
+  },
+  {
+   "file": "docs/DESIGN.md",
+   "owner": "foundations then integration",
+   "changes": "Wave 0 adds rules: card-link siblings; text floor white/50; logical overlaps; client i18n imports; Arabic and French copy rules; Popover versus menu; Chip modes; 'Your page' naming."
+  }
+ ],
+ "contracts": "// Built ONCE at this path by the owning track; consumers code against these signatures; never changed after the wave.\n\n// ===== foundations (wave 0) =====\n// src/lib/i18n/locales.ts (no imports) — french adds 'fr', LOCALE_META, negotiateLocale in wave 1\nexport type Locale = 'en' | 'fr' | 'ar' | 'tn'   // wave 0 ships 'en'|'ar'|'tn'\nexport const LOCALES: readonly Locale[]; export const LOCALE_COOKIE = 'tf-locale'\nexport const isLocale: (v: unknown) => v is Locale\nexport const isArabicScript: (l: Locale) => boolean\nexport const dirOf: (l: Locale) => 'ltr' | 'rtl'\nexport const htmlLang: (l: Locale) => string\nexport const dateLocale: (l: Locale) => string     // string from wave 1 on\n// src/lib/i18n/translate.ts\nexport function translatorFrom(messages: Record<string, string>, fallback?: Record<string, string>): Translate\nexport function translateApiMessage(t: Translate, message?: string): string | undefined\n// src/lib/i18n/rich.tsx — vars wrapped in <bdi>, bold ones in <strong>\nexport function richT(t: Translate, key: TKey, vars: Record<string, React.ReactNode | string | number>, opts?: { bold?: string[] }): React.ReactNode\n// src/components/ui/popover.tsx: Popover, PopoverTrigger, PopoverAnchor, PopoverContent (glass-strong), PopoverClose\n// EmptyState({ title, children, icon, action?: ReactNode }); SectionHeader({ ..., end?: ReactNode })\n// SignInInvite({ icon, title?, text?, callbackUrl?, className? }) — callbackUrl defaults to current path+search\n// src/lib/with-timeout.ts\nexport function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T>\n// src/lib/session-scope.ts — Session augmented with scope?: 'tv', pinnedProfileId?: string\nexport function isLimitedSession(s: Session | null): boolean\nexport async function denyLimitedSession(): Promise<NextResponse | null>   // 403 {code:'tv_session'}\n// src/lib/tv-mode.ts\nexport const TV_COOKIE = 'tf-tv'; export function isTvMode(): boolean\n// src/components/tv/TvModeProvider.tsx\nexport const TvModeContext: React.Context<{ tv: boolean; inApp: boolean } | null>\nexport default function TvModeProvider(p: { tv: boolean; inApp: boolean; children: React.ReactNode }): JSX.Element\n// src/hooks/use-tv-mode.ts — never throws; useLikelyTv starts false, evaluates in an effect\nexport function useTvMode(): boolean; export function useLikelyTv(): boolean\n\n// STUBS (foundations creates; owner implements; signatures frozen)\n// social: share/ShareSheetHost.tsx  () => JSX.Element | null ; social/FriendsRow.tsx async () => Promise<JSX.Element | null>\n// french: shell/LanguageHint.tsx () => null ; profile/LanguageSettings.tsx () => JSX.Element | null\n// seasons: seasons/SeasonalBanner.tsx async ({ kids?: boolean }) => Promise<JSX.Element | null>\n// drama-hubs: hubs/HubShelf.tsx async ({ kids: boolean }) => Promise<JSX.Element | null>\n// digest: digest/DigestSettings.tsx () => JSX.Element | null  (a SettingsGroup id='email') ; digest/ReleaseEmailSwitch.tsx () => JSX.Element | null\n// social-pages: social/SocialPrivacySettings.tsx () => JSX.Element | null  (a SettingsSection id='privacy')\n// movie-night: movie-night/UpcomingNightCard.tsx async () => Promise<JSX.Element|null> ; NightTile.tsx ({ onNavigate: () => void }) ; PlanNightRow.tsx ({ media: ShareMedia; onDone: () => void })\n// badges: badges/ProfileBadges.tsx async ({ owner: ProfileRef; view: 'owner' | 'public' }) ; badges/BadgesSetting.tsx () ; support/SupporterSettings.tsx ()\n// shared-lists: lists/ProfileLists.tsx async ({ owner: ProfileRef; viewer: ProfileRef | null; view: 'owner' | 'public'; linkAccess: boolean }) ; lists/AddToListSection.tsx ({ media: ShareMedia; onDone: () => void })\n// tv-mode: tv/TvShell.tsx ({ children }) ; tv/TvModeOffer.tsx () ; tv/TvModeSetting.tsx () ; tv/TvSessionsSetting.tsx ()\n\n// ===== social (types.ts written by foundations) =====\nexport type ProfileRef = { userId: string; profileId: string }\nexport type AvatarPerson = { name: string; color: string; image?: string | null; handle?: string | null }\nexport type PublicIdentity = AvatarPerson & { handle: string }\nexport type Visibility = 'private' | 'friends' | 'link'        // link = friends OR holder of the shareKey (profiles) / slug (lists)\nexport type PrivacySettings = { activity: 'private' | 'friends'; ratings: Visibility; badges: Visibility; requests: 'anyone' | 'nobody'; paused: boolean }\nexport const DEFAULT_PRIVACY: PrivacySettings\nexport type Relationship = 'self' | 'friends' | 'outgoing' | 'incoming' | 'blocked' | 'none'\nexport const HANDLE_RE: RegExp                          // /^[a-z0-9_]{3,20}$/\nexport const RESERVED_HANDLES: ReadonlySet<string>; export const RESERVED_SUBSTRINGS: readonly string[]\nexport type ShareMedia = { media_type: 'movie' | 'tv'; id: string; title: string; poster_path: string | null }   // display only; APIs take {media_type, id}\nexport type MediaRef = { media_type: 'movie' | 'tv'; id: string }\nexport type NotificationKind = 'movie_released' | 'new_episode' | 'friend_request' | 'friend_accepted' | 'title_sent' | 'friend_rated' | 'night_invite' | 'night_update' | 'night_reminder' | 'list_invite' | 'list_update' | 'badge_earned'\nexport type InboxActionType = 'friend_request' | 'night_invite' | 'night_join' | 'list_invite'\nexport type InboxAction = { type: InboxActionType; state: 'pending' | 'accepted' | 'declined'; id: string }  // night_join id = `${nightId}:${profileId}`\nexport const NOTIFICATION_FILTERS: Record<'friends' | 'nights' | 'alerts', NotificationKind[]>\n// friends: friend_request, friend_accepted, title_sent, friend_rated, list_invite, list_update; nights: night_*; alerts: movie_released, new_episode, badge_earned\n\n// session.ts\nexport async function socialSelf(): Promise<null | { ref: ProfileRef; kids: boolean; verified: boolean; limited: boolean; profileName: string; color: string; social: SocialProfileDoc | null }>\nexport async function requireSocial(opts?: { needsHandle?: boolean; write?: boolean }): Promise<{ ref: ProfileRef; social: SocialProfileDoc | null } | { error: NextResponse }>\n// 401 guest → 403 tv_session → 409 needs_pick → 403 kids → (write) 403 unverified → (needsHandle) 409 needs_handle\n// identity.ts\nexport async function getIdentity(profileId: string): Promise<PublicIdentity | null>\nexport async function getIdentities(profileIds: string[]): Promise<Map<string, PublicIdentity>>\nexport async function resolveHandle(handle: string): Promise<(ProfileRef & { identity: PublicIdentity; redirectTo?: string }) | null>\nexport async function avatarPerson(ref: ProfileRef): Promise<AvatarPerson>\n// media.ts\nexport async function resolveShareMedia(media_type: 'movie' | 'tv', id: string, locale?: Locale): Promise<ShareMedia | null>\nexport const mediaHref: (media_type: 'movie' | 'tv', id: string) => string\n// friends.ts\nexport async function getFriends(profileId: string): Promise<ProfileRef[]>\nexport async function areFriends(a: string, b: string): Promise<boolean>\nexport async function relationship(viewer: ProfileRef | null, owner: ProfileRef): Promise<Relationship>\nexport async function isBlockedEitherWay(a: ProfileRef, b: ProfileRef): Promise<boolean>   // profile pair OR account pair\n// privacy.ts\nexport async function getPrivacy(profileId: string): Promise<PrivacySettings>\nexport async function canSee(viewer: ProfileRef | null, owner: ProfileRef, what: 'activity' | 'ratings' | 'badges', opts?: { shareKey?: string | null }): Promise<boolean>\nexport async function shareKeyMatches(owner: ProfileRef, key: string | null | undefined): Promise<boolean>\n// ratings.ts — GET /api/ratings -> { mine, friends, average, countLabel }\nexport async function setRating(ref: ProfileRef, input: { media_type: 'movie' | 'tv'; tmdbId: string; stars: 1 | 2 | 3 | 4 | 5 }): Promise<{ first: boolean }>\nexport async function getMyRating(ref: ProfileRef, media_type: 'movie' | 'tv', tmdbId: string): Promise<number | null>\nexport async function clearRating(ref: ProfileRef, media_type: 'movie' | 'tv', tmdbId: string): Promise<void>\nexport async function ratingSummary(media_type: 'movie' | 'tv', tmdbId: string): Promise<{ average: number | null; countLabel: string | null }>  // daily; >=20 verified accounts\nexport async function friendsRatings(viewer: ProfileRef, media_type: 'movie' | 'tv', tmdbId: string): Promise<{ person: PublicIdentity; stars: number }[]>\nexport async function getRecentRatings(owner: ProfileRef, viewer: ProfileRef | null, opts?: { shareKey?: string | null; limit?: number }): Promise<{ media: ShareMedia; stars: number; day: string }[]>\n// activity.ts — day = YYYY-MM-DD (Africa/Tunis); no time for non-owners\nexport type ActivityItem = { id: string; actor: PublicIdentity; kind: 'watched' | 'on_episode' | 'season_finale' | 'series_finale' | 'rated'; media: ShareMedia; season?: number; episode?: number; stars?: number; day: string }\nexport async function getFriendsActivity(viewer: ProfileRef, opts?: { before?: string; limit?: number }): Promise<{ items: ActivityItem[]; next: string | null }>\nexport async function getRecentActivity(owner: ProfileRef, viewer: ProfileRef | null, limit?: number): Promise<ActivityItem[]>\n// account.ts\nexport async function exportSocialData(userId: string): Promise<unknown>; export async function deleteSocialData(userId: string): Promise<void>\nexport async function deleteSocialProfile(ref: ProfileRef): Promise<void>; export async function resetSocialVisibility(profileId: string): Promise<void>\n// invites.ts — {_id: sha256(token), kind, targetId, owner, createdAt, expiresAt TTL, maxUses, uses, revokedAt}\nexport type InviteKind = 'friend' | 'night' | 'list'\nexport const isInviteToken: (v: unknown) => v is string          // /^[A-Za-z0-9_-]{22}$/\nexport async function createInvite(i: { kind: InviteKind; targetId: string; owner: ProfileRef; expiresAt: Date; maxUses: number; replace?: boolean }): Promise<{ token: string; expiresAt: Date }>\nexport async function readInvite(kind: InviteKind, token: string): Promise<{ targetId: string; owner: ProfileRef; expiresAt: Date; uses: number; maxUses: number } | null>\nexport async function consumeInvite(kind: InviteKind, token: string): Promise<{ ok: true; targetId: string; owner: ProfileRef } | { ok: false; reason: 'invalid' | 'expired' | 'used_up' }>\nexport async function inviteStatus(kind: InviteKind, targetId: string): Promise<{ active: boolean; uses: number; maxUses: number; expiresAt: Date | null }>\nexport async function revokeInvites(kind: InviteKind, targetId: string): Promise<void>\nexport const inviteHref: (path: string, token: string) => string\n// notify.ts — event_key = `${kind}:${to.profileId}:${key}` (existing unique {userId, event_key})\nexport type NotifyText = { key: TKey; vars?: Record<string, string | number> }\nexport type NotifyInput = { to: ProfileRef; kind: NotificationKind; key: string; href: string; text: NotifyText; actor?: ProfileRef; media?: ShareMedia; image?: string | null; note?: string; action?: { type: InboxActionType; id: string }; merge?: boolean /* only when no note */; kidsVisible?: boolean; push?: false | { topic: 'friends' | 'nights' | 'alerts'; title: NotifyText; body: NotifyText } }\nexport async function notify(i: NotifyInput): Promise<{ created: boolean; id?: string }>\nexport async function retractNotification(to: ProfileRef, kind: NotificationKind, key: string): Promise<void>\nexport async function settleNotificationAction(to: ProfileRef, action: { type: InboxActionType; id: string }, state: 'accepted' | 'declined'): Promise<void>\n// push.ts\nexport async function pushToUser(userId: string, payloadFor: (sub: { locale: Locale; profileId: string | null }) => PushPayload | null, topic?: PushTopic, opts?: { profileId?: string; kidSafe?: boolean }): Promise<void>\n// models/Follow.ts NotificationItem: { id, kind, created_at, read, href, actor?, others?, media?, image?, note?, text?, episode?, action?, legacy release fields }\n// GET /api/notifications?limit&before&filter=all|friends|alerts|nights -> { items, unread, next }; pending actions first\n// Kids filter: {$or:[{kind:{$in:['movie_released','new_episode']}, kidSafe:true},{kidsVisible:true}]}\n\n// UI (client)\nexport function UserAvatar(p: { person: AvatarPerson; size: 24 | 32 | 40 | 56 | 96 | 128; className?: string }): JSX.Element\nexport function AvatarStack(p: { people: AvatarPerson[]; total?: number; size?: 24 | 32; label?: string; className?: string }): JSX.Element  // [&>*+*]:-ms-2\nexport function PersonChip(p: { person: AvatarPerson; href?: string | null }): JSX.Element\nexport function RatingStars(p: { value: number | null; onChange: (v: number | null) => void; label: string; disabled?: boolean }): JSX.Element\nexport function RatingSummary(p: { average: number; countLabel: string; className?: string }): JSX.Element\nexport default function RatingsBand(p: { id?: string; media: ShareMedia }): JSX.Element | null   // guests: null unless an average exists\nexport default function VisibilitySelect(p: { value: Visibility; onChange: (v: Visibility) => void; label: string; context: 'profile' | 'list'; options?: Visibility[]; solo?: boolean; disabled?: boolean }): JSX.Element\nexport default function FriendPicker(p: { selected: string[]; onChange: (handles: string[]) => void; max?: number; disabledHandles?: string[] }): JSX.Element\nexport default function ProfileSetupCard(p: { onCreated?: (identity: PublicIdentity) => void; variant?: 'page' | 'inline' }): JSX.Element\nexport default function KidsBlocked(p: { what?: 'title' | 'tunisian' | 'social'; title?: string; description?: string; next?: string }): JSX.Element\nexport type ShareRequest = { kind: 'title'; media: ShareMedia } | { kind: 'invite'; target: 'friend' | 'night' | 'list'; url: string; title: string; text?: string; sendTo?: { endpoint: string; body?: Record<string, unknown> } }\nexport function openShare(r: ShareRequest): void; export function closeShare(): void\nexport function ShareActionRow(p: { icon: React.ReactNode; label: string; hint?: string; href?: string; onSelect?: () => void }): JSX.Element\nexport default function InviteBanner(p: { token: string; inviter: AvatarPerson | null; sentence: string; acceptLabel: string; accept: { endpoint: string; method?: 'POST' | 'PUT'; body?: Record<string, unknown> }; signedIn: boolean; unavailable?: string | null; consent?: string; onAcceptedHref?: string }): JSX.Element\nexport function InboxItem(p: { item: NotificationItem; onChange?: (i: NotificationItem) => void }): JSX.Element\nexport function InboxList(p: { items: NotificationItem[]; loading?: boolean; digestHint?: boolean; onChange?: (i: NotificationItem) => void }): JSX.Element\nexport default function InboxBell(): JSX.Element | null\n\n// nav.tsx\nexport type NavItem = { href: string; label: TKey; icon: Icon; plain?: boolean; match?: string[]; grownUp?: boolean; kidsHref?: string; kidsAlt?: Omit<NavItem, 'kidsAlt'> }\nexport const BROWSE, WORLD, YOURS, LIBRARY, TABS: NavItem[]\nexport const SEASONAL_ICONS: Record<SeasonalIconKey, LucideIcon>   // moon MoonStar, flag Flag, year CalendarHeart\nexport const isActive: (pathname: string, href: string) => boolean\nexport const isItemActive: (pathname: string, item: NavItem) => boolean\nexport const activeHref: (pathname: string, items: NavItem[]) => string | null   // longest match wins\nexport const visibleItems: (items: NavItem[], kids: boolean) => NavItem[]       // kidsAlt replaces; grownUp dropped; kidsHref swaps href\n// Rail({ kids?, seasonal? }), TabBar({ kids?, seasonal? }), TopBar({ kids?, ask? })\n\n// ===== seasons (types created by foundations in src/lib/seasons.ts) =====\nexport type SeasonalIconKey = 'moon' | 'flag' | 'year'\nexport type SeasonalNav = { href: string; label: TKey; icon: SeasonalIconKey; accent: string; signedInOnly?: boolean }\nexport function getSeasonalNav(kids: boolean, today?: string): SeasonalNav | null\nexport type SeasonalBannerModel = { id: string /* = moments.ts id, or 'your-year' */; occurrence: string; href: string; accent: string; emblem: 'crescent' | 'crescent-star' | 'tunisia' | 'year'; title: TKey; titleVars?: Record<string, string | number>; subtitle?: TKey; subtitleVars?: Record<string, string | number>; note?: TKey; countdown: { at: string; liveWithinMs: number; zeroTitle: TKey; zeroVars?: Record<string, string | number> } | null }\nexport function getSeasonalBanner(o: { kids: boolean; signedIn: boolean; today?: string; now?: Date }): SeasonalBannerModel | null\nexport const SEASON_DISMISS_COOKIE = 'tf-season-dismissed'   // 'id:occurrence|id:occurrence' (max 4)\nexport default function HubDoor(p: { href: string; title: string; text?: string; icon: React.ReactNode; accent: string; badge?: React.ReactNode; className?: string }): JSX.Element\nexport function useCountdown(atMs: number, o: { seconds: boolean; initial: { days: number; hours: number; minutes: number; seconds: number } }): { parts: { days: number; hours: number; minutes: number; seconds: number }; done: boolean }\n\n// ===== drama-hubs (wave 1) =====\nexport type ChipProps = { children: React.ReactNode; active?: boolean; icon?: React.ComponentType<{ className?: string }>; count?: number; href?: string; onClick?: () => void; onRemove?: () => void; removeLabel?: string; controls?: string; disabled?: boolean; className?: string }\nexport function Chip(p: ChipProps): JSX.Element   // with onRemove: <span> chip + sibling remove <button>, never nested\nexport function ChipGroup(p: { label: string; mode?: 'single' | 'multi' | 'nav' | 'tabs' | 'none'; scroll?: boolean; children: React.ReactNode; className?: string }): JSX.Element\n// single: radiogroup/radio; multi: aria-pressed; nav: <nav> + aria-current='page' links; tabs: tablist/tab/aria-controls, manual activation; none: list\nexport default function HubHeader(p: { title: string; subtitle?: string; accent: string; watermark?: React.ReactNode; end?: React.ReactNode; below?: React.ReactNode; size?: 'display' | 'compact' }): JSX.Element\nexport default function HubTile(p: { href: string; title: string; line?: string; picture: { kind: 'tmdb-backdrop' | 'url'; src: string } | null; accent: string; badge?: React.ReactNode; size?: 'shelf' | 'door' }): JSX.Element\nexport default function LiveDot(p: { label: string; className?: string }): JSX.Element\nexport const isYouTubeId: (v: unknown) => v is string\nexport function youtubeThumb(key: string, size: 'mq' | 'hq' | 'maxres'): string   // first-party '/api/yt-thumb/{key}/{size}'\nexport function youtubeEmbedUrl(key: string, o?: { autoplay?: boolean; start?: number; hl?: string }): string   // youtube-nocookie\nexport function youtubeLiveEmbedUrl(channelId: string, o?: { hl?: string }): string\nexport function youtubeWatchUrl(key: string): string\nexport type DialogVideo = { key: string; title: string; subtitle?: string; liveChannelId?: string; blocked?: boolean }\nexport default function YouTubeDialog(p: { open: boolean; onOpenChange: (o: boolean) => void; videos: DialogVideo[]; index: number; onIndexChange: (i: number) => void; label: string; external?: boolean /* false hides 'Watch on YouTube' (Kids) */ }): JSX.Element\nexport default function VideoTile(p: { videoKey: string; title: string; meta?: React.ReactNode; badge?: React.ReactNode; duration?: string | null; onPlay: () => void; blocked?: boolean; className?: string }): JSX.Element\nexport type ArabCountryCode = 'dz' | 'bh' | 'km' | 'dj' | 'eg' | 'iq' | 'jo' | 'kw' | 'lb' | 'ly' | 'mr' | 'ma' | 'om' | 'ps' | 'qa' | 'sa' | 'so' | 'sd' | 'sy' | 'tn' | 'ae' | 'ye'\nexport const ARAB_COUNTRY_CODES: readonly ArabCountryCode[]; export const ARAB_TMDB_COUNTRIES: readonly string[]\nexport function isArabCountry(v: string): v is ArabCountryCode; export function arabCountryOf(o?: readonly string[] | null): ArabCountryCode | null\nexport function arabCountryHref(c: ArabCountryCode): string; export function arabCountryName(c: ArabCountryCode, lang: string): string\n\n// ===== digest (wave 1) =====\nexport function isCronAuthorized(r: Request): boolean\nexport function cronDeadline(source: string): number   // 'github' | vercel-cron UA: +45s; anything else (cron-job): +22s\nexport async function withLease<T>(key: string, ms: number, fn: () => Promise<T>): Promise<{ busy: true } | { busy: false; value: T }>\nexport async function runCron(r: Request, name: string, fn: (ctx: { deadline: number; source: string }) => Promise<Record<string, unknown> & { more?: boolean }>): Promise<Response>\n// src/lib/email.ts\nexport async function reserveMail(kind: 'bulk' | 'transactional'): Promise<boolean>   // mail:day:<UTC date>; bulk stops at MAIL_DAILY_LIMIT(450) - 70\nexport type DigestTile = { title: string; href: string; poster: string | null; line?: string }\nexport type DigestSection = { type: 'rows'; id: string; title: string; rows: DigestTile[] } | { type: 'posters'; id: string; title: string; tiles: DigestTile[] } | { type: 'note'; id: string; text: string; href?: string }\nexport type DigestContext = { userId: string; profileId: string; locale: Locale; since: Date; until: Date; t: Translate }\nexport type DigestProvider = { id: string; build: (ctx: DigestContext) => Promise<DigestSection | null> }\nexport const DIGEST_PROVIDERS: DigestProvider[]\n// GET /api/digest -> { available, locked, enabled, email, emailVerified, locale, pausedReason, releaseAlerts, next }\n\n// ===== french (wave 1) =====\nexport const LOCALE_META: Record<Locale, { short: string; label: string; endonym: string; dir: 'ltr' | 'rtl'; script: 'latn' | 'arab'; htmlLang: string; og: string; tmdb: string; date: string }>\nexport function negotiateLocale(acceptLanguage: string | null): Locale | undefined\nexport function formatDate(v: string | number | Date, l: Locale, o: Intl.DateTimeFormatOptions, x?: { headline?: boolean }): string\nexport function quote(text: string, l: Locale): string\nexport function languageName(iso: string, l: Locale): string | undefined; export function regionName(iso: string, l: Locale): string | undefined\nexport function catalogueLanguage(l: Locale): string | undefined; export function logoLanguages(l: Locale): string\nexport async function translatedRecord(kind: 'movie' | 'tv' | 'person', id: string, l: Locale, ttl?: number): Promise<any | null>\nexport function localizeDetail<T extends Record<string, any>>(en: T, tr: any | null, l: Locale): T\nexport async function genreList(kind: 'movie' | 'tv', l: Locale): Promise<{ id: number; name: string }[]>\n\n// ===== wave-2 providers =====\nexport default function DateTile(p: { at: string; tz: string; size?: 'sm' | 'md' | 'lg' }): JSX.Element            // movie-night\nexport async function listMyNights(ref: ProfileRef, o?: { within?: number }): Promise<NightSummary[]>                // movie-night\nexport async function getTunisianTvShelfTile(): Promise<{ live: boolean; picture: string | null }>                  // tunisian-tv\nexport async function tunisianTvSitemap(): Promise<{ path: string; priority: number }[]>                             // tunisian-tv\nexport function aiSearchEnabled(): boolean                                                                           // ai-search config.ts\nexport function supportUrl(): string | null                                                                          // badges support-url.ts\n// ai-search normalize.ts (client-safe): looksLikeAsk(q), normalizeQuery(q), cleanInput(q)\n// badges art route /badges/art/{id}-{tier}.svg (tier 0 = locked)\n// tv-mode: tvSessions {_id, userId, profileId, deviceLabel, createdAt, lastSeenAt, revokedAt}; deleteTvSessions(userId); revokeTvSessionsForProfile(userId, profileId)",
+ "waves": [
+  [
+   "foundations"
+  ],
+  [
+   "french",
+   "social",
+   "seasons",
+   "drama-hubs",
+   "digest"
+  ],
+  [
+   "social-pages",
+   "ai-search",
+   "movie-night",
+   "shared-lists",
+   "badges",
+   "arab-map",
+   "tunisian-tv",
+   "tv-mode",
+   "detail-extras"
+  ]
+ ],
+ "cuts": "- **Seasonal skin.** Cut: logo finial, garland, data-season skin, BrandMark swap, RoomLight colour, the 'Seasonal touches' setting, the ?season= preview and particles. The IA forbids decorations in chrome. Developers preview with SEASONS_TODAY instead.\n- **New Year banner.** Cut: its weight (70) is below the banner threshold. It stays in ChipRail and SeasonRows.\n- **Movie night.**\n  - Cut: voting, reveal, tie-breaks, guests without accounts, the /together hub and hero entry points. The IA chose RSVP, candidates and linked swipe rooms.\n  - Deferred: 'Ask me before people join' as a general rule. Link joins already need host approval when a place or note is set.\n- **TV.** Cut: the /leanback route tree, the 10-foot rem system, TWA/Bubblewrap, assetlinks and the Play listing (USD 25; TV boxes lack Chrome). Also cut: the UA auto-redirect and CSS zoom (old WebViews).\n- **Detail page.** Cut: the hero actions slot and overflow. Cut: the MusicBrainz/Wikidata/Spotify pipeline and its cron; Deezer replaces them. Cut: the 'Darker' and 'Older' variations.\n- **Ask.** Cut: TopMatch, editable chip menus, the '+' facet and AskButton/AskSuggestion. Deferred to v2: Kids variant and TV mode.\n- **Social.**\n  - Cut: the single account identity, directory and name search, the /inbox page, read receipts, mute, reports and the multi-step setup sheet.\n  - Deferred: a per-profile photo upload. Only the owner profile may show the account photo.\n  - Dropped: 'Anyone with the link' for activity (Only me / Friends only), and the profile-level lists setting (each list has its own visibility).\n- **Badges.** Cut: the /badges page, film-gauge tiers, daily streaks, the toast host, Buy Me a Coffee, SupportCard prompts, the /supporters page and WrappedBadges. Hours of play are no longer stored (day flags only).\n- **Digest.** Cut: the /api/cron/[job] registry and its extra jobs, the home invite card and the account-level profile selector.\n- **Tunisian TV.** Cut: series pages, a custom player, resume/progress, home rows, the nudge and report endpoints. 'Complete series' is cut when no YouTube API key is set.\n- **Drama hubs.** Cut: the See-all routes (now ?shelf=), DramaHomeRow, a Kids variant and the /tv cross-links.\n- **Arab map.** Cut: the TN country page (redirect), the custom icon, and the duplicate country chip list.\n- **French P2.** Deferred: ?lang= URLs, hreflang and the middleware locale (touches middleware with TV mode; revisit after launch). Localized e-mails are deferred too.\n- **Shared lists.** Cut: the join/[token] page, HMAC nonces, ShareListSheet, the 'profile' visibility (replaced by 'friends'), and the PeekLayer action (no stacked sheets).\n- **Settings.** 'Titles you follow' stays its own section rather than moving inside Notifications (it is a long list); only e-mail folds into Notifications.",
+ "openQuestions": "These are decisions and accounts only you can provide:\n\n1. **Groq.**\n   - Create a free Groq account and set GROQ_API_KEY in Vercel.\n   - Keep no payment method on the Groq org. Without the key, Ask stays hidden.\n2. **Scheduler.**\n   - Create a cron-job.org account. Generate two secrets with `openssl rand -hex 32`, one for cron-job.org and one for GitHub, and put both in CRON_SECRETS_EXTRA.\n   - Add the repo secrets SITE_URL and CRON_SECRET_GH.\n   - Is the repo public or private? Private repos get 2,000 Actions minutes a month.\n3. **New required secrets.** Generate and set EMAIL_TOKEN_SECRET (the digest stays off without it) and SUPPORT_HASH_SECRET (the Ko-fi matching stays off without it).\n4. **Ko-fi.**\n   - Confirm the Ko-fi page.\n   - Set NEXT_PUBLIC_SUPPORT_URL and KOFI_VERIFICATION_TOKEN.\n   - Register `https://tunisiaflicks.vercel.app/api/supporters/webhook`.\n5. **Android TV APK.**\n   - Which GitHub owner/repo hosts the Releases?\n   - Create the signing keystore. Store it as ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD, and keep an offline backup.\n   - Set NEXT_PUBLIC_ANDROID_APK_URL; the APK panel on /app stays hidden until then.\n6. **YouTube Data API key.** Strongly recommended: RSS feeds show only 15 entries, so without the key Tunisian TV never shows 'complete' series. It needs a free Google Cloud project; no billing is required.\n7. **Tunisian TV channels.** Confirm that Hannibal TV (UCMowjs_MJ-oIWEeHUu3DrOQ) and Carthage+ (UCivxHCcy2MQwPBGQyPYcPcg) are the official channels.\n8. **E-mail.** Stay on Gmail SMTP (450 a day shared, with 70 reserved for account mail), or set up a free Brevo account on a custom domain?",
+ "ia": {
+  "navigation": "SHELL OWNERSHIP. One registry, four surfaces. The social track owns the structural edits to src/components/shell/{nav.tsx, Rail.tsx, TabBar.tsx, MenuSheet.tsx, AccountMenu.tsx, TopBar.tsx} and src/components/NotificationBell.tsx. Every other track only adds its own NavItem line, in the group and position given here, in the same commit that ships its route. The exceptions are: french edits LanguageSwitch OPTIONS; seasons provides src/lib/seasons.ts#getSeasonalNav; tv-mode edits layout.tsx to swap in its shell; ai-search edits the TopBar search pill label and CommandPalette.\n\nnav.tsx (new shape):\n  type NavItem = { href; label: TKey; icon; plain?; match?: string[] /* more paths that light it up */; grownUp?: boolean /* hidden for Kids profiles */ }\n  isActive(pathname, item) checks item.href plus item.match, with the same prefix rule as today.\n  BROWSE = Home /, TV Shows /tv, Discover /discover, Clips /clips, Coming Soon /upcoming, Top Rated /top-rated, Surprise me /surprise (plain). Surprise moves here from EXTRAS.\n  WORLD  = Tunisian /tunisian (TunisiaIcon), Dramas /dramas (lucide Drama, key 'dramas.nav', EN label \"Turkish & K-dramas\", added by drama-hubs), Arab cinema /arab-cinema (lucide Map, 'arabMap.nav', added by arab-map), then the SEASONAL SLOT as the group's last item.\n  YOURS  = Friends /friends (UsersRound, 'social.nav', grownUp, added by social), Movie night /movie-night (Popcorn, 'night.nav', grownUp, added by movie-night; it REPLACES the Swipe rail item), Library /saved (lucide Library, 'nav.library', match: all LIBRARY hrefs).\n  LIBRARY = /saved, /favorites, /history, /lists. Saved goes first so the Library landing page is the first tab; LibraryTabs and the MenuSheet follow this order.\n  EXTRAS is deleted. Swipe stays reachable from the /movie-night \"Decide now\" card, the ChipRail mood.swipe chip, the footer and /swipe directly. My Year moves to the /me \"Your year\" card and to the seasonal slot from Dec 1 to Jan 15.\n  Transition rule: until movie-night ships, YOURS keeps {href:'/swipe', label:'swipe.title', icon:HeartHandshake} in its slot. My Year stays in the rail (after Library) until /me ships.\n  TABS: unchanged (Home, Discover, Clips, Search, plus You).\n  TV_NAV (tv-mode): Home, Search, Movies (/discover), TV Shows (/tv), Tunisian, Live TV (/tunisian/tv), Dramas, Library (/saved), Settings (/profile#display).\n  SEASONAL_ICONS: { moon: MoonStar, flag: Flag, year: CalendarHeart }. Server components can't pass icon components to the client, so getSeasonalNav returns an icon key.\n\nRAIL (desktop, lg and up). Three hairline-separated groups, BROWSE | WORLD (+ seasonal) | YOURS, with Settings pinned at the bottom (unchanged). That makes 14 items, plus 1 in season (today it has 15). Kids profiles get no grownUp items. Rail labels must be 20 characters or fewer in every language (the 256px panel truncates). No nav colour except the red active indicator; the seasonal icon stays white.\n\nSEASONAL SLOT. getSeasonalNav(kids, today) in src/lib/seasons.ts, built on activeMoments(), returns {href, label, icon, accent, signedInOnly?} or null. It only covers moments with weight 90 or more: Ramadan (from 45 days before, /ramadan), Eid al-Fitr and Eid al-Adha (/moments/<id>). It also covers \"Your year\" (Dec 1 to Jan 15, /wrapped, signedInOnly, weight 50). Halloween, summer and the like never take the slot; they stay in ChipRail and SeasonRows.\n\nLAYOUT PROPS. src/app/layout.tsx computes `kids = await getKidsMode()` (cached per request) and `seasonal = getSeasonalNav(kids)`, and passes them as props to Rail, TabBar→MenuSheet and TopBar. That way Kids filtering never flashes on the client.\n\nTABBAR (below lg): unchanged, 4 tabs plus \"You\". Friends is NOT a tab; revisit once there's usage data. Hidden in TV mode.\n\nMENUSHEET (\"You\"), top to bottom:\n 1. The existing account row, plus a new second line linking \"Your profile page\" to /me (all signed-in profiles). The settings gear stays. Guests keep the existing sign-in card.\n 2. The profile switcher (unchanged).\n 3. NEW \"Together\" pair: two tiles side by side, rounded-[22px], h-[84px].\n    - Friends: AvatarStack of up to 3 friends, plus a red count of pending requests.\n    - Movie night: the next night as a mini DateTile, or \"Plan a night\".\n    Hidden for Kids. Guests see both (they lead to the signed-out states). Each tile renders only once its YOURS entry exists.\n 4. Places grid (4 columns) = [...BROWSE, ...WORLD] minus TABS, plus the seasonal slot: TV Shows, Tunisian, Dramas, Arab cinema, Coming Soon, Top Rated, Surprise me, [seasonal]. The static /ramadan tile is removed; the seasonal slot replaces it, and Ramadan stays reachable all year through the Tunisian hub door and the footer.\n 5. The Library list (existing, now saved-first).\n 6. LanguageSwitch stretch with 4 options: EN, FR, عربي, تونسي.\n 7. A \"Switch to TV mode\" row (TvMinimal), only when tv-mode's useLikelyTv() is true.\n 8. Log out.\n\nACCOUNTMENU (desktop). The header label (avatar, name, Kids badge) becomes a link to /me. Then: Switch profile, Manage profiles, Favorites, Bookmarked, \"Switch to TV mode\" (likely-TV devices only), Settings, then a separator and Log out. Nothing else.\n\nTOPBAR. Same composition, and nothing new may ever be added:\n- The search pill, whose label becomes 'ai.searchOrAsk' (\"Search or ask…\") when ai-search ships; Kids keep 'search.open'.\n- LanguageSwitch compact (4 options).\n- InboxBell, in NotificationBell's slot, on all sizes.\n- AccountMenu.\n\nINBOX = THE BELL. There is no separate messages area and no chat.\n- The title becomes \"Notifications\" ('alerts.bellLabel') instead of \"Alerts\".\n- Desktop: the existing glass DropdownMenu, widened to 360px. Phones: a vaul Drawer with the same InboxList.\n- Footer of both: \"See all\" → /notifications, \"Manage\" → /profile#notifications.\n- Kids: release/new-episode alerts only.\n- The badge shows the unread count and clears on open. Actionable items keep their inline buttons until answered.\n\nHUB GROUPING.\n- The Tunisian family lives under /tunisian: catalogue, /tunisian/cinema, /tunisian/tv, plus an always-present door to /ramadan.\n- Turkish and Korean live under /dramas.\n- The Arab map is /arab-cinema.\n- Ramadan and moments are calendar-driven (seasonal slot, SeasonalBanner, ChipRail, SeasonRows) and never permanent nav.\n- One HubShelf row on home advertises every hub.\n- Inside a hub, the rail item stays lit for all sub-paths. Siblings switch with SegmentedLinks (3 or fewer: Turkish|Korean, All|Series|Movies) or a Chip row (countries). No breadcrumbs, no back-eyebrows.\n\nFOOTER (each track adds its own link). Explore column: Turkish & K-dramas, Arab cinema, Tunisian TV, Movie night (Swipe stays). Site column: Support us (/support), Get the app (/app).\n\nTV MODE. TvShell replaces Rail, TopBar, TabBar, Footer, PeekLayer, SearchPaletteHost and ShareSheetHost, on the same URLs, using TV_NAV.",
+  "routes": "NEW PAGES (owner):\n- /friends (social): friends' activity feed. SegmentedLinks: Activity (/friends) | Your friends (/friends/list). Guest: SignInInvite (icon UsersRound). Kids: KidsBlocked what='social'. A grown-up profile without a handle gets an inline \"Create your profile page\" setup card. noIndex.\n- /friends/list (social): friends, incoming/outgoing requests (anchor #requests), and \"Add a friend\" (exact-handle lookup or an invite link via ShareSheet invite mode). Row menu: Remove, Block.\n- /u/[handle] (social): profile page, one per grown-up viewer profile.\n  - Each viewer only sees what the owner made visible. The owner sees everything, with \"Only you\" lock markers and Edit → /profile#privacy.\n  - ?invite=TOKEN shows an InviteBanner (Add friend).\n  - Has opengraph-image.tsx (public fields only). Always noIndex.\n  - handle matches /^[a-z0-9_]{3,20}$/ and is unique across all profiles. Reserved: me, u, admin, support, settings, friends, tunisiaflicks, …\n- /me (social): your own hub, for every signed-in profile.\n  - If the profile has a handle: 302 → /u/[handle].\n  - Otherwise it renders the owner view: BadgeShelf, streak, a \"Your year\" card → /wrapped, lists, and a \"Create your profile page\" card.\n  - Kids get badges and streak only. Guest: SignInInvite.\n- /notifications (social): the full inbox, with Chip filters All / Friends / Alerts / Movie nights. Guest: SignInInvite (Bell). The API stays at /api/notifications (extended, GET/PATCH kept).\n- /movie-night (movie-night): lobby with upcoming nights (hosting and invited), \"Plan a night\" (primary), and a \"Decide now\" card → /swipe. Guest: hero, the Swipe card and SignInInvite. Kids: KidsBlocked what='social'.\n- /movie-night/new (movie-night): the planning flow as a real page, not a modal. ?title=movie:550 | tv:1399 prefills the title, using the same key format as SwipeCard.key.\n- /movie-night/[id] (movie-night): the night itself.\n  - Date and time, guests and RSVP, film candidates.\n  - \"Pick together\" creates or opens a linked swipe room at /swipe/[code].\n  - \"Add to calendar\" reuses buildIcs from src/lib/calendar.\n  - ?invite=TOKEN shows an InviteBanner (Join).\n  - opengraph-image never shows guest names. noIndex.\n- /swipe and /swipe/[code] (unchanged): the lobby gains a \"Plan it for later\" link to /movie-night, and night-linked rooms show the night's name.\n- /lists and /lists/[slug] (shared-lists, no new routes): /lists gets \"Yours\" and \"Shared with you\". /lists/[slug]?invite=TOKEN shows an InviteBanner (Join as editor).\n- /dramas (drama-hubs): hub index with two picture doors (Turkish, Korean) and rows.\n- /dramas/turkish and /dramas/korean (drama-hubs): HubHeader, with SegmentedLinks Turkish | Korean and Chip filters. Indexable; added to sitemap.ts and SHARE_SECTIONS.\n- /arab-cinema (arab-map): the map, plus an accessible country Chip list (keyboard, D-pad, screen readers).\n- /arab-cinema/[country] (arab-map): ISO 3166-1 alpha-2 lowercase, the 22 Arab League members; anything else → notFound(). tn → permanentRedirect('/tunisian/cinema'). Neighbour Chip row.\n- /tunisian/tv (tunisian-tv): official Tunisian channels on YouTube, live now and latest. The static segment beats /tunisian/[year]. Kids: KidsBlocked what='tunisian'.\n- /tunisian/tv/[channel] (tunisian-tv): channel page, e.g. watania-1, el-hiwar-ettounsi.\n- /search?mode=ask&q=… (ai-search): the existing /search with a Titles | Ask switch. There is NO /ask route. API: POST /api/ai/search.\n- /support (badges): why it's free, what it costs, the Ko-fi link.\n- /app (tv-mode): Get the app (APK on GitHub Releases, PWA install, TV mode).\n- /unsubscribe?t=SIGNED (digest): one-click unsubscribe without login; the List-Unsubscribe header points here (plus a POST one-click).\n\nSETTINGS (anchors only, no new routes): /profile#privacy, #display, #email, #supporter. /profile stays Settings; do not rename it.\n\nMODES, NOT ROUTES. TV mode is the cookie tf-tv=1:\n- Set by /?tv=1 (the middleware sets the cookie and redirects to /; add '/' to the matcher).\n- Cleared by /?tv=0 or POST /api/tv-mode.\n- Never use a /tv prefix: /tv is TV Shows.\n\nAPIs:\n- social: /api/social/{handle,friends,requests,privacy,feed,send}; /api/ratings (GET ?type=&id= → {mine, friends[], average, count}; PUT {rating:1..5}; DELETE).\n- /api/notifications: extended.\n- movie-night: /api/movie-night, /api/movie-night/[id].\n- shared-lists: /api/lists/[slug]/collaborators.\n- ai-search: /api/ai/search.\n- tv-mode: /api/tv-mode.\n- badges: /api/supporters/webhook (Ko-fi).\n- Cron endpoints, all behind isCronAuthorized: /api/cron/digest, /api/cron/nights, /api/cron/badges, /api/cron/tunisian-tv. /api/cron/notify stays on the Vercel daily cron.\n\nINVITATION RULE. Every invitation is the thing's own URL plus ?invite=TOKEN (friend: /u/handle; night: /movie-night/id; list: /lists/slug).\n- Tokens are random base64url, 16+ chars, single-purpose and expiring: friend 14 days, list 30 days, night until it ends.\n- The page strips the parameter with history.replaceState after reading it.\n- A signed-out visitor carries the token through /login?next=.\n- Swipe keeps its 6-character codes.\n\nINBOX DEEP LINKS:\n- friend_request → /friends/list#requests\n- friend_accepted → /u/[handle]\n- title_sent → /{media_type}/{id}\n- friend_rated → /{type}/{id}#ratings\n- night_* → /movie-night/[id]\n- list_* → /lists/[slug]\n- badge_earned → /me#badges\n- release alerts: unchanged\n\nINDEXING. noIndex: /u/*, /me, /friends/*, /notifications, /movie-night/*, /unsubscribe. Hubs are indexable and go in sitemap.ts.",
+  "placements": "AI-SEARCH:\n- A leading \"Ask\" chip (AiMark) in ChipRail, before the moment chips, → /search?mode=ask.\n- CommandPalette: when the field holds 3 or more words, the first item is \"Ask: \"{query}\"\" → /search?mode=ask&q=. The empty state gets a \"Try asking\" group with 2 prompts computed from time of day and season. No palette animation.\n- /search: a Titles | Ask switch beside the field. Ask results = interpretation as removable Chips, then MediaGrid, then AiNote.\n- TopBar pill label \"Search or ask…\". Phones use the Search tab.\n- Hidden for Kids (v1) and in TV mode. Guests are allowed, rate-limited with src/lib/rate-limit.ts, with a keyword fallback when the free quota runs out.\n\nSOCIAL (also the shell owner):\n- Rail and MenuSheet \"Friends\"; the Together tiles; AccountMenu header → /me; MenuSheet \"Your profile page\".\n- InboxBell and /notifications.\n- Detail page: #ratings band; the hero Share opens the ShareSheet (friends row + Send).\n- Home: FriendsRow.\n- PeekLayer QuickSheet: Share opens the ShareSheet. MediaContextMenu and MediaOptionsMenu get \"Send to a friend…\".\n- Settings #privacy.\n- Push topic 'friends'.\n- Kids never see any of it.\n\nMOVIE-NIGHT:\n- Rail and MenuSheet \"Movie night\" (swaps out Swipe); the Together tile shows the next night.\n- ShareSheet action row \"Plan a movie night\" → /movie-night/new?title=….\n- Home: UpcomingNightCard.\n- /swipe: \"Plan it for later\" link. Nights pick their film through linked swipe rooms.\n- Inbox kinds: night_invite (inline RSVP: Going / Can't), night_update, night_reminder. Push topic 'nights'.\n- Footer link.\n\nSHARED-LISTS:\n- /lists: \"Shared with you\" section, plus collaborator AvatarStacks on ListCover cards.\n- /lists/[slug]: header AvatarStack and an \"Invite\" button (ShareSheet invite mode).\n- AddToListPanel opens from: the ShareSheet row \"Add to a list\", MediaContextMenu \"Add to a list…\", the QuickSheet, and an \"Add to a list\" action on the saved-to-My-list toast.\n- Lists the owner made visible appear on /u/[handle].\n- Inbox kinds: list_invite (inline Join), list_update (batched daily).\n\nBADGES:\n- BadgeShelf (#badges) and the weekly streak in the header of /me and /u/[handle].\n- Inbox kind badge_earned. No toasts during playback; nothing on home.\n- The /support page, Settings #supporter, the footer \"Support us\" link.\n- Supporter badge on the profile page, if the user opts in.\n\nFRENCH:\n- LanguageSwitch OPTIONS: EN, FR, عربي, تونسي (both compact and stretch). Settings #display Language block.\n- Locale = 'en'|'ar'|'tn'|'fr'.\n- isArabicScript must become ar|tn only; audit all 22 call sites of isArabicScript / locale !== 'en'.\n- dateLocale('fr') = 'fr-FR'; tmdbLanguage('fr') = 'fr-FR'; htmlLang('fr') = 'fr'.\n- getLocale maps an accept-language of fr to 'fr'. Add og alternateLocale fr_FR.\n\nDRAMA-HUBS:\n- Rail and MenuSheet \"Turkish & K-dramas\" (WORLD, after Tunisian).\n- Home HubShelf; footer link.\n- Owns the Chip, HubHeader and HubShelf patterns.\n- grownUp: hidden for Kids; the pages show KidsBlocked.\n- Titles open the normal /tv/[id] pages.\n\nARAB-MAP:\n- Rail and MenuSheet \"Arab cinema\" (WORLD); a HubShelf tile; footer link.\n- A HubDoor \"See the Arab cinema map\" on /tunisian/cinema.\n- DetailsGrid \"Countries\" entries become links to /arab-cinema/[cc] for Arab countries (a small edit in src/components/detail/DetailSections.tsx).\n- Kids: visible, filtered with filterKidSafe; countries with nothing kid-safe are dimmed.\n\nTUNISIAN-TV:\n- The /tunisian header's single \"Tunisian cinema\" card becomes a row of 3 HubDoors: Tunisian cinema, Tunisian TV (LiveDot when a channel is live), and Ramadan series (/ramadan, always shown).\n- A HubShelf tile with LiveDot; TV_NAV \"Live TV\"; footer link.\n- No rail item (the Tunisian item stays lit).\n- KidsBlocked.\n\nSEASONS:\n- SeasonalBanner in home slot 3. It replaces RamadanBanner and keeps the Ramadan logic (BANNER_DAYS_BEFORE).\n  - One banner at most, from moments with weight 80 or more, plus \"Your year\" in December for signed-in users.\n  - Kids only see kid-safe moments.\n  - Dismissible per occurrence (localStorage 'tf-season-dismissed:<id>:<start>').\n- The seasonal nav slot via getSeasonalNav. RoomTint accents on hub and moment pages.\n- NEVER: page background changes, logo recolouring, confetti or particles, decorations in the shell chrome, sound.\n\nTV-MODE:\n- Entry:\n  - The Android TV app's start URL /?tv=1.\n  - Settings #display switch.\n  - On likely-TV devices, a one-time suggestion card (bottom-end, VerifyEmailBanner style): \"Watching on a TV? Switch to TV mode\", with Switch / Not now (dismissed for 30 days).\n  - An AccountMenu or MenuSheet row, on likely-TV devices only.\n- Exit: the TV Settings screen's \"Exit TV mode\" button, or /?tv=0. Hidden inside the Android TV app (detected by a UA token).\n- /app page and footer link. TvShell and TV_NAV.\n- Not in TV mode: clips, swipe, friends, movie-night planning, the map, AI search, ShareSheet, PeekLayer.\n\nDETAIL-EXTRAS:\n- Detail page: \"but…\" Chips on #similar, the #extras section, and \"Where have I seen them?\" on the #cast header.\n- /person/[id]: a \"You've seen {name} in\" row first (signed in; history intersected with credits).\n- Guests: the button opens a popover with Sign in.\n- Owns VideoTile and YouTubeDialog.\n\nDIGEST:\n- Settings #email; the /unsubscribe page.\n- One line in the inbox empty state, \"Get a weekly digest by email\" → /profile#email.\n- Owns src/lib/cron.ts and .github/workflows/cron.yml (GitHub Actions, free). Other tracks add their job lines there.",
+  "homeOrder": "src/app/page.tsx, top to bottom. New blocks render null when their condition fails, never a placeholder.\n 1. Billboard (existing)\n 2. ChipRail (existing; ai-search adds the leading \"Ask\" chip, not for Kids or TV mode)\n 3. SeasonalBanner (seasons; replaces RamadanBanner; only in season; at most one)\n 4. ContinueWatching (existing; signed in)\n 5. UpcomingNightCard (movie-night; only for a grown-up with a night in the next 7 days; compact framed card: DateTile, guests AvatarStack, chosen film or \"Pick together\")\n 6. Top10Row (existing)\n 7. FriendsRow \"Friends are watching\" (social; grown-up whose friends share activity; posters with an AvatarStack overlay at the bottom-start; See all → /friends)\n 8. SeasonRows (existing, Suspense)\n 9. PushPrompt (existing)\n10. Trending movies (existing PosterSlider)\n11. PickOfTheDay (existing)\n12. HubShelf \"Beyond Hollywood\" (drama-hubs; Suspense; landscape picture doors: Tunisian, Tunisian TV (LiveDot), Turkish dramas, Korean dramas, Arab cinema; hidden for Kids)\n13. SequelRow (existing)\n14. BecauseYouWatched (existing)\n15. Community trending (existing, same condition)\n16. Now playing HeroSlider\n17. Popular movies\n18. Top rated movies\n19. AnniversaryRow\n20. Coming soon\n\nRULES:\n- At most two framed cards (3 and 5) above Top10.\n- Nothing on home for badges, streaks, the digest or AI beyond the Ask chip.\n- New data blocks stream in Suspense with fallback null.\n- Kids skip 5, 7 and 12, and the Ask chip.\n- TV mode skips 5, 7 and 9, and the Ask chip.",
+  "detailOrder": "MovieDetail.tsx and TvDetail.tsx:\n1. MediaHero, with NO new buttons.\n   - Kept as is: Play, Trailer, then My list, Favorite, Share, Follow (if followable).\n   - \"Share\" now opens the ShareSheet: friends row with Send, Plan a movie night, Add to a list, then the external ShareButtons.\n   - Guests get the external share plus \"Sign in to send it to friends\". Kids get the external share only.\n   - The meta line is unchanged; the single star with a decimal stays TMDB's score.\n2. SectionNav: Watch, Episodes (TV only), Ratings, More like this, Extras, Cast, Details. A section that isn't on the page isn't in the nav.\n3. #streamSection Watch (existing).\n4. #episodes Episodes (TV, existing).\n5. #ratings Ratings band (social, a panel inside page-x). It sits here because people land on it right after watching.\n   - Your 5-star input: everyone signed in, including Kids, and private by default.\n   - Friends who rated: AvatarStack plus their stars, only from friends who share ratings, grown-ups only.\n   - TunisiaFlicks average: a 5-star row plus the count, only with 5 or more ratings.\n   - Guests: the average plus \"Sign in to rate\".\n   - After a first rating, one hint for grown-ups with a handle: \"Share your ratings with friends\" → /profile#privacy.\n6. #similar More like this: the existing PosterSlider, with detail-extras \"but…\" Chips above it (lighter, shorter, newer, a series/a film, Arab). The chips refilter in place.\n7. #extras Extras (detail-extras):\n   - A Videos row of VideoTiles: featurettes, behind the scenes, bloopers, teasers. The main trailer stays in the hero.\n   - A Soundtrack block: album plus tracks with 30-second previews, opening Deezer, Anghami, Spotify or YouTube Music searches.\n   - The section is omitted when both are empty.\n8. #cast Cast: the existing CastRow, plus a \"Where have I seen them?\" header action (ScanFace) that shows, for each person, the matching title from your history.\n9. #details Details: the existing DetailsGrid; arab-map links the Arab countries.\n\nNOT ON THE DETAIL PAGE:\n- No separate \"Send to a friend\" or \"Plan a movie night\" buttons or sections; both live in the ShareSheet.\n- No friends feed, no badges.\n\nTunisian catalogue pages (/tunisian/[year]/[month]/[slug]) have no TMDB id, so v1 gives them no ratings, sends or nights; they only get the ShareSheet's external share.\n\nTV mode keeps: Watch, Episodes, own Ratings, More like this, Extras, Cast, Details. It drops the ShareSheet and friends.",
+  "settings": "/profile (Settings). Add `grownUp?: boolean` to SETTINGS_SECTIONS in src/components/profile/SettingsNav.tsx. page.tsx renders the sections in this order and skips grownUp sections for Kids; SettingsNav filters them too.\n 1. account: existing.\n 2. profiles: existing.\n 3. privacy (NEW, social, grownUp, icon Lock), \"Profile page and privacy\", scope: this profile.\n    - Handle, display name, bio (160 chars max), \"Use my account photo\".\n    - A VisibilitySelect (Only me / Friends / Anyone with the link) for each of: what I watch, my ratings, my lists on my profile page, my badges.\n    - Friend requests from: anyone with my handle or link / nobody.\n    - A \"Pause sharing\" master switch.\n    - Blocked people.\n    - Defaults: everything is Only me. No directory: friends are found by exact handle or invite link only.\n    - Suggested storage: a `socialProfiles` collection {_id: profileId, userId, handle (unique index), …}.\n 4. display (NEW, owned by french, icon Languages), \"Language and display\", scope: this device.\n    - LanguageSwitch stretch (EN/FR/عربي/تونسي).\n    - tv-mode adds a <TvModeSetting/> switch (cookie tf-tv) and a link to /app.\n 5. playback: existing.\n 6. notifications: the existing push card on this device. Add SwitchRows for the new topics: 'friends' (social: requests, titles sent) and 'nights' (movie-night: invites, reminders). Extend PushTopic in src/lib/push.ts.\n 7. email (NEW, digest, grownUp, icon Mail), \"Email\", scope: this profile, sent to the account address.\n    - Weekly digest switch, default OFF. One fixed weekly slot chosen by the digest track; no per-user scheduling.\n    - A \"Preview\" link.\n    - A release-alert emails switch (default on, matching today's behaviour).\n 8. following: existing.\n 9. library: existing.\n10. supporter (NEW, badges, grownUp, icon HandHeart), \"Supporter\", scope: account. Supporter status, a link to /support (Ko-fi), and a \"Show my supporter badge\" switch.\n11. security: existing.\n12. data: existing. Every track adds its collections to exportUserData/deleteUserData in src/lib/account.ts (ratings, friends, socialProfiles, nights, notifications, badges, digest prefs).\n\nNOT SETTINGS: seasonal decorations (the banner is dismissible instead), AI on/off, badge notifications, hubs.\n\nCOPY RULE: each new section's description names its scope (\"On this device.\" / \"For this profile.\" / \"For your account.\").",
+  "patterns": "Build each once at the given path; other tracks consume it and never fork it.\n\n1. RatingStars, RatingSummary (src/components/social/RatingStars.tsx, owner: social)\n   - Scale: 1 to 5 whole stars.\n   - Input: a radiogroup of 5 buttons with 44×44 hit areas and 24px stars; `fill-star text-star` when filled, text-white/30 when empty.\n   - Hover preview only under (hover:hover); arrow keys change the value; haptic() on commit.\n   - A \"Clear rating\" text button. Optimistic save; toast only on error.\n   - Display: a row of five 14px stars, partially filled for averages, plus the count in white/50.\n   - Rule: one star plus a decimal is reserved for TMDB's /10 score (hero, Billboard, PosterCard). Our scale is always five stars. Never red.\n\n2. UserAvatar, AvatarStack, PersonChip (src/components/social/Avatar.tsx, owner: social)\n   - Built on ProfileAvatar's colour tile and initial (the account photo only when usePhoto is on), always rounded-full. Sizes 24/32/40/56/96.\n   - AvatarStack: up to 3 plus a \"+N\" pill, -space-x-2, ring-2 ring-black.\n   - PersonChip: avatar plus <bdi>name</bdi>, an h-8 pill in bg-white/[0.06], linking to /u/[handle].\n   - Site people are colour tiles, film people (CastRow) are photos; never mix them.\n\n3. ShareSheet, ShareSheetHost, useShareSheet (src/components/share/ShareSheet.tsx, src/components/share/ShareSheetHost.tsx, src/store/share-sheet.ts, owner: social)\n   - Mounted once in layout.tsx beside PeekLayer.\n   - API: openShare({kind:'title', media:{media_type,id,title,poster_path}} | {kind:'invite', target:'friend'|'night'|'list', url, title}).\n   - Desktop (md and up): Dialog. Phones: Drawer.\n   - Sections:\n     a) People row: friends, multi-select, an optional note of up to 140 chars, and a red \"Send\" (the sheet's only red).\n     b) Action rows: \"Plan a movie night\" (Popcorn, provided by movie-night) and \"Add to a list\" (ListPlus, which opens shared-lists' AddToListPanel inside the sheet).\n     c) External: the existing ShareButtons (WhatsApp first) and Copy link.\n   - Guests get (c) plus a sign-in line. Kids get (c) only. It never opens on its own.\n\n4. InviteBanner (src/components/share/InviteBanner.tsx, owner: social)\n   - A framed card at the top of the invited page when ?invite= is present: inviter PersonChip, one sentence, Accept (primary) and Not now (ghost).\n   - Signed-out: \"Sign in to accept\", keeping the token through ?next=.\n\n5. InboxItem, InboxList, InboxBell (src/components/inbox/*, owner: social; NotificationBell.tsx re-exports InboxBell; other tracks add kinds)\n   - NotificationItem becomes {id, kind, created_at, read, href, actor?: {handle,name,color,image?}, media?: {media_type,tmdbId,title,poster_path}, note?, episode?, action?: {type:'friend_request'|'night_invite'|'list_invite', state:'pending'|'accepted'|'declined', id}}.\n   - Notification docs gain profileId (null = account-wide release alerts). GET filters {userId, profileId in [null, active]}; Kids get release kinds only.\n   - Row anatomy (the existing bell row):\n     - A leading 44px visual: poster, UserAvatar 40, or BadgeArt 44.\n     - Line 1 \"<bdi>Name</bdi> verb\" at 15px; line 2 white/60, clamp-2; line 3 time in white/40 at 11px; a trailing red unread dot.\n     - At most 2 inline sm buttons.\n   - Same kind and media within 24h merge (\"Sami and 2 others…\").\n\n6. VisibilitySelect (src/components/social/VisibilitySelect.tsx, owner: social): Only me (Lock) / Friends (UsersRound) / Anyone with the link (Link2).\n\n7. Chip, ChipGroup (src/components/ui/chip.tsx, owner: drama-hubs)\n   - h-10, rounded-full, px-4, text-[13.5px], bg-white/[0.06], hover /[0.1]; selected = bg-white text-black.\n   - Optional 16px icon, optional count, a removable variant (X with aria-label), link or button. ChipGroup supports single or multi selection with a roving tabindex.\n   - Country chips are the country name only (no flags, no emoji). Language chips: \"Dubbed in Arabic\", \"Arabic subtitles\", \"Original audio\".\n   - Used by: hub filters, arab-map, \"but…\", AI interpretation, /notifications, /lists.\n\n8. HubHeader (src/components/hubs/HubHeader.tsx, owner: drama-hubs)\n   - The /tunisian header, generalized: RoomTint(accent), a title at clamp(40px,6.5vw,92px), one subtitle, an optional watermark glyph at about 13% opacity, an end slot (SegmentedLinks) and a below slot (HubDoors).\n   - Each hub has one accent \"r g b\", used only for tint, watermark and glows, never for buttons. It must differ from Tunisian (231 0 19) and Ramadan (245 190 80).\n\n9. HubDoor (src/components/hubs/HubDoor.tsx, owner: seasons, built while generalizing RamadanBanner)\n   - Icon disk, title, one line, ChevronRight with rtl:rotate-180, accent gradient, optional LiveDot.\n   - Used by SeasonalBanner, the Tunisian hub doors, /dramas and the /tunisian/cinema → map link.\n\n10. HubShelf (src/components/hubs/HubShelf.tsx, owner: drama-hubs): home row of rounded-tile landscape picture doors, one per hub.\n\n11. AiMark, AiNote (src/components/ai/AiMark.tsx, owner: ai-search)\n   - The icon is lucide `Sparkle` (the single four-point star), reserved for AI. `Sparkles` keeps meaning new/special (ChipRail \"New\", the Pick reason, Wrapped).\n   - White on glass; never red, never a rainbow. Label \"Ask\".\n   - Thinking state: \"Thinking…\" with a soft opacity pulse, static under reduced motion.\n   - AiNote: one white/50 line, \"Suggested by AI from TMDB data. It can be wrong.\"\n   - All AI output carries AiMark; computed features never do.\n\n12. BadgeArt, BadgeShelf (src/components/badges/*, owner: badges)\n   - Generated SVG: one medallion shape family, a centred lucide glyph, and tiers as muted metals (bronze, silver, gold, platinum) with ProfileAvatar's top-light gradient. Locked badges are outlines in white/15.\n   - No emoji, no raster, no red. The supporter badge is warm gold with the A mark.\n   - Sizes: 44 (inbox), 64 (shelf), 160 (dialog).\n   - Streaks count weeks with at least one title watched; they show as a number plus CalendarCheck and are never used to nag.\n\n13. SeasonalBanner (src/components/seasons/SeasonalBanner.tsx, owner: seasons): src/components/ramadan/RamadanBanner.tsx re-exports it. getSeasonalNav and getSeasonalBanner live in src/lib/seasons.ts, built on src/lib/moments.ts.\n\n14. VideoTile, YouTubeDialog (src/components/media/VideoTile.tsx and YouTubeDialog.tsx, owner: detail-extras): YouTubeDialog is extracted from MediaHero's trailer Dialog (youtube-nocookie). tunisian-tv reuses both.\n\n15. LiveDot (src/components/ui/live-dot.tsx, owner: tunisian-tv): an 8px red-500 dot with glow and a \"Live\" sr-only label; a 2s pulse only under no-preference. Red is legitimate here: it is a signal.\n\n16. DateTile (src/components/movie-night/DateTile.tsx, owner: movie-night): a calendar-leaf tile (weekday, day in the display face, time) for night cards, the MenuSheet tile, inbox and OG.\n\n17. AddToListPanel (src/components/lists/AddToListPanel.tsx, owner: shared-lists): renders inside the ShareSheet, or as its own Drawer from context menus.\n\n18. KidsBlocked what='social' (owner: social) and SignInInvite (existing, pass the icon): every new page's Kids and signed-out states.\n\n19. isCronAuthorized, cron helpers (src/lib/cron.ts, owner: digest)\n   - Extracted from src/app/api/cron/notify/route.ts.\n   - Every /api/cron/* route: GET with Bearer CRON_SECRET, maxDuration 60, deadline Date.now()+45_000, idempotent, returns stats JSON.\n\n20. TvShell, useTvMode, useLikelyTv, `.tv-focus` (src/components/tv/TvShell.tsx, src/hooks/use-tv-mode.ts, owner: tv-mode): focus = a 3px white ring, scale 1.04 and a soft glow. Red is only the Play button background.",
+  "notes": "IDENTITY\n- Every social object belongs to a viewer profile (userId + profileId), the same way userContent does.\n- Kids profiles have no social identity, no social UI, and a bell with release alerts only.\n- Account-level legacy data stays as it is (lists.userId, follows, wrapped). New links reference profileId; shared-lists adds ownerProfileId, adopted by profiles[0].\n\nCOPY\n- The social page is the \"profile page\" (/u, /me). Viewer profiles stay \"profiles\". Never call the social page just \"profile\".\n- Settings stays at /profile, because its anchors are linked across the site.\n\nPRIVACY\n- Nothing is shared until the person chooses to share it.\n- No user directory: exact handle or invite link only.\n- /u pages are noindex; OG cards show public fields only.\n- Not a chat: no threads, no read receipts, only a note of up to 140 chars on a sent title.\n\nMERGE ORDER\n1. The social shell foundation: NavItem.match/grownUp, isActive(item), the WORLD and YOURS groups, the Library collapse with LIBRARY saved-first, Surprise moved into BROWSE, layout passing kids and seasonal (seasonal is null until seasons lands), Together tiles, InboxBell, ShareSheetHost.\n2. Every other track then adds its own NavItem, footer link and settings section with its route.\n3. movie-night swaps out the Swipe rail entry. My Year leaves the rail when /me ships.\n\nCHROME RULES\n- Floating cards: one at a time (VerifyEmailBanner first, then the TV suggestion).\n- Nav icons are unique within the nav.\n- Rail labels are 20 characters or fewer in every language.\n\nFRENCH\n- isArabicScript must not be true for fr; audit all 22 call sites.\n- Arabic TMDB fetches (withTranslatedFields with 'ar') must use tmdbLanguage(locale) instead.\n\nFREE-TIER CONSTRAINTS\n- No Play Store (a $25 fee): ship the APK on GitHub Releases.\n- Most Android TV boxes lack Chrome, so a TWA won't run; use a WebView wrapper with a UA token.\n- YouTube: use channel RSS feeds and embeds; don't use Data API search (quota).\n- Scheduler: GitHub Actions or cron-job.org. Vercel's single cron stays on /api/cron/notify.\n- AI: a free-tier provider, rate-limited server-side, with keyword fallback.\n- Supporters: Ko-fi webhook.\n- Soundtrack previews: Deezer's public API (no key).\n\nSITEMAP AND SHARE CARDS\n- Hubs go in sitemap.ts and SHARE_SECTIONS.\n- next/og returns 500 on Windows dev; preview share cards with the patched plain-Node harness.\n- Never junction node_modules into a worktree: removing the junction deletes the real one.\n\nREVISIT WITH DATA: Friends as a tab-bar tab; Coming Soon and Top Rated folding into Discover."
+ }
+}
