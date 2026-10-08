@@ -56,7 +56,8 @@ export default async function MainPage() {
       {/* 1 */}
       <Billboard items={billboard} />
       {/* On desktop the first rows rise into the billboard's fade. */}
-      <div className="relative z-10 mt-6 space-y-10 sm:space-y-12 md:-mt-16">
+      {/* Without a billboard (a Kids profile with nothing kid-safe to feature), clear the top bar. */}
+      <div className={billboard.length > 0 ? 'relative z-10 mt-6 space-y-10 sm:space-y-12 md:-mt-16' : 'page-top relative z-10 space-y-10 sm:space-y-12'}>
         {/* 2 */}
         <ChipRail />
         {/* 3. Seasonal: at most one banner, only in season (Ramadan, the Eids...). */}

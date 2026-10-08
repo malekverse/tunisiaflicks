@@ -90,6 +90,9 @@ export const authOptions: NextAuthOptions = {
         // Do not include the image in the session
       }
       session.loginAt = token.loginAt;
+      // A TV signed in with a code gets a limited session (see lib/session-scope): carry its scope.
+      session.scope = token.scope;
+      session.pinnedProfileId = token.pinnedProfileId;
       return session;
     },
   },

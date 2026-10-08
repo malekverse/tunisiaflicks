@@ -82,7 +82,7 @@ export default function Following() {
       id="following"
       title={t('alerts.following')}
       description={t('alerts.sectionDesc')}
-      action={items.length > 0 ? <span className="text-[13px] tabular-nums text-white/45">{items.length}</span> : undefined}
+      action={items.length > 0 ? <span className="text-[13px] tabular-nums text-white/50">{items.length}</span> : undefined}
     >
       {/* "Release alerts by email", for the whole account (disappears when it renders nothing). */}
       <div className="mb-6 empty:hidden"><ReleaseEmailSwitch /></div>
@@ -109,7 +109,7 @@ export default function Following() {
                   <Link href={`/${item.media_type}/${item.id}`} className="line-clamp-1 text-[15px] font-semibold text-white outline-none hover:underline focus-visible:underline">
                     <bdi>{item.title}</bdi>
                   </Link>
-                  <p className="mt-0.5 text-[12.5px] text-white/45">{t(item.media_type === 'movie' ? 'common.movie' : 'common.tvShow')}</p>
+                  <p className="mt-0.5 text-[12.5px] text-white/50">{t(item.media_type === 'movie' ? 'common.movie' : 'common.tvShow')}</p>
                   <p className="mt-1.5 flex items-start gap-1.5 text-[13px] leading-snug text-white/70">
                     <BellRing aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-400" strokeWidth={2.2} />
                     <span>{status(item, t, dateLocale)}</span>

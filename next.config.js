@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // A production build can go to its own folder (NEXT_DIST_DIR=.next-build) while a dev server uses .next.
+  ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   // Skip type checking during builds for better performance
   typescript: {
     ignoreBuildErrors: true,
