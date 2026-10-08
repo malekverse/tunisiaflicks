@@ -167,7 +167,7 @@ export default function InboxBell(): JSX.Element | null {
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent>
           <DrawerTitle className="px-5 pb-1 pt-3 text-[17px] font-semibold">{t('alerts.bellLabel')}</DrawerTitle>
-          <DrawerDescription className="sr-only">{t('social.inbox.emptyText')}</DrawerDescription>
+          <DrawerDescription className="sr-only">{t(kids ? 'social.inbox.emptyTextKids' : 'social.inbox.emptyText')}</DrawerDescription>
           <InboxTouchContext.Provider value>
             <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-2.5 pb-1">{list}</div>
           </InboxTouchContext.Provider>

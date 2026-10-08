@@ -136,6 +136,7 @@ export const social = defineStrings({
     // Inbox
     'social.inbox.empty': "You're all caught up",
     'social.inbox.emptyText': 'Friend requests, titles friends send you and release alerts land here.',
+    'social.inbox.emptyTextKids': 'New episodes and releases of the titles you follow land here.',
     'social.inbox.seeAll': 'See all',
     'social.inbox.manage': 'Manage',
     'social.inbox.digestHint': 'Get your week in one email',
@@ -320,6 +321,7 @@ export const social = defineStrings({
 
     'social.inbox.empty': 'لا جديد الآن',
     'social.inbox.emptyText': 'طلبات الصداقة والعناوين التي يرسلها أصدقاؤك وتنبيهات الإصدارات تظهر هنا.',
+    'social.inbox.emptyTextKids': 'الحلقات الجديدة وإصدارات العناوين التي تتابعها تظهر هنا.',
     'social.inbox.seeAll': 'عرض الكل',
     'social.inbox.manage': 'الإدارة',
     'social.inbox.digestHint': 'ملخّص أسبوعك في رسالة واحدة',
@@ -438,6 +440,7 @@ export const social = defineStrings({
     'social.invite.friendAccept': 'اقبل',
     'social.inbox.empty': 'ما فمّا حتى جديد',
     'social.inbox.emptyText': 'طلبات الصحبة والحاجات اللي يبعثوهالك صحابك وتنبيهات الخروج يجيو لهنا.',
+    'social.inbox.emptyTextKids': 'الحلقات الجديدة والأعمال اللي تتبّع فيها كي تخرج، تجي لهنا.',
     'social.inbox.seeAll': 'ورّي الكل',
     'social.inbox.titleSent': 'من {name}: {title}',
     'social.inbox.friendRequest': 'طلب صحبة من {name}',
@@ -580,6 +583,7 @@ export const social = defineStrings({
 
     'social.inbox.empty': 'Rien de nouveau',
     'social.inbox.emptyText': 'Les demandes d’ami, les titres envoyés par vos amis et les alertes de sortie arrivent ici.',
+    'social.inbox.emptyTextKids': 'Les nouveaux épisodes et les sorties des titres que vous suivez arrivent ici.',
     'social.inbox.seeAll': 'Tout voir',
     'social.inbox.manage': 'Gérer',
     'social.inbox.digestHint': 'Votre semaine en un e-mail',

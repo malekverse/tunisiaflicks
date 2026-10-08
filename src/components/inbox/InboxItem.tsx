@@ -185,7 +185,7 @@ export function InboxItem({ item, onChange }: { item: NotificationItem; onChange
         {action && pending && (
           <div className="pointer-events-auto relative z-10 mt-2.5 flex flex-wrap gap-2">
             <Button type="button" size="sm" onClick={yes} disabled={busy} className={buttonSize}>{t(ACTIONS[action.type].yes)}</Button>
-            <Button type="button" size="sm" variant="secondary" onClick={no} disabled={busy} className={buttonSize}>{t(ACTIONS[action.type].no)}</Button>
+            <Button type="button" size="sm" variant="ghost" onClick={no} disabled={busy} className={cn(buttonSize, 'ring-1 ring-inset ring-white/[0.12]')}>{t(ACTIONS[action.type].no)}</Button>
           </div>
         )}
         {action && !pending && (

@@ -4,6 +4,7 @@
 import Link from 'next/link'
 import { Bell, ChevronRight, Mail } from 'lucide-react'
 import { useT } from '@/src/components/I18nProvider'
+import { useProfiles } from '@/src/hooks/use-profiles'
 import { Skeleton } from '@/src/components/ui/skeleton'
 import type { NotificationItem } from '@/src/lib/models/Follow'
 import { InboxItem } from './InboxItem'
@@ -27,6 +28,9 @@ function DigestHint() {
 
 export function InboxList({ items, loading, digestHint, onChange }: { items: NotificationItem[]; loading?: boolean; digestHint?: boolean; onChange?: (i: NotificationItem) => void }): JSX.Element {
   const t = useT()
+  // Kids only ever get release alerts: the empty state doesn't mention friends.
+  const { active } = useProfiles()
+  const kids = !!active?.kids
 
   if (loading && items.length === 0) {
     return (
@@ -52,9 +56,9 @@ export function InboxList({ items, loading, digestHint, onChange }: { items: Not
             <Bell aria-hidden className="h-5 w-5 text-white/60" />
           </span>
           <p className="mt-1 text-[15px] font-semibold text-white">{t('social.inbox.empty')}</p>
-          <p className="max-w-[28ch] text-[13px] leading-relaxed text-white/55">{t('social.inbox.emptyText')}</p>
+          <p className="max-w-[28ch] text-[13px] leading-relaxed text-white/55">{t(kids ? 'social.inbox.emptyTextKids' : 'social.inbox.emptyText')}</p>
         </div>
-        {digestHint && <DigestHint />}
+        {digestHint && !kids && <DigestHint />}
       </div>
     )
   }

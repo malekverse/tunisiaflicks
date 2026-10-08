@@ -56,7 +56,7 @@ export default function VisibilitySelect({ value, onChange, label, context, opti
         aria-describedby={showHint ? hintId : undefined}
         aria-disabled={disabled || undefined}
         onKeyDown={onKeyDown}
-        className={cn('flex w-full rounded-full bg-white/[0.07] p-1', disabled && 'opacity-50')}
+        className={cn('flex w-full rounded-[24px] bg-white/[0.07] p-1', disabled && 'opacity-50')}
       >
         {options.map((option, index) => {
           const active = option === value
@@ -72,13 +72,15 @@ export default function VisibilitySelect({ value, onChange, label, context, opti
               disabled={disabled}
               onClick={() => { if (!active) onChange(option) }}
               className={cn(
-                'relative flex h-11 min-w-0 flex-1 select-none items-center justify-center gap-1.5 rounded-full px-3 text-[13.5px] font-medium outline-none transition-colors duration-200 [touch-action:manipulation] focus-visible:ring-2 focus-visible:ring-red-500',
+                // Each segment grows from its own label's width, so the long one ('Anyone with the
+                // link') gets the room it needs; when even that is too narrow, labels wrap to two lines.
+                'relative flex min-h-11 min-w-0 flex-auto select-none items-center justify-center gap-1.5 rounded-full px-3 py-1 text-[13.5px] font-medium leading-tight outline-none transition-colors duration-200 [-webkit-tap-highlight-color:transparent] [touch-action:manipulation] focus-visible:ring-2 focus-visible:ring-red-500',
                 active ? 'text-black' : 'text-white/70 hover:text-white',
               )}
             >
               {active && <m.span layoutId={`visibility-pill-${id}`} transition={spring.snappy} aria-hidden className="absolute inset-0 rounded-full bg-white" />}
               <Icon aria-hidden className="relative h-4 w-4 shrink-0" strokeWidth={2} />
-              <span className="relative truncate">{t(name(option))}</span>
+              <span className="relative text-balance text-center">{t(name(option))}</span>
             </button>
           )
         })}
