@@ -45,15 +45,16 @@ export default function SettingsNav({ kids = false, className }: { kids?: boolea
   const lockUntil = useRef(0)
 
   // Which section is being read: the last one whose top has passed the upper third of the screen.
+  // The sections are looked up on every pass: some only appear once their data has loaded.
   useEffect(() => {
-    const sections = SETTINGS_SECTIONS
-      .map((section) => document.getElementById(section.id))
-      .filter((node): node is HTMLElement => !!node)
-    if (!sections.length) return
     let frame = 0
     const update = () => {
       frame = 0
       if (Date.now() < lockUntil.current) return
+      const sections = SETTINGS_SECTIONS
+        .map((section) => document.getElementById(section.id))
+        .filter((node): node is HTMLElement => !!node)
+      if (!sections.length) return
       const line = window.innerHeight * 0.33
       let current = sections[0].id
       for (const section of sections) {
@@ -75,11 +76,12 @@ export default function SettingsNav({ kids = false, className }: { kids?: boolea
   }, [])
 
   // Arriving on /profile#following: sections above it fill in after load (profiles, alerts...),
-  // which pushes the target down. Settle on it again, unless the reader has started scrolling.
+  // which pushes the target down, and some sections (#privacy) only appear once loaded. Settle on
+  // it again, unless the reader has started scrolling.
   useEffect(() => {
     const id = window.location.hash.slice(1)
-    if (!SETTINGS_SECTIONS.some((section) => section.id === id) || !document.getElementById(id)) return
-    setActive(id)
+    if (!SETTINGS_SECTIONS.some((section) => section.id === id)) return
+    if (document.getElementById(id)) setActive(id)
     let interacted = false
     const stop = () => { interacted = true }
     const events = ['wheel', 'touchstart', 'keydown', 'pointerdown'] as const

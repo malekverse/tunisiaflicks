@@ -131,7 +131,7 @@ export default function ProfileForm({ user }: { user: User }) {
   }
 
   const label = "text-[13px] font-medium text-white/70"
-  const hint = "text-[12.5px] leading-snug text-white/45"
+  const hint = "text-[12.5px] leading-snug text-white/50"
   const error = "text-[13px] font-normal text-red-400"
   const input = "text-base sm:text-[15px]"
 
