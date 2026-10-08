@@ -10,12 +10,13 @@ import { Button } from '@/src/components/ui/button'
 import { getKidsMode } from '@/src/lib/profiles'
 import { getLocale, getT } from '@/src/lib/i18n/server'
 import { getTunisianCinema, getTunisianStars } from '@/src/lib/tunisian-cinema'
+import { pageMetadata } from '@/src/lib/seo'
 
 export const dynamic = 'force-dynamic'
 
 export function generateMetadata() {
   const t = getT()
-  return { title: `${t('tnCinema.title')} | TunisiaFlicks`, description: t('tnCinema.intro') }
+  return pageMetadata({ title: t('tnCinema.title'), description: t('tnCinema.intro'), path: '/tunisian/cinema', card: 'cinema' })
 }
 
 async function Stars() {

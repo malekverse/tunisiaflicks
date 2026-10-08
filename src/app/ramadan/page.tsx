@@ -8,12 +8,13 @@ import { getKidsMode } from '@/src/lib/profiles'
 import { getLocale, getT } from '@/src/lib/i18n/server'
 import { dateLocale } from '@/src/lib/i18n'
 import { arabRamadanSeries, ramadanSeasons, ramadanStatus, tunisianRamadanSeries } from '@/src/lib/ramadan'
+import { pageMetadata } from '@/src/lib/seo'
 
 export const dynamic = 'force-dynamic'
 
 export function generateMetadata() {
   const t = getT()
-  return { title: `${t('ramadan.title')} | TunisiaFlicks`, description: t('ramadan.intro') }
+  return pageMetadata({ title: t('ramadan.title'), description: t('ramadan.intro'), path: '/ramadan', card: 'ramadan' })
 }
 
 // Lantern gold: during Ramadan the room is lit warm.

@@ -5,10 +5,11 @@ import ContactForm from '@/src/components/ContactForm'
 import { getLocale, getT } from '@/src/lib/i18n/server'
 import { getLegalDoc } from '@/src/lib/legal'
 import type { TKey } from '@/src/lib/i18n'
+import { pageMetadata } from '@/src/lib/seo'
 
 export function generateMetadata(): Metadata {
   const t = getT()
-  return { title: `${t('contact.title')} | TunisiaFlicks`, description: t('contact.metaDesc') }
+  return pageMetadata({ title: t('contact.title'), description: t('contact.metaDesc'), path: '/contact' })
 }
 
 export default function ContactPage() {

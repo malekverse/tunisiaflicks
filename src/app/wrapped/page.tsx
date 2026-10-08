@@ -8,11 +8,13 @@ import { Button } from '@/src/components/ui/button'
 import { getT } from '@/src/lib/i18n/server'
 import { cn } from '@/src/lib/utils'
 import { computeWrapped, firstName, sharesCollection, yearFromParam } from '@/src/lib/wrapped'
+import { pageMetadata } from '@/src/lib/seo'
 
 export const dynamic = 'force-dynamic'
 
 export function generateMetadata() {
-  return { title: `${getT()('nav.myYear')} | TunisiaFlicks` }
+  const t = getT()
+  return pageMetadata({ title: t('nav.myYear'), description: t('wrapped.intro'), path: '/wrapped', card: 'wrapped', noIndex: true })
 }
 
 /**

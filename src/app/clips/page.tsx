@@ -4,12 +4,13 @@ import { EmptyState } from '@/src/components/MediaGrid'
 import { getClips } from '@/src/lib/clips'
 import { getLocale, getT } from '@/src/lib/i18n/server'
 import { getKidsMode } from '@/src/lib/profiles'
+import { pageMetadata } from '@/src/lib/seo'
 
 export const dynamic = 'force-dynamic'
 
 export function generateMetadata() {
   const t = getT()
-  return { title: `${t('clips.title')} | TunisiaFlicks`, description: t('clips.description') }
+  return pageMetadata({ title: t('clips.title'), description: t('clips.description'), path: '/clips', card: 'clips' })
 }
 
 export default async function ClipsPage() {

@@ -7,6 +7,7 @@ import { isArabicScript } from '@/src/lib/i18n'
 import KidsBlocked from '@/src/components/profiles/KidsBlocked'
 import { filterKidSafe, isKidSafe } from '@/src/lib/kids'
 import { getKidsMode } from '@/src/lib/profiles'
+import { pageMetadata } from '@/src/lib/seo'
 
 type Props = { params: { id: string } }
 
@@ -27,16 +28,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const movie = await tmdbFetchSafe(`movie/${params.id}`)
   if (!movie) return {}
   const year = movie.release_date?.substring(0, 4)
-  const title = `${movie.title}${year ? ` (${year})` : ''} | TunisiaFlicks`
-  return {
-    title,
-    description: movie.overview || undefined,
-    // The share image comes from ./opengraph-image.tsx (branded card); setting `images` here would override it.
-    openGraph: {
-      title,
-      description: movie.overview || undefined,
-    },
-  }
+  // The share image comes from ./opengraph-image.tsx (card: false).
+  return pageMetadata({
+    title: `${movie.title}${year ? ` (${year})` : ''}`,
+    description: movie.overview,
+    path: `/movie/${params.id}`,
+    card: false,
+    openGraph: { type: 'video.movie', releaseDate: movie.release_date || undefined, duration: movie.runtime ? movie.runtime * 60 : undefined },
+  })
 }
 
 export default async function MoviePage({ params }: Props) {

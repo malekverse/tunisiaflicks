@@ -5,8 +5,14 @@ import getTVShows from './actions'
 import { getLocale, getT } from '@/src/lib/i18n/server'
 import { getKidsMode } from '@/src/lib/profiles'
 import { getBillboard } from '@/src/lib/billboard'
+import { pageMetadata } from '@/src/lib/seo'
 
 export const dynamic = 'force-dynamic'
+
+export function generateMetadata() {
+  const t = getT()
+  return pageMetadata({ title: t('tvPage.title'), description: t('tvPage.description'), path: '/tv', card: 'tv' })
+}
 
 export default async function TVPage() {
   const kids = await getKidsMode()

@@ -8,6 +8,7 @@ import ShareButtons from '@/src/components/ShareButtons'
 import { Button } from '@/src/components/ui/button'
 import { getLocale, getT } from '@/src/lib/i18n/server'
 import { getShare } from '@/src/lib/wrapped'
+import { pageMetadata } from '@/src/lib/seo'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,7 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     genre: stats.topGenres[0] ? genreLabel(stats.topGenres[0].name, getLocale()) : '—',
     personality: personaOf(stats.personality, t).title,
   })
-  return { title, description, openGraph: { title, description, type: 'website' }, twitter: { card: 'summary_large_image', title, description } }
+  return pageMetadata({ title, description, path: `/wrapped/s/${params.token}`, card: false })
 }
 
 /** Public, shareable version of someone's year recap (a snapshot they chose to publish). */

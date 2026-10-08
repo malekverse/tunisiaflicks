@@ -3,10 +3,11 @@ import ContactForm from '@/src/components/ContactForm'
 import LegalPage from '@/src/components/LegalPage'
 import { getLegalDoc } from '@/src/lib/legal'
 import { getLocale, getT } from '@/src/lib/i18n/server'
+import { pageMetadata } from '@/src/lib/seo'
 
 export function generateMetadata(): Metadata {
   const doc = getLegalDoc('dmca', getLocale())
-  return { title: `${doc.title} | TunisiaFlicks`, description: doc.description }
+  return pageMetadata({ title: doc.title, description: doc.description, path: '/dmca' })
 }
 
 export default function DmcaPage() {

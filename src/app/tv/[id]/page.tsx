@@ -7,6 +7,7 @@ import { isArabicScript } from '@/src/lib/i18n'
 import KidsBlocked from '@/src/components/profiles/KidsBlocked'
 import { filterKidSafe, isKidSafe } from '@/src/lib/kids'
 import { getKidsMode } from '@/src/lib/profiles'
+import { pageMetadata } from '@/src/lib/seo'
 
 type Props = { params: { id: string }, searchParams?: { s?: string, e?: string } }
 
@@ -36,16 +37,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const show = await tmdbFetchSafe(`tv/${params.id}`)
   if (!show) return {}
   const year = show.first_air_date?.substring(0, 4)
-  const title = `${show.name}${year ? ` (${year})` : ''} | TunisiaFlicks`
-  return {
-    title,
-    description: show.overview || undefined,
-    // The share image comes from ./opengraph-image.tsx (branded card); setting `images` here would override it.
-    openGraph: {
-      title,
-      description: show.overview || undefined,
-    },
-  }
+  // The share image comes from ./opengraph-image.tsx (card: false).
+  return pageMetadata({
+    title: `${show.name}${year ? ` (${year})` : ''}`,
+    description: show.overview,
+    path: `/tv/${params.id}`,
+    card: false,
+    openGraph: { type: 'video.tv_show' },
+  })
 }
 
 export default async function TvPage({ params, searchParams }: Props) {

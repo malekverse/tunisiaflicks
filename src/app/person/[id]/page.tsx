@@ -10,6 +10,7 @@ import { createTranslator, isArabicScript, type Locale, type TKey } from '@/src/
 import { getLocale } from '@/src/lib/i18n/server'
 import { filterKidSafe } from '@/src/lib/kids'
 import { getKidsMode } from '@/src/lib/profiles'
+import { pageMetadata } from '@/src/lib/seo'
 
 type Props = { params: { id: string } }
 
@@ -62,14 +63,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!isValidId(params.id)) return {}
   const person = await tmdbFetchSafe(`person/${params.id}`)
   if (!person) return {}
-  return {
-    title: `${person.name} | TunisiaFlicks`,
-    description: person.biography ? person.biography.slice(0, 200) : `Movies and TV shows with ${person.name}.`,
-    // The share image comes from ./opengraph-image.tsx (branded card); setting `images` here would override it.
-    openGraph: {
-      title: person.name,
-    },
-  }
+  // The share image comes from ./opengraph-image.tsx (card: false).
+  return pageMetadata({
+    title: person.name,
+    description: person.biography || `Movies and TV shows with ${person.name}.`,
+    path: `/person/${params.id}`,
+    card: false,
+    openGraph: { type: 'profile' },
+  })
 }
 
 export default async function PersonPage({ params }: Props) {

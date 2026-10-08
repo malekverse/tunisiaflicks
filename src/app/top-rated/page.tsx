@@ -8,9 +8,13 @@ import { getList, parsePage } from '@/src/lib/lists'
 import { getT } from '@/src/lib/i18n/server'
 import { kidsList } from '@/src/lib/kids'
 import { getKidsMode } from '@/src/lib/profiles'
+import { pageMetadata } from '@/src/lib/seo'
 
 export const dynamic = 'force-dynamic'
-export const generateMetadata = () => ({ title: `${getT()('topRated.title')} | TunisiaFlicks` })
+export const generateMetadata = () => {
+  const t = getT()
+  return pageMetadata({ title: t('topRated.title'), description: t('topRated.subtitle'), path: '/top-rated', card: 'top-rated' })
+}
 
 export default async function TopRatedPage({ searchParams }: { searchParams: { page?: string, type?: string } }) {
   const page = parsePage(searchParams.page)

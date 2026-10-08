@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import BecauseYouWatched from '@/src/components/BecauseYouWatched'
 import ContinueWatching from '@/src/components/ContinueWatching'
 import PickOfTheDay from '@/src/components/PickOfTheDay'
@@ -14,10 +15,14 @@ import { getPickOfTheDay } from '@/src/lib/pick-of-the-day'
 import { getCommunityTrending } from '@/src/lib/community'
 import { getBillboard } from '@/src/lib/billboard'
 import { getTop10 } from '@/src/lib/top10'
+import { JsonLd, websiteJsonLd } from '@/src/lib/structured-data'
 
 // TMDB responses are cached for an hour by the data cache (see lib/tmdb.ts); the page itself is
 // rendered per request so a TMDB hiccup can never get frozen into a static page.
 export const dynamic = 'force-dynamic'
+
+// The site-wide title, description and share card (from the root layout), at its own URL.
+export const metadata: Metadata = { alternates: { canonical: '/' } }
 
 export default async function MainPage() {
   const kids = await getKidsMode()
@@ -33,6 +38,7 @@ export default async function MainPage() {
 
   return (
     <div className="pb-6">
+      <JsonLd data={websiteJsonLd()} />
       <Billboard items={billboard} />
       {/* On desktop the first rows rise into the billboard's fade. */}
       <div className="relative z-10 mt-6 space-y-10 sm:space-y-12 md:-mt-16">

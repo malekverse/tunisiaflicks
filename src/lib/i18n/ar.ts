@@ -1080,4 +1080,8 @@ export const ar: Record<TKey, string> = {
   'wrapped.ctaTitle': 'وكيف كانت سنتك؟',
   'wrapped.ctaText': 'سجّل الدخول واحصل على ملخّصك الخاص من TunisiaFlicks بنقرة واحدة.',
   'wrapped.ctaAction': 'شاهد سنتي',
+
+  // Page descriptions (search engines and link previews)
+  'tvPage.description': 'المسلسلات التي يشاهدها الجميع هذا الأسبوع، وما يُعرض الليلة، وأفضل المسلسلات على الإطلاق.',
+  'search.description': 'ابحث عن أي فيلم أو مسلسل أو ممثل، بالعربية أو بالإنجليزية.',
 }

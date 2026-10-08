@@ -8,8 +8,24 @@ import { createTranslator } from '@/src/lib/i18n'
 import { getLocale } from '@/src/lib/i18n/server'
 import { kidsDiscoverParams } from '@/src/lib/kids'
 import { getKidsMode } from '@/src/lib/profiles'
+import { pageMetadata } from '@/src/lib/seo'
 
 export const dynamic = 'force-dynamic'
+
+export async function generateMetadata({ params, searchParams }: { params: { id: string }, searchParams: { type?: string } }) {
+  const kind = searchParams.type === 'tv' ? 'tv' : 'movie'
+  const locale = getLocale()
+  const t = createTranslator(locale)
+  const genres = await tmdbFetchSafe<{ genres: { id: number, name: string }[] }>(`genre/${kind}/list`, { language: tmdbLanguage(locale) }, 86400)
+  const genre = genres?.genres.find((item) => String(item.id) === params.id)?.name ?? t('genre.fallback')
+  const kindLabel = t(kind === 'tv' ? 'common.tvShows' : 'common.movies')
+  return pageMetadata({
+    title: t('genre.heading', { genre, kind: kindLabel }),
+    description: t('genre.subtitle', { kind: kindLabel }),
+    path: `/genres/${params.id}${kind === 'tv' ? '?type=tv' : ''}`,
+    card: 'discover',
+  })
+}
 
 export default async function GenrePage({ params, searchParams }: { params: { id: string }, searchParams: { page?: string, type?: string } }) {
   const page = parsePage(searchParams.page)

@@ -1078,6 +1078,10 @@ export const en = {
   'wrapped.ctaTitle': 'What was your year?',
   'wrapped.ctaText': 'Sign in and get your own TunisiaFlicks recap in one click.',
   'wrapped.ctaAction': 'See my year',
+
+  // Page descriptions (search engines and link previews)
+  'tvPage.description': "The shows everyone is watching this week, what's on the air tonight and the best of all time.",
+  'search.description': 'Search every movie, show and actor, in English or Arabic.',
 } satisfies Record<string, string>
 
 export type TKey = keyof typeof en

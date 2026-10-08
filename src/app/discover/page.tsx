@@ -9,9 +9,13 @@ import { createTranslator } from '@/src/lib/i18n'
 import { getLocale, getT } from '@/src/lib/i18n/server'
 import { kidsDiscoverParams } from '@/src/lib/kids'
 import { getKidsMode } from '@/src/lib/profiles'
+import { pageMetadata } from '@/src/lib/seo'
 
 export const dynamic = 'force-dynamic'
-export const generateMetadata = () => ({ title: `${getT()('discover.title')} | TunisiaFlicks` })
+export const generateMetadata = () => {
+  const t = getT()
+  return pageMetadata({ title: t('discover.title'), description: t('discover.subtitle'), path: '/discover', card: 'discover' })
+}
 
 type SearchParams = { page?: string, type?: string, genre?: string, year?: string, rating?: string, sort?: string, runtime?: string, family?: string }
 

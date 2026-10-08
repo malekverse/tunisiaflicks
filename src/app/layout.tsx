@@ -22,6 +22,7 @@ import ErrorReporter from "@/src/components/ErrorReporter";
 import { I18nProvider } from "@/src/components/I18nProvider";
 import { dirOf, htmlLang } from "@/src/lib/i18n";
 import { getLocale, getT } from "@/src/lib/i18n/server";
+import { SITE_DESCRIPTION, SITE_URL } from "@/src/lib/seo";
 
 import type { Viewport } from 'next'
 
@@ -33,9 +34,9 @@ const display = Bricolage_Grotesque({ subsets: ['latin'], axes: ['opsz', 'wdth']
 const displayArabic = Alexandria({ subsets: ['arabic'], variable: '--font-display-ar', display: 'swap', preload: false });
 
 export const metadata: Metadata = {
-  title: 'TunisiaFlicks',
-  description: 'Stream the latest movies and TV shows for free with no ads, powered by cutting-edge technology for the best viewing experience.',
-  keywords: ['Free Movies', 'Free Streaming', 'No Ads', 'Latest Movies', 'TV Shows', 'Streaming Service', 'TunisiaFlicks'],
+  title: 'TunisiaFlicks: movies, TV shows and Tunisian series',
+  description: SITE_DESCRIPTION,
+  keywords: ['Movies', 'TV shows', 'Tunisian series', 'Ramadan series', 'Trailers', 'Top 10', 'مسلسلات تونسية', 'مسلسلات رمضان', 'TunisiaFlicks'],
   authors: [{ name: 'TunisiaFlicks Team' }],
   creator: 'TunisiaFlicks Team',
   publisher: 'TunisiaFlicks',
@@ -44,22 +45,18 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://tunisiaflicks.vercel.app'),
+  metadataBase: new URL(SITE_URL),
   // No site-wide canonical / og:url: inherited by every route, they told Google and Facebook that
-  // each movie/show page was a duplicate of the homepage. Pages now default to their own URL.
+  // each movie/show page was a duplicate of the homepage. Pages set their own (see pageMetadata).
+  // The defaults below are for pages that set nothing; no twitter title or description, or X
+  // would show the site's on every page that only sets Open Graph ones.
   openGraph: {
-    title: 'TunisiaFlicks - Free Movies and TV Shows',
-    description: 'Stream the latest movies and TV shows for free, without ads, on TunisiaFlicks. High-quality entertainment at your fingertips.',
+    title: 'TunisiaFlicks: movies, TV shows and Tunisian series',
+    description: SITE_DESCRIPTION,
     siteName: 'TunisiaFlicks',
-    images: [
-      {
-        url: 'https://tunisiaflicks.vercel.app/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'TunisiaFlicks - Free Streaming Service',
-      },
-    ],
+    images: [{ url: '/og/home', width: 1200, height: 630, alt: 'TunisiaFlicks' }],
     locale: 'en_US',
+    alternateLocale: ['ar_TN'],
     type: 'website',
   },
   robots: {
@@ -75,10 +72,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'TunisiaFlicks',
-    description: 'Watch the latest movies and TV shows for free with no ads on TunisiaFlicks.',
     creator: '@TunisiaFlicks',
-    images: ['https://tunisiaflicks.vercel.app/og-image.png'],
+    images: ['/og/home'],
   },
   // viewport property moved to separate viewport export
   verification: {

@@ -14,6 +14,7 @@ import { authOptions } from '@/src/lib/auth'
 import { getListBySlug, toPublicList } from '@/src/lib/lists-db'
 import { dateLocale } from '@/src/lib/i18n'
 import { getLocale, getT } from '@/src/lib/i18n/server'
+import { pageMetadata } from '@/src/lib/seo'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,12 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const names = list.items.slice(0, 5).map((item) => item.title).join(', ')
   const description = list.description
     || (names ? t('lists.metaTitles', { count: list.items.length, names: `${names}${list.items.length > 5 ? '…' : ''}` }) : t('lists.byOwner', { name: list.ownerName }))
-  return {
-    title: `${t('lists.metaTitle', { title: list.title, name: list.ownerName })} | TunisiaFlicks`,
-    description,
-    openGraph: { title: list.title, description, type: 'website' },
-    twitter: { card: 'summary_large_image', title: list.title, description },
-  }
+  return pageMetadata({ title: t('lists.metaTitle', { title: list.title, name: list.ownerName }), description, path: `/lists/${params.slug}`, card: false })
 }
 
 export default async function ListPage({ params }: Props) {

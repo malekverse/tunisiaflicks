@@ -3,12 +3,13 @@ import { getLocale, getT } from '@/src/lib/i18n/server'
 import { tmdbFetchSafe, tmdbLanguage } from '@/src/lib/tmdb'
 import { getKidsMode } from '@/src/lib/profiles'
 import { isGrownUpGenre, kidsDiscoverParams } from '@/src/lib/kids'
+import { pageMetadata } from '@/src/lib/seo'
 
 export const dynamic = 'force-dynamic'
 
 export function generateMetadata() {
   const t = getT()
-  return { title: `${t('swipe.title')} | TunisiaFlicks`, description: t('swipe.subtitle') }
+  return pageMetadata({ title: t('swipe.title'), description: t('swipe.subtitle'), path: '/swipe', card: 'swipe' })
 }
 
 export default async function SwipePage() {

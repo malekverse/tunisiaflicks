@@ -12,9 +12,13 @@ import { genreNames } from '@/src/lib/genres'
 import { tunisToday } from '@/src/lib/pick-of-the-day'
 import { kidsList } from '@/src/lib/kids'
 import { getKidsMode } from '@/src/lib/profiles'
+import { pageMetadata } from '@/src/lib/seo'
 
 export const dynamic = 'force-dynamic'
-export const generateMetadata = () => ({ title: `${getT()('upcoming.title')} | TunisiaFlicks` })
+export const generateMetadata = () => {
+  const t = getT()
+  return pageMetadata({ title: t('upcoming.title'), description: t('upcoming.subtitle'), path: '/upcoming', card: 'upcoming' })
+}
 
 const DAY = 86400000
 

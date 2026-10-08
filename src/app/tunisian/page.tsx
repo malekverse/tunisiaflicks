@@ -10,11 +10,15 @@ import { getKidsMode } from '@/src/lib/profiles'
 import { getTunisianTitles } from '@/src/lib/tunisian'
 import type { TKey } from '@/src/lib/i18n'
 import { getT } from '@/src/lib/i18n/server'
+import { pageMetadata } from '@/src/lib/seo'
 
 // The catalogue is cached for 30 minutes (see lib/tunisian.ts); rendering per request keeps a
 // temporary outage of the source site from being frozen into a static page.
 export const dynamic = 'force-dynamic'
-export const generateMetadata = () => ({ title: `${getT()('tunisian.metaTitle')} | TunisiaFlicks` })
+export const generateMetadata = () => {
+  const t = getT()
+  return pageMetadata({ title: t('tunisian.title'), description: t('tunisian.subtitle'), path: '/tunisian', card: 'tunisian' })
+}
 
 const TABS: { label: TKey, value?: 'series' | 'movie' }[] = [
   { label: 'common.all', value: undefined },

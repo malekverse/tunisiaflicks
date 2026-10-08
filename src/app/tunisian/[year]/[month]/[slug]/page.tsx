@@ -11,6 +11,7 @@ import { Button } from '@/src/components/ui/button'
 import { getKidsMode } from '@/src/lib/profiles'
 import { getTunisianDetail, getTunisianTitles } from '@/src/lib/tunisian'
 import { getT } from '@/src/lib/i18n/server'
+import { pageMetadata } from '@/src/lib/seo'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,11 +22,14 @@ const slugOf = ({ year, month, slug }: Props['params']) => `${year}/${month}/${s
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const detail = await getTunisianDetail(slugOf(params))
   if (!detail) return {}
-  return {
-    title: `${detail.title} | TunisiaFlicks`,
-    description: detail.description || undefined,
-    openGraph: { title: detail.title, description: detail.description || undefined, images: detail.poster ? [detail.poster] : undefined },
-  }
+  // The share image comes from ./opengraph-image.tsx (card: false).
+  return pageMetadata({
+    title: detail.title,
+    description: detail.description,
+    path: `/tunisian/${detail.slug}`,
+    card: false,
+    openGraph: { type: detail.kind === 'series' ? 'video.tv_show' : 'video.movie' },
+  })
 }
 
 const chip = 'rounded-full border border-white/15 bg-white/[0.06] px-3 py-1 text-[13px] text-white/80'
