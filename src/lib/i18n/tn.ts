@@ -700,4 +700,10 @@ export const tn: Partial<Record<TKey, string>> = {
   'pick.why.arabCinema': 'خميس بالعربي: من أحلى الأعمال العربية.',
   'pick.why.crowdPleaser': 'سهرية الجمعة: فيلم جديد يعجب الناس الكل.',
   'pick.why.family': 'سبت العايلة: حاجة تتفرّج فيها العايلة الكل.',
+
+  // Moods for the time of day
+  'mood.titleDay': 'اليوم:',
+  'mood.laugh': 'حاجة تضحّك',
+  'mood.dateNight': 'سهرية لزوز',
+  'mood.scary': 'حاجة تخوّف',
 }

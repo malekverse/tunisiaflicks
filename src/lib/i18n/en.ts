@@ -1134,6 +1134,12 @@ export const en = {
   'pick.why.arabCinema': 'Thursday in Arabic: one of the best-loved Arab titles.',
   'pick.why.crowdPleaser': 'Friday night: a recent crowd-pleaser.',
   'pick.why.family': 'Saturday with the family: something everyone can watch.',
+
+  // Moods for the time of day
+  'mood.titleDay': 'Today:',
+  'mood.laugh': 'Something funny',
+  'mood.dateNight': 'Date night',
+  'mood.scary': 'Something scary',
 } satisfies Record<string, string>
 
 export type TKey = keyof typeof en

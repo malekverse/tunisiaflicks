@@ -1136,4 +1136,10 @@ export const ar: Record<TKey, string> = {
   'pick.why.arabCinema': 'خميس عربي: من أحبّ الأعمال العربية.',
   'pick.why.crowdPleaser': 'سهرة الجمعة: فيلم حديث يحبّه الجميع.',
   'pick.why.family': 'سبت العائلة: عمل يشاهده الجميع.',
+
+  // Moods for the time of day
+  'mood.titleDay': 'اليوم:',
+  'mood.laugh': 'شيء مضحك',
+  'mood.dateNight': 'سهرة لشخصين',
+  'mood.scary': 'شيء مرعب',
 }
