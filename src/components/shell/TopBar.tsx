@@ -48,7 +48,7 @@ export default function TopBar() {
 
         <div className="flex-1" />
 
-        <LanguageSwitch className="hidden lg:flex" />
+        <LanguageSwitch compact className="hidden lg:flex" />
         <NotificationBell />
         <div className="hidden lg:block">
           <AccountMenu />
