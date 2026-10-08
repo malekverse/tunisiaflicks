@@ -310,6 +310,32 @@
   opacity: 1;
 }
 
+/*
+  Switching language (I18nProvider): while the page re-renders in the new language it dims, so no
+  frame ever shows half of it translated. Quick to dim, a little slower to come back; the chrome
+  (bars, rail) stays lit because it is what was just touched.
+*/
+#main,
+#main ~ footer {
+  transition: opacity 240ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+html[data-locale-pending] #main,
+html[data-locale-pending] #main ~ footer {
+  opacity: 0.55;
+  transition-duration: 160ms;
+}
+html[data-locale-pending] {
+  cursor: progress;
+}
+@media (prefers-reduced-motion: reduce) {
+  #main,
+  #main ~ footer,
+  html[data-locale-pending] #main,
+  html[data-locale-pending] #main ~ footer {
+    transition-duration: 120ms;
+  }
+}
+
 /* Route progress bar (nextjs-toploader) with a little glow. */
 #nprogress .bar {
   box-shadow: 0 0 10px rgb(255 36 20 / 0.8);
