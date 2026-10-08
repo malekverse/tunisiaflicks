@@ -13,6 +13,7 @@ import { featureStrings } from '@/src/lib/i18n/features'
 import { genreNames, localGenreName } from '@/src/lib/genres'
 import { catalogueLanguage, localizeDetail, logoLanguages } from '@/src/lib/tmdb-locale'
 import { tmdbLanguage } from '@/src/lib/tmdb'
+import { siteMetadata } from '@/src/lib/seo'
 
 const NBSP = String.fromCharCode(0xa0)
 const NNBSP = String.fromCharCode(0x202f)
@@ -183,4 +184,21 @@ test('localizeDetail: Arabic only overlays the overview and genres; English is u
   assert.strictEqual(localizeDetail(english, arabic, 'en'), english)
   assert.strictEqual(localizeDetail(english, null, 'ar'), english)
   assert.deepEqual(localizeDetail(english, null, 'fr').genres.map((genre) => genre.name), ['Policier', 'Drame'], 'French genre names even without a French record')
+})
+
+test('siteMetadata: the site described in the language of the page, with its og:locale', () => {
+  const french = siteMetadata('fr', createTranslator('fr'))
+  assert.equal(french.title, `TunisiaFlicks${NBSP}: films, séries et séries tunisiennes`)
+  assert.match(String(french.description), /en français, en anglais et en arabe/)
+  assert.equal(french.openGraph.locale, 'fr_FR')
+  assert.deepEqual(french.openGraph.alternateLocale, ['en_US', 'ar_TN'])
+  assert.equal(french.openGraph.title, french.title)
+  assert.ok(french.keywords.includes('Séries tunisiennes'))
+  const english = siteMetadata('en', createTranslator('en'))
+  assert.equal(english.title, 'TunisiaFlicks: movies, TV shows and Tunisian series')
+  assert.equal(english.openGraph.locale, 'en_US')
+  const derja = siteMetadata('tn', createTranslator('tn'))
+  assert.equal(derja.openGraph.locale, 'ar_TN')
+  assert.deepEqual(derja.openGraph.alternateLocale, ['en_US', 'fr_FR'])
+  assert.match(String(derja.title), /TunisiaFlicks/)
 })
