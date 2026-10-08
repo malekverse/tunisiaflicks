@@ -1,5 +1,5 @@
 "use client"
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   LOCALE_COOKIE, LOCALE_META, dateLocale, dirOf, htmlLang, type Dir, type Locale,
@@ -32,6 +32,8 @@ const ONE_YEAR = 60 * 60 * 24 * 365
 /** The page dims while it re-renders in the new language; it never stays dim longer than this. */
 const MAX_DIM_MS = 4000
 const PENDING_ATTRIBUTE = 'data-locale-pending'
+/** Before paint in the browser (no frame with the new strings in the old direction); a no-op on the server. */
+const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect
 
 function writeCookie(locale: Locale) {
   const secure = location.protocol === 'https:' ? '; secure' : ''
@@ -72,8 +74,9 @@ export function I18nProvider({ locale, messages, children }: {
     document.documentElement.removeAttribute(PENDING_ATTRIBUTE)
   }, [])
 
-  // The new server output (and with it this locale) has landed: finish the switch.
-  useEffect(() => {
+  // The new server output (and with it this locale) has landed: finish the switch in the same
+  // frame, so the new language never paints in the old direction.
+  useIsomorphicLayoutEffect(() => {
     const html = document.documentElement
     html.lang = htmlLang(locale)
     html.dir = dirOf(locale)
