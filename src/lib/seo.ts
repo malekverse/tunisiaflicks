@@ -1,6 +1,8 @@
 // Page metadata for search engines and link previews (WhatsApp, Facebook, Messenger, X, Telegram).
 import type { Metadata } from 'next'
 import type { ShareSection } from '@/src/lib/share-sections'
+import { ogAlternates, ogLocale, type Locale } from '@/src/lib/i18n/locales'
+import type { Translate } from '@/src/lib/i18n/translate'
 
 type OpenGraph = NonNullable<Metadata['openGraph']>
 
@@ -8,6 +10,32 @@ export const SITE_HOST = 'tunisiaflicks.vercel.app'
 export const SITE_URL = `https://${SITE_HOST}`
 export const SITE_NAME = 'TunisiaFlicks'
 export const SITE_DESCRIPTION = "Movies, TV shows and Tunisian series in one place: what's trending today, trailers, a daily Top 10, Ramadan series and release alerts, in English, French and Arabic."
+
+/** What people search for, in the three languages the site speaks (the root layout's keywords). */
+export const SITE_KEYWORDS = [
+  'Movies', 'TV shows', 'Tunisian series', 'Ramadan series', 'Trailers', 'Top 10',
+  'Films', 'Séries', 'Séries tunisiennes', 'Séries du Ramadan', 'Bandes-annonces', 'Films en streaming',
+  'مسلسلات تونسية', 'مسلسلات رمضان', 'أفلام',
+  SITE_NAME,
+]
+
+/**
+ * The root layout's title, description and Open Graph locale in the page's language (`t` from
+ * getT(), `locale` from getLocale()). Pages that set their own metadata override the title and
+ * description; the og:locale pair stays right for all of them. To merge over the layout's static
+ * metadata in its generateMetadata:
+ *   `const site = siteMetadata(locale, t); return { ...base, ...site, openGraph: { ...base.openGraph, ...site.openGraph } }`
+ */
+export function siteMetadata(locale: Locale, t: Translate): Pick<Metadata, 'title' | 'description' | 'keywords'> & { openGraph: OpenGraph } {
+  const title = t('languages.meta.title')
+  const description = t('languages.meta.description')
+  return {
+    title,
+    description,
+    keywords: SITE_KEYWORDS,
+    openGraph: { title, description, locale: ogLocale(locale), alternateLocale: ogAlternates(locale) } as OpenGraph,
+  }
+}
 
 /** Search results and previews cut descriptions after ~160 characters: end on a whole word. */
 export function clampDescription(text: string | null | undefined, max = 160): string | undefined {
