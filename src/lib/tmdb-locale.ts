@@ -4,9 +4,10 @@
 // - English: everything is TMDB's English.
 // - Arabic and Derja: overviews, genre and season names in Arabic where TMDB has them; titles and
 //   artwork stay as they are (Tunisians mostly know a film by its English or original title).
-// - French: titles, overviews, taglines, genre and season names and posters in French where TMDB
-//   has them, list rows included (`catalogueLanguage`), and a French title logo when the French
-//   title differs from the English one (or none, rather than an English logo over a French title).
+// - French: titles, overviews, genre and season names and posters in French where TMDB has them,
+//   list rows included (`catalogueLanguage`); a tagline only in French (never the English one); and
+//   a French title logo when the French title differs from the English one (or none, rather than an
+//   English logo over a French title).
 import { tmdbFetchSafe, tmdbLanguage, withTranslatedFields } from '@/src/lib/tmdb'
 import { localGenreName } from '@/src/lib/genres'
 import { DEFAULT_LOCALE, type Locale } from '@/src/lib/i18n/locales'
@@ -45,8 +46,8 @@ function frenchGenres(genres: any[] | undefined, l: Locale) {
 /**
  * The English TMDB record `en` with the translated fields of `tr` (from translatedRecord) laid over
  * it. TMDB answers '' or [] when a translation is missing, so those fields keep their English
- * value. Arabic: overview and genres. French: title, name, overview, tagline, genres, poster and
- * biography, plus the logo rule. Season names in both.
+ * value. Arabic: overview and genres. French: title, name, overview, genres, poster and biography,
+ * the French tagline or none, plus the logo rule. Season names in both.
  */
 export function localizeDetail<T extends Record<string, any>>(en: T, tr: any | null, l: Locale): T {
   if (!en || isBase(l)) return en
@@ -58,6 +59,9 @@ export function localizeDetail<T extends Record<string, any>>(en: T, tr: any | n
     : ['overview', 'genres', 'biography']
   const result: Record<string, any> = withTranslatedFields<Record<string, any>>(en, tr, fields)
   if (french && result.genres) result.genres = frenchGenres(result.genres, l)
+  // A tagline is a line of copy, not information: TMDB's French one or none, never the English
+  // line in French quotation marks.
+  if (french && 'tagline' in en) result.tagline = typeof tr.tagline === 'string' ? tr.tagline.trim() : ''
 
   // Season names ("Saison 1", "الموسم 1"); their posters stay the English ones.
   if (Array.isArray(en.seasons) && Array.isArray(tr.seasons)) {
