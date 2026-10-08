@@ -30,12 +30,12 @@ export default async function RamadanPage() {
   const latest = seasons[0]
 
   const [tunisian, arab] = await Promise.all([
-    Promise.all(seasons.map((season) => tunisianRamadanSeries(season.year, locale, kids))),
-    latest ? arabRamadanSeries(latest.year, locale, kids) : Promise.resolve([]),
+    Promise.all(seasons.map((season) => tunisianRamadanSeries(season, locale, kids))),
+    latest ? arabRamadanSeries(latest, locale, kids) : Promise.resolve([]),
   ])
   const formatDate = (date: string) =>
     new Date(`${date}T12:00:00Z`).toLocaleDateString(dateLocale(locale) ?? 'en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
-  const isNow = (year: number) => status?.phase === 'during' && status.year === year
+  const isNow = (hijriYear: number) => status.phase === 'during' && status.hijriYear === hijriYear
 
   return (
     <div className="space-y-12 pb-10">
@@ -48,13 +48,13 @@ export default async function RamadanPage() {
         </div>
         <div className="max-w-2xl space-y-5">
           <h1 className="animate-focus-in font-display text-[clamp(40px,6.5vw,92px)] font-extrabold leading-[0.92] text-amber-50">
-            {status?.phase === 'during' ? t('ramadan.mubarak') : t('ramadan.title')}
+            {status.phase === 'during' ? t('ramadan.mubarak') : t('ramadan.title')}
           </h1>
           <p className="max-w-[56ch] animate-focus-in text-[15px] leading-relaxed text-amber-50/70 [animation-delay:60ms]">{t('ramadan.intro')}</p>
-          {status?.phase === 'during' && (
+          {status.phase === 'during' && (
             <p className="animate-focus-in font-display text-3xl font-bold text-amber-300 [animation-delay:120ms]">{t('ramadan.day', { day: status.day })}</p>
           )}
-          {status?.phase === 'before' && (
+          {status.phase === 'before' && (
             <div className="animate-focus-in space-y-3 [animation-delay:120ms]">
               <p className="text-amber-100/90">{t('ramadan.startsAround', { year: status.year, date: formatDate(status.start) })}</p>
               <RamadanCountdown start={status.start} />
@@ -68,12 +68,12 @@ export default async function RamadanPage() {
       </section>
 
       {latest && (
-        <PosterSlider title={isNow(latest.year) ? t('ramadan.arabNow') : t('ramadan.arabOf', { year: latest.year })} items={arab} kind="tv" />
+        <PosterSlider title={isNow(latest.hijriYear) ? t('ramadan.arabNow') : t('ramadan.arabOf', { year: latest.year })} items={arab} kind="tv" />
       )}
       {seasons.map((season, index) => (
         <PosterSlider
-          key={season.year}
-          title={isNow(season.year) ? t('ramadan.tunisianNow') : t('ramadan.tunisianOf', { year: season.year })}
+          key={season.hijriYear}
+          title={isNow(season.hijriYear) ? t('ramadan.tunisianNow') : t('ramadan.tunisianOf', { year: season.year })}
           items={tunisian[index]}
           kind="tv"
         />

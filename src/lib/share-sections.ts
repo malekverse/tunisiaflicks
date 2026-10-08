@@ -4,7 +4,7 @@
 import { renderSectionCard, type SectionCard } from '@/src/lib/og'
 import { tmdbFetchSafe } from '@/src/lib/tmdb'
 import { getTunisianTitles } from '@/src/lib/tunisian'
-import { arabRamadanSeries, ramadanSeasons, ramadanStatus, tunisianRamadanSeries } from '@/src/lib/ramadan'
+import { arabRamadanSeries, ramadanSeasons, tunisianRamadanSeries } from '@/src/lib/ramadan'
 
 const posters = (items: any[] | null | undefined, count = 12) =>
   (items ?? []).filter((item) => item.poster_path).slice(0, count).map((item) => `https://image.tmdb.org/t/p/w342${item.poster_path}`)
@@ -77,11 +77,10 @@ export const SHARE_SECTIONS = {
     cta: 'Watch now',
     emblem: 'ramadan',
     posters: async () => {
-      // This Ramadan's series once it has started, otherwise last year's.
-      const status = ramadanStatus()
-      const year = status?.phase === 'during' ? status.year : ramadanSeasons()[0]?.year
-      if (!year) return []
-      const [tunisian, arab] = await Promise.all([tunisianRamadanSeries(year, 'en', false), arabRamadanSeries(year, 'en', false)])
+      // This Ramadan's series once it has started, otherwise the last one's.
+      const latest = ramadanSeasons(new Date(), 1)[0]
+      if (!latest) return []
+      const [tunisian, arab] = await Promise.all([tunisianRamadanSeries(latest, 'en', false), arabRamadanSeries(latest, 'en', false)])
       return posters([...tunisian, ...arab])
     },
   },

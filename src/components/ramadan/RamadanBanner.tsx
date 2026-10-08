@@ -6,7 +6,7 @@ import { BANNER_DAYS_BEFORE, ramadanStatus } from '@/src/lib/ramadan'
 /** Seasonal home banner: the weeks before Ramadan and during it. Renders nothing otherwise. */
 export default function RamadanBanner() {
   const status = ramadanStatus()
-  if (!status || (status.phase === 'before' && status.daysUntil > BANNER_DAYS_BEFORE)) return null
+  if (status.phase === 'before' && status.daysUntil > BANNER_DAYS_BEFORE) return null
   const t = getT()
   return (
     <div className="page-x">
