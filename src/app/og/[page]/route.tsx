@@ -3,6 +3,7 @@ import { isShareSection, renderSection } from '@/src/lib/share-sections'
 // /og/home, /og/discover, /og/ramadan...: the share image of each section (see pageMetadata).
 // Rendered on demand and kept at the edge for six hours, so the poster walls follow the trends.
 export const dynamic = 'force-dynamic'
+export const maxDuration = 30
 
 export async function GET(_request: Request, { params }: { params: { page: string } }) {
   const name = params.page.replace(/\.(jpe?g|png)$/, '')

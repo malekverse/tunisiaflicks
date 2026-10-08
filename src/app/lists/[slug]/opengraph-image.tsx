@@ -3,6 +3,7 @@ import { getListBySlug } from '@/src/lib/lists-db'
 
 // Share card for a list: title, owner and a poster collage.
 export const revalidate = 300 // lists change; refresh the card every few minutes
+export const maxDuration = 30
 export const alt = 'A list on TunisiaFlicks'
 export const size = OG_SIZE
 export const contentType = 'image/jpeg'

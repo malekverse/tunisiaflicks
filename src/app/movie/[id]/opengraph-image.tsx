@@ -3,6 +3,7 @@ import { tmdbFetchSafe } from '@/src/lib/tmdb'
 
 // Share card for /movie/:id (what Facebook, WhatsApp, Messenger, X and Telegram show).
 export const revalidate = 86400
+export const maxDuration = 30
 export const alt = 'Movie on TunisiaFlicks'
 export const size = OG_SIZE
 export const contentType = 'image/jpeg'

@@ -4,7 +4,8 @@ import { getTunisianDetail } from '@/src/lib/tunisian'
 
 // Share card for a title of the Tunisian catalogue.
 export const revalidate = 86400
-export const alt = 'Tunisian series on TunisiaFlicks'
+export const maxDuration = 30
+export const alt = 'A Tunisian title on TunisiaFlicks'
 export const size = OG_SIZE
 export const contentType = 'image/jpeg'
 

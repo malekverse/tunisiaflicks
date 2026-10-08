@@ -3,6 +3,7 @@ import { tmdbFetchSafe } from '@/src/lib/tmdb'
 
 // Share card for /person/:id: portrait, name, and a strip of their best-known titles.
 export const revalidate = 86400
+export const maxDuration = 30
 export const alt = 'Actor on TunisiaFlicks'
 export const size = OG_SIZE
 export const contentType = 'image/jpeg'

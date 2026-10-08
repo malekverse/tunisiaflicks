@@ -164,10 +164,13 @@ function Text({ run, box, type }: { run: TextRun, box?: React.CSSProperties, typ
 // Output: JPEG, not Satori's PNG. Photographic PNG cards weigh ~800 KB; WhatsApp (how most links
 // get shared here) shrinks or drops previews above roughly 300 KB. JPEG lands around 60-150 KB.
 
+// Cached by Vercel's CDN for a day (crawlers get it at once), refreshed in the background after.
+const CACHE_CONTROL = 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800'
+
 async function asJpeg(image: ImageResponse, quality = 82): Promise<Response> {
   // Rendering errors surface here: the stream can only be read once.
   const png = new Uint8Array(await image.arrayBuffer())
-  const cacheControl = image.headers.get('Cache-Control') ?? 'public, max-age=86400'
+  const cacheControl = CACHE_CONTROL
   try {
     const sharp = (await import('sharp')).default
     const jpeg = await sharp(png).jpeg({ quality, mozjpeg: true, chromaSubsampling: '4:4:4' }).toBuffer()
@@ -481,7 +484,7 @@ export async function renderPersonCard(card: PersonCard) {
           <div style={{ display: 'flex', marginTop: 28 }}>
             {strip.map((src) => (
               // eslint-disable-next-line @next/next/no-img-element
-              <img key={src} src={src} alt="" width={84} height={126} style={{ width: 84, height: 126, objectFit: 'cover', borderRadius: 12, marginRight: 14, boxShadow: '0 16px 30px -12px rgba(0,0,0,0.9)' }} />
+              <img key={src} src={src} alt="" width={84} height={126} style={{ width: 84, height: 126, objectFit: 'cover', borderRadius: 12, marginRight: 14 }} />
             ))}
           </div>
         ) : null}
@@ -495,6 +498,7 @@ export async function renderPersonCard(card: PersonCard) {
 
 /** Posters as a tilted wall drifting off the end side (the sign-in pages' poster wall). */
 function PosterWall({ posters }: { posters: string[] }) {
+  // No shadows here: under rotation, twelve blurred shadows cost Satori ~6 seconds per card.
   const columns = [0, 1, 2, 3].map((column) => [0, 1, 2].map((row) => posters[(column * 3 + row) % posters.length]))
   return (
     <div style={{ position: 'absolute', top: -170, left: 540, width: 900, height: 1000, display: 'flex', transform: 'rotate(-9deg)' }}>
@@ -502,7 +506,7 @@ function PosterWall({ posters }: { posters: string[] }) {
         <div key={index} style={{ display: 'flex', flexDirection: 'column', marginRight: 22, marginTop: index % 2 === 0 ? 0 : 120 }}>
           {column.map((src, row) => (
             // eslint-disable-next-line @next/next/no-img-element
-            <img key={`${src}-${row}`} src={src} alt="" width={190} height={285} style={{ width: 190, height: 285, objectFit: 'cover', borderRadius: 18, marginBottom: 22, boxShadow: '0 30px 60px -20px rgba(0,0,0,0.9)' }} />
+            <img key={`${src}-${row}`} src={src} alt="" width={190} height={285} style={{ width: 190, height: 285, objectFit: 'cover', borderRadius: 18, marginBottom: 22 }} />
           ))}
         </div>
       ))}
@@ -691,7 +695,7 @@ export async function renderWrappedCard(data: WrappedCardData, format: 'og' | 's
           <div style={{ display: 'flex' }}>
             {posters.map((src) => (
               // eslint-disable-next-line @next/next/no-img-element
-              <img key={src} src={src} alt="" width={280} height={420} style={{ width: 280, height: 420, objectFit: 'cover', borderRadius: 22, marginRight: 22, boxShadow: '0 24px 50px -14px rgba(0,0,0,0.9)' }} />
+              <img key={src} src={src} alt="" width={280} height={420} style={{ width: 280, height: 420, objectFit: 'cover', borderRadius: 22, marginRight: 22 }} />
             ))}
           </div>
         ) : null}

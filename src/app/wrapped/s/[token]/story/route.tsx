@@ -3,6 +3,7 @@ import { getShare } from '@/src/lib/wrapped'
 
 // 1080x1920 story image of a shared recap (Instagram / Facebook / WhatsApp stories).
 export const dynamic = 'force-dynamic'
+export const maxDuration = 30
 
 export async function GET(_request: Request, { params }: { params: { token: string } }) {
   const share = await getShare(params.token)

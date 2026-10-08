@@ -3,6 +3,7 @@ import { getShare } from '@/src/lib/wrapped'
 
 // Link preview for a shared year recap.
 export const revalidate = 300
+export const maxDuration = 30
 export const alt = 'A year on TunisiaFlicks'
 export const size = OG_SIZE
 export const contentType = 'image/jpeg'

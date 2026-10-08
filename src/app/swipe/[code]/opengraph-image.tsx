@@ -5,6 +5,7 @@ import { getRoom, isRoomCode } from '@/src/lib/swipe'
 // The invitation people see when a room link is sent to friends: the room's first cards, fanned
 // out, and its code. A room that has expired gets the general Swipe card.
 export const revalidate = 300
+export const maxDuration = 30
 export const alt = 'Swipe to decide on TunisiaFlicks'
 export const size = OG_SIZE
 export const contentType = 'image/jpeg'
