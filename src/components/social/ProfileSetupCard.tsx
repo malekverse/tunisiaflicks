@@ -228,7 +228,9 @@ export default function ProfileSetupCard({ onCreated, variant = 'page' }: { onCr
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, transition: { duration: 0.1 } }}
                   transition={spring.snappy}
-                  className="absolute right-3 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full bg-white text-black"
+                  // Motion owns this transform (the scale), so the centring goes through it too.
+                  style={{ y: '-50%' }}
+                  className="absolute right-3 top-1/2 grid h-6 w-6 place-items-center rounded-full bg-white text-black"
                 >
                   <Check aria-hidden className="h-3.5 w-3.5" strokeWidth={3} />
                 </m.span>
