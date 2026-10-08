@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TunisiaFlicks Player — prototype</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #0d0c0f; color: #fff;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    display: flex; flex-direction: column; min-height: 100vh;
+  }
+  header { padding: 20px 16px 8px; }
+  h1 { margin: 0; font-size: 1.4rem; }
+  h1 span { color: #ef4444; }
+  p.sub { margin: 4px 0 0; color: #9ca3af; font-size: .85rem; }
+  main { flex: 1; width: 100%; max-width: 980px; margin: 0 auto; padding: 16px; }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; }
+  input {
+    flex: 1; min-width: 240px; padding: 10px 12px; border-radius: 10px;
+    border: 1px solid #27272a; background: #1a161f; color: #fff; font-size: .9rem;
+  }
+  button {
+    padding: 10px 18px; border: 0; border-radius: 10px; font-weight: 600; cursor: pointer;
+    background: #ef4444; color: #fff;
+  }
+  button:disabled { opacity: .6; cursor: default; }
+  .presets { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .presets button { background: #27272a; color: #d4d4d8; font-weight: 500; padding: 6px 12px; font-size: .8rem; }
+  video { width: 100%; margin-top: 16px; background: #000; border-radius: 12px; aspect-ratio: 16/9; }
+  #status { margin-top: 12px; color: #9ca3af; font-size: .85rem; min-height: 1.2em; }
+  #files { margin-top: 12px; display: grid; gap: 6px; }
+  .file {
+    display: flex; justify-content: space-between; gap: 12px; padding: 8px 12px;
+    background: #1a161f; border-radius: 8px; font-size: .82rem; cursor: pointer;
+  }
+  .file:hover { background: #241f2b; }
+  .file.active { outline: 1px solid #ef4444; }
+  .file .size { color: #9ca3af; white-space: nowrap; }
+  footer { padding: 12px 16px; color: #52525b; font-size: .75rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>TunisiaFlicks <span>Player</span> — prototype</h1>
+  <p class="sub">Pastes a magnet / infohash, streams it as HTTP video. Test only with content you're allowed to stream.</p>
+</header>
+
+<main>
+  <div class="bar">
+    <input id="magnet" placeholder="magnet:?xt=urn:btih:…  or  infohash" />
+    <button id="load">Load</button>
+  </div>
+  <div class="presets">
+    <span style="color:#71717a;font-size:.8rem;align-self:center">Public-domain demos:</span>
+    <button data-magnet="magnet:?xt=urn:btih:08ada5a7a6183aae1e09d831df6748d566095a10&dn=Sintel&tr=udp%3A%2F%2Fexplodie.org%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337&tr=wss%3A%2F%2Ftracker.btorrent.xyz&tr=wss%3A%2F%2Ftracker.openwebtorrent.com&ws=https%3A%2F%2Fwebtorrent.io%2Ftorrents%2F">Sintel (CC-BY)</button>
+    <button data-magnet="magnet:?xt=urn:btih:dd8255ecdc7ca55fb0bbf81323d87062db1f6d1c&dn=Big+Buck+Bunny&tr=udp%3A%2F%2Fexplodie.org%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337&tr=wss%3A%2F%2Ftracker.btorrent.xyz&tr=wss%3A%2F%2Ftracker.openwebtorrent.com&ws=https%3A%2F%2Fwebtorrent.io%2Ftorrents%2F">Big Buck Bunny (CC-BY)</button>
+  </div>
+
+  <video id="player" controls playsinline></video>
+  <div id="status"></div>
+  <div id="files"></div>
+</main>
+
+<footer>Prototype · the server joins the swarm and re-serves the video over HTTP with Range support.</footer>
+
+<script>
+  const $ = (id) => document.getElementById(id)
+  const fmt = (b) => {
+    if (!b) return ''
+    const u = ['B', 'KB', 'MB', 'GB']; let i = 0; let n = b
+    while (n >= 1024 && i < u.length - 1) { n /= 1024; i++ }
+    return `${n.toFixed(1)} ${u[i]}`
+  }
+  const setStatus = (t) => { $('status').textContent = t }
+  let infoHash = null
+
+  async function load(magnet) {
+    if (!magnet) return
+    setStatus('Fetching torrent metadata… (first peers can take a few seconds)')
+    $('load').disabled = true
+    $('files').innerHTML = ''
+    try {
+      const res = await fetch('/add?magnet=' + encodeURIComponent(magnet))
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed')
+      infoHash = data.infoHash
+      const b = data.best
+      const how = b ? ` · ${b.decision}${b.video ? ` (${b.video}/${b.audio || 'no audio'})` : ''}${b.seekable ? '' : ' · no seek yet'}` : ''
+      setStatus(`“${data.name}” · ${data.peers} peers · ${data.files.length} file(s)${how}`)
+      renderFiles(data.files, b)
+      if (b) play(b)
+    } catch (err) {
+      setStatus('Error: ' + err.message)
+    } finally {
+      $('load').disabled = false
+    }
+  }
+
+  // Every file plays via /play — the server redirects to the seekable /stream path when the file is
+  // already browser-native, and otherwise remuxes/transcodes on the fly.
+  const playUrlFor = (index) => `/play/${infoHash}/${index}`
+
+  function renderFiles(files, best) {
+    $('files').innerHTML = ''
+    files.forEach((f) => {
+      const row = document.createElement('div')
+      row.className = 'file' + (best && f.index === best.index ? ' active' : '')
+      row.innerHTML = `<span>${f.video ? '🎬 ' : '📄 '}${f.name}</span><span class="size">${fmt(f.length)}</span>`
+      if (f.video) row.onclick = () => { document.querySelectorAll('.file').forEach(r => r.classList.remove('active')); row.classList.add('active'); play({ name: f.name, index: f.index }) }
+      $('files').appendChild(row)
+    })
+  }
+
+  function play(file) {
+    const p = $('player')
+    p.src = file.playUrl || playUrlFor(file.index)
+    p.play().catch(() => {})
+    setStatus('Streaming: ' + file.name)
+  }
+
+  $('load').onclick = () => load($('magnet').value.trim())
+  $('magnet').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('load').click() })
+  document.querySelectorAll('.presets button').forEach((b) => {
+    b.onclick = () => { $('magnet').value = b.dataset.magnet; load(b.dataset.magnet) }
+  })
+</script>
+</body>
+</html>

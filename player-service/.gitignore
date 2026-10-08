@@ -1,0 +1,7 @@
+node_modules
+/downloads
+*.log
+headers.txt
+*.bin
+add*.json
+*.stackdump

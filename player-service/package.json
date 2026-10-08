@@ -1,0 +1,24 @@
+{
+  "name": "tunisiaflicks-player-service",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Standalone torrent -> HTTP range-streaming service for TunisiaFlicks. Runs on a long-lived server (e.g. an Oracle Cloud Always Free VM), NOT on Vercel.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "ffmpeg-ffprobe-static": "^6.1.2-rc.1",
+    "parse-torrent": "^11.0.16",
+    "webtorrent": "^2.8.5"
+  },
+  "overrides": {
+    "uint8-util": "2.2.5"
+  }
+}
