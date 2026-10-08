@@ -500,7 +500,7 @@ export const social = defineStrings({
     'social.ratings.sharing': 'Réglages de partage',
     'social.ratings.notRated': 'Pas encore noté',
     'social.ratings.saveFailed': 'Impossible d’enregistrer votre note. Réessayez.',
-    'social.ratings.friendStars': '{name} : {count} sur 5',
+    'social.ratings.friendStars': '{name} : {count} sur 5',
 
     'social.visibility.private': 'Moi seulement',
     'social.visibility.privateList': 'Les membres de cette liste',
@@ -556,7 +556,7 @@ export const social = defineStrings({
     'social.share.sendTo': 'Envoyer à {count}',
     'social.share.sending': 'Envoi…',
     'social.share.sent': 'Envoyé',
-    'social.share.someSkipped': 'Envoi impossible pour : {names}',
+    'social.share.someSkipped': 'Envoi impossible pour : {names}',
     'social.share.failed': 'Impossible d’envoyer. Réessayez.',
     'social.share.elsewhere': 'Partager ailleurs',
     'social.share.signIn': 'Connectez-vous pour l’envoyer à vos amis.',
@@ -590,8 +590,8 @@ export const social = defineStrings({
     'social.inbox.digestHintText': 'Un court e-mail hebdomadaire avec ce qui est nouveau pour vous.',
     'social.inbox.titleSent': '{title}, de la part de {name}',
     'social.inbox.friendRequest': 'Demande d’ami de {name}',
-    'social.inbox.friendAccepted': 'Nouvel ami : {name}',
-    'social.inbox.friendRated': 'Note de {name} : {title}',
+    'social.inbox.friendAccepted': 'Nouvel ami : {name}',
+    'social.inbox.friendRated': 'Note de {name} : {title}',
     'social.inbox.andOthers': '{name} et {count} autres',
     'social.inbox.andOne': '{name} et une autre personne',
     'social.inbox.someone': 'Quelqu’un',
@@ -622,7 +622,7 @@ export const social = defineStrings({
     'social.push.titleSentBody': '{title}',
 
     'social.row.title': 'Vos amis regardent',
-    'social.row.watchedBy': 'Amis qui ont vu {title} : {names}',
+    'social.row.watchedBy': 'Amis qui ont vu {title} : {names}',
 
     'social.errors.generic': 'Une erreur est survenue. Réessayez.',
     'social.errors.kidsHasHandle': 'Un profil avec une page ne peut pas devenir un profil Enfants. Supprimez d’abord la page.',
