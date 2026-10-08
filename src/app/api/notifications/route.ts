@@ -5,6 +5,7 @@ import { ObjectId, type Filter } from 'mongodb'
 import { alertCollections } from '@/src/lib/follows'
 import { requireActiveProfile } from '@/src/lib/profiles'
 import { socialDb, type SocialNotificationDoc } from '@/src/lib/social/db'
+import { blockedAccounts } from '@/src/lib/social/friends'
 import { getIdentities } from '@/src/lib/social/identity'
 import { readJson, socialError, socialJson } from '@/src/lib/social/session'
 import { NOTIFICATION_FILTERS, type AvatarPerson } from '@/src/lib/social/types'
@@ -14,13 +15,18 @@ export const dynamic = 'force-dynamic'
 
 const MAX_LIMIT = 50
 
-type Scope = { userId: string; profileId: string; kids: boolean }
+type Scope = { userId: string; profileId: string; kids: boolean; blocked: string[] }
 
-/** What this profile may see: the account's alerts and its own rows (Kids: the kid-safe ones). */
+/**
+ * What this profile may see: the account's alerts and its own rows (Kids: the kid-safe ones).
+ * Nothing from an account on either side of a block: a block also takes back what they had
+ * already sent (a request from another of their profiles, a note).
+ */
 function visibleTo(scope: Scope, filter?: string | null): Filter<SocialNotificationDoc> {
   const clauses: Filter<SocialNotificationDoc>[] = [
     { userId: scope.userId, profileId: { $in: [null, scope.profileId] } },
   ]
+  if (scope.blocked.length) clauses.push({ 'actor.userId': { $nin: scope.blocked } })
   if (scope.kids) {
     clauses.push({ $or: [{ kind: { $in: [...RELEASE_KINDS] }, kidSafe: true }, { kidsVisible: true }] })
   }
@@ -33,7 +39,8 @@ function visibleTo(scope: Scope, filter?: string | null): Filter<SocialNotificat
 async function scopeOrError() {
   const owner = await requireActiveProfile()
   if ('error' in owner) return owner
-  return { scope: { userId: owner.userId, profileId: owner.profile.id, kids: owner.profile.kids } as Scope }
+  const blocked = Array.from(await blockedAccounts(owner.userId))
+  return { scope: { userId: owner.userId, profileId: owner.profile.id, kids: owner.profile.kids, blocked } as Scope }
 }
 
 function toItem(doc: SocialNotificationDoc & { _id: ObjectId }, people: Map<string, AvatarPerson>): NotificationItem {

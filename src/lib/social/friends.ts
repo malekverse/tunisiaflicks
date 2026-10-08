@@ -25,7 +25,7 @@ export async function isBlockedEitherWay(a: ProfileRef, b: ProfileRef): Promise<
 }
 
 /** The accounts on the other side of any block that involves `userId` (either direction). */
-async function blockedAccounts(userId: string): Promise<Set<string>> {
+export async function blockedAccounts(userId: string): Promise<Set<string>> {
   const { blocks } = await socialDb()
   const rows = await blocks.find(
     { $or: [{ blockerUserId: userId }, { blockedUserId: userId }] },

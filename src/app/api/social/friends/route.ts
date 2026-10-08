@@ -5,7 +5,7 @@ import { revalidateTag } from 'next/cache'
 import { ObjectId } from 'mongodb'
 import { retractNotification, settleNotificationAction } from '@/src/lib/notify'
 import { socialDb } from '@/src/lib/social/db'
-import { friendRows, otherSide } from '@/src/lib/social/friends'
+import { blockedAccounts, friendRows, otherSide } from '@/src/lib/social/friends'
 import { getIdentities, resolveHandle } from '@/src/lib/social/identity'
 import { pairKey } from '@/src/lib/social/rules'
 import { requireSocial, socialError, socialJson } from '@/src/lib/social/session'
@@ -28,11 +28,14 @@ export async function GET(request: Request) {
       : { friends: [], incoming: [], outgoing: [], blocked: [] })
   }
 
+  // A block covers whole accounts: requests from any of their profiles don't count or show.
+  const blocked = Array.from(await blockedAccounts(ref.userId))
+
   if (summary) {
     const [rows, pendingIncoming, unreadRequests] = await Promise.all([
       friendRows(ref.profileId),
-      friendships.countDocuments({ profiles: ref.profileId, status: 'pending', requestedBy: { $ne: ref.profileId } }),
-      notifications.countDocuments({ userId: ref.userId, profileId: ref.profileId, kind: 'friend_request', read: false, 'action.state': 'pending' }),
+      friendships.countDocuments({ profiles: ref.profileId, status: 'pending', requestedBy: { $ne: ref.profileId }, requestedByUser: { $nin: blocked } }),
+      notifications.countDocuments({ userId: ref.userId, profileId: ref.profileId, kind: 'friend_request', read: false, 'action.state': 'pending', 'actor.userId': { $nin: blocked } }),
     ])
     const identities = await getIdentities(rows.slice(0, 3).map((row) => otherSide(row, ref.profileId).profileId))
     return socialJson({
@@ -47,6 +50,7 @@ export async function GET(request: Request) {
     friendRows(ref.profileId),
     friendships.find({
       profiles: ref.profileId,
+      users: { $nin: blocked },
       $or: [
         { status: 'pending' },
         // A declined request still reads as sent to the person who sent it.

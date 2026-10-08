@@ -39,7 +39,9 @@ async function acceptRow(row: FriendshipDoc, me: ProfileRef, mine: SocialProfile
     { $set: { status: 'accepted', acceptedAt: new Date(), ...(via ? { via } : {}) }, $unset: { expiresAt: '', requesterCancelled: '' } },
   )
   const them = otherSide(row, me.profileId)
-  await settleNotificationAction(me, { type: 'friend_request', id: String(row._id) }, 'accepted')
+  // The request's inbox row lives with whoever received it: me when I answer it, them when I
+  // follow their invite link after asking them myself.
+  await settleNotificationAction(otherSide(row, row.requestedBy), { type: 'friend_request', id: String(row._id) }, 'accepted')
   await announceFriends(me, mine, them, String(row._id))
 }
 
@@ -170,10 +172,19 @@ export async function PATCH(request: Request) {
   const id = typeof body?.id === 'string' && ObjectId.isValid(body.id) ? new ObjectId(body.id) : null
   if (!id || typeof body?.accept !== 'boolean') return socialError(400, 'invalid')
   const { friendships } = await socialDb()
+  const action = { type: 'friend_request' as const, id: String(id) }
   const row = await friendships.findOne({ _id: id, profiles: me.profileId, status: 'pending', requestedBy: { $ne: me.profileId } })
   if (!row) {
-    // Already answered (from another device, or the request was cancelled): settle the row anyway.
-    await settleNotificationAction(me, { type: 'friend_request', id: String(id) }, body.accept ? 'accepted' : 'declined')
+    // Already answered on another device: the inbox row shows how. Cancelled or expired: it goes.
+    const known = await friendships.findOne({ _id: id, profiles: me.profileId, requestedBy: { $ne: me.profileId } }, { projection: { status: 1 } })
+    if (known?.status === 'accepted' || known?.status === 'declined') await settleNotificationAction(me, action, known.status)
+    else await retractNotification(me, 'friend_request', action.id)
+    return socialError(404, 'not_found')
+  }
+  // Someone blocked (either way, any profile of the account) can't become a friend through an old request.
+  if (await isBlockedEitherWay(me, otherSide(row, me.profileId))) {
+    await friendships.deleteOne({ _id: id })
+    await retractNotification(me, 'friend_request', action.id)
     return socialError(404, 'not_found')
   }
   if (body.accept) {
@@ -183,7 +194,7 @@ export async function PATCH(request: Request) {
   }
   const now = new Date()
   await friendships.updateOne({ _id: id }, { $set: { status: 'declined', expiresAt: new Date(now.getTime() + DAYS(PENDING_DAYS)) } })
-  await settleNotificationAction(me, { type: 'friend_request', id: String(id) }, 'declined')
+  await settleNotificationAction(me, action, 'declined')
   return socialJson({ status: 'none' })
 }
 
