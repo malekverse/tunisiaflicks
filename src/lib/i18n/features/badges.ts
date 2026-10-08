@@ -3,7 +3,9 @@ import { defineStrings } from '../define'
 
 export const badges = defineStrings({
   en: {
+    'badges.supporter.title': 'Supporter',
   },
   ar: {
+    'badges.supporter.title': 'الدعم',
   },
 })

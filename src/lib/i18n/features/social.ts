@@ -3,7 +3,9 @@ import { defineStrings } from '../define'
 
 export const social = defineStrings({
   en: {
+    'social.privacy.title': 'Friends and privacy',
   },
   ar: {
+    'social.privacy.title': 'الأصدقاء والخصوصية',
   },
 })
