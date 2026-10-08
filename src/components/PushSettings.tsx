@@ -8,6 +8,7 @@ import SettingsSection, { SettingsGroup } from '@/src/components/profile/Setting
 import { useT } from '@/src/components/I18nProvider'
 import { toast } from '@/src/hooks/use-toast'
 import { usePush, type PushTopic } from '@/src/hooks/use-push'
+import { useProfiles } from '@/src/hooks/use-profiles'
 import type { TKey } from '@/src/lib/i18n'
 
 function Toggle({ id, checked, disabled, onChange, label, hint }: { id: string, checked: boolean, disabled?: boolean, onChange: (value: boolean) => void, label: string, hint: string }) {
@@ -27,6 +28,8 @@ const STATUS_MESSAGE: Partial<Record<string, TKey>> = {
 export function PushSettingsCard({ children }: { children?: React.ReactNode } = {}) {
   const t = useT()
   const { status, topics, busy, update } = usePush()
+  const { active } = useProfiles()
+  const grownUp = !!active && !active.kids
 
   const toggle = async (topic: PushTopic, on: boolean) => {
     const next = on ? Array.from(new Set([...topics, topic])) : topics.filter((item) => item !== topic)
@@ -39,7 +42,7 @@ export function PushSettingsCard({ children }: { children?: React.ReactNode } = 
   return (
     <SettingsSection id="notifications" title={t('settings.notifications')} description={t('push.description')}>
       <p className="mb-3 flex items-center gap-2 text-[13px] font-medium text-white/60">
-        <Smartphone aria-hidden className="h-4 w-4" strokeWidth={1.9} />{t('push.title')}
+        <Smartphone aria-hidden className="h-4 w-4" strokeWidth={1.9} />{t('social.push.onThisDevice')}
       </p>
       {status === 'loading' ? (
         <SettingsGroup aria-busy>
@@ -58,6 +61,13 @@ export function PushSettingsCard({ children }: { children?: React.ReactNode } = 
         <SettingsGroup>
           <Toggle id="push-pick" checked={topics.includes('pick')} disabled={busy} onChange={(on) => toggle('pick', on)} label={t('push.pickLabel')} hint={t('push.pickHint')} />
           <Toggle id="push-alerts" checked={topics.includes('alerts')} disabled={busy} onChange={(on) => toggle('alerts', on)} label={t('push.alertsLabel')} hint={t('push.alertsHint')} />
+          {/* Friends and nights belong to a grown-up profile (this device follows the profile in use). */}
+          {grownUp && (
+            <>
+              <Toggle id="push-friends" checked={topics.includes('friends')} disabled={busy} onChange={(on) => toggle('friends', on)} label={t('social.push.friendsLabel')} hint={t('social.push.friendsHint')} />
+              <Toggle id="push-nights" checked={topics.includes('nights')} disabled={busy} onChange={(on) => toggle('nights', on)} label={t('social.push.nightsLabel')} hint={t('social.push.nightsHint')} />
+            </>
+          )}
         </SettingsGroup>
       )}
       {/* Disappears when the slot renders nothing. */}
