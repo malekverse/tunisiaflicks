@@ -20,7 +20,7 @@ async function page(path) {
 }
 
 const STATIC_PAGES = ['/about', '/privacy', '/terms', '/dmca', '/contact', '/login', '/signup', '/swipe', '/ramadan']
-const TMDB_PAGES = ['/', '/tv', '/discover', '/upcoming', '/top-rated', '/search?q=batman', '/movie/550', '/tv/1396', '/person/287', '/tunisian/cinema']
+const TMDB_PAGES = ['/', '/tv', '/clips', '/discover', '/upcoming', '/top-rated', '/search?q=batman', '/movie/550', '/tv/1396', '/person/287', '/tunisian/cinema']
 
 for (const path of STATIC_PAGES) test(`page ${path}`, () => page(path))
 for (const path of TMDB_PAGES) test(`page ${path}`, { skip: !hasTmdb && 'no TMDB_API_KEY' }, () => page(path))
