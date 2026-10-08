@@ -1,10 +1,34 @@
-// Unit tests for the scheduling lib and the weekly digest (npm run test:unit).
-// The database tests (lease, deliveries) run when MONGODB_URI is set (CI starts a MongoDB);
-// they use their own collections' documents and clean up after themselves.
+// Unit tests for the scheduling lib, the mail budget, release alerts and the weekly digest
+// (npm run test:unit). The database tests run when MONGODB_URI is set (CI starts a MongoDB), in a
+// database of their own that is dropped at the end.
 import { after, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
+import { register } from 'node:module'
+
+// A few app modules (src/lib/tmdb.ts) use a TypeScript parameter property, which Node's type
+// stripping can't load: those files go through Node's own TypeScript transform instead.
+const TRANSFORM_HOOK = String.raw`
+import { readFile } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
+import { stripTypeScriptTypes } from 'node:module'
+const PARAMETER_PROPERTY = /constructor\s*\([^)]*\b(public|private|protected|readonly)\s/
+export async function load(url, context, nextLoad) {
+  if (url.startsWith('file:') && url.endsWith('.ts')) {
+    const source = await readFile(fileURLToPath(url), 'utf8')
+    if (PARAMETER_PROPERTY.test(source)) {
+      return { format: 'module', source: stripTypeScriptTypes(source, { mode: 'transform' }), shortCircuit: true }
+    }
+  }
+  return nextLoad(url, context)
+}`
+register(`data:text/javascript,${encodeURIComponent(TRANSFORM_HOOK)}`)
 
 const HAS_DB = !!process.env.MONGODB_URI
+if (HAS_DB) {
+  const url = new URL(process.env.MONGODB_URI)
+  url.pathname = `/tf_unit_digest_${process.pid}`
+  process.env.MONGODB_URI = url.toString()
+}
 const SECRET = 'unit-test-cron-secret-0123456789abcdef'
 const EXTRA = 'unit-test-extra-secret-0123456789abcdef-cron-job'
 const SHORT_EXTRA = 'short-extra-secret'
@@ -17,7 +41,10 @@ const cron = await import('@/src/lib/cron')
 const request = (headers = {}) => new Request('http://localhost/api/cron/test', { headers })
 
 after(async () => {
-  if (HAS_DB) await (await (await import('@/src/lib/mongodb')).default).close()
+  if (!HAS_DB) return
+  const client = await (await import('@/src/lib/mongodb')).default
+  await client.db().dropDatabase()
+  await client.close()
 })
 
 describe('cron: who may call', () => {
@@ -149,5 +176,92 @@ describe('cron: lease and answers', { skip: !HAS_DB && 'no MONGODB_URI' }, () =>
     assert.deepEqual(inner.value, { busy: true })
     const later = await cron.withLease(key, 60_000, async () => 'ok')
     assert.deepEqual(later, { busy: false, value: 'ok' })
+  })
+})
+
+describe('mail budget', { skip: !HAS_DB && 'no MONGODB_URI' }, () => {
+  const today = () => `mail:day:${new Date().toISOString().slice(0, 10)}`
+  const counters = async () => (await (await import('@/src/lib/mongodb')).default).db().collection('rateLimits')
+
+  test('bulk stops at MAIL_DAILY_LIMIT - 70; account mail always goes and still counts', async () => {
+    const { reserveMail } = await import('@/src/lib/email')
+    process.env.MAIL_DAILY_LIMIT = '73'
+    try {
+      await (await counters()).deleteOne({ _id: today() })
+      const bulk = []
+      for (let i = 0; i < 5; i++) bulk.push(await reserveMail('bulk'))
+      assert.deepEqual(bulk, [true, true, true, false, false])
+      assert.equal(await reserveMail('transactional'), true)
+      assert.equal(await reserveMail('bulk'), false)
+      const doc = await (await counters()).findOne({ _id: today() })
+      assert.equal(doc.count, 4, 'three bulk and one account mail')
+      assert.ok(doc.expiresAt instanceof Date)
+    } finally {
+      delete process.env.MAIL_DAILY_LIMIT
+      await (await counters()).deleteOne({ _id: today() })
+    }
+  })
+
+  test('concurrent bulk reservations never pass the cap', async () => {
+    const { reserveDailySlot } = await import('@/src/lib/email')
+    const results = await Promise.all(Array.from({ length: 40 }, () => reserveDailySlot('unit-race', 7)))
+    assert.equal(results.filter(Boolean).length, 7)
+  })
+})
+
+describe('release alerts: the e-mail switch, the budget and Kids', { skip: !HAS_DB && 'no MONGODB_URI' }, () => {
+  const db = async () => (await (await import('@/src/lib/mongodb')).default).db()
+  process.env.FROM_EMAIL ??= 'alerts@example.test'
+  process.env.NEXT_PUBLIC_APP_URL ??= 'http://localhost:3000'
+
+  const seed = async (emailPrefs) => {
+    const { ObjectId } = await import('mongodb')
+    const d = await db()
+    const _id = new ObjectId()
+    await d.collection('users').insertOne({ _id, email: `${_id}@example.test`, name: 'Unit', ...(emailPrefs ? { emailPrefs } : {}) })
+    await d.collection('notifications').insertOne({
+      userId: String(_id), media_type: 'movie', tmdbId: '550', title: 'Fight Club', poster_path: null,
+      kind: 'movie_released', event_key: `movie:550:released:${_id}`, episode: null,
+      created_at: new Date(), read: false, email_status: 'pending', kidSafe: false,
+    })
+    return String(_id)
+  }
+
+  test('with release e-mails off: no e-mail, the bell keeps the alert', async () => {
+    const { runReleaseAlerts } = await import('@/src/lib/release-alerts')
+    const d = await db()
+    await d.collection('notifications').deleteMany({})
+    const userId = await seed({ releaseAlerts: false })
+    const stats = await runReleaseAlerts({ deadline: Date.now() + 10_000 })
+    assert.equal(stats.emailsSkipped, 1)
+    assert.equal(stats.usersEmailed, 0)
+    const doc = await d.collection('notifications').findOne({ userId })
+    assert.equal(doc.email_status, 'sent')
+    assert.equal(doc.emailed_at, null)
+    assert.equal(doc.read, false, 'still in the bell')
+  })
+
+  test('once the bulk budget is spent, alerts wait for the next run; a password reset still goes', async () => {
+    const { runReleaseAlerts } = await import('@/src/lib/release-alerts')
+    const { reserveMail } = await import('@/src/lib/email')
+    const d = await db()
+    await d.collection('notifications').deleteMany({})
+    const userId = await seed(null)
+    process.env.MAIL_DAILY_LIMIT = '71'
+    const key = `mail:day:${new Date().toISOString().slice(0, 10)}`
+    await d.collection('rateLimits').updateOne({ _id: key }, { $set: { count: 1, expiresAt: new Date(Date.now() + 86400000) } }, { upsert: true })
+    try {
+      const stats = await runReleaseAlerts({ deadline: Date.now() + 10_000 })
+      assert.equal(stats.emailsOverQuota, 1)
+      assert.equal(stats.usersEmailed, 0)
+      assert.equal(stats.emailsFailed, 0)
+      const doc = await d.collection('notifications').findOne({ userId })
+      assert.equal(doc.email_status, 'pending', 'left for the next run')
+      assert.equal(doc.email_attempts ?? 0, 0, 'not counted as a failed attempt')
+      assert.equal(await reserveMail('transactional'), true, 'account mail is never held back')
+    } finally {
+      delete process.env.MAIL_DAILY_LIMIT
+      await d.collection('rateLimits').deleteOne({ _id: key })
+    }
   })
 })
