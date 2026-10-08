@@ -13,7 +13,7 @@ import { featureStrings } from '@/src/lib/i18n/features'
 import { genreNames, localGenreName } from '@/src/lib/genres'
 import { catalogueLanguage, localizeDetail, logoLanguages } from '@/src/lib/tmdb-locale'
 import { tmdbLanguage } from '@/src/lib/tmdb'
-import { siteMetadata } from '@/src/lib/seo'
+import { pageMetadata, siteMetadata } from '@/src/lib/seo'
 
 const NBSP = String.fromCharCode(0xa0)
 const NNBSP = String.fromCharCode(0x202f)
@@ -203,4 +203,11 @@ test('siteMetadata: the site described in the language of the page, with its og:
   assert.equal(derja.openGraph.locale, 'ar_TN')
   assert.deepEqual(derja.openGraph.alternateLocale, ['en_US', 'fr_FR'])
   assert.match(String(derja.title), /TunisiaFlicks/)
+})
+
+test('pageMetadata: og:locale follows the language of the page (English outside a request)', () => {
+  const page = pageMetadata({ title: 'À propos', path: '/about' })
+  assert.equal(page.openGraph.locale, 'en_US')
+  assert.deepEqual(page.openGraph.alternateLocale, ['fr_FR', 'ar_TN'])
+  assert.equal(page.title, 'À propos | TunisiaFlicks')
 })

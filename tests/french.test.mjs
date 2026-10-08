@@ -27,6 +27,9 @@ test('French cookie: /about is French, left to right', async () => {
   assert.match(htmlTag(page), /lang="fr"/)
   assert.match(htmlTag(page), /dir="ltr"/)
   assert.match(page, /À propos de TunisiaFlicks/)
+  // A page's own metadata says which language it is in, for link previews.
+  assert.match(page, /<meta property="og:locale" content="fr_FR"\/>/)
+  assert.match(page, /<meta property="og:locale:alternate" content="en_US"\/>/)
 })
 
 test('French cookie: /privacy has no Arabic', async () => {
