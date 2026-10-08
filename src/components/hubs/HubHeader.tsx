@@ -33,8 +33,11 @@ export default function HubHeader({ title, subtitle, accent, watermark, end, bel
         <div
           aria-hidden
           className={cn(
-            'pointer-events-none absolute -z-10 opacity-[0.13] [&>svg]:h-full [&>svg]:w-full',
-            compact ? '-end-16 -top-16 h-[320px] w-[320px] sm:-end-6 sm:h-[400px] sm:w-[400px]' : '-end-24 -top-10 h-[420px] w-[420px] sm:-end-10 sm:h-[560px] sm:w-[560px]',
+            // Fades out towards its edges, so it never ends on a hard line.
+            'pointer-events-none absolute -z-10 opacity-[0.13] [mask-image:radial-gradient(farthest-side_at_50%_42%,black_40%,transparent)] [&>svg]:h-full [&>svg]:w-full',
+            // Square; on phones a fixed size, from tablets as tall as the header (and a little above).
+            'aspect-square h-[280px] sm:bottom-0 sm:h-auto',
+            compact ? '-end-10 -top-10 sm:-end-4' : '-end-16 -top-16 sm:-end-8',
           )}
           style={{ color: `rgb(${accent})` }}
         >

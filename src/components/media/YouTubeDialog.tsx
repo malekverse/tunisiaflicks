@@ -15,10 +15,11 @@ const NAV_BUTTON = 'pressable glass grid h-11 w-11 shrink-0 place-items-center r
 
 /**
  * YouTube in a dialog: one video, or a playlist you step through (trailers, a channel's videos).
- * The player is the privacy-enhanced embed and only exists while the dialog is open. Below it, the
- * title, the position, previous and next, and "Watch on YouTube" (hidden with `external={false}`,
- * for Kids). While the dialog itself has focus (not the player), the arrow keys step through,
- * mirrored in Arabic. Videos whose owner blocks embedding show a card that sends people to YouTube.
+ * The player is the privacy-enhanced embed and only exists while the dialog is open. Above it, a
+ * bar (where the dialog's close button sits, clear of YouTube's own controls): the title, the
+ * position, previous and next, and "Watch on YouTube" (hidden with `external={false}`, for Kids).
+ * While the dialog itself has focus (not the player), the arrow keys step through, mirrored in
+ * Arabic. Videos whose owner blocks embedding show a card that sends people to YouTube.
  */
 export default function YouTubeDialog({ open, onOpenChange, videos, index, onIndexChange, label, external = true }: {
   open: boolean
@@ -68,41 +69,8 @@ export default function YouTubeDialog({ open, onOpenChange, videos, index, onInd
         className="max-w-5xl gap-0 overflow-hidden border-0 p-0 outline-none"
       >
         <DialogTitle className="sr-only">{label}</DialogTitle>
-        <div className="relative aspect-video w-full bg-black">
-          {open && video && !video.blocked && (
-            <iframe
-              key={video.liveChannelId ?? video.key}
-              src={src}
-              title={video.title}
-              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-              allowFullScreen
-              // YouTube refuses to play without a referrer (error 153): never 'no-referrer' here.
-              referrerPolicy="strict-origin-when-cross-origin"
-              className="absolute inset-0 h-full w-full border-0"
-            />
-          )}
-          {video?.blocked && (
-            <div className="absolute inset-0 grid place-items-center bg-[radial-gradient(ellipse_at_center,rgb(255_255_255/0.06),transparent_70%)] p-6 text-center">
-              <div className="flex flex-col items-center">
-                <span className="grid h-14 w-14 place-items-center rounded-full bg-white/[0.06] text-white/70">
-                  <MonitorPlay aria-hidden className="h-6 w-6" />
-                </span>
-                <p className="mt-4 max-w-sm text-balance font-display text-xl font-bold text-white">{t('video.blocked')}</p>
-                {external && (
-                  <Button asChild size="lg" className="mt-6">
-                    <a href={watchUrl} target="_blank" rel="noopener noreferrer">
-                      <FaYoutube aria-hidden className="h-5 w-5" />
-                      {t('video.watchOnYouTube')}
-                    </a>
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
         {video && (
-          <div className="flex items-center gap-3 px-4 py-3 sm:gap-4 sm:px-5 sm:py-4">
+          <div className="flex min-h-[60px] items-center gap-3 py-2 pe-14 ps-4 sm:gap-4 sm:ps-5">
             <div className="min-w-0 flex-1">
               <p dir="auto" className="line-clamp-1 text-[15px] font-semibold text-white">{video.title}</p>
               {video.subtitle && <p dir="auto" className="mt-0.5 line-clamp-1 text-[13px] text-white/60">{video.subtitle}</p>}
@@ -140,6 +108,39 @@ export default function YouTubeDialog({ open, onOpenChange, videos, index, onInd
             )}
           </div>
         )}
+        <div className="relative aspect-video w-full bg-black">
+          {open && video && !video.blocked && (
+            <iframe
+              key={video.liveChannelId ?? video.key}
+              src={src}
+              title={video.title}
+              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+              allowFullScreen
+              // YouTube refuses to play without a referrer (error 153): never 'no-referrer' here.
+              referrerPolicy="strict-origin-when-cross-origin"
+              className="absolute inset-0 h-full w-full border-0"
+            />
+          )}
+          {video?.blocked && (
+            <div className="absolute inset-0 grid place-items-center bg-[radial-gradient(ellipse_at_center,rgb(255_255_255/0.06),transparent_70%)] p-6 text-center">
+              <div className="flex flex-col items-center">
+                <span className="grid h-14 w-14 place-items-center rounded-full bg-white/[0.06] text-white/70">
+                  <MonitorPlay aria-hidden className="h-6 w-6" />
+                </span>
+                <p className="mt-4 max-w-sm text-balance font-display text-xl font-bold text-white">{t('video.blocked')}</p>
+                {external && (
+                  <Button asChild size="lg" className="mt-6">
+                    <a href={watchUrl} target="_blank" rel="noopener noreferrer">
+                      <FaYoutube aria-hidden className="h-5 w-5" />
+                      {t('video.watchOnYouTube')}
+                    </a>
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
       </DialogContent>
     </Dialog>
   )
