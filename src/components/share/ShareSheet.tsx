@@ -21,6 +21,7 @@ import { withCallback } from '@/src/components/auth/links'
 import { Button } from '@/src/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/src/components/ui/dialog'
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/src/components/ui/drawer'
+import { useProfiles } from '@/src/hooks/use-profiles'
 import { toast } from '@/src/hooks/use-toast'
 import { haptic, spring } from '@/src/lib/motion'
 import { NOTE_MAX } from '@/src/lib/social/rules'
@@ -157,6 +158,9 @@ function People({ request }: { request: ShareRequest }) {
   const t = useT()
   const pathname = usePathname()
   const { status, self, reload } = useSocialSelf()
+  // Kids never get the row: known on this device already, so no placeholder that then collapses.
+  const { active } = useProfiles()
+  if (active?.kids || status === 'kids') return null
   if (status === 'loading') return <div aria-busy className="h-[132px] animate-pulse rounded-2xl bg-white/[0.03]" />
   if (status === 'guest') {
     const back = typeof window !== 'undefined' ? window.location.pathname + window.location.search : pathname
