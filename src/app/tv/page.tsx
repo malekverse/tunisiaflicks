@@ -6,6 +6,7 @@ import { getLocale, getT } from '@/src/lib/i18n/server'
 import { getKidsMode } from '@/src/lib/profiles'
 import { getBillboard } from '@/src/lib/billboard'
 import { pageMetadata } from '@/src/lib/seo'
+import { catalogueLanguage } from '@/src/lib/tmdb-locale'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +17,8 @@ export function generateMetadata() {
 
 export default async function TVPage() {
   const kids = await getKidsMode()
-  const [data, billboard] = await Promise.all([getTVShows(kids), getBillboard(kids, getLocale(), 'tv')])
+  const locale = getLocale()
+  const [data, billboard] = await Promise.all([getTVShows(kids, catalogueLanguage(locale)), getBillboard(kids, locale, 'tv')])
   const t = getT()
 
   return (

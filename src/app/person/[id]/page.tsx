@@ -5,8 +5,10 @@ import TmdbImage from '@/src/components/TmdbImage'
 import Filmography, { type Credit } from '@/src/components/person/Filmography'
 import RoomTint from '@/src/components/shell/RoomTint'
 import { PosterSlider } from '@/src/components/Sliders'
-import { TmdbError, tmdbFetch, tmdbFetchSafe, withTranslatedFields } from '@/src/lib/tmdb'
-import { createTranslator, isArabicScript, type Locale, type TKey } from '@/src/lib/i18n'
+import { TmdbError, tmdbFetch, tmdbFetchSafe } from '@/src/lib/tmdb'
+import { catalogueLanguage, localizeDetail, translatedRecord } from '@/src/lib/tmdb-locale'
+import { createTranslator, type Locale, type TKey } from '@/src/lib/i18n'
+import { formatDate } from '@/src/lib/i18n/format'
 import { getLocale } from '@/src/lib/i18n/server'
 import { filterKidSafe } from '@/src/lib/kids'
 import { getKidsMode } from '@/src/lib/profiles'
@@ -46,6 +48,19 @@ function buildCredits(person: any) {
   return credits
 }
 
+/** The English credits with the titles (and posters) of the same credits in the viewer's language. */
+function localizeCredits(credits: { cast?: any[], crew?: any[] } | undefined, local: { cast?: any[], crew?: any[] }) {
+  const byKey = new Map<string, any>()
+  for (const credit of [...(local.cast ?? []), ...(local.crew ?? [])]) byKey.set(`${credit.media_type}-${credit.id}`, credit)
+  const overlay = (credit: any) => {
+    const match = byKey.get(`${credit.media_type}-${credit.id}`)
+    return match
+      ? { ...credit, title: match.title || credit.title, name: match.name || credit.name, poster_path: match.poster_path || credit.poster_path }
+      : credit
+  }
+  return { ...credits, cast: credits?.cast?.map(overlay), crew: credits?.crew?.map(overlay) }
+}
+
 const dateOf = (credit: any) => credit.release_date || credit.first_air_date || ''
 
 function age(birthday: string, deathday?: string | null) {
@@ -56,13 +71,14 @@ function age(birthday: string, deathday?: string | null) {
   return years
 }
 
-const formatDate = (value: string, locale: Locale) =>
-  new Date(value).toLocaleDateString(isArabicScript(locale) ? 'ar-TN-u-nu-latn' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+const longDate = (value: string, locale: Locale) => formatDate(value, locale, { day: 'numeric', month: 'long', year: 'numeric' })
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!isValidId(params.id)) return {}
-  const person = await tmdbFetchSafe(`person/${params.id}`)
-  if (!person) return {}
+  const locale = getLocale()
+  const [english, translated] = await Promise.all([tmdbFetchSafe(`person/${params.id}`), translatedRecord('person', params.id, locale)])
+  if (!english) return {}
+  const person = localizeDetail(english, translated, locale)
   // The share image comes from ./opengraph-image.tsx (card: false).
   return pageMetadata({
     title: person.name,
@@ -76,13 +92,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PersonPage({ params }: Props) {
   const locale = getLocale()
   const t = createTranslator(locale)
-  // Arabic UI: TMDB's Arabic biography when there is one (most people only have an English one).
-  const [english, translated, kids] = await Promise.all([
+  // The biography in the viewer's language when TMDB has one (most people only have an English
+  // one); in French, the titles of their films and shows in French too.
+  const language = catalogueLanguage(locale)
+  const [english, translated, localCredits, kids] = await Promise.all([
     getPerson(params.id),
-    isArabicScript(locale) && isValidId(params.id) ? tmdbFetchSafe(`person/${params.id}`, { language: 'ar' }) : null,
+    translatedRecord('person', params.id, locale),
+    language && isValidId(params.id) ? tmdbFetchSafe<{ cast?: any[], crew?: any[] }>(`person/${params.id}/combined_credits`, { language }) : null,
     getKidsMode(),
   ])
-  const person = withTranslatedFields(english, translated, ['biography'])
+  const person = localizeDetail(english, translated, locale)
+  if (localCredits) person.combined_credits = localizeCredits(person.combined_credits, localCredits)
   // Kids profiles: only their best-known titles that are rated for kids.
   const credits = kids
     ? await filterKidSafe(buildCredits(person).sort((a, b) => (b.vote_count ?? 0) - (a.vote_count ?? 0)), undefined, 60)
@@ -100,9 +120,9 @@ export default async function PersonPage({ params }: Props) {
     person.known_for_department && { label: t('person.knownFor'), value: department(person.known_for_department) },
     person.birthday && {
       label: t('person.born'),
-      value: `${formatDate(person.birthday, locale)}${person.deathday ? '' : ` ${t('person.age', { age: age(person.birthday) })}`}`,
+      value: `${longDate(person.birthday, locale)}${person.deathday ? '' : ` ${t('person.age', { age: age(person.birthday) })}`}`,
     },
-    person.deathday && { label: t('person.died'), value: `${formatDate(person.deathday, locale)} ${t('person.aged', { age: age(person.birthday, person.deathday) })}` },
+    person.deathday && { label: t('person.died'), value: `${longDate(person.deathday, locale)} ${t('person.aged', { age: age(person.birthday, person.deathday) })}` },
     person.place_of_birth && { label: t('person.placeOfBirth'), value: person.place_of_birth },
     credits.length > 0 && { label: t('person.credits'), value: t('person.titles', { count: credits.length }) },
   ].filter(Boolean) as { label: string, value: string }[]
@@ -153,7 +173,7 @@ export default async function PersonPage({ params }: Props) {
               <dl className="mt-6 flex animate-focus-in flex-wrap justify-center gap-x-10 gap-y-4 [animation-delay:120ms] md:justify-start">
                 {facts.filter((fact) => fact.label !== t('person.knownFor')).map((fact) => (
                   <div key={fact.label}>
-                    <dt className="text-[12.5px] text-white/45">{fact.label}</dt>
+                    <dt className="text-[12.5px] text-white/50">{fact.label}</dt>
                     <dd className="mt-0.5 text-[15px] font-medium text-white/90">{fact.value}</dd>
                   </div>
                 ))}

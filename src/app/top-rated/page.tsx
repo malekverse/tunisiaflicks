@@ -5,7 +5,8 @@ import SegmentedLinks from '@/src/components/browse/SegmentedLinks'
 import { cardProps } from '@/src/lib/card-props'
 import PageNav from '@/src/components/PageNav'
 import { getList, parsePage } from '@/src/lib/lists'
-import { getT } from '@/src/lib/i18n/server'
+import { getLocale, getT } from '@/src/lib/i18n/server'
+import { catalogueLanguage } from '@/src/lib/tmdb-locale'
 import { kidsList } from '@/src/lib/kids'
 import { getKidsMode } from '@/src/lib/profiles'
 import { pageMetadata } from '@/src/lib/seo'
@@ -20,9 +21,10 @@ export default async function TopRatedPage({ searchParams }: { searchParams: { p
   const page = parsePage(searchParams.page)
   const kind = searchParams.type === 'tv' ? 'tv' : 'movie'
   const kids = kidsList(kind, 'top_rated')
+  const language = catalogueLanguage(getLocale())
   const { results, totalPages, failed } = await getKidsMode()
-    ? await getList(kids.path, page, kids.params)
-    : await getList(`${kind}/top_rated`, page)
+    ? await getList(kids.path, page, { ...kids.params, language })
+    : await getList(`${kind}/top_rated`, page, { language })
   const t = getT()
 
   const offset = (page - 1) * 20

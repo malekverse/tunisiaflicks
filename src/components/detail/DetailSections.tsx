@@ -6,6 +6,7 @@ import TmdbImage from '@/src/components/TmdbImage'
 import { Row, SectionHeader } from '@/src/components/rows/Row'
 import { useI18n } from '@/src/components/I18nProvider'
 import type { TKey } from '@/src/lib/i18n'
+import { formatDate, languageName, regionName } from '@/src/lib/i18n/format'
 
 /** The cast as a row of portraits, with the character each one plays. */
 export function CastRow({ cast, id }: { cast: any[], id: string }) {
@@ -22,7 +23,7 @@ export function CastRow({ cast, id }: { cast: any[], id: string }) {
                             <TmdbImage kind="profile" path={person.profile_path} fallback="/actor.png" alt="" fill sizes="118px" className="object-cover object-[50%_25%]" />
                         </span>
                         <span className="mt-2.5 block truncate text-[13px] font-medium text-white/90"><bdi>{person.name}</bdi></span>
-                        {person.character && <span className="block truncate text-[12px] text-white/45"><bdi>{person.character}</bdi></span>}
+                        {person.character && <span className="block truncate text-[12px] text-white/50"><bdi>{person.character}</bdi></span>}
                     </Link>
                 ))}
             </Row>
@@ -56,9 +57,12 @@ const STATUS: Record<string, TKey> = {
 
 /** The facts: dates, people, places, money. The poster sits beside them on wide screens. */
 export function DetailsGrid({ kind, data, id }: { kind: 'movie' | 'tv', data: any, id: string }) {
-    const { t, dateLocale } = useI18n()
+    const { t, locale } = useI18n()
     // An explicit locale (never the runtime default): this renders on the server and in the browser.
-    const formatDate = (value?: string) => value ? new Date(`${value}T12:00:00Z`).toLocaleDateString(dateLocale ?? 'en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : ''
+    const longDate = (value?: string) => value ? formatDate(value, locale, { day: 'numeric', month: 'long', year: 'numeric' }) : ''
+    // Countries and languages named in the viewer's language ('Tunisie', 'الفرنسية'), TMDB's English as a fallback.
+    const countries = (data.production_countries ?? []).map((country: any) => regionName(country.iso_3166_1, locale) || country.name)
+    const languages = (data.spoken_languages ?? []).map((language: any) => languageName(language.iso_639_1, locale) || language.english_name || language.name)
     const crew: any[] = data.credits?.crew ?? []
     const names = (list: any[], limit = 3) => Array.from(new Set(list.map((item) => item.name).filter(Boolean))).slice(0, limit).join(', ')
     const title = data.title || data.name
@@ -68,8 +72,8 @@ export function DetailsGrid({ kind, data, id }: { kind: 'movie' | 'tv', data: an
     const facts: [TKey, React.ReactNode][] = [
         [`detail.originalTitle`, original && original !== title ? <bdi key="o">{original}</bdi> : ''],
         ['detail.status', data.status ? (STATUS[data.status] ? t(STATUS[data.status]) : data.status) : ''],
-        [kind === 'movie' ? 'detail.released' : 'detail.firstAired', formatDate(kind === 'movie' ? data.release_date : data.first_air_date)],
-        ['detail.lastAired', kind === 'tv' && (data.status === 'Ended' || data.status === 'Canceled') ? formatDate(data.last_air_date) : ''],
+        [kind === 'movie' ? 'detail.released' : 'detail.firstAired', longDate(kind === 'movie' ? data.release_date : data.first_air_date)],
+        ['detail.lastAired', kind === 'tv' && (data.status === 'Ended' || data.status === 'Canceled') ? longDate(data.last_air_date) : ''],
         ['detail.runtime', runtime ? t('detail.minutes', { count: runtime }) : ''],
         ['detail.seasonsEpisodes', kind === 'tv' && data.number_of_seasons ? t('detail.seasonsEpisodesValue', { seasons: data.number_of_seasons, episodes: data.number_of_episodes ?? 0 }) : ''],
         ['detail.director', kind === 'movie' ? names(crew.filter((person) => person.job === 'Director')) : ''],
@@ -77,8 +81,8 @@ export function DetailsGrid({ kind, data, id }: { kind: 'movie' | 'tv', data: an
         ['detail.writers', names(crew.filter((person) => person.department === 'Writing'))],
         ['detail.networks', kind === 'tv' ? names(data.networks ?? [], 4) : ''],
         ['detail.studios', names(data.production_companies ?? [], 4)],
-        ['detail.countries', names(data.production_countries ?? [], 4)],
-        ['detail.languages', (data.spoken_languages ?? []).map((language: any) => language.english_name || language.name).filter(Boolean).slice(0, 4).join(', ')],
+        ['detail.countries', Array.from(new Set(countries.filter(Boolean))).slice(0, 4).join(', ')],
+        ['detail.languages', Array.from(new Set(languages.filter(Boolean))).slice(0, 4).join(', ')],
         ['detail.budget', kind === 'movie' ? money(data.budget) : ''],
         ['detail.revenue', kind === 'movie' ? money(data.revenue) : ''],
     ]
@@ -101,7 +105,7 @@ export function DetailsGrid({ kind, data, id }: { kind: 'movie' | 'tv', data: an
                     <dl className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3 xl:grid-cols-4">
                         {shown.map(([label, value]) => (
                             <div key={label} className="min-w-0">
-                                <dt className="text-[12.5px] text-white/45">{t(label)}</dt>
+                                <dt className="text-[12.5px] text-white/50">{t(label)}</dt>
                                 <dd className="mt-1 text-[14.5px] leading-snug text-white/90">{value}</dd>
                             </div>
                         ))}

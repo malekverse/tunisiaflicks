@@ -5,7 +5,7 @@ import {
   Users, Video, Wand2, Zap,
   type LucideIcon,
 } from 'lucide-react'
-import { tmdbFetchSafe, tmdbLanguage } from '@/src/lib/tmdb'
+import { genreList } from '@/src/lib/tmdb-locale'
 import { getLocale, getT } from '@/src/lib/i18n/server'
 import { isGrownUpGenre } from '@/src/lib/kids'
 import { getKidsMode } from '@/src/lib/profiles'
@@ -78,12 +78,10 @@ const chip = 'pressable inline-flex h-10 shrink-0 items-center gap-2 rounded-ful
  */
 export default async function ChipRail({ type = 'movie', className }: { type?: 'movie' | 'tv', className?: string }) {
   const t = getT()
-  const data = await tmdbFetchSafe<{ genres: { id: number, name: string }[] }>(
-    `genre/${type}/list`, { language: tmdbLanguage(getLocale()) }, 86400
-  )
+  const allGenres = await genreList(type, getLocale())
   // Kids profiles don't get Horror, Crime, War…: those lists would be empty for them anyway.
   const kids = await getKidsMode()
-  const genres = (data?.genres ?? []).filter((genre) => !kids || !isGrownUpGenre(genre.id))
+  const genres = allGenres.filter((genre) => !kids || !isGrownUpGenre(genre.id))
   const context = tunisContext()
   const moods = MOODS
     .filter((mood) => (type === 'tv' ? !mood.movieOnly : true) && !(kids && mood.grownUp))

@@ -4,7 +4,7 @@ import PageHeader from '@/src/components/browse/PageHeader'
 import SegmentedLinks from '@/src/components/browse/SegmentedLinks'
 import PageNav from '@/src/components/PageNav'
 import { getList, parsePage } from '@/src/lib/lists'
-import { tmdbFetchSafe, tmdbLanguage } from '@/src/lib/tmdb'
+import { catalogueLanguage, genreList } from '@/src/lib/tmdb-locale'
 import { createTranslator } from '@/src/lib/i18n'
 import { getLocale, getT } from '@/src/lib/i18n/server'
 import { kidsDiscoverParams } from '@/src/lib/kids'
@@ -73,9 +73,10 @@ export default async function DiscoverPage({ searchParams }: { searchParams: Sea
   // "Family-friendly" uses the same rating rules as Kids profiles.
   const familyOnly = kids || filters.family === '1'
 
-  const [{ results, totalPages, failed }, genreList] = await Promise.all([
-    getList(`discover/${kind}`, page, familyOnly ? kidsDiscoverParams(kind, params) : params),
-    tmdbFetchSafe<{ genres: { id: number, name: string }[] }>(`genre/${kind}/list`, { language: tmdbLanguage(locale) }, 86400),
+  const language = catalogueLanguage(locale)
+  const [{ results, totalPages, failed }, genres] = await Promise.all([
+    getList(`discover/${kind}`, page, { ...(familyOnly ? kidsDiscoverParams(kind, params) : params), language }),
+    genreList(kind, locale),
   ])
 
   return (
@@ -90,7 +91,7 @@ export default async function DiscoverPage({ searchParams }: { searchParams: Sea
           ]}
         />
       </PageHeader>
-      <DiscoverFilters genres={genreList?.genres ?? []} values={filters} />
+      <DiscoverFilters genres={genres} values={filters} />
       <div className="page-x mt-8">
         {failed
           ? <EmptyState>{t('common.listFailed')}</EmptyState>

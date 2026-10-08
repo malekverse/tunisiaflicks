@@ -7,7 +7,8 @@ import FollowButton from '@/src/components/FollowButton'
 import TmdbImage from '@/src/components/TmdbImage'
 import { getList, parsePage } from '@/src/lib/lists'
 import { getLocale, getT } from '@/src/lib/i18n/server'
-import { dateLocale } from '@/src/lib/i18n'
+import { formatDate } from '@/src/lib/i18n/format'
+import { catalogueLanguage } from '@/src/lib/tmdb-locale'
 import { genreNames } from '@/src/lib/genres'
 import { tunisToday } from '@/src/lib/pick-of-the-day'
 import { kidsList } from '@/src/lib/kids'
@@ -29,11 +30,12 @@ const DAY = 86400000
 export default async function UpcomingPage({ searchParams }: { searchParams: { page?: string } }) {
   const page = parsePage(searchParams.page)
   const kids = kidsList('movie', 'upcoming')
-  const { results, totalPages, failed } = await getKidsMode()
-    ? await getList(kids.path, page, kids.params)
-    : await getList('movie/upcoming', page)
-  const t = getT()
   const locale = getLocale()
+  const language = catalogueLanguage(locale)
+  const { results, totalPages, failed } = await getKidsMode()
+    ? await getList(kids.path, page, { ...kids.params, language })
+    : await getList('movie/upcoming', page, { language })
+  const t = getT()
   const today = tunisToday()
 
   // Group by release date, soonest first; anything already out goes in one "Out now" group at the end.
@@ -48,8 +50,7 @@ export default async function UpcomingPage({ searchParams }: { searchParams: { p
     const days = Math.round((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / DAY)
     return days === 0 ? t('upcoming.today') : days === 1 ? t('upcoming.tomorrow') : t('upcoming.inDays', { count: days })
   }
-  const format = (date: string, options: Intl.DateTimeFormatOptions) =>
-    new Date(`${date}T12:00:00Z`).toLocaleDateString(dateLocale(locale) ?? 'en-GB', { ...options, timeZone: 'UTC' })
+  const format = (date: string, options: Intl.DateTimeFormatOptions) => formatDate(date, locale, options, { headline: true })
 
   return (
     <div className="pb-10">
