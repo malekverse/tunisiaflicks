@@ -44,11 +44,14 @@ async function arabPick(locale: Locale): Promise<{ title: string, backdrop: stri
 }
 
 /**
- * Tunisian TV has no picture of its own yet: the flag's red with the crescent and star, drawn as an
- * SVG (the tunisian-tv track gives it a channel's picture and a live dot).
+ * Tunisian TV has no picture of its own yet: the flag's red, and its white disc with the red
+ * crescent and star (TunisiaMark's shape), drawn as an SVG. A white crescent straight on the red
+ * would be Turkey's flag, next door to the Turkish dramas. The disc is centred, as on the flag, so
+ * the title clears it in either direction. The tunisian-tv track gives the tile a channel's
+ * picture and a live dot.
  */
 const TUNISIAN_TV_PICTURE = `data:image/svg+xml,${encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 90"><defs><radialGradient id="g" cx="78%" cy="30%" r="85%"><stop offset="0" stop-color="#b3000f"/><stop offset=".55" stop-color="#4a0006"/><stop offset="1" stop-color="#120002"/></radialGradient><mask id="m"><rect width="160" height="90" fill="#fff"/><circle cx="121" cy="34" r="15.5" fill="#000"/></mask></defs><rect width="160" height="90" fill="url(#g)"/><circle cx="115" cy="34" r="19.5" fill="#fff" fill-opacity=".9" mask="url(#m)"/><polygon fill="#fff" fill-opacity=".9" points="114.2,34 120.7,31.9 120.7,25.1 124.7,30.6 131.2,28.5 127.2,34 131.2,39.5 124.7,37.4 120.7,42.9 120.7,36.1"/></svg>',
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 90"><defs><radialGradient id="g" cx="50%" cy="32%" r="80%"><stop offset="0" stop-color="#b3000f"/><stop offset=".55" stop-color="#4a0006"/><stop offset="1" stop-color="#120002"/></radialGradient><mask id="m"><rect width="100" height="100" fill="#fff"/><circle cx="57" cy="50" r="20" fill="#000"/></mask></defs><rect width="160" height="90" fill="url(#g)"/><circle cx="80" cy="33" r="21" fill="#fff" fill-opacity=".94"/><g transform="translate(48.5 1.5) scale(.63)" fill="#e70013"><circle cx="50" cy="50" r="25" mask="url(#m)"/><polygon points="49,50 57.28,47.3 57.29,38.59 62.42,45.63 70.71,42.95 65.6,50 70.71,57.05 62.42,54.37 57.29,61.41 57.28,52.7"/></g></svg>',
 )}`
 
 export default async function HubShelf({ kids }: { kids: boolean }): Promise<JSX.Element | null> {
