@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next'
-import { SITE_HOST } from '@/src/lib/og'
+import { SITE_HOST } from '@/src/lib/seo'
 import { tmdbFetchSafe } from '@/src/lib/tmdb'
 import { getTunisianTitles } from '@/src/lib/tunisian'
 

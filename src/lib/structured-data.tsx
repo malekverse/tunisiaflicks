@@ -1,6 +1,6 @@
 // schema.org JSON-LD for title and person pages, so search engines can show rich results
 // (poster, rating, release year, director, cast) for TunisiaFlicks pages.
-import { SITE_HOST } from '@/src/lib/og'
+import { SITE_HOST } from '@/src/lib/seo'
 
 const SITE = `https://${SITE_HOST}`
 const img = (path?: string | null, size = 'w780') => (path ? `https://image.tmdb.org/t/p/${size}${path}` : undefined)
@@ -64,6 +64,22 @@ export function personJsonLd(person: any) {
     deathDate: person.deathday || undefined,
     birthPlace: person.place_of_birth || undefined,
     jobTitle: person.known_for_department || undefined,
+  }
+}
+
+/** The site itself, with its search, so Google can show a search box under its result. */
+export function websiteJsonLd() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'TunisiaFlicks',
+    url: SITE,
+    inLanguage: ['en', 'ar'],
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: { '@type': 'EntryPoint', urlTemplate: `${SITE}/search?q={search_term_string}` },
+      'query-input': 'required name=search_term_string',
+    },
   }
 }
 

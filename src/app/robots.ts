@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next'
-import { SITE_HOST } from '@/src/lib/og'
+import { SITE_HOST } from '@/src/lib/seo'
 
 // /robots.txt: crawl the catalogue, skip private, endless or redirect-only pages. Public share
 // pages (/lists/:id, /wrapped/s/:token) stay crawlable so link previews always work.
