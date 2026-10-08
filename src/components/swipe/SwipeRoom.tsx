@@ -1,13 +1,20 @@
 "use client"
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { FaHeart, FaXmark, FaPlay, FaShareNodes, FaStar, FaRotate } from 'react-icons/fa6'
+import { AnimatePresence } from 'framer-motion'
+import { Heart, Popcorn, RotateCcw, Share2 } from 'lucide-react'
 import { Button } from '@/src/components/ui/button'
+import { Input } from '@/src/components/ui/input'
+import { Label } from '@/src/components/ui/label'
 import TmdbImage from '@/src/components/TmdbImage'
 import { useT } from '@/src/components/I18nProvider'
 import { toast } from '@/src/hooks/use-toast'
-import { getCredentials, getSavedName, saveCredentials, saveName, type SwipeCredentials } from './storage'
+import { cn } from '@/src/lib/utils'
+import { forgetRoom, getCredentials, getSavedName, saveCredentials, saveName, type SwipeCredentials } from './storage'
 import type { SwipeCard } from '@/src/lib/swipe'
+import MatchMoment from './MatchMoment'
+import PosterFan from './PosterFan'
+import SwipeDeck from './SwipeDeck'
 
 type RoomState = {
   code: string
@@ -21,110 +28,47 @@ type RoomState = {
 }
 
 const POLL_MS = 3000
-const SWIPE_THRESHOLD = 110
+const panel = 'rounded-[22px] bg-white/[0.04] ring-1 ring-white/[0.07]'
+const RING = 2 * Math.PI * 13
 
-type SwipeControl = React.MutableRefObject<((yes: boolean) => void) | null>
-
-function Card({ card, depth, onVote, active, control }: { card: SwipeCard, depth: number, onVote: (yes: boolean) => void, active: boolean, control: SwipeControl }) {
+/** A person in the room: their initial inside a ring that fills as they go through the deck. */
+function Person({ name, voted, total, me }: { name: string, voted: number, total: number, me: boolean }) {
   const t = useT()
-  const [dx, setDx] = useState(0)
-  const [leaving, setLeaving] = useState<null | boolean>(null)
-  const [dragging, setDragging] = useState(false)
-  const start = useRef<number | null>(null)
-
-  const left = useRef(false)
-  const finish = useCallback((yes: boolean) => {
-    if (left.current) return
-    left.current = true
-    setLeaving(yes)
-    // Let the fly-out animation play before the card is removed.
-    setTimeout(() => onVote(yes), 220)
-  }, [onVote])
-
-  // The ✕ / ♥ buttons and arrow keys swipe the top card through this.
-  useEffect(() => {
-    if (!active) return
-    control.current = finish
-    return () => { if (control.current === finish) control.current = null }
-  }, [active, control, finish])
-
-  const onPointerDown = (event: React.PointerEvent) => {
-    if (!active || leaving !== null) return
-    start.current = event.clientX
-    setDragging(true)
-    ;(event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId)
-  }
-  const onPointerMove = (event: React.PointerEvent) => {
-    if (start.current === null) return
-    setDx(event.clientX - start.current)
-  }
-  const onPointerUp = () => {
-    if (start.current === null) return
-    start.current = null
-    setDragging(false)
-    if (Math.abs(dx) > SWIPE_THRESHOLD) finish(dx > 0)
-    else setDx(0)
-  }
-
-  const x = leaving === null ? dx : leaving ? 700 : -700
-  const style: React.CSSProperties = {
-    transform: `translateX(${x}px) translateY(${depth * 10}px) scale(${1 - depth * 0.04}) rotate(${x / 18}deg)`,
-    transition: dragging ? 'none' : 'transform 0.25s ease-out',
-    zIndex: 10 - depth,
-  }
-  const yesOpacity = Math.max(0, Math.min(1, x / SWIPE_THRESHOLD))
-  const noOpacity = Math.max(0, Math.min(1, -x / SWIPE_THRESHOLD))
-
+  const share = total ? Math.min(1, voted / total) : 0
   return (
-    <div
-      className={`absolute inset-0 select-none overflow-hidden rounded-3xl bg-zinc-900 shadow-2xl shadow-black/50 ${active ? 'cursor-grab active:cursor-grabbing touch-none' : 'pointer-events-none'}`}
-      style={style}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
-      aria-hidden={!active}
-    >
-      <TmdbImage kind="poster" path={card.poster_path} fill sizes="(min-width: 640px) 360px, 90vw" alt="" draggable={false} className="object-cover pointer-events-none" priority={active} />
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/80 to-transparent p-5 pt-24 text-white">
-        <p className="text-xs uppercase tracking-wide text-gray-300">
-          {card.media_type === 'tv' ? t('common.tvShow') : t('common.movie')}{card.year ? ` · ${card.year}` : ''}
-          {card.vote_average > 0 && <span className="ms-2 inline-flex items-center gap-1 text-yellow-400"><FaStar />{card.vote_average.toFixed(1)}</span>}
-        </p>
-        <h2 className="mt-1 text-2xl font-bold leading-tight"><bdi>{card.title}</bdi></h2>
-        {card.overview && <p className="mt-2 line-clamp-3 text-sm text-gray-300">{card.overview}</p>}
-      </div>
-      <span className="absolute start-5 top-6 -rotate-12 rounded-lg border-4 border-emerald-400 px-3 py-1 text-2xl font-black uppercase text-emerald-400" style={{ opacity: yesOpacity }}>{t('swipe.yes')}</span>
-      <span className="absolute end-5 top-6 rotate-12 rounded-lg border-4 border-red-500 px-3 py-1 text-2xl font-black uppercase text-red-500" style={{ opacity: noOpacity }}>{t('swipe.no')}</span>
-    </div>
+    <li className="flex shrink-0 items-center gap-2.5 rounded-full bg-white/[0.06] py-1 pe-3.5 ps-1 lg:rounded-[14px] lg:bg-transparent lg:px-2 lg:py-1.5">
+      <span className="relative grid h-8 w-8 shrink-0 place-items-center">
+        <svg aria-hidden viewBox="0 0 32 32" className="absolute inset-0 -rotate-90">
+          <circle cx="16" cy="16" r="13" fill="none" stroke="rgb(255 255 255 / 0.14)" strokeWidth="2.5" />
+          <circle
+            cx="16" cy="16" r="13" fill="none" strokeWidth="2.5" strokeLinecap="round"
+            stroke={me ? 'rgb(255 36 20)' : 'rgb(255 255 255 / 0.85)'}
+            strokeDasharray={RING}
+            strokeDashoffset={RING * (1 - share)}
+            style={{ transition: 'stroke-dashoffset 600ms cubic-bezier(0.23, 1, 0.32, 1)' }}
+          />
+        </svg>
+        <span aria-hidden className="text-[12px] font-semibold uppercase text-white">{Array.from(name.trim())[0] ?? '?'}</span>
+      </span>
+      <span className="flex min-w-0 items-baseline gap-x-2 lg:flex-1">
+        <span className="max-w-[12ch] truncate text-sm font-medium text-white lg:max-w-none"><bdi>{name}</bdi></span>
+        {me && <span className="text-[12px] text-white/50">{t('nav.you')}</span>}
+      </span>
+      <span className="text-[12px] tabular-nums text-white/50">{voted}/{total}</span>
+    </li>
   )
 }
 
-function MatchScreen({ card, names, onNewDeck, onClose }: { card: SwipeCard, names: string, onNewDeck: () => void, onClose: () => void }) {
+function Loading() {
   const t = useT()
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
-  const href = `/${card.media_type}/${card.id}`
   return (
-    <div role="dialog" aria-modal="true" aria-label={t('swipe.matchTitle')} onClick={(event) => { if (event.target === event.currentTarget) onClose() }}
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/85 p-4 animate-in fade-in duration-300">
-      <button type="button" onClick={onClose} aria-label={t('common.close')} className="absolute end-4 top-4 rounded-full p-2 text-2xl text-white/70 hover:bg-white/10 hover:text-white"><FaXmark /></button>
-      <div className="w-full max-w-sm text-center text-white animate-in zoom-in-90 duration-500">
-        <p className="text-5xl" aria-hidden>🎉</p>
-        <h2 className="mt-2 bg-gradient-to-r from-red-400 via-pink-400 to-amber-300 bg-clip-text text-4xl font-black text-transparent">{t('swipe.matchTitle')}</h2>
-        <p className="mt-1 text-sm text-gray-300">{t('swipe.matchText', { names })}</p>
-        <div className="relative mx-auto mt-5 aspect-[2/3] w-48 overflow-hidden rounded-2xl shadow-2xl shadow-red-500/30 ring-4 ring-red-500">
-          <TmdbImage kind="poster" path={card.poster_path} fill sizes="192px" alt={card.title} className="object-cover" />
+    <div className="page-top pb-10" aria-busy="true">
+      <div className="page-x">
+        <div className="mx-auto max-w-[380px] space-y-6">
+          <div className="h-12 w-40 rounded-full bg-white/[0.05]" />
+          <div className="tf-shimmer relative mx-auto aspect-[2/3] w-full rounded-[22px]" />
+          <span className="sr-only">{t('common.loading')}</span>
         </div>
-        <p className="mt-3 text-xl font-bold"><bdi>{card.title}</bdi></p>
-        <div className="mt-5 flex flex-wrap justify-center gap-3">
-          <Button asChild className="bg-red-500 text-white hover:bg-red-400"><Link href={`${href}#streamSection`}><FaPlay className="me-2" />{t('hero.watchNow')}</Link></Button>
-          <Button asChild variant="outline" className="border-white bg-transparent text-white hover:bg-white/10 hover:text-white"><Link href={href}>{t('pick.moreInfo')}</Link></Button>
-        </div>
-        <button type="button" onClick={onNewDeck} className="mt-4 text-sm text-gray-400 underline-offset-4 hover:text-white hover:underline">{t('swipe.playAgain')}</button>
       </div>
     </div>
   )
@@ -132,6 +76,7 @@ function MatchScreen({ card, names, onNewDeck, onClose }: { card: SwipeCard, nam
 
 export default function SwipeRoom({ code }: { code: string }) {
   const t = useT()
+  const ids = useId()
   const [state, setState] = useState<RoomState | null>(null)
   const [missing, setMissing] = useState(false)
   const [credentials, setCredentials] = useState<SwipeCredentials | null | undefined>(undefined)
@@ -148,7 +93,10 @@ export default function SwipeRoom({ code }: { code: string }) {
       headers: creds ? { 'x-swipe-id': creds.id, 'x-swipe-secret': creds.secret } : {},
       cache: 'no-store',
     })
-    if (response.status === 404) return setMissing(true)
+    if (response.status === 404) {
+      forgetRoom(code)
+      return setMissing(true)
+    }
     if (!response.ok) return
     const data: RoomState = await response.json()
     if (data.deck) {
@@ -196,6 +144,8 @@ export default function SwipeRoom({ code }: { code: string }) {
       saveCredentials(code, data.participant)
       setCredentials(data.participant)
       await load(true, data.participant)
+    } catch {
+      setError(t('swipe.joinFailed'))
     } finally {
       setJoining(false)
     }
@@ -220,21 +170,6 @@ export default function SwipeRoom({ code }: { code: string }) {
     }
   }, [code, credentials, load, t])
 
-  const top = remaining[0]
-  const control: SwipeControl = useRef(null)
-  const swipeTop = useCallback((yes: boolean) => control.current?.(yes), [])
-
-  useEffect(() => {
-    if (!joined || !top) return
-    const onKey = (event: KeyboardEvent) => {
-      if ((event.target as HTMLElement)?.closest('input, textarea, select')) return
-      if (event.key === 'ArrowRight') swipeTop(true)
-      if (event.key === 'ArrowLeft') swipeTop(false)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [joined, top, swipeTop])
-
   const newDeck = async () => {
     if (!credentials) return
     const response = await fetch(`/api/swipe/${code}`, {
@@ -257,114 +192,156 @@ export default function SwipeRoom({ code }: { code: string }) {
     } catch { /* cancelled */ }
   }
 
+  const closeMatch = useCallback(() => setDismissedMatch(state?.match?.key ?? null), [state?.match?.key])
+
   if (missing) {
     return (
-      <div className="w-full max-w-md px-4 py-16 text-center space-y-4">
-        <p className="text-5xl" aria-hidden>🍿</p>
-        <h1 className="text-2xl font-bold">{t('swipe.notFound')}</h1>
-        <p className="text-gray-500">{t('swipe.notFoundText')}</p>
-        <Button asChild className="bg-red-500 text-white hover:bg-red-400"><Link href="/swipe">{t('swipe.create')}</Link></Button>
+      <div className="page-top pb-10">
+        <div className="page-x">
+          <div className="mx-auto flex max-w-md flex-col items-center py-14 text-center">
+            <span className="grid h-14 w-14 place-items-center rounded-full bg-white/[0.06] text-white/55">
+              <Popcorn aria-hidden className="h-6 w-6" />
+            </span>
+            <h1 className="mt-5 font-display text-[clamp(30px,5vw,44px)] font-extrabold leading-[0.95]">{t('swipe.notFound')}</h1>
+            <p className="mt-3 max-w-sm text-[15px] text-white/60">{t('swipe.notFoundText')}</p>
+            <Button asChild size="lg" className="mt-7"><Link href="/swipe">{t('swipe.create')}</Link></Button>
+          </div>
+        </div>
       </div>
     )
   }
 
-  if (!state || credentials === undefined) {
-    return <div className="w-full max-w-md px-4 py-24 flex justify-center"><div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-red-500" /></div>
-  }
+  if (!state || credentials === undefined) return <Loading />
 
   const names = state.participants.map((person) => person.name).join(', ')
   const others = state.participants.filter((person) => person.id !== state.me?.id)
+  const showMatch = !!state.match && dismissedMatch !== state.match.key
 
   return (
-    <div className="w-full max-w-md px-4 pb-10 space-y-5">
-      <header className="flex items-center justify-between gap-3 pt-2">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-gray-500">{t('swipe.roomCode')}</p>
-          <p className="text-3xl font-black tracking-[0.25em]" dir="ltr">{code}</p>
-        </div>
-        <Button onClick={invite} variant="outline" className="gap-2"><FaShareNodes />{t('swipe.invite')}</Button>
-      </header>
-
-      <ul className="flex flex-wrap gap-2" aria-label={t('swipe.people')}>
-        {state.participants.map((person) => (
-          <li key={person.id} className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm ${person.id === state.me?.id ? 'bg-red-500/15 text-red-600 dark:text-red-300' : 'bg-gray-100 dark:bg-zinc-800'}`}>
-            <span className="font-medium"><bdi>{person.name}</bdi></span>
-            <span className="text-xs opacity-70 tabular-nums">{person.voted}/{state.deckSize}</span>
-          </li>
-        ))}
-      </ul>
-
-      {!joined ? (
-        <form onSubmit={join} className="rounded-2xl border border-gray-200 p-5 space-y-4 dark:border-zinc-800">
-          <h1 className="text-xl font-semibold">{t('swipe.joinRoom', { names })}</h1>
-          <label className="block space-y-1 text-sm">
-            <span>{t('swipe.yourName')}</span>
-            <input value={name} maxLength={24} onChange={(e) => setName(e.target.value)} autoComplete="nickname"
-              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:border-zinc-700 dark:bg-[#1a161f] dark:text-white" />
-          </label>
-          {error && <p role="alert" className="text-sm text-red-500">{error}</p>}
-          <Button type="submit" disabled={joining} className="w-full bg-red-500 text-white hover:bg-red-400">{t('swipe.join')}</Button>
-        </form>
-      ) : (
-        <>
-          {others.length === 0 && (
-            <p className="rounded-xl bg-amber-500/10 px-4 py-2 text-sm text-amber-700 dark:text-amber-300">{t('swipe.waiting')}</p>
-          )}
-
-          {top ? (
-            <>
-              <div className="relative mx-auto aspect-[2/3] w-full max-w-[360px]">
-                {remaining.slice(0, 3).reverse().map((card) => {
-                  const depth = remaining.indexOf(card)
-                  return <Card key={card.key} card={card} depth={depth} active={depth === 0} control={control} onVote={(yes) => castVote(card, yes)} />
-                })}
+    <div className="page-top pb-10">
+      <div className="page-x">
+        <div className="mx-auto max-w-[1080px] lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-16">
+          {/* The room: its code, the invite, and everyone's progress through the deck. */}
+          <aside className="lg:sticky lg:top-[calc(var(--topbar)+28px)] lg:self-start lg:pt-6">
+            <div className="flex items-end justify-between gap-4 lg:block">
+              <div className="min-w-0">
+                <p className="text-[13px] text-white/50">{t('swipe.roomCode')}</p>
+                <p dir="ltr" className="mt-0.5 font-display text-[34px] font-extrabold leading-none tracking-[0.12em] text-white rtl:text-right lg:text-[46px]">{code}</p>
               </div>
-              {/* Same physical direction as the swipe in every language. */}
-              <div className="flex items-center justify-center gap-6" dir="ltr">
-                <button type="button" onClick={() => swipeTop(false)} aria-label={t('swipe.no')}
-                  className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-gray-300 text-3xl text-gray-500 transition hover:scale-110 hover:border-red-500 hover:text-red-500 dark:border-zinc-700">
-                  <FaXmark />
-                </button>
-                <span className="text-sm text-gray-500 tabular-nums">{state.deckSize - remaining.length + 1}/{state.deckSize}</span>
-                <button type="button" onClick={() => swipeTop(true)} aria-label={t('swipe.yes')}
-                  className="flex h-16 w-16 items-center justify-center rounded-full bg-red-500 text-3xl text-white shadow-lg shadow-red-500/30 transition hover:scale-110">
-                  <FaHeart />
-                </button>
-              </div>
-              <p className="text-center text-xs text-gray-500">{t('swipe.hint')}</p>
-            </>
-          ) : (
-            <section className="rounded-2xl border border-gray-200 p-6 text-center space-y-4 dark:border-zinc-800">
-              <p className="text-4xl" aria-hidden>🍿</p>
-              <h2 className="text-xl font-semibold">{t('swipe.outOfCards')}</h2>
-              <p className="text-sm text-gray-500">{state.match ? '' : t('swipe.outOfCardsText')}</p>
-              {state.favorites.length > 0 && (
-                <div className="text-start space-y-2">
-                  <h3 className="text-sm font-semibold">{t('swipe.closest')}</h3>
-                  <ul className="space-y-2">
-                    {state.favorites.map(({ card, likes }) => (
-                      <li key={card.key}>
-                        <Link href={`/${card.media_type}/${card.id}`} className="flex items-center gap-3 rounded-xl p-2 hover:bg-gray-100 dark:hover:bg-zinc-900">
-                          <span className="relative h-16 w-11 shrink-0 overflow-hidden rounded-md bg-zinc-800">
-                            <TmdbImage kind="poster" path={card.poster_path} fill sizes="44px" alt="" className="object-cover" />
-                          </span>
-                          <span className="min-w-0 flex-1 truncate font-medium"><bdi>{card.title}</bdi></span>
-                          <span className="inline-flex items-center gap-1 text-sm text-red-500"><FaHeart />{likes}/{state.participants.length}</span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
+              <Button onClick={invite} variant="secondary" className="shrink-0 lg:mt-6 lg:h-11 lg:w-full">
+                <Share2 aria-hidden className="h-4 w-4" />{t('swipe.invite')}
+              </Button>
+            </div>
+
+            <ul
+              aria-label={t('swipe.people')}
+              className="no-scrollbar -mx-[var(--gutter)] mt-5 flex gap-2 overflow-x-auto px-[var(--gutter)] lg:mx-0 lg:mt-8 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:px-0"
+            >
+              {state.participants.map((person) => (
+                <Person key={person.id} name={person.name} voted={person.voted} total={state.deckSize} me={person.id === state.me?.id} />
+              ))}
+            </ul>
+
+            {joined && others.length === 0 && (
+              <p className="mt-3 flex items-start gap-2.5 text-[13px] leading-relaxed text-white/55 lg:mt-5 lg:px-2">
+                <span aria-hidden className="relative mt-[7px] flex h-1.5 w-1.5 shrink-0">
+                  <span className="absolute inset-0 animate-pulse-ring rounded-full bg-red-500" />
+                  <span className="relative h-1.5 w-1.5 rounded-full bg-red-500" />
+                </span>
+                {t('swipe.waiting')}
+              </p>
+            )}
+          </aside>
+
+          <section aria-label={t('swipe.title')} className="min-w-0">
+            {!joined ? (
+              <form onSubmit={join} noValidate className="mx-auto mt-8 flex max-w-[420px] flex-col items-center text-center lg:mt-4">
+                <PosterFan posters={(state.deck ?? []).slice(0, 3).map((card) => card.poster_path)} sizes="(min-width: 1024px) 220px, 160px" priority className="w-[min(72%,300px)]" />
+                <h1 className="mt-8 text-balance font-display text-[clamp(30px,5vw,48px)] font-extrabold leading-[0.95]">
+                  {t('swipe.joinRoom', { names })}
+                </h1>
+                <p className="mt-3 text-[15px] text-white/60">{t('swipe.inviteText')}</p>
+                <div className={cn(panel, 'mt-7 w-full space-y-4 p-5 text-start sm:p-6')}>
+                  <div className="space-y-2">
+                    <Label htmlFor={`${ids}-name`} className="text-[13px] font-normal text-white/70">{t('swipe.yourName')}</Label>
+                    <Input
+                      id={`${ids}-name`}
+                      value={name}
+                      maxLength={24}
+                      onChange={(event) => { setName(event.target.value); if (error) setError(null) }}
+                      autoComplete="nickname"
+                      enterKeyHint="go"
+                      aria-invalid={!!error}
+                      aria-describedby={error ? `${ids}-error` : undefined}
+                    />
+                    {error && <p id={`${ids}-error`} role="alert" className="text-[13px] text-red-400">{error}</p>}
+                  </div>
+                  <Button type="submit" size="lg" disabled={joining} className="w-full">{t('swipe.join')}</Button>
                 </div>
-              )}
-              <Button onClick={newDeck} variant="outline" className="gap-2"><FaRotate />{t('swipe.newDeck')}</Button>
-            </section>
-          )}
-        </>
-      )}
+              </form>
+            ) : remaining.length > 0 ? (
+              <div className="relative">
+                {state.match && !showMatch && (
+                  <div className="absolute inset-x-0 top-0 z-40 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() => setDismissedMatch(null)}
+                      className="pressable glass inline-flex h-10 items-center gap-2 rounded-full pe-4 ps-3 text-sm font-medium text-white"
+                    >
+                      <Heart aria-hidden className="h-4 w-4 fill-red-500 text-red-500" />{t('swipe.seeMatch')}
+                    </button>
+                  </div>
+                )}
+                <SwipeDeck cards={remaining} total={state.deckSize} onVote={castVote} />
+              </div>
+            ) : (
+              <div className={cn(panel, 'mx-auto mt-8 max-w-[520px] p-6 text-center sm:p-8 lg:mt-6')}>
+                <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-white/[0.06] text-white/60">
+                  <Popcorn aria-hidden className="h-6 w-6" />
+                </span>
+                <h2 className="mt-4 font-display text-[26px] font-bold leading-tight">{t('swipe.outOfCards')}</h2>
+                {!state.match && <p className="mx-auto mt-2 max-w-[40ch] text-sm text-white/60">{t('swipe.outOfCardsText')}</p>}
 
-      {state.match && dismissedMatch !== state.match.key && (
-        <MatchScreen card={state.match} names={names} onNewDeck={newDeck} onClose={() => setDismissedMatch(state.match!.key)} />
-      )}
+                {state.match && (
+                  <Button type="button" variant="white" className="mt-5" onClick={() => setDismissedMatch(null)}>
+                    <Heart aria-hidden className="h-4 w-4 fill-red-600 text-red-600" />{t('swipe.seeMatch')}
+                  </Button>
+                )}
+
+                {state.favorites.length > 0 && (
+                  <div className="mt-7 text-start">
+                    <h3 className="px-2 text-[13px] text-white/55">{t('swipe.closest')}</h3>
+                    <ul className="mt-2 space-y-1">
+                      {state.favorites.map(({ card, likes }) => (
+                        <li key={card.key}>
+                          <Link href={`/${card.media_type}/${card.id}`} className="flex items-center gap-3 rounded-[14px] p-2 transition-colors hover:bg-white/[0.06]">
+                            <span className="relative h-16 w-11 shrink-0 overflow-hidden rounded-[8px] bg-white/[0.06]">
+                              <TmdbImage kind="poster" path={card.poster_path} fill sizes="44px" alt="" className="object-cover" />
+                            </span>
+                            <span className="min-w-0 flex-1 truncate font-medium text-white"><bdi>{card.title}</bdi></span>
+                            <span className="inline-flex items-center gap-1.5 text-sm tabular-nums text-white/70">
+                              <Heart aria-hidden className="h-4 w-4 fill-red-500 text-red-500" />{likes}/{state.participants.length}
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <Button onClick={newDeck} variant="secondary" size="lg" className="mt-7">
+                  <RotateCcw aria-hidden className="h-4 w-4" />{t('swipe.newDeck')}
+                </Button>
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {showMatch && state.match && (
+          <MatchMoment key={state.match.key} card={state.match} names={names} onNewDeck={newDeck} onClose={closeMatch} />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
