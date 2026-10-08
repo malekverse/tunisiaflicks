@@ -111,5 +111,19 @@ test('home still renders with the new shell', { skip: !hasTmdb && 'no TMDB_API_K
 test('the shell renders on a library page (the "You" tab lights up there)', async () => {
   const res = await fetch(`${BASE}/saved`)
   assert.equal(res.status, 200)
-  assert.doesNotMatch(await res.text(), /Application error/)
+  const html = await res.text()
+  assert.doesNotMatch(html, /Application error/)
+  // The rail: Surprise is in BROWSE, Tunisian in WORLD, and Library is lit on /saved.
+  assert.match(html, /href="\/surprise"/)
+  assert.match(html, /href="\/tunisian"/)
+  // No tab covers /saved, so "You" (the menu sheet button) is the current page.
+  assert.match(html, /<button[^>]*aria-haspopup="dialog"[^>]*aria-current="page"/)
+})
+
+test('a page no tab covers lights the "You" tab, a tab page does not', async () => {
+  const discover = await (await fetch(`${BASE}/discover`)).text()
+  assert.doesNotMatch(discover, /<button[^>]*aria-haspopup="dialog"[^>]*aria-current="page"/)
+  const dramas = await fetch(`${BASE}/dramas`)
+  if (dramas.status !== 200) return // the hub ships with its own track
+  assert.match(await dramas.text(), /<button[^>]*aria-haspopup="dialog"[^>]*aria-current="page"/)
 })
