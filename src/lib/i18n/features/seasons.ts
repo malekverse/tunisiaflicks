@@ -82,7 +82,7 @@ export const seasons = defineStrings({
     'seasons.newYear.soon': 'Compte à rebours vers {year}',
     'seasons.newYear.happy': 'Bonne année {year}',
     'seasons.newYear.text': 'Des films pour le premier jour de l’année',
-    'seasons.countdown.label': 'Temps restant : {time}',
+    'seasons.countdown.label': 'Temps restant : {time}',
     'seasons.countdown.seconds': 's',
     'seasons.dismiss': 'Masquer ce bandeau',
     'seasons.nav.eidFitr': 'Aïd el-Fitr',
