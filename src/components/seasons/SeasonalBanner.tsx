@@ -68,7 +68,7 @@ export default async function SeasonalBanner({ kids }: { kids?: boolean }): Prom
               variant="corner"
               className={cn(
                 'absolute -z-10 opacity-30 sm:hidden',
-                model.id === 'new-year' ? 'bottom-0 end-0 h-14 w-14 opacity-50' : '-bottom-4 -end-4 h-[67px] w-[80px]',
+                model.id === 'new-year' ? 'bottom-0 end-0 h-9 w-12 opacity-60' : '-bottom-4 -end-4 h-[67px] w-[80px]',
               )}
             />
           </>
