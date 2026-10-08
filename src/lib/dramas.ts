@@ -291,7 +291,7 @@ export function describeReason(reason: FeaturedReason, hub: HubId, locale: Local
   switch (reason.type) {
     case 'premiere': return t('dramas.why.premiere', { season: reason.season })
     case 'new': return t('dramas.why.new', { date: formatDay(reason.date, locale) })
-    case 'airing': return t('dramas.why.airing', { date: formatDay(reason.date, locale) })
+    case 'airing': return reason.date === tunisDate() ? t('dramas.why.airingToday') : t('dramas.why.airing', { date: formatDay(reason.date, locale) })
     case 'justAired': return t('dramas.why.justAired', { episode: reason.episode })
     case 'trending': return t('dramas.why.trending', { rank: reason.rank })
     case 'favourite': return t(`dramas.why.favourite.${hub}` as TKey)
