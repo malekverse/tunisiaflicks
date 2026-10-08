@@ -14,8 +14,10 @@ fills. Surfaces are white at low alpha so they take the tint of the room light b
 
 - Colours: `bg-black` page; surfaces `bg-white/[0.04]` (card), `bg-white/[0.06]` (input/chip),
   `bg-white/[0.1]` (hover); hairlines `border-white/[0.07]`–`/10`; text `text-white`, `text-white/70`
-  (secondary), `text-white/50` (tertiary; never below /45 for real text). Red scale `red-500` #FF2414
-  (accents, rings), `red-600` #E50F05 (button bg). Ratings star: `fill-star text-star`.
+  (secondary), `text-white/50` (tertiary). **Text floor: white/50.** Nothing a person is meant to read
+  goes below it (timestamps and counts included); only decorative glyphs and disabled controls may.
+  Red scale `red-500` #FF2414 (accents, rings), `red-600` #E50F05 (button bg). Ratings star:
+  `fill-star text-star`.
 - Glass for chrome only: `.glass` (light) / `.glass-strong` (heavy) — sheets, menus, bars, floating cards.
 - Radii by hierarchy: chips/buttons `rounded-full`; posters `rounded-poster` (10px); landscape tiles
   `rounded-tile` (14px); panels/cards `rounded-[22px]`; big frames `rounded-stage` (28px).
@@ -46,6 +48,20 @@ fills. Surfaces are white at low alpha so they take the tint of the room light b
 - Panels: `rounded-[22px] bg-white/[0.04] ring-1 ring-white/[0.07] p-5 sm:p-6`.
 - Tabs/segmented: `components/ui/tabs` (white pill active) or the `LanguageSwitch` sliding pill
   (framer `m.span layoutId`). Dialogs: `components/ui/dialog`; bottom sheets: `components/ui/drawer`.
+- Popover or menu: a panel that holds actions, a form or a list with its own buttons (the desktop
+  inbox, a sign-in prompt) is a `Popover` (`components/ui/popover`; give it `role="dialog"` and a
+  label when it is a panel). A plain list of commands is a `DropdownMenu`. On phones the same panel
+  becomes a `Drawer`.
+- Chips (`components/ui/chip`, `ChipGroup`): pick the mode by what the chips do, never by looks.
+  `single` filters one way at a time (radio group), `multi` toggles several (`aria-pressed`), `nav`
+  goes to other pages (a `<nav>` of links, `aria-current="page"`), `tabs` swaps panels on the same page
+  (tablist, manual activation), `none` is a plain list. A removable chip's X is its own button beside
+  the chip, never inside it.
+- Cards that are links: the whole card is one `<a>`. A secondary action or a dismiss button on it is a
+  sibling of the link (positioned over the card), never nested inside it: no button inside a link,
+  no link inside a link.
+- Overlapping avatars and posters (stacks): logical overlap on the children, `[&>*+*]:-ms-2`, with a
+  `ring-2 ring-black` cut-out, so the stack reads the same way in Arabic. Never `-space-x-*`.
 - Toasts: `toast({ title, description, variant: 'destructive' })` from `@/src/hooks/use-toast`.
 
 ## Motion (Emil Kowalski + Apple)
@@ -71,6 +87,17 @@ fills. Surfaces are white at low alpha so they take the tint of the room light b
   file, `src/lib/i18n/features/<feature>.ts` (`defineStrings({ en, ar, tn?, fr? })`; `ar` must cover every
   key, `tsc` checks it). Keys are namespaced by feature (`social.feed.title`). Reuse existing core keys
   where they fit (`common.*`, `nav.*`).
+- Client files never value-import `@/src/lib/i18n` (that module holds every dictionary). They import
+  from `@/src/lib/i18n/locales` (languages, direction, `dateLocale`) and `@/src/lib/i18n/translate`
+  (`translatorFrom`, `translateApiMessage`), and get `t` from `useT()`. `import type` from the index is
+  fine. Never `locale === 'en'` (use `isArabicScript`), never an exhaustive `Record<Locale, ...>`.
+- Sentences with a name or a title in them: `richT(t, key, vars, { bold })` from
+  `@/src/lib/i18n/rich` isolates each value in `<bdi>` (and bolds the ones you name), so an Arabic name
+  in an English sentence, or the reverse, never scrambles the word order.
+- Copy around `{name}`. Arabic and Derja: no verb right after `{name}`; use a noun form that works
+  for anyone ('طلب صداقة من {name}', 'من {name}: {title}'), never a conjugated verb that would have to
+  agree with the person. French: no participle that agrees with `{name}` ('Invitation de {name}', not
+  'invité par'); English can say 'Amine invited you'.
 
 ## Who's watching
 
@@ -79,6 +106,9 @@ fills. Surfaces are white at low alpha so they take the tint of the room light b
 - Signed-out visitors see most pages: every signed-in feature needs a good signed-out state (an inviting
   `SignInInvite`, never a dead end).
 - Privacy by default: nothing a person watches or rates is visible to anyone until they choose so.
+- Naming: a person's public page (`/u/[handle]`, `/me`) is **"Your page"** ('صفحتك', 'Votre page'), or
+  "{name}'s page" for someone else's. Viewer profiles stay "profiles", and Settings stays "Settings"
+  (`/profile`). Never call the public page just "profile". Its settings section is "Friends and privacy".
 
 ## Reference implementations
 
@@ -86,7 +116,13 @@ fills. Surfaces are white at low alpha so they take the tint of the room light b
 (hero, buttons), `src/components/PickOfTheDay.tsx` (framed card), `src/components/rows/Row.tsx`,
 `src/components/PosterCard.tsx`, `src/components/NotificationBell.tsx` (glass dropdown list),
 `src/components/VerifyEmailBanner.tsx` (floating card), `src/components/swipe/*` (rooms, sharing, codes),
-`src/components/home/ChipRail.tsx` (chips), `src/app/moments/[id]/page.tsx` (simple browse page).
+`src/components/home/ChipRail.tsx` (chips), `src/app/moments/[id]/page.tsx` (simple browse page),
+`src/components/ui/popover.tsx` (anchored glass panel), `src/components/library/SignInInvite.tsx`
+(signed-out state; it brings people back to the same page after signing in).
+
+New blocks on shared pages (home rows, cards) render nothing when they have nothing to show, never a
+placeholder: stream them in `<Suspense fallback={null}>` and bound their data with `withTimeout`
+(`src/lib/with-timeout.ts`), so one slow source can't hold the page.
 
 ## Keep every feature
 
