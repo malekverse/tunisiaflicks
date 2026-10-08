@@ -5,7 +5,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-const BASE = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/$/, '')
+const BASE = (process.env.BASE_URL ?? 'http://localhost:3000').replace(/\/$/, '')
 const hasTmdb = !!process.env.TMDB_API_KEY
 
 const get = (path, init) => fetch(BASE + path, { redirect: 'manual', ...init })

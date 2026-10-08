@@ -1,5 +1,6 @@
-# Lint, type-check, build, then start the app against a throwaway MongoDB and run the smoke tests.
-# Free on GitHub Actions. Add a TMDB_API_KEY repository secret to also smoke-test the TMDB pages.
+# Lint, type-check, unit tests, build, then start the app against a throwaway MongoDB and run the
+# smoke tests. Free on GitHub Actions. Add a TMDB_API_KEY repository secret to also smoke-test the
+# TMDB pages.
 name: CI
 
 on:
@@ -24,18 +25,25 @@ jobs:
       NEXTAUTH_SECRET: ci-only-secret
       NEXTAUTH_URL: http://localhost:3000
       NEXT_PUBLIC_APP_URL: http://localhost:3000
+      BASE_URL: http://localhost:3000
+      # Test-only values (40 characters, like the real ones); never used outside CI.
+      CRON_SECRET: ci-test-cron-secret-not-for-production-1
+      EMAIL_TOKEN_SECRET: ci-test-mail-token-not-for-production-01
       TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
       NEXT_TELEMETRY_DISABLED: 1
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Node 22 runs the TypeScript unit tests natively (type stripping).
+          node-version: 22
           cache: npm
       - run: npm ci
       - run: npm run lint
       - name: Type-check
-        run: npx tsc --noEmit
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm run test:unit
       - run: npm run build
       - name: Start the app
         run: |
