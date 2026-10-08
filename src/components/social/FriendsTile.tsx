@@ -60,7 +60,8 @@ export default function FriendsTile({ signedIn, onNavigate }: { signedIn: boolea
           : signedIn
             ? <UserPlus aria-hidden className="h-[18px] w-[18px] shrink-0 text-white/70" />
             : <UsersRound aria-hidden className="h-[18px] w-[18px] shrink-0 text-white/70" />}
-        <span className="truncate text-[12.5px] text-white/60">{line}</span>
+        {/* Two short lines at most: a half-width tile on a phone is about 170px wide. */}
+        <span className="line-clamp-2 min-w-0 text-[12.5px] leading-tight text-white/60">{line}</span>
       </span>
     </Link>
   )
