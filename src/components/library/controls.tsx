@@ -45,31 +45,9 @@ export function CardAction({ label, onClick, disabled, children, className, tone
   )
 }
 
-/** One choice in a row of filter chips (a radio group). White when chosen. */
-export function Chip({ active, onClick, children }: { active: boolean, onClick: () => void, children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={active}
-      onClick={onClick}
-      className={cn(
-        'pressable h-10 shrink-0 select-none whitespace-nowrap rounded-full px-4 text-[13.5px] font-medium outline-none transition-[background-color,color] duration-200 focus-visible:ring-2 focus-visible:ring-red-500 sm:h-9',
-        active ? 'bg-white text-black' : 'bg-white/[0.06] text-white/70 hover:bg-white/[0.1] hover:text-white',
-      )}
-    >
-      {children}
-    </button>
-  )
-}
-
-export function ChipGroup({ label, children, className }: { label: string, children: React.ReactNode, className?: string }) {
-  return (
-    <div role="radiogroup" aria-label={label} className={cn('flex shrink-0 gap-1.5', className)}>
-      {children}
-    </div>
-  )
-}
+// The filter chips moved to the shared chip primitive (default mode: a single-choice radio group,
+// as these always were). Re-exported so the library's toolbars keep their imports.
+export { Chip, ChipGroup } from '@/src/components/ui/chip'
 
 /** Newest first / oldest first, as one button that flips. */
 export function SortToggle({ label, value, onToggle, ariaLabel }: { label: string, value: 'newest' | 'oldest', onToggle: () => void, ariaLabel: string }) {
@@ -78,7 +56,7 @@ export function SortToggle({ label, value, onToggle, ariaLabel }: { label: strin
       type="button"
       onClick={onToggle}
       aria-label={`${ariaLabel}: ${label}`}
-      className="pressable inline-flex h-10 shrink-0 select-none items-center gap-2 whitespace-nowrap rounded-full bg-white/[0.06] px-4 text-[13.5px] font-medium text-white/80 outline-none transition-colors duration-200 hover:bg-white/[0.1] hover:text-white focus-visible:ring-2 focus-visible:ring-red-500 sm:h-9"
+      className="pressable inline-flex h-10 shrink-0 select-none items-center gap-2 whitespace-nowrap rounded-full bg-white/[0.06] px-4 text-[13.5px] font-medium text-white/80 outline-none transition-colors duration-200 hover:bg-white/[0.1] hover:text-white focus-visible:ring-2 focus-visible:ring-red-500"
     >
       <ArrowDownUp aria-hidden className={cn('h-4 w-4 transition-transform duration-300 ease-out', value === 'oldest' && 'rotate-180')} strokeWidth={2} />
       {label}
