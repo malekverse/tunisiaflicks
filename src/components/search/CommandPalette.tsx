@@ -146,7 +146,7 @@ export default function CommandPalette() {
                                         <TmdbImage kind="backdrop" path={item.backdrop_path || item.poster_path} alt="" fill sizes="64px" className="object-cover" />
                                     </span>
                                     <span className="min-w-0 flex-1">
-                                        <bdi className="block truncate text-[15px]">{item.title}</bdi>
+                                        <bdi dir="auto" className="block truncate text-start text-[15px]">{item.title}</bdi>
                                         <span className="flex gap-2 text-xs text-white/45"><span>{item.media_type === 'tv' ? t('common.tvShow') : t('common.movie')}</span>{item.year && <span>{item.year}</span>}</span>
                                     </span>
                                     <TrendingUp aria-hidden className="h-4 w-4 shrink-0 text-white/30" />
@@ -163,7 +163,7 @@ export default function CommandPalette() {
                                         <TmdbImage kind="poster" path={item.poster_path || item.backdrop_path} alt="" fill sizes="36px" className="object-cover" />
                                     </span>
                                     <span className="min-w-0 flex-1">
-                                        <bdi className="block truncate text-[15px]">{item.title || item.name}</bdi>
+                                        <bdi dir="auto" className="block truncate text-start text-[15px]">{item.title || item.name}</bdi>
                                         <span className="flex gap-2 text-xs text-white/45">
                                             <span>{item.media_type === 'tv' ? t('common.tvShow') : t('common.movie')}</span>
                                             {(item.release_date || item.first_air_date) && <span>{(item.release_date || item.first_air_date).slice(0, 4)}</span>}
@@ -185,7 +185,7 @@ export default function CommandPalette() {
                                             <TmdbImage kind="profile" path={item.profile_path} fallback="/actor.png" alt="" fill sizes="40px" className="object-cover" />
                                         </span>
                                         <span className="min-w-0 flex-1">
-                                            <bdi className="block truncate text-[15px]">{item.name}</bdi>
+                                            <bdi dir="auto" className="block truncate text-start text-[15px]">{item.name}</bdi>
                                             <span className="flex min-w-0 gap-2 text-xs text-white/45">
                                                 <span className="shrink-0">{item.known_for_department === 'Directing' ? t('search.director') : t('search.actor')}</span>
                                                 {knownFor && <bdi className="truncate">{knownFor}</bdi>}

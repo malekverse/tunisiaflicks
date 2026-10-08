@@ -4,13 +4,18 @@ import {
   Bookmark, CalendarClock, Clapperboard, Compass, Dices, Heart, HeartHandshake, History, House,
   ListVideo, Search, Sparkles, Trophy, Tv, type LucideIcon,
 } from 'lucide-react'
-import { GiTunisia } from 'react-icons/gi'
+import TunisiaMark from '@/src/components/tunisian/TunisiaMark'
 import type { TKey } from '@/src/lib/i18n'
+
+type Icon = LucideIcon | ((props: { className?: string, strokeWidth?: number }) => JSX.Element)
+
+// The crescent and star stands for "Tunisian" (an inline SVG: no icon pack to load).
+const TunisiaIcon = ({ className }: { className?: string }) => <TunisiaMark className={className} />
 
 export type NavItem = {
   href: string
   label: TKey
-  icon: LucideIcon | typeof GiTunisia
+  icon: Icon
   /** A route handler (fresh random pick each time): use a plain <a>, not a prefetched <Link>. */
   plain?: boolean
 }
@@ -20,7 +25,7 @@ export const BROWSE: NavItem[] = [
   { href: '/tv', label: 'nav.tvShows', icon: Tv },
   { href: '/discover', label: 'nav.discover', icon: Compass },
   { href: '/clips', label: 'nav.clips', icon: Clapperboard },
-  { href: '/tunisian', label: 'nav.tunisian', icon: GiTunisia },
+  { href: '/tunisian', label: 'nav.tunisian', icon: TunisiaIcon },
   { href: '/upcoming', label: 'nav.comingSoon', icon: CalendarClock },
   { href: '/top-rated', label: 'nav.topRated', icon: Trophy },
 ]

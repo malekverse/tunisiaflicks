@@ -95,7 +95,7 @@ export default function ContinueWatching() {
                     <Play className="ms-0.5 h-5 w-5 fill-current rtl:-scale-x-100" />
                   </span>
                   <div className="absolute inset-x-0 bottom-0 p-3.5">
-                    <p className="line-clamp-1 font-display text-[18px] font-bold leading-tight text-white"><bdi>{item.title}</bdi></p>
+                    <p dir="auto" className="line-clamp-1 text-start font-display text-[18px] font-bold leading-tight text-white">{item.title}</p>
                     <p className="mt-0.5 text-[12px] font-medium text-white/70">{episode ?? t('home.resume')}</p>
                   </div>
                 </div>

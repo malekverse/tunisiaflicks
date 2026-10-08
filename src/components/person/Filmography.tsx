@@ -56,7 +56,7 @@ export default function Filmography({ credits }: { credits: Credit[] }) {
                       <TmdbImage kind="poster" path={credit.poster_path} alt="" fill sizes="56px" className="object-cover" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[15px] font-medium text-white/90 group-hover/credit:text-white"><bdi>{credit.title}</bdi></span>
+                      <span dir="auto" className="block truncate text-start text-[15px] font-medium text-white/90 group-hover/credit:text-white">{credit.title}</span>
                       {credit.role && <span className="mt-0.5 block truncate text-[13px] text-white/50"><bdi>{credit.role}</bdi></span>}
                       <span className="mt-1 flex items-center gap-3 text-[12px] text-white/40">
                         <span>{credit.media_type === 'tv' ? t('common.tvShow') : t('common.movie')}</span>
