@@ -47,7 +47,7 @@ export default async function ChipRail({ type = 'movie', className }: { type?: '
   const moods = MOODS.filter((mood) => (type === 'tv' ? !mood.movieOnly : !mood.tvOnly))
 
   return (
-    <nav aria-label={t('mood.title')} className={cn('rail-x no-scrollbar flex items-center gap-2 overflow-x-auto px-[var(--gutter)] py-1', className)}>
+    <nav aria-label={t('mood.title')} className={cn('rail-x no-scrollbar flex items-center gap-2 overflow-x-auto overflow-y-hidden px-[var(--gutter)] py-1', className)}>
       {moods.map((mood) => {
         const Icon = mood.icon
         const content = <><Icon aria-hidden className="h-4 w-4 text-white/80" strokeWidth={2} />{t(mood.label)}</>

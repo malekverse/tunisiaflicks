@@ -112,7 +112,7 @@ export function Row({ children, className, itemClassName, gap = 'gap-3 sm:gap-4'
                 role={label ? 'list' : undefined}
                 aria-label={label}
                 // The vertical padding leaves room for cards lifting on hover (the row clips both axes).
-                className={cn('rail-x no-scrollbar -my-3 flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain px-[var(--gutter)] py-3 [scroll-padding-inline:var(--gutter)] lg:snap-proximity', gap)}
+                className={cn('rail-x no-scrollbar -my-3 flex snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain px-[var(--gutter)] py-3 [scroll-padding-inline:var(--gutter)] lg:snap-proximity', gap)}
             >
                 {React.Children.map(children, (child) => child && (
                     <div role={label ? 'listitem' : undefined} className={cn('shrink-0 snap-start', itemClassName)}>{child}</div>

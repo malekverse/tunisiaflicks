@@ -199,7 +199,7 @@ export default function WrappedCards({ stats, isCurrentYear }: { stats: WrappedS
       <div
         ref={scroller}
         style={{ '--story-h': 'max(440px, min(660px, calc(100dvh - 270px)))' } as React.CSSProperties}
-        className="no-scrollbar -mx-[var(--gutter)] flex snap-x snap-mandatory scroll-px-[var(--gutter)] gap-3 overflow-x-auto overscroll-x-contain px-[var(--gutter)] lg:mx-0 lg:grid lg:grid-cols-6 lg:gap-4 lg:overflow-visible lg:px-0"
+        className="no-scrollbar -mx-[var(--gutter)] flex snap-x snap-mandatory scroll-px-[var(--gutter)] gap-3 overflow-x-auto overflow-y-hidden overscroll-x-contain px-[var(--gutter)] lg:mx-0 lg:grid lg:grid-cols-6 lg:gap-4 lg:overflow-visible lg:px-0"
       >
         {/* Intro */}
         <article data-story className={cn(CARD, 'justify-end bg-black lg:col-span-4 lg:row-span-2 lg:min-h-[500px] lg:p-10')}>

@@ -80,7 +80,7 @@ export default function SettingsNav({ className }: { className?: string }) {
 
   return (
     <nav aria-label={t('nav.settings')} className={cn('lg:sticky lg:top-[calc(var(--topbar)+24px)]', className)}>
-      <ul className="no-scrollbar -mx-[var(--gutter)] flex gap-1 overflow-x-auto overscroll-x-contain px-[var(--gutter)] lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:px-0">
+      <ul className="no-scrollbar -mx-[var(--gutter)] flex gap-1 overflow-x-auto overflow-y-hidden overscroll-x-contain px-[var(--gutter)] lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:px-0">
         {SETTINGS_SECTIONS.map((section) => {
           const Icon = section.icon
           const current = active === section.id

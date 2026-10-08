@@ -19,7 +19,7 @@ export default function TunisianSeasons({ seasons }: { seasons: TunisianSeason[]
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-display text-[21px] font-bold sm:text-[26px]">{t('tv.episodes')}</h2>
         {seasons.length > 1 && (
-          <div role="tablist" aria-label={t('tv.seasons')} className="no-scrollbar flex max-w-full overflow-x-auto rounded-full bg-white/[0.07] p-1">
+          <div role="tablist" aria-label={t('tv.seasons')} className="no-scrollbar flex max-w-full overflow-x-auto overflow-y-hidden rounded-full bg-white/[0.07] p-1">
             {seasons.map((season) => {
               const selected = season.season === current.season
               return (

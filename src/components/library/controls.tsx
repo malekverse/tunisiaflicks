@@ -89,7 +89,7 @@ export function SortToggle({ label, value, onToggle, ariaLabel }: { label: strin
 /** A strip of controls that scrolls sideways on phones and wraps on bigger screens. */
 export function Toolbar({ children }: { children: React.ReactNode }) {
   return (
-    <div className="no-scrollbar -mx-[var(--gutter)] flex items-center gap-2 overflow-x-auto overscroll-x-contain px-[var(--gutter)] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+    <div className="no-scrollbar -mx-[var(--gutter)] flex items-center gap-2 overflow-x-auto overflow-y-hidden overscroll-x-contain px-[var(--gutter)] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
       {children}
     </div>
   )

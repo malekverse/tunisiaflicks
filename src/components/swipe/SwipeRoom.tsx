@@ -235,7 +235,7 @@ export default function SwipeRoom({ code }: { code: string }) {
 
             <ul
               aria-label={t('swipe.people')}
-              className="no-scrollbar -mx-[var(--gutter)] mt-5 flex gap-2 overflow-x-auto px-[var(--gutter)] lg:mx-0 lg:mt-8 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:px-0"
+              className="no-scrollbar -mx-[var(--gutter)] mt-5 flex gap-2 overflow-x-auto overflow-y-hidden px-[var(--gutter)] lg:mx-0 lg:mt-8 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:px-0"
             >
               {state.participants.map((person) => (
                 <Person key={person.id} name={person.name} voted={person.voted} total={state.deckSize} me={person.id === state.me?.id} />

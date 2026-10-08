@@ -351,7 +351,7 @@ function Deck({ items, colors, enabled }: { items: BillboardItem[], colors: (str
                 ref={scroller}
                 onScroll={onScroll}
                 onPointerDown={() => setTouched(true)}
-                className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-[calc((100vw-min(80vw,380px))/2)] pb-6 pt-2"
+                className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto overflow-y-hidden overscroll-x-contain px-[calc((100vw-min(80vw,380px))/2)] pb-6 pt-2"
             >
                 {items.map((item, i) => (
                     <article

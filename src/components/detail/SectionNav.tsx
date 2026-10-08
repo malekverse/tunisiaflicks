@@ -40,7 +40,7 @@ export default function SectionNav({ sections }: { sections: Section[] }) {
             style={{ top: 'calc(var(--topbar) + env(safe-area-inset-top, 0px))' }}
         >
             <div className="glass-strong border-x-0 border-t-0">
-                <div className="page-x no-scrollbar flex gap-1 overflow-x-auto">
+                <div className="page-x no-scrollbar flex gap-1 overflow-x-auto overflow-y-hidden">
                     {sections.map((section) => {
                         const current = section.id === active
                         return (

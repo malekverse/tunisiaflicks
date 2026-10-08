@@ -139,7 +139,7 @@ export default function StreamSection({ services, downloadSlot, enabled = true, 
 
                 {/* Controls: sources on the start side, the rest at the end. */}
                 <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center">
-                    <div role="tablist" aria-label={t('stream.sourceAria')} className="no-scrollbar -mx-[var(--gutter)] flex min-w-0 flex-1 gap-1 overflow-x-auto px-[var(--gutter)] md:mx-0 md:px-0">
+                    <div role="tablist" aria-label={t('stream.sourceAria')} className="no-scrollbar -mx-[var(--gutter)] flex min-w-0 flex-1 gap-1 overflow-x-auto overflow-y-hidden px-[var(--gutter)] md:mx-0 md:px-0">
                         <div className="flex shrink-0 gap-1 rounded-full bg-white/[0.06] p-1">
                             {source.ordered.map((item) => {
                                 const active = source.ready && source.current?.name === item.name

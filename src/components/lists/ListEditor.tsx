@@ -224,7 +224,7 @@ export default function ListEditor({ initial }: { initial: PublicList }) {
         {freshSuggestions.length > 0 && (
           <div>
             <p className="mb-3 text-[13px] text-white/55">{t('lists.suggestions')}</p>
-            <div className="no-scrollbar -mx-[var(--gutter)] flex gap-2.5 overflow-x-auto overscroll-x-contain px-[var(--gutter)] pb-1">
+            <div className="no-scrollbar -mx-[var(--gutter)] flex gap-2.5 overflow-x-auto overflow-y-hidden overscroll-x-contain px-[var(--gutter)] pb-1">
               {freshSuggestions.map((item) => (
                 <button
                   key={keyOf(item)}

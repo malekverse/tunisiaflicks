@@ -77,7 +77,7 @@ export default function MenuSheet({ open, onOpenChange, account }: {
                         {account.others.length > 0 && (
                             <div className="mt-4">
                                 <p className="mb-2 text-xs font-medium text-white/50">{t('nav.switchProfile')}</p>
-                                <div className="no-scrollbar -mx-5 flex gap-3 overflow-x-auto px-5">
+                                <div className="no-scrollbar -mx-5 flex gap-3 overflow-x-auto overflow-y-hidden px-5">
                                     {account.others.map((profile) => (
                                         <button key={profile.id} type="button" onClick={() => account.switchTo(profile)} className="pressable flex w-16 shrink-0 flex-col items-center gap-1.5">
                                             <ProfileAvatar profile={profile} size="md" className="h-12 w-12 rounded-2xl text-lg" />

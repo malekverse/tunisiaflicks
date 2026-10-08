@@ -41,7 +41,7 @@ export function LibraryTabs({ className }: { className?: string }) {
 
   return (
     <nav aria-label={t('nav.library')} className={className}>
-      <div data-strip className="no-scrollbar -mx-[var(--gutter)] overflow-x-auto overscroll-x-contain px-[var(--gutter)]">
+      <div data-strip className="no-scrollbar -mx-[var(--gutter)] overflow-x-auto overflow-y-hidden overscroll-x-contain px-[var(--gutter)]">
         <ul className="inline-flex gap-0.5 rounded-full bg-white/[0.07] p-1 ring-1 ring-inset ring-white/[0.05]">
           {LIBRARY.map((item) => {
             const Icon = item.icon

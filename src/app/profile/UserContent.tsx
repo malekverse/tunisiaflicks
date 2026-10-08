@@ -174,7 +174,7 @@ export default function UserContent() {
       )}
     >
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as Tab)}>
-        <div className="no-scrollbar -mx-5 overflow-x-auto px-5 sm:mx-0 sm:px-0">
+        <div className="no-scrollbar -mx-5 overflow-x-auto overflow-y-hidden px-5 sm:mx-0 sm:px-0">
           <TabsList>
             {TABS.map((tab) => {
               const Icon = tab.icon;
@@ -198,7 +198,7 @@ export default function UserContent() {
                   {Array.from({ length: 6 }, (_, index) => <Skeleton key={index} className="aspect-[2/3] w-[104px] shrink-0 rounded-poster sm:w-[118px]" />)}
                 </div>
               ) : items.length > 0 ? (
-                <ul className="no-scrollbar relative -mx-5 flex gap-3 overflow-x-auto overscroll-x-contain px-5 pb-1 sm:-mx-7 sm:px-7">
+                <ul className="no-scrollbar relative -mx-5 flex gap-3 overflow-x-auto overflow-y-hidden overscroll-x-contain px-5 pb-1 sm:-mx-7 sm:px-7">
                   <AnimatePresence mode="popLayout" initial={false}>
                     {items.slice(0, PREVIEW).map(item => renderContentItem(item, tab.value))}
                   </AnimatePresence>

@@ -80,7 +80,7 @@ export default function DiscoverFilters({ genres, values }: { genres: { id: numb
 
   return (
     <div className="page-x" aria-busy={pending}>
-      <div role="group" aria-label={t('filters.aria')} className="no-scrollbar -mx-[var(--gutter)] flex items-center gap-2 overflow-x-auto px-[var(--gutter)] pb-1">
+      <div role="group" aria-label={t('filters.aria')} className="no-scrollbar -mx-[var(--gutter)] flex items-center gap-2 overflow-x-auto overflow-y-hidden px-[var(--gutter)] pb-1">
         <FilterSelect
           label={t('filters.sortBy')}
           value={values.sort}
