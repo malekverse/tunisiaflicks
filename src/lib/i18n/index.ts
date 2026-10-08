@@ -3,6 +3,7 @@
 import { en, type TKey } from './en'
 import { ar } from './ar'
 import { tn } from './tn'
+import { featureStrings } from './features'
 
 export type { TKey }
 /** English, Modern Standard Arabic, and Tunisian Arabic (Derja). */
@@ -15,8 +16,11 @@ export const LOCALES: Locale[] = ['en', 'ar', 'tn']
 export const DEFAULT_LOCALE: Locale = 'en'
 export const LOCALE_COOKIE = 'tf-locale'
 
-// Derja only overrides what it translates; the rest comes from Arabic, then English.
-const dictionaries: Record<Locale, Partial<Record<TKey, string>>> = { en, ar, tn: { ...ar, ...tn } }
+// Each feature's strings (./features) join the core ones. Derja only overrides what it
+// translates; the rest comes from Arabic, then English.
+const english: Record<TKey, string> = { ...en, ...featureStrings('en') } as Record<TKey, string>
+const arabic = { ...ar, ...featureStrings('ar') }
+const dictionaries: Record<Locale, Partial<Record<TKey, string>>> = { en: english, ar: arabic, tn: { ...arabic, ...tn, ...featureStrings('tn') } }
 
 export const isLocale = (value: unknown): value is Locale => value === 'en' || value === 'ar' || value === 'tn'
 /** Arabic and Derja: right-to-left, Arabic font, Arabic TMDB data. */
@@ -35,7 +39,7 @@ export const dateLocale = (locale: Locale): string | undefined => (isArabicScrip
 export function createTranslator(locale: Locale): Translate {
   const dictionary = dictionaries[locale]
   return (key, vars) => {
-    const text = dictionary[key] ?? en[key] ?? key
+    const text = dictionary[key] ?? english[key] ?? key
     return vars ? text.replace(/\{(\w+)\}/g, (match, name) => (name in vars ? String(vars[name]) : match)) : text
   }
 }

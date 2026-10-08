@@ -1,9 +1,9 @@
 // Arabic UI strings. Typed against the English keys, so a missing or misspelled key fails `tsc`.
 // Numbers stay in Latin digits (as used in Tunisia); counts are phrased "Label: {n}" to sidestep
 // Arabic plural forms.
-import type { TKey } from './en'
+import type { CoreKey } from './en'
 
-export const ar: Record<TKey, string> = {
+export const ar: Record<CoreKey, string> = {
   // Shared
   'common.movie': 'فيلم',
   'common.tvShow': 'مسلسل',
