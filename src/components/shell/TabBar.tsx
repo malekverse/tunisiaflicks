@@ -11,13 +11,23 @@ import { TABS, isActive } from './nav'
 import AccountAvatar from './AccountAvatar'
 import MenuSheet from './MenuSheet'
 import { useShellAccount } from './use-shell-account'
+import type { SeasonalNav } from '@/src/lib/seasons'
+
+export type TabBarProps = {
+    /** A Kids profile is in use (from the server, so grown-up items never flash). */
+    kids?: boolean
+    /** The seasonal nav item, if any, for the menu sheet's places (getSeasonalNav in src/lib/seasons.ts). */
+    seasonal?: SeasonalNav | null
+}
 
 /**
  * Phones and tablets: a floating glass tab bar in the thumb zone. It shrinks a little while the
  * viewer scrolls down (the labels fade) and comes back to full size on the way up. The last tab,
  * "You", opens the menu sheet with everything else.
  */
-export default function TabBar() {
+export default function TabBar(props: TabBarProps = {}) {
+    // kids and seasonal are wired from the root layout; the social track puts them to use.
+    void props
     const t = useT()
     const pathname = usePathname()
     const { retracted } = useScrollChrome(140)

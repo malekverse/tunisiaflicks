@@ -9,6 +9,14 @@ import { cn } from '@/src/lib/utils'
 import { spring } from '@/src/lib/motion'
 import { useI18n } from '@/src/components/I18nProvider'
 import { BROWSE, EXTRAS, LIBRARY, isActive, type NavItem } from './nav'
+import type { SeasonalNav } from '@/src/lib/seasons'
+
+export type RailProps = {
+    /** A Kids profile is in use (from the server, so grown-up items never flash). */
+    kids?: boolean
+    /** The seasonal nav item, if any (getSeasonalNav in src/lib/seasons.ts). */
+    seasonal?: SeasonalNav | null
+}
 
 const OPEN_DELAY = 90
 const CLOSE_DELAY = 180
@@ -19,7 +27,9 @@ const CLOSE_DELAY = 180
  * The panel is always 256px wide and clipped down to the icon column while closed: unfolding is a
  * clip-path transition, which also keeps the hidden part from catching the mouse.
  */
-export default function Rail() {
+export default function Rail(props: RailProps = {}) {
+    // kids and seasonal are wired from the root layout; the social track puts them to use.
+    void props
     const pathname = usePathname()
     const { t, dir } = useI18n()
     const [open, setOpen] = useState(false)

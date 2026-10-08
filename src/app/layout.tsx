@@ -20,9 +20,18 @@ import ServiceWorkerRegister from "@/src/components/ServiceWorkerRegister";
 import DailyPushTrigger from "@/src/components/DailyPushTrigger";
 import ErrorReporter from "@/src/components/ErrorReporter";
 import { I18nProvider } from "@/src/components/I18nProvider";
+import ShareSheetHost from "@/src/components/share/ShareSheetHost";
+import LanguageHint from "@/src/components/shell/LanguageHint";
+import TvModeProvider from "@/src/components/tv/TvModeProvider";
+import TvShell from "@/src/components/tv/TvShell";
+import TvModeOffer from "@/src/components/tv/TvModeOffer";
 import { dirOf, htmlLang } from "@/src/lib/i18n";
 import { getLocale, getT } from "@/src/lib/i18n/server";
+import { getKidsMode } from "@/src/lib/profiles";
+import { getSeasonalNav, getSeasonSkin } from "@/src/lib/seasons";
+import { isTvMode } from "@/src/lib/tv-mode";
 import { SITE_DESCRIPTION, SITE_URL } from "@/src/lib/seo";
+import { headers } from "next/headers";
 
 import type { Viewport } from 'next'
 
@@ -106,7 +115,7 @@ export const viewport: Viewport = {
 };
 
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -115,11 +124,38 @@ export default function RootLayout({
   // in the right language and direction.
   const locale = getLocale();
   const t = getT();
+  // Who's watching (Kids hide grown-up items from the nav without a flash), TV mode (cookie
+  // tf-tv=1, see src/middleware.ts), the Android TV app (its WebView adds this token to the user
+  // agent), and the season (the nav slot, and the room's default light).
+  const kids = await getKidsMode().catch(() => false);
+  const tv = isTvMode();
+  const inApp = (headers().get('user-agent') ?? '').includes('TunisiaFlicksTV/');
+  const seasonal = getSeasonalNav(kids);
+  const skin = getSeasonSkin(kids);
+  const seasonStyle = skin
+    ? ({ '--season-light': skin.light, ...(skin.glow ? { '--season-glow': skin.glow } : {}) } as React.CSSProperties)
+    : undefined;
+
+  // The page column. In TV mode the remote-friendly shell wraps it instead of the usual chrome.
+  const page = (
+    <div className="relative flex min-h-dvh flex-col">
+      <VerifyEmailBanner />
+      {!tv && <TvModeOffer />}
+      <main id="main" role="main" className="flex-1 min-w-0">
+        {children}
+      </main>
+      {!tv && <Footer />}
+    </div>
+  );
+
   return (
     <html
       lang={htmlLang(locale)}
       dir={dirOf(locale)}
       className={`dark ${text.variable} ${display.variable} ${displayArabic.variable}`}
+      data-tv={tv ? '1' : undefined}
+      data-season={skin?.id}
+      style={seasonStyle}
       suppressHydrationWarning
     >
       <head>
@@ -133,25 +169,32 @@ export default function RootLayout({
           {t('nav.skipToContent')}
         </a>
         <I18nProvider locale={locale}>
-          <SessionProvider>
-            <MotionProvider>
-              <RoomLight />
-              <Rail />
-              <TopBar />
-              <ShellEffects />
-              <div className="relative flex min-h-dvh flex-col">
-                <VerifyEmailBanner />
-                <main id="main" role="main" className="flex-1 min-w-0">
-                  {children}
-                </main>
-                <Footer />
-              </div>
-              <TabBar />
-              <SearchPaletteHost />
-              <PeekLayer />
-            </MotionProvider>
-          </SessionProvider>
-          <Toaster />
+          <TvModeProvider tv={tv} inApp={inApp}>
+            <SessionProvider>
+              <MotionProvider>
+                <RoomLight />
+                {tv ? (
+                  <>
+                    <ShellEffects />
+                    <TvShell>{page}</TvShell>
+                  </>
+                ) : (
+                  <>
+                    <Rail kids={kids} seasonal={seasonal} />
+                    <TopBar kids={kids} ask={false} />
+                    <ShellEffects />
+                    {page}
+                    <TabBar kids={kids} seasonal={seasonal} />
+                    <SearchPaletteHost />
+                    <PeekLayer />
+                    <ShareSheetHost />
+                  </>
+                )}
+              </MotionProvider>
+            </SessionProvider>
+            <Toaster />
+            <LanguageHint />
+          </TvModeProvider>
         </I18nProvider>
         <div aria-hidden className="tf-grain" />
         <SpeedInsights />

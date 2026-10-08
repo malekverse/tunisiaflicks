@@ -20,8 +20,11 @@ const STATUS_MESSAGE: Partial<Record<string, TKey>> = {
   denied: 'push.denied',
 }
 
-/** Settings > Notifications (#notifications): which notifications this device receives. */
-export function PushSettingsCard() {
+/**
+ * Settings > Notifications (#notifications): which notifications this device receives, then
+ * `children` (the "By email" group, #email) below.
+ */
+export function PushSettingsCard({ children }: { children?: React.ReactNode } = {}) {
   const t = useT()
   const { status, topics, busy, update } = usePush()
 
@@ -57,6 +60,8 @@ export function PushSettingsCard() {
           <Toggle id="push-alerts" checked={topics.includes('alerts')} disabled={busy} onChange={(on) => toggle('alerts', on)} label={t('push.alertsLabel')} hint={t('push.alertsHint')} />
         </SettingsGroup>
       )}
+      {/* Disappears when the slot renders nothing. */}
+      {children && <div className="mt-8 empty:hidden">{children}</div>}
     </SettingsSection>
   )
 }

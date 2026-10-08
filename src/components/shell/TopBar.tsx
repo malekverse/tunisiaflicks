@@ -10,11 +10,20 @@ import NotificationBell from '@/src/components/NotificationBell'
 import LanguageSwitch from './LanguageSwitch'
 import AccountMenu from './AccountMenu'
 
+export type TopBarProps = {
+  /** A Kids profile is in use (from the server). */
+  kids?: boolean
+  /** Whether the search pill also offers Ask (AI search): never for Kids or in TV mode. */
+  ask?: boolean
+}
+
 /**
  * The top bar floats over the page: a soft dark fade while the hero is showing, frosted glass once
  * the page scrolls. On phones it tucks away while scrolling down and returns on the way back up.
  */
-export default function TopBar() {
+export default function TopBar(props: TopBarProps = {}) {
+  // kids and ask are wired from the root layout; the social and ai-search tracks put them to use.
+  void props
   const t = useT()
   const { scrolled, retracted } = useScrollChrome()
   const openSearch = useSearchPalette((state) => state.setOpen)

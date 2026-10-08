@@ -2,32 +2,46 @@
 import { useEffect, useRef, useState } from 'react'
 import { m } from 'framer-motion'
 import {
-  BellRing, Clapperboard, Database, Library, ShieldCheck, Smartphone, UserRound, Users, type LucideIcon,
+  BellRing, Clapperboard, Database, HandHeart, Languages, Library, Lock, ShieldCheck, Smartphone, UserRound, Users, type LucideIcon,
 } from 'lucide-react'
 import { useT } from '@/src/components/I18nProvider'
 import { spring } from '@/src/lib/motion'
 import { cn } from '@/src/lib/utils'
 import type { TKey } from '@/src/lib/i18n'
 
-/** The settings page's sections, in page order. The ids are anchors other pages link to. */
-export const SETTINGS_SECTIONS: { id: string, label: TKey, icon: LucideIcon }[] = [
+/**
+ * The settings page's sections, in page order. The ids are anchors other pages link to.
+ * `grownUp` sections are not on the page for a Kids profile, so they're not in the nav either.
+ */
+export const SETTINGS_SECTIONS: { id: string, label: TKey, icon: LucideIcon, grownUp?: boolean }[] = [
   { id: 'account', label: 'settings.account', icon: UserRound },
   { id: 'profiles', label: 'profiles.title', icon: Users },
+  { id: 'privacy', label: 'social.privacy.title', icon: Lock, grownUp: true },
+  { id: 'display', label: 'languages.settings.title', icon: Languages },
   { id: 'playback', label: 'settings.playback', icon: Clapperboard },
   { id: 'notifications', label: 'settings.notifications', icon: Smartphone },
   { id: 'following', label: 'alerts.following', icon: BellRing },
   { id: 'library', label: 'nav.library', icon: Library },
+  { id: 'supporter', label: 'badges.supporter.title', icon: HandHeart, grownUp: true },
   { id: 'security', label: 'settings.security', icon: ShieldCheck },
   { id: 'data', label: 'settings.data', icon: Database },
 ]
 
+// An entry whose section isn't on the page (not built yet, or with nothing to show) is hidden by CSS
+// alone, so the list never changes after it has painted.
+const HIDE_MISSING = SETTINGS_SECTIONS
+  .map((section) => `body:not(:has(#${section.id})) [data-settings-link=${section.id}]{display:none}`)
+  .join('')
+
 /**
  * Desktop: a sticky list of the sections on the start side, the one being read highlighted.
  * Phones and tablets: the same links as a strip that scrolls sideways above the sections.
+ * `kids` (from getKidsMode() on the server) leaves out the grown-up sections.
  */
-export default function SettingsNav({ className }: { className?: string }) {
+export default function SettingsNav({ kids = false, className }: { kids?: boolean, className?: string }) {
   const t = useT()
-  const [active, setActive] = useState(SETTINGS_SECTIONS[0].id)
+  const visible = SETTINGS_SECTIONS.filter((section) => !(kids && section.grownUp))
+  const [active, setActive] = useState(visible[0].id)
   const lockUntil = useRef(0)
 
   // Which section is being read: the last one whose top has passed the upper third of the screen.
@@ -64,7 +78,7 @@ export default function SettingsNav({ className }: { className?: string }) {
   // which pushes the target down. Settle on it again, unless the reader has started scrolling.
   useEffect(() => {
     const id = window.location.hash.slice(1)
-    if (!SETTINGS_SECTIONS.some((section) => section.id === id)) return
+    if (!SETTINGS_SECTIONS.some((section) => section.id === id) || !document.getElementById(id)) return
     setActive(id)
     let interacted = false
     const stop = () => { interacted = true }
@@ -80,12 +94,13 @@ export default function SettingsNav({ className }: { className?: string }) {
 
   return (
     <nav aria-label={t('nav.settings')} className={cn('lg:sticky lg:top-[calc(var(--topbar)+24px)]', className)}>
+      <style dangerouslySetInnerHTML={{ __html: HIDE_MISSING }} />
       <ul className="no-scrollbar -mx-[var(--gutter)] flex gap-1 overflow-x-auto overflow-y-hidden overscroll-x-contain px-[var(--gutter)] lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:px-0">
-        {SETTINGS_SECTIONS.map((section) => {
+        {visible.map((section) => {
           const Icon = section.icon
           const current = active === section.id
           return (
-            <li key={section.id} className="shrink-0">
+            <li key={section.id} data-settings-link={section.id} className="shrink-0">
               <a
                 href={`#${section.id}`}
                 aria-current={current ? 'location' : undefined}
