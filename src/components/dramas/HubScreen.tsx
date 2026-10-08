@@ -204,7 +204,7 @@ export default function HubScreen({ series, accent }: { series: FeaturedSeries, 
             <button
               type="button"
               onClick={() => setPaused((value) => !value)}
-              aria-pressed={paused}
+              // The label says what pressing does (Play / Pause), so no aria-pressed on top of it.
               aria-label={paused ? t('clips.play') : t('clips.pause')}
               className="pressable glass grid h-11 w-11 place-items-center rounded-full text-white outline-none focus-visible:ring-2 focus-visible:ring-red-500"
             >

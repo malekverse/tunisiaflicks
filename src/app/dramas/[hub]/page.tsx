@@ -126,8 +126,9 @@ export default async function DramaHubPage({ params, searchParams }: Props) {
 
   // One shelf, as a full grid.
   if (shelf) {
+    // null: the shelf didn't answer in time, which is not the same as an empty shelf.
     const [items, top] = await Promise.all([
-      withTimeout(getShelf(hub, shelf, locale, GRID_SIZE), 15000, []),
+      withTimeout(getShelf(hub, shelf, locale, GRID_SIZE), 15000, null),
       withTimeout(getShelf(hub, 'trending', locale, 10), 8000, []),
     ])
     const title = gridTitle(t, hub, shelf)
@@ -138,20 +139,20 @@ export default async function DramaHubPage({ params, searchParams }: Props) {
         <div className="page-x">
           <HubFilters hub={hub} active={shelf} />
           <div className="mt-6 sm:mt-8">
-            {items.length > 0 ? (
+            {items && items.length > 0 ? (
               <div className={GRID_CLASS}>
                 {items.map((item) => (
                   <PosterCard key={`${item.media_type}-${item.id}`} {...cardProps(item, item.media_type)} overlay={badgeFor(item, t, locale)} />
                 ))}
               </div>
-            ) : top.length === 0 ? (
+            ) : !items || top.length === 0 ? (
               <Unavailable />
             ) : (
               <EmptyState>{t('dramas.grid.empty')}</EmptyState>
             )}
           </div>
         </div>
-        <JsonLd data={collectionJsonLd({ name: title, description, path: hubPath(hub, shelf), items, locale: htmlLang(locale) })} />
+        <JsonLd data={collectionJsonLd({ name: title, description, path: hubPath(hub, shelf), items: items ?? [], locale: htmlLang(locale) })} />
       </div>
     )
   }
