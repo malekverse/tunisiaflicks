@@ -4,6 +4,7 @@
 //   or one-tap install from Chrome when there's no release yet.
 // - Android TV, in TV mode: the address to type in the Downloader app.
 // - iPhone / iPad: Add to Home Screen, step by step.
+// - Windows: the desktop app, with its own ad-free player (its page, /desktop), once it has a release.
 // - Windows, Mac, Linux, ChromeOS: install from the browser in one click (Safari: File > Add to Dock).
 //
 // Never pushy: only from a second visit or a third page, a few seconds after the page settles,
@@ -12,6 +13,7 @@
 // 4 months. The TV-mode offer (TvModeOffer) covers TV browsers outside TV mode, so the two never meet.
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Download, PlusSquare, Share, X } from 'lucide-react'
 import { useT } from '@/src/components/I18nProvider'
@@ -24,9 +26,9 @@ import type { TKey } from '@/src/lib/i18n'
 import { useDevice } from './use-device'
 
 /** Sizes in MB of the apps there's a release of (null: none yet). From the root layout. */
-export type OfferedApps = { android: number | null, tv: number | null }
+export type OfferedApps = { android: number | null, tv: number | null, desktop: number | null }
 
-type Variant = 'android' | 'pwa' | 'tv' | 'ios' | 'computer' | 'computer-safari'
+type Variant = 'android' | 'pwa' | 'tv' | 'ios' | 'desktop' | 'computer' | 'computer-safari'
 
 const STATE_KEY = 'tf-app-offer'
 const VISITS_KEY = 'tf-visits'
@@ -40,7 +42,7 @@ const SNOOZE = 21 * DAY
 const SNOOZE_LONG = 180 * DAY
 const AFTER_GETTING_IT = 120 * DAY
 const SETTLE_MS = 6000
-const QUIET_PATHS = ['/app', '/download', '/login', '/signup', '/auth', '/activate', '/profiles', '/unsubscribe']
+const QUIET_PATHS = ['/app', '/desktop', '/download', '/login', '/signup', '/auth', '/activate', '/profiles', '/unsubscribe']
 
 type OfferState = { until: number, dismissals: number }
 
@@ -79,6 +81,7 @@ function variantFor(platform: DevicePlatform, apps: OfferedApps, canInstall: boo
     case 'android': return apps.android !== null ? 'android' : canInstall ? 'pwa' : null
     case 'ios': return 'ios'
     case 'windows': case 'mac': case 'linux': case 'chromeos':
+      if (platform === 'windows' && apps.desktop !== null) return 'desktop'
       return canInstall ? 'computer' : platform === 'mac' && isMacSafari(userAgent) ? 'computer-safari' : null
     default: return null
   }
@@ -162,7 +165,8 @@ export default function AppOffer({ apps }: { apps: OfferedApps }): JSX.Element |
       : variant === 'pwa' ? 'apps.offer.pwa.text'
         : variant === 'tv' ? 'apps.offer.tv.text'
           : variant === 'ios' ? 'apps.offer.ios.text'
-            : variant === 'computer-safari' ? 'apps.offer.computer.safari'
+            : variant === 'desktop' ? 'desktop.offer.text'
+              : variant === 'computer-safari' ? 'apps.offer.computer.safari'
               : 'apps.offer.computer.text'
 
   const host = typeof window === 'undefined' ? '' : window.location.host
@@ -232,6 +236,13 @@ export default function AppOffer({ apps }: { apps: OfferedApps }): JSX.Element |
             <Button ref={(node) => { primaryRef.current = node }} size="sm" className="h-10" onClick={installNow}>
               <Download aria-hidden className="h-4 w-4" />
               {t('apps.offer.install')}
+            </Button>
+          )}
+          {variant === 'desktop' && (
+            <Button asChild size="sm" className="h-10">
+              <Link ref={(node) => { primaryRef.current = node }} href="/desktop" onClick={() => { gotIt(); setClosed(true) }}>
+                {t('desktop.offer.cta')}
+              </Link>
             </Button>
           )}
           {variant === 'ios' && step !== 'how' && (

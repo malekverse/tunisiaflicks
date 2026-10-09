@@ -1,27 +1,31 @@
 "use client"
 // /app's cards, one per kind of device, the visitor's own first and marked "This device":
-// Android phones (the APK), Android TV (the APK, typed into Downloader), iPhone and iPad (Home
-// Screen), computers (installed from the browser) and other smart TVs (TV mode in their browser).
-import { useState } from 'react'
-import { CircleCheck, Download, MonitorDown, PlusSquare, Share, Smartphone, TabletSmartphone, Tv, TvMinimal } from 'lucide-react'
+// Android phones (the APK), Android TV (the APK, typed into Downloader), Windows (the desktop app,
+// with its own ad-free player), iPhone and iPad (Home Screen), computers (installed from the
+// browser) and other smart TVs (TV mode in their browser).
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { CircleCheck, Download, Monitor, MonitorDown, PlusSquare, Share, Smartphone, TabletSmartphone, Tv, TvMinimal } from 'lucide-react'
 import { useI18n, useT } from '@/src/components/I18nProvider'
 import { Button } from '@/src/components/ui/button'
+import { isDesktopApp } from '@/src/hooks/use-desktop-app'
 import { useInstallPrompt } from '@/src/hooks/use-install-prompt'
 import { setTvMode } from '@/src/components/tv/TvModeSetting'
 import { COMPUTERS, isMacSafari, type DevicePlatform } from '@/src/lib/device-platform'
-import type { AppFile, AppReleases } from '@/src/lib/app-releases'
+import type { AppFile, AppReleases, DesktopRelease } from '@/src/lib/app-releases'
 import type { TKey } from '@/src/lib/i18n'
 import { cn } from '@/src/lib/utils'
 import { useDevice } from './use-device'
 
-type CardId = 'android' | 'tv' | 'ios' | 'computer' | 'smart-tv'
+type CardId = 'android' | 'tv' | 'desktop' | 'ios' | 'computer' | 'smart-tv'
 
-const ORDER: CardId[] = ['android', 'tv', 'ios', 'computer', 'smart-tv']
+const ORDER: CardId[] = ['android', 'tv', 'desktop', 'ios', 'computer', 'smart-tv']
 
 function cardFor(platform: DevicePlatform): CardId | null {
   if (platform === 'android') return 'android'
   if (platform === 'android-tv') return 'tv'
   if (platform === 'ios') return 'ios'
+  if (platform === 'windows') return 'desktop'
   return COMPUTERS.includes(platform) ? 'computer' : null
 }
 
@@ -50,14 +54,17 @@ function Fingerprint({ label, value }: { label: string, value: string }) {
   )
 }
 
-/** The version line and "Check the file" for one APK. */
-function FileDetails({ file, releases }: { file: AppFile, releases: AppReleases }) {
+/** The release a file comes from (an Android or a desktop release). */
+type ReleaseInfo = Pick<AppReleases, 'version' | 'publishedAt' | 'releaseUrl'> & { certSha256?: string | null }
+
+/** The version line and "Check the file" for one APK or installer. */
+export function FileDetails({ file, releases, version = true }: { file: AppFile, releases: ReleaseInfo, /** The version line (off where it is already shown). */ version?: boolean }) {
   const t = useT()
   const { dateLocale } = useI18n()
   const date = releases.publishedAt ? new Date(releases.publishedAt).toLocaleDateString(dateLocale, { day: 'numeric', month: 'long', year: 'numeric' }) : ''
   return (
     <>
-      <p className="mt-2.5 text-[13px] text-white/50">{t('apps.page.version', { version: releases.version, size: megabytes(file.size).toLocaleString(dateLocale), date })}</p>
+      {version && <p className="mt-2.5 text-[13px] text-white/50">{t('apps.page.version', { version: releases.version, size: megabytes(file.size).toLocaleString(dateLocale), date })}</p>}
       {(file.sha256 || releases.certSha256) && (
         <details className="group mt-4 rounded-2xl bg-white/[0.03] px-4 py-3 ring-1 ring-white/[0.06]">
           <summary className="cursor-pointer select-none text-[13.5px] font-medium text-white/75 outline-none marker:text-white/40 focus-visible:text-white">{t('apps.page.check')}</summary>
@@ -99,16 +106,20 @@ function Card({ id, icon, title, text, mine, children }: { id: CardId, icon: Rea
   )
 }
 
-export default function AppDevices({ releases, tv }: { releases: AppReleases | null, tv: boolean }) {
+export default function AppDevices({ releases, desktop, tv }: { releases: AppReleases | null, desktop: DesktopRelease | null, tv: boolean }) {
   const t = useT()
   const device = useDevice()
   const { canInstall, installed, install } = useInstallPrompt()
   const [switching, setSwitching] = useState(false)
+  const [desktopApp, setDesktopApp] = useState(false)
+  useEffect(() => setDesktopApp(isDesktopApp()), [])
   const host = typeof window === 'undefined' ? 'tunisiaflicks.vercel.app' : window.location.host
 
   const mine = device ? cardFor(device.platform) : null
   const order = mine ? [mine, ...ORDER.filter((id) => id !== mine)] : ORDER
   const inApp = !!device?.inApp
+  // Windows shows the desktop app first; the browser install stays on offer on every computer.
+  const computer = !!device && COMPUTERS.includes(device.platform)
   const androidFile = releases?.apps.android
   const tvFile = releases?.apps.tv
   const safari = !!device && isMacSafari(device.userAgent)
@@ -175,13 +186,34 @@ export default function AppDevices({ releases, tv }: { releases: AppReleases | n
         )}
       </Card>
     ),
+    desktop: (
+      <Card key="desktop" id="desktop" mine={mine === 'desktop'} icon={<Monitor aria-hidden className="h-5 w-5" strokeWidth={1.9} />} title="desktop.card.title" text="desktop.card.text">
+        {desktopApp ? done('apps.page.inApp') : (
+          <>
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              {desktop ? (
+                <Button asChild size="lg">
+                  <a href="/download/desktop"><Download aria-hidden className="h-[18px] w-[18px]" />{t('desktop.download')}</a>
+                </Button>
+              ) : (
+                <span className="inline-flex rounded-full bg-white/[0.06] px-3 py-1.5 text-[13px] font-medium text-white/60">{t('apps.page.soon')}</span>
+              )}
+              <Button asChild size="lg" variant="secondary">
+                <Link href="/desktop">{t('desktop.card.more')}</Link>
+              </Button>
+            </div>
+            {desktop && <FileDetails file={desktop.file} releases={desktop} />}
+          </>
+        )}
+      </Card>
+    ),
     computer: (
       <Card key="computer" id="computer" mine={mine === 'computer'} icon={<MonitorDown aria-hidden className="h-5 w-5" strokeWidth={1.9} />} title="apps.computer.title" text="apps.computer.text">
-        {mine === 'computer' && (inApp || installed) ? done('apps.page.installed') : (
+        {computer && !desktopApp && (inApp || installed) ? done('apps.page.installed') : (
           <>
-            {mine === 'computer' && canInstall && installButton('apps.computer.install')}
+            {computer && canInstall && installButton('apps.computer.install')}
             <ul className="mt-4 space-y-2 text-[14px] leading-relaxed text-white/60">
-              <li className={cn(mine === 'computer' && !safari && !canInstall && 'text-white/80')}>{t('apps.computer.chrome')}</li>
+              <li className={cn(computer && !safari && !canInstall && 'text-white/80')}>{t('apps.computer.chrome')}</li>
               <li className={cn(safari && 'text-white/80')}>{t('apps.computer.safari')}</li>
               <li>{t('apps.computer.firefox')}</li>
             </ul>

@@ -55,6 +55,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry('/upcoming', 0.7, 'daily'),
     entry('/ramadan', 0.7, 'weekly'),
     entry('/app', 0.4, 'monthly'),
+    entry('/desktop', 0.5, 'monthly'),
     ...(supportUrl() ? [entry('/support', 0.3, 'monthly')] : []),
     // The moments on now rank higher than the ones out of season.
     ...MOMENT_IDS.filter((id) => id !== 'ramadan').map((id) => entry(`/moments/${id}`, activeMoments(false).some((moment) => moment.id === id) ? 0.7 : 0.3, 'daily')),

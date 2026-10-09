@@ -27,7 +27,7 @@ import TvModeProvider from "@/src/components/tv/TvModeProvider";
 import TvShell from "@/src/components/tv/TvShell";
 import TvModeOffer from "@/src/components/tv/TvModeOffer";
 import AppOffer from "@/src/components/apps/AppOffer";
-import { getAppReleases } from "@/src/lib/app-releases";
+import { getAppReleases, getDesktopRelease } from "@/src/lib/app-releases";
 import { INSTALL_PROMPT_SCRIPT } from "@/src/lib/install-prompt-script";
 import { LAUNCH_SCRIPT } from "@/src/lib/launch-script";
 import AppLaunch from "@/src/components/brand/AppLaunch";
@@ -148,10 +148,13 @@ export default async function RootLayout({
   // The search pill offers Ask (AI search) too: never for Kids or in TV mode.
   const ask = aiSearchEnabled() && !kids && !tv;
   const inApp = (headers().get('user-agent') ?? '').includes('TunisiaFlicksTV/');
-  // The Android apps with a release (cached for an hour; see src/lib/app-releases.ts), for the offer.
-  const releases = await withTimeout(getAppReleases(), 1500, null);
+  // The apps with a release (cached for an hour; see src/lib/app-releases.ts), for the offer.
+  const [releases, desktopRelease] = await Promise.all([
+    withTimeout(getAppReleases(), 1500, null),
+    withTimeout(getDesktopRelease(), 1500, null),
+  ]);
   const megabytes = (bytes?: number) => (bytes ? Math.max(0.1, Math.round(bytes / 104857.6) / 10) : null);
-  const offeredApps = { android: megabytes(releases?.apps.android?.size), tv: megabytes(releases?.apps.tv?.size) };
+  const offeredApps = { android: megabytes(releases?.apps.android?.size), tv: megabytes(releases?.apps.tv?.size), desktop: megabytes(desktopRelease?.file.size) };
   // In development a cookie can preview another day's season (seasonClock ignores it in production).
   const { today: seasonDay } = seasonClock(cookies().get(SEASONS_TODAY_COOKIE)?.value);
   const seasonal = getSeasonalNav(kids, seasonDay);
