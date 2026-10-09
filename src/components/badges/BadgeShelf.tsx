@@ -21,6 +21,9 @@ import BadgeDialog, { BadgeProgress } from './BadgeDialog'
 
 const SECTION = 'scroll-mt-[calc(var(--topbar)+env(safe-area-inset-top,0px)+20px)] rounded-[22px] bg-white/[0.04] p-5 ring-1 ring-white/[0.07] sm:p-6'
 
+// 'Up next' on a wide page: side by side, so a bar never runs the whole width of the screen.
+const UP_NEXT_COLUMNS = ['', 'lg:max-w-[560px]', 'lg:grid-cols-2', 'lg:grid-cols-3']
+
 function Title({ children }: { children?: React.ReactNode }) {
   const { t } = useI18n()
   return (
@@ -183,7 +186,7 @@ export default function BadgeShelf({ data, error }: { data: BadgesView | null; e
       {owner && earned.length > 0 && data.upNext.length > 0 && (
         <div className="mt-5 border-t border-white/[0.07] pt-5">
           <h3 className="text-[15px] font-semibold text-white">{t('badges.upNext')}</h3>
-          <ul className="-mx-2 mt-2">
+          <ul className={cn('-mx-2 mt-2 grid gap-x-6', UP_NEXT_COLUMNS[Math.min(3, data.upNext.length)])}>
             {data.upNext.map((card) => {
               const nextTier = card.next ? tierOf(card.next.level) : null
               const fraction = card.next ? Math.min(1, (card.value ?? 0) / card.next.target) : 0

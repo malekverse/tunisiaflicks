@@ -68,6 +68,8 @@ export default function BadgesSetting(): JSX.Element | null {
         body: JSON.stringify({ enabled: next }),
       })
       if (!response.ok) throw new Error(String(response.status))
+      // Off deletes something: say so. On needs no word, the switch says it.
+      if (!next) toast({ title: t('badges.setting.offDone') })
     } catch {
       setState({ status: 'ready', enabled: !next })
       toast({ variant: 'destructive', title: t('badges.setting.failed') })
@@ -76,11 +78,12 @@ export default function BadgesSetting(): JSX.Element | null {
     }
   }
 
+  // Optimistic: the switch moves at once and stays focusable while the change is saved (a second
+  // toggle during the save is ignored); a failure puts it back and says so.
   return (
     <SwitchRow
       id="badges-enabled"
       checked={enabled}
-      disabled={saving}
       onCheckedChange={(value) => void toggle(value)}
       label={t('badges.setting.label')}
       hint={t('badges.setting.hint')}

@@ -79,6 +79,7 @@ export const badges = defineStrings({
     'badges.setting.label': 'Badges and streak',
     'badges.setting.hint': 'Keeps a private daily log of which days you pressed play, for 13 months.',
     'badges.setting.failed': 'Couldn’t save that. Try again.',
+    'badges.setting.offDone': 'Badges are off. Your daily log was deleted.',
     'badges.setting.loadFailed': 'Couldn’t load this setting.',
 
     // Settings > Supporter (#supporter)
@@ -203,6 +204,7 @@ export const badges = defineStrings({
     'badges.setting.label': 'الشارات والسلسلة',
     'badges.setting.hint': 'سجلّ يومي خاص بالأيام التي ضغطت فيها تشغيل، يُحفظ سنةً وشهرًا.',
     'badges.setting.failed': 'تعذّر الحفظ. حاول مرة أخرى.',
+    'badges.setting.offDone': 'الشارات متوقفة. حُذف سجلّك اليومي.',
     'badges.setting.loadFailed': 'تعذّر تحميل هذا الإعداد.',
 
     'support.settings.desc': 'لحسابك.',
@@ -266,6 +268,7 @@ export const badges = defineStrings({
     'badges.onlyYou': 'حتى حد ما يشوفها كان إنت',
     'badges.desc.openingNight': 'إضغط تشغيل على أول فيلم ولا حلقة.',
     'badges.setting.hint': 'سجلّ يومي خاص بالنهارات اللي ضغطت فيهم تشغيل، يتخبّى عام وشهر.',
+    'badges.setting.offDone': 'الشارات مسكّرة. السجلّ اليومي متاعك تفسخ.',
     'support.subtitle': 'بلاش للناس الكل، وشويّة قهاوي يخلّوه ماشي.',
     'support.coffee.title': 'شريلنا قهوة',
     'support.already.title': 'تدعم فينا من قبل؟',
@@ -340,6 +343,7 @@ export const badges = defineStrings({
     'badges.setting.label': 'Badges et série',
     'badges.setting.hint': 'Tient un journal privé des jours où vous avez lancé une lecture, pendant 13 mois.',
     'badges.setting.failed': 'Impossible d’enregistrer. Réessayez.',
+    'badges.setting.offDone': 'Badges désactivés. Votre journal quotidien a été supprimé.',
     'badges.setting.loadFailed': 'Impossible de charger ce réglage.',
 
     'support.settings.desc': 'Pour votre compte.',
