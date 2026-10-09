@@ -2,8 +2,8 @@
 // One badge, up close: the 160px medallion, what it measures, its four levels, how far the next
 // one is, and when it was earned. The first time a new level is opened the medallion pops in with
 // a glow of its metal (just a fade with less motion); after that it simply sits there.
+import { useCallback } from 'react'
 import { Lock } from 'lucide-react'
-import { m, useReducedMotion } from 'framer-motion'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/src/components/ui/dialog'
 import { useI18n } from '@/src/components/I18nProvider'
 import { formatDate } from '@/src/lib/i18n/format'
@@ -11,11 +11,45 @@ import { richT } from '@/src/lib/i18n/rich'
 import type { TKey } from '@/src/lib/i18n'
 import { TIERS, TIER_RGB, badgeDef, tierOf } from '@/src/lib/badges/catalogue'
 import type { BadgeCard } from '@/src/lib/badges/present'
-import { spring } from '@/src/lib/motion'
 import { cn } from '@/src/lib/utils'
 import BadgeArt from './BadgeArt'
 
 const metal = (tier: string | null | undefined, alpha = 1) => (tier ? `rgb(${TIER_RGB[tier as keyof typeof TIER_RGB]} / ${alpha})` : undefined)
+
+// The celebration is a fixed little piece of motion, so it runs on the compositor (Web Animations)
+// rather than the main thread: it plays even while the page is still busy, and an old browser that
+// can't animate simply shows the medallion. The pop is spring.pop (bounce 0.45) drawn as linear().
+const POP_EASE = 'linear(0, 0.062, 0.212, 0.402, 0.597, 0.772, 0.914, 1.018, 1.084, 1.118, 1.126, 1.117, 1.098, 1.074, 1.049, 1.027, 1.01, 0.997, 0.989, 0.985, 0.984, 0.985, 0.988, 0.991, 1)'
+const POP_FALLBACK_EASE = 'cubic-bezier(0.34, 1.56, 0.64, 1)'
+
+const prefersLessMotion = () => {
+  try {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  } catch {
+    return false
+  }
+}
+
+function play(node: Element, frames: Keyframe[], options: KeyframeAnimationOptions, fallbackEase?: string) {
+  if (typeof node.animate !== 'function') return
+  try {
+    node.animate(frames, options)
+  } catch {
+    // linear() easing isn't known everywhere yet.
+    if (fallbackEase) try { node.animate(frames, { ...options, easing: fallbackEase }) } catch { /* it just shows */ }
+  }
+}
+
+/** The medallion's entrance: a pop (scale and a quick fade), or only the fade with less motion. */
+function popIn(node: Element) {
+  play(node, [{ opacity: 0 }, { opacity: 1 }], { duration: prefersLessMotion() ? 300 : 180, easing: 'ease-out', fill: 'backwards' })
+  if (!prefersLessMotion()) play(node, [{ transform: 'scale(0.6)' }, { transform: 'scale(1)' }], { duration: 650, easing: POP_EASE, fill: 'backwards' }, POP_FALLBACK_EASE)
+}
+
+/** The rim glow: flares up, then settles to a soft halo (opacity only, so the same with less motion). */
+function glowIn(node: Element) {
+  play(node, [{ opacity: 0 }, { opacity: 1, offset: 0.35 }, { opacity: 0.35 }], { duration: 1400, easing: 'ease-out', fill: 'backwards' })
+}
 
 export function BadgeProgress({ card, name, className }: { card: BadgeCard; name: string; className?: string }) {
   const { t } = useI18n()
@@ -49,7 +83,9 @@ export default function BadgeDialog({ card, open, onOpenChange, celebrate }: {
   celebrate: boolean
 }) {
   const { t, locale } = useI18n()
-  const reduce = useReducedMotion()
+  // The dialog's content mounts each time it opens, so these run once per opening.
+  const medallionRef = useCallback((node: HTMLSpanElement | null) => { if (node && celebrate) popIn(node) }, [celebrate])
+  const glowRef = useCallback((node: HTMLSpanElement | null) => { if (node) glowIn(node) }, [])
   if (!card) return null
   const def = badgeDef(card.id)
   const name = t(`badges.name.${card.id}` as TKey)
@@ -64,26 +100,19 @@ export default function BadgeDialog({ card, open, onOpenChange, celebrate }: {
       <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-[400px] gap-0 overflow-y-auto px-6 pb-7 pt-9 text-center sm:px-8">
         <div className="relative mx-auto grid h-[160px] w-[160px] place-items-center">
           {earned && celebrate && (
-            <m.span
+            <span
+              ref={glowRef}
               aria-hidden
-              className="absolute inset-0 rounded-full"
+              className="absolute inset-0 rounded-full opacity-[0.35]"
               style={{ boxShadow: `0 0 56px 10px ${metal(tier, 0.42)}` }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: [0, 1, 0.35] }}
-              transition={{ duration: 1.4, times: [0, 0.35, 1], ease: 'easeOut' }}
             />
           )}
           {earned && !celebrate && (
             <span aria-hidden className="absolute inset-2 rounded-full" style={{ boxShadow: `0 0 44px 4px ${metal(tier, 0.16)}` }} />
           )}
-          <m.span
-            className="relative"
-            initial={celebrate && earned ? (reduce ? { opacity: 0 } : { opacity: 0, scale: 0.6 }) : false}
-            animate={reduce ? { opacity: 1 } : { opacity: 1, scale: 1 }}
-            transition={reduce ? { duration: 0.3 } : spring.pop}
-          >
+          <span ref={earned ? medallionRef : undefined} className="relative">
             <BadgeArt id={card.id} level={earned ? card.level : 0} size={160} progress={earned ? undefined : progressFraction} arcTier={nextTier} />
-          </m.span>
+          </span>
         </div>
 
         <DialogTitle dir="auto" className="mt-6 font-display text-[28px] font-extrabold leading-[1.05] tracking-normal text-white">{name}</DialogTitle>

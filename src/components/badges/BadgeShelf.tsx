@@ -198,17 +198,16 @@ export default function BadgeShelf({ data, error }: { data: BadgesView | null; e
                     className="pressable flex w-full select-none items-center gap-3.5 rounded-2xl px-2 py-2.5 text-start outline-none transition-colors duration-150 [-webkit-tap-highlight-color:transparent] hover:bg-white/[0.05] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500"
                   >
                     <BadgeArt id={card.id} level={0} size={44} progress={fraction} arcTier={nextTier} />
+                    {/* The name gets the whole line; the count sits under the bar, across from the next level. */}
                     <span className="min-w-0 flex-1">
-                      <span className="flex items-baseline justify-between gap-3">
-                        <span dir="auto" className="truncate text-[15px] font-medium text-white">{name(card)}</span>
-                        <span className="shrink-0 text-[13px] tabular-nums text-white/60">
+                      <span dir="auto" className="block truncate text-[15px] font-medium text-white">{name(card)}</span>
+                      <BadgeProgress card={card} name={name(card)} className="mt-2" />
+                      <span className="mt-1.5 flex items-baseline justify-between gap-3 text-[12.5px]">
+                        <span className="min-w-0 truncate text-white/55">{nextTier ? t('badges.nextTier', { tier: t(`badges.tier.${nextTier}` as TKey) }) : null}</span>
+                        <span className="shrink-0 tabular-nums text-white/70">
                           {card.next && richT(t, 'badges.progress', { value: Math.min(card.value ?? 0, card.next.target), target: card.next.target })}
                         </span>
                       </span>
-                      <BadgeProgress card={card} name={name(card)} className="mt-2" />
-                      {nextTier && (
-                        <span className="mt-1.5 block text-[12.5px] text-white/55">{t('badges.nextTier', { tier: t(`badges.tier.${nextTier}` as TKey) })}</span>
-                      )}
                     </span>
                   </button>
                 </li>

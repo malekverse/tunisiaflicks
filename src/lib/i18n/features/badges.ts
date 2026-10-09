@@ -101,6 +101,7 @@ export const badges = defineStrings({
 
     // /support
     'support.meta.title': 'Support TunisiaFlicks',
+    'support.footer': 'Support us',
     'support.meta.description': 'TunisiaFlicks is free for everyone. If it helps you find your next film, a coffee on Ko-fi helps keep it going.',
     'support.title': 'Support TunisiaFlicks',
     'support.subtitle': 'Free for everyone, kept going by a few coffees.',
@@ -224,6 +225,7 @@ export const badges = defineStrings({
     'support.settings.failed': 'تعذّر الحفظ. حاول مرة أخرى.',
 
     'support.meta.title': 'ادعم TunisiaFlicks',
+    'support.footer': 'ادعمنا',
     'support.meta.description': 'TunisiaFlicks مجاني للجميع. إن ساعدك على إيجاد فيلمك القادم، فقهوة على Ko-fi تساعد على استمراره.',
     'support.title': 'ادعم TunisiaFlicks',
     'support.subtitle': 'مجاني للجميع، وتُبقيه بضعة فناجين قهوة.',
@@ -270,6 +272,7 @@ export const badges = defineStrings({
     'badges.setting.hint': 'سجلّ يومي خاص بالنهارات اللي ضغطت فيهم تشغيل، يتخبّى عام وشهر.',
     'badges.setting.offDone': 'الشارات مسكّرة. السجلّ اليومي متاعك تفسخ.',
     'support.subtitle': 'بلاش للناس الكل، وشويّة قهاوي يخلّوه ماشي.',
+    'support.footer': 'إدعمنا',
     'support.coffee.title': 'شريلنا قهوة',
     'support.already.title': 'تدعم فينا من قبل؟',
     'support.credits.title': 'يعيشكم',
@@ -363,6 +366,7 @@ export const badges = defineStrings({
     'support.settings.failed': 'Impossible d’enregistrer. Réessayez.',
 
     'support.meta.title': 'Soutenir TunisiaFlicks',
+    'support.footer': 'Nous soutenir',
     'support.meta.description': 'TunisiaFlicks est gratuit pour tout le monde. S’il vous aide à trouver votre prochain film, un café sur Ko-fi l’aide à continuer.',
     'support.title': 'Soutenir TunisiaFlicks',
     'support.subtitle': 'Gratuit pour tous, grâce à quelques cafés.',
