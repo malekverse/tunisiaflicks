@@ -300,3 +300,57 @@ test('strings: Arabic, Derja and French follow English\'s keys and placeholders'
   }
   for (const key of keys) assert.ok(tunisianTv.ar[key], `ar: ${key}`)
 })
+
+// ---------------------------------------------------------------------------------------------
+// Series from uploads, and what the tiles may load
+
+test('deriveChannel: series from titles and playlists, clips aside, one-offs alone', async () => {
+  const { deriveChannel } = await import('@/src/lib/tunisian-tv/derive')
+  const feed = parseFeed(fixture('watania-2-uulf.xml'))
+  const videos = feed.entries.map((entry) => {
+    const info = parseEpisodeTitle(entry.title)
+    return {
+      _id: entry.id, title: entry.title, publishedAt: new Date(entry.publishedAt), seriesId: null, playlistIds: [], episode: info.episode, part: info.part,
+      season: info.season, date: info.date, clip: info.clip, status: 'ok', duration: null, seriesName: info.series, seriesNameAlt: info.seriesAlt,
+      description: cleanDescription(entry.description, { title: entry.title }) || null,
+    }
+  })
+  const { series, assign } = deriveChannel({ channel: 'watania-2', kind: 'tv', videos, existing: [], now: new Date('2026-10-09T06:00:00Z') })
+  const maestro = series.find((item) => item.titleAlt === 'El Maestro' || item.title === 'El Maestro')
+  assert.ok(maestro, 'El Maestro is a series')
+  assert.equal(maestro.kind, 'drama')
+  assert.equal(maestro.hidden, false)
+  assert.ok(maestro.episodeCount >= 3)
+  assert.equal(maestro.complete, false, 'never complete from feeds')
+  assert.match(maestro._id, /^watania-2:/)
+  const clips = series.filter((item) => item.kind === 'clips')
+  assert.ok(clips.every((item) => item.hidden), 'clips are hidden')
+  // A one-off upload belongs to no series.
+  const oneOff = feed.entries.find((entry) => entry.title.startsWith('دار كاملة'))
+  if (oneOff) assert.equal(assign.get(oneOff.id), null)
+
+  // A playlist's series keeps its videos and its name.
+  const fromPlaylist = videos.map((video) => ({ ...video, seriesId: 'watania-2:hajjema', playlistIds: ['PLekykBim9-f4'] }))
+  const again = deriveChannel({
+    channel: 'watania-2', kind: 'tv', videos: fromPlaylist,
+    existing: [{ _id: 'watania-2:hajjema', source: 'playlist', playlistId: 'PLekykBim9-f4', title: 'الحجامة', titleAlt: 'Hajjema', complete: true, coverId: null, coverMaxres: false, coverCheckedId: null, color: null, colorOf: null }],
+    now: new Date('2026-10-09T06:00:00Z'),
+  })
+  assert.equal(again.series.length, 1)
+  assert.equal(again.series[0].title, 'الحجامة')
+  assert.equal(again.series[0].source, 'playlist')
+  assert.equal(again.series[0].complete, true)
+})
+
+test('tiles: blocked videos open YouTube, thumbnails come from our own route', () => {
+  const root = path.resolve(FIXTURES, '..', '..', '..')
+  const read = readFileSync(path.join(root, 'src/lib/tunisian-tv/read.ts'), 'utf8')
+  assert.match(read, /blocked: lead\.status === 'blocked'/)
+  const row = readFileSync(path.join(root, 'src/components/tunisian-tv/TvRow.tsx'), 'utf8')
+  assert.match(row, /blocked=\{video\.blocked\}/)
+  for (const file of ['src/components/tunisian-tv/TvRow.tsx', 'src/components/tunisian-tv/TvHero.tsx', 'src/components/tunisian-tv/ChannelAvatar.tsx', 'src/components/tunisian-tv/Channels.tsx', 'src/app/tunisian/tv/page.tsx', 'src/app/tunisian/tv/[channel]/page.tsx']) {
+    const source = readFileSync(path.join(root, file), 'utf8')
+    assert.doesNotMatch(source, /i\.ytimg\.com|ytimg|ggpht|googleusercontent/, `${file} loads a picture from Google`)
+    assert.doesNotMatch(source, /referrerPolicy=["']no-referrer["']/, file)
+  }
+})
