@@ -64,6 +64,9 @@ export type ActiveProfile = {
   /** 'invalid' = the cookie names a profile this account doesn't have (deleted, or another account's). */
   cookie: 'valid' | 'missing' | 'invalid'
   loginAt?: number
+  /** 'tv': a TV signed in with a code, pinned to `pinnedProfileId` (see src/lib/session-scope.ts). */
+  scope?: 'tv'
+  pinnedProfileId?: string
 }
 
 /** The signed-in user's profiles and the active one (once per request). Null for guests. */
@@ -81,6 +84,8 @@ export const getActiveProfile = cache(async (): Promise<ActiveProfile | null> =>
     profile: match ?? (!raw && profiles.length === 1 ? profiles[0] : null),
     cookie: match ? 'valid' : raw ? 'invalid' : 'missing',
     loginAt: session.loginAt,
+    scope: session.scope,
+    pinnedProfileId: session.pinnedProfileId,
   }
 })
 
@@ -101,6 +106,12 @@ export async function getKidsMode(): Promise<boolean> {
  * mustn't unlock), unless the user has only just signed in.
  */
 export function canSwitchFreely(active: ActiveProfile) {
+  // A TV pinned to a Kids profile never unlocks a grown-up one without the password (and a TV
+  // session never counts as a fresh sign-in: it has no loginAt).
+  if (active.scope === 'tv') {
+    const pinned = active.profiles.find((profile) => profile.id === active.pinnedProfileId)
+    if (!pinned || pinned.kids) return false
+  }
   if (active.profile) return !active.profile.kids
   if (!active.profiles.some((profile) => profile.kids)) return true
   return typeof active.loginAt === 'number' && Date.now() - active.loginAt < FRESH_LOGIN_MS
