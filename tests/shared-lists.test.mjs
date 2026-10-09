@@ -1,9 +1,9 @@
 // Smoke tests for shared lists against a running server (BASE_URL, default :3000): what a guest
 // gets from every lists API, that a list nobody may see answers exactly like one that doesn't
-// exist (API, ?v= polling and page), and that a list stored before visibility existed is still
-// open to anyone with its link. With a LOCAL MONGODB_URI (127.0.0.1/localhost) it also stores two
-// lists to check that; otherwise those tests are skipped. Signed-in flows and concurrency live in
-// scripts/shared-lists-concurrency.mjs.
+// exist (API and ?v= polling: 404; page: the not-found page, noindex, never naming the list), and
+// that a list stored before visibility existed is still open to anyone with its link. With a LOCAL
+// MONGODB_URI (127.0.0.1/localhost) it also stores two lists to check that; otherwise those tests
+// are skipped. Signed-in flows and concurrency live in scripts/shared-lists-concurrency.mjs.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
@@ -13,6 +13,19 @@ const LOCAL_DB = /^mongodb:\/\/(127\.0\.0\.1|localhost)(:\d+)?\//.test(process.e
 
 const call = (path, init) => fetch(BASE + path, { redirect: 'manual', ...init, headers: { 'content-type': 'application/json', ...(init?.headers ?? {}) } })
 const slug = () => randomBytes(8).toString('base64url')
+
+/**
+ * The page of a list nobody may see is the app's not-found page: a 404, or, because the root
+ * loading screen streams every page, a 200 whose body is the not-found page (noindex). Either way it
+ * never names the list.
+ */
+async function assertNotFoundPage(path, secret) {
+  const res = await call(path, { headers: { accept: 'text/html' } })
+  const html = await res.text()
+  assert.ok(res.status === 404 || (res.status === 200 && html.includes('NEXT_NOT_FOUND')), `${path} -> ${res.status}, not the not-found page`)
+  assert.match(html, /<meta name="robots" content="noindex"\/>/, `${path} is noindex`)
+  if (secret) assert.ok(!html.includes(secret), `${path} never names the list`)
+}
 
 async function json(res) {
   const text = await res.text()
@@ -56,14 +69,13 @@ test('a random slug is 404 with a neutral answer, polling included', async () =>
   }
 })
 
-test('a random list page is 404, with or without an invitation token', async () => {
+test('a random list page is the not-found page, with or without an invitation token', async () => {
   for (const path of [`/lists/${slug()}`, `/lists/${slug()}?invite=${'A'.repeat(22)}`, `/lists/${slug()}?invite=garbage`]) {
-    const res = await call(path, { headers: { accept: 'text/html' } })
-    assert.equal(res.status, 404, path)
+    await assertNotFoundPage(path)
   }
 })
 
-test('stored lists: friends-only is 404 to a guest (also ?v= and the page); an old list reads as link', { skip: !LOCAL_DB && 'needs a local MONGODB_URI' }, async () => {
+test('stored lists: friends-only is 404 to a guest (also ?v=; the page is the not-found page); an old list reads as link', { skip: !LOCAL_DB && 'needs a local MONGODB_URI' }, async () => {
   const { MongoClient } = await import('mongodb')
   const client = await new MongoClient(LOCAL_DB).connect()
   const lists = client.db().collection('lists')
@@ -80,7 +92,7 @@ test('stored lists: friends-only is 404 to a guest (also ?v= and the page); an o
       assert.equal(res.status, 404, path)
       assert.deepEqual(await json(res), { error: 'List not found', code: 'not_found' }, `${path} looks like a missing list`)
     }
-    assert.equal((await call(`/lists/${friends}`, { headers: { accept: 'text/html' } })).status, 404, 'the page too')
+    await assertNotFoundPage(`/lists/${friends}`, 'Friends only')
 
     const old = await call(`/api/lists/${legacy}`)
     assert.equal(old.status, 200)

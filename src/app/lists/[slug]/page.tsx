@@ -27,8 +27,8 @@ async function inviteFor(slug: string, token: string | null) {
 }
 
 // Never indexed (lists are found through their link, not search engines), and the title only shows
-// to people who may see the list. A list nobody may see is a 404 from here: metadata settles
-// before the page starts streaming, so the status is a real 404 (Kids get their own page instead).
+// to people who may see the list. A list nobody may see is not found from here already, so its
+// title never reaches the head (Kids get their own page instead).
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const t = getT()
   const viewer = await loadListViewer()
