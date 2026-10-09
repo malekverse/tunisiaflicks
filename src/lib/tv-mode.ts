@@ -4,6 +4,12 @@
 import { cookies } from 'next/headers'
 
 export const TV_COOKIE = 'tf-tv'
+/**
+ * Set once TV mode has been switched on by itself (a Samsung / LG TV's browser opening the home
+ * page, see src/middleware.ts) or switched off by the viewer: from then on it's the viewer's call,
+ * and TV mode never comes back on by itself.
+ */
+export const TV_CHOSEN_COOKIE = 'tf-tv-chosen'
 
 /** The TV cookie's settings (1 year, readable by the page so the TV settings can show the state). */
 export const TV_COOKIE_OPTIONS = {

@@ -1,7 +1,8 @@
 import { getToken } from 'next-auth/jwt';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { TV_COOKIE } from '@/src/lib/tv-mode';
+import { TV_CHOSEN_COOKIE, TV_COOKIE } from '@/src/lib/tv-mode';
+import { isSmartTvBrowser } from '@/src/lib/device-platform';
 import { profilePageGate } from '@/src/app/u/_lib/middleware-gate';
 import { isArabCountry } from '@/src/lib/arab-countries';
 import { isHubId } from '@/src/lib/dramas-config';
@@ -15,26 +16,43 @@ const AUTH_PATHS = ['/dashboard', '/login', '/signup', '/profiles'];
 /**
  * TV mode is a cookie, switched from the home page: /?tv=1 turns it on (the Android TV app starts
  * there), /?tv=0 turns it off. Either way the visitor lands on / with the other parameters kept.
+ * A Samsung / LG TV's browser gets it on by itself, once (autoTvMode).
  * Not httpOnly: the TV settings read it to show the switch's state.
  */
 function switchTvMode(req: NextRequest): NextResponse | null {
   const value = req.nextUrl.searchParams.get('tv');
-  if (value !== '1' && value !== '0') return null;
+  if (value !== '1' && value !== '0') return autoTvMode(req);
 
   const url = req.nextUrl.clone();
   url.searchParams.delete('tv');
   const response = NextResponse.redirect(url);
   if (value === '1') {
-    response.cookies.set(TV_COOKIE, '1', {
-      path: '/',
-      maxAge: ONE_YEAR,
-      sameSite: 'lax',
-      httpOnly: false,
-      secure: req.nextUrl.protocol === 'https:',
-    });
+    response.cookies.set(TV_COOKIE, '1', tvCookie(req));
   } else {
     response.cookies.delete(TV_COOKIE);
+    response.cookies.set(TV_CHOSEN_COOKIE, '1', tvCookie(req));
   }
+  return response;
+}
+
+const tvCookie = (req: NextRequest) => ({
+  path: '/',
+  maxAge: ONE_YEAR,
+  sameSite: 'lax' as const,
+  httpOnly: false,
+  secure: req.nextUrl.protocol === 'https:',
+});
+
+/**
+ * A Samsung or LG TV's own browser (they can't install the Android TV app) opening the home page
+ * for the first time: switch TV mode on by itself, once. If the viewer turns it off, it stays off.
+ */
+function autoTvMode(req: NextRequest): NextResponse | null {
+  if (req.method !== 'GET' || req.cookies.has(TV_COOKIE) || req.cookies.has(TV_CHOSEN_COOKIE)) return null;
+  if (!isSmartTvBrowser(req.headers.get('user-agent') ?? '')) return null;
+  const response = NextResponse.redirect(req.nextUrl.clone());
+  response.cookies.set(TV_COOKIE, '1', tvCookie(req));
+  response.cookies.set(TV_CHOSEN_COOKIE, '1', tvCookie(req));
   return response;
 }
 

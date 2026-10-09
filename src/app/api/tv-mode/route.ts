@@ -1,7 +1,7 @@
 // Turns TV mode on or off on this device: POST {on: boolean}, JSON only (a form post from another
 // site can't send JSON, so it can't flip the mode). The cookie is the same one /?tv=1|0 sets.
 import { NextRequest, NextResponse } from 'next/server'
-import { TV_COOKIE, TV_COOKIE_OPTIONS } from '@/src/lib/tv-mode'
+import { TV_CHOSEN_COOKIE, TV_COOKIE, TV_COOKIE_OPTIONS } from '@/src/lib/tv-mode'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,6 +19,8 @@ export async function POST(request: NextRequest) {
     response.cookies.set(TV_COOKIE, '1', { ...TV_COOKIE_OPTIONS, secure: request.nextUrl.protocol === 'https:' })
   } else {
     response.cookies.delete(TV_COOKIE)
+    // Turned off on purpose: a Samsung / LG TV's browser doesn't switch it back on by itself.
+    response.cookies.set(TV_CHOSEN_COOKIE, '1', { ...TV_COOKIE_OPTIONS, secure: request.nextUrl.protocol === 'https:' })
   }
   return response
 }
