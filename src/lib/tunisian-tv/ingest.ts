@@ -172,7 +172,7 @@ async function phaseFeeds(db: TtvCollections, defs: TvChannelDef[], docs: Map<st
   })
   // Least recently read first.
   due.sort((a, b) => (docs.get(a.slug)?.feedReadAt?.getTime() ?? 0) - (docs.get(b.slug)?.feedReadAt?.getTime() ?? 0))
-  // A channel gets 7 seconds (its retries and the fallback included); the phase leaves 9 for the rest.
+  // A channel gets 7 seconds (its retries and the fallback included); the phase leaves 11 for the rest.
   const { results, skipped } = await inBatches(due, FEED_BATCH, o.deadline, 11000, (def) => readChannel(def, Math.min(o.deadline - 6000, Date.now() + 7000)))
   stats.feedsDue = due.length
   const failed = results.filter((read) => !read.ok).length
@@ -306,6 +306,8 @@ function playlistDue(ref: TtvPlaylistRef, series: Pick<TtvSeriesDoc, 'lastAt' | 
   if (ref.rejected || (ref.failures ?? 0) >= 6) return false
   if (!ref.readAt) return true
   const age = o.now.getTime() - ref.readAt.getTime()
+  // A failed read (YouTube's feeds often fail) is retried sooner, a little later each time.
+  if ((ref.failures ?? 0) > 0) return age >= (ref.failures ?? 1) * HOUR
   const onAir = !!series && o.now.getTime() - series.lastAt.getTime() < 21 * DAY
   if (!onAir) return age >= 7 * DAY
   if (o.ramadanYear !== null && series?.ramadan === o.ramadanYear) return age >= 30 * MINUTE
