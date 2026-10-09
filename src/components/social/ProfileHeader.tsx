@@ -267,7 +267,9 @@ export default function ProfileHeader({ person, bio, isOwner, viewer, relationsh
           <UserAvatar person={person} size={128} className="hidden ring-4 ring-black/40 md:inline-flex" />
         </span>
         <div className="min-w-0 flex-1">
-          <h1 dir="auto" className="break-words font-display text-[clamp(34px,5vw,64px)] font-extrabold leading-[0.95] text-white">{person.name}</h1>
+          {/* The name keeps its own direction (dir=auto) but lines up with the page: a Latin name on
+              an Arabic page starts on the right, like the rest of the header. */}
+          <h1 className="break-words font-display text-[clamp(34px,5vw,64px)] font-extrabold leading-[0.95] text-white"><bdi dir="auto">{person.name}</bdi></h1>
           <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[15px]">
             <bdi dir="ltr" className="text-white/55">@{person.handle}</bdi>
             {friendsSince && relation === 'friends' && <span className="text-white/70">{t('social.page.friendsSince', { date: friendsSince })}</span>}
