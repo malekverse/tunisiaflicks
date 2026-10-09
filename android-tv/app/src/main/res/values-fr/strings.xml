@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="blocked_link">Ce lien s’ouvre en dehors de TunisiaFlicks. Ouvrez-le sur votre téléphone.</string>
+    <string name="webview_old_title">Mettez à jour Android System WebView</string>
+    <string name="webview_old_text">Cette télé affiche les sites avec Android System WebView %1$d, trop ancien pour TunisiaFlicks. Mettez-le à jour depuis le Play Store, puis rouvrez TunisiaFlicks.</string>
+    <string name="webview_update">Ouvrir le Play Store</string>
+    <string name="webview_continue">Essayer quand même</string>
+    <string name="webview_no_store">Cette télé n’a pas de Play Store. Cherchez « Android System WebView » dans sa boutique d’applications ou ses mises à jour système.</string>
+    <string name="offline_title">Pas de connexion</string>
+    <string name="offline_text">Impossible de joindre TunisiaFlicks. Vérifiez la connexion Internet de la télé.</string>
+    <string name="offline_retry">Réessayer</string>
+</resources>

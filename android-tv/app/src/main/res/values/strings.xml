@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">TunisiaFlicks</string>
+    <string name="blocked_link">This link opens outside TunisiaFlicks. Open it on your phone.</string>
+    <string name="webview_old_title">Update Android System WebView</string>
+    <string name="webview_old_text">This TV shows websites with Android System WebView %1$d, which is too old for TunisiaFlicks. Update it from the Play Store, then open TunisiaFlicks again.</string>
+    <string name="webview_update">Open the Play Store</string>
+    <string name="webview_continue">Try anyway</string>
+    <string name="webview_no_store">There\'s no Play Store on this TV. Look for "Android System WebView" in its app store or its system updates.</string>
+    <string name="offline_title">No connection</string>
+    <string name="offline_text">TunisiaFlicks couldn\'t be reached. Check the TV\'s internet connection.</string>
+    <string name="offline_retry">Try again</string>
+</resources>

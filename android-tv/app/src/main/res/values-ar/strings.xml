@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="blocked_link">هذا الرابط يُفتح خارج TunisiaFlicks. افتحه على هاتفك.</string>
+    <string name="webview_old_title">حدّث Android System WebView</string>
+    <string name="webview_old_text">يعرض هذا التلفاز المواقع عبر Android System WebView %1$d، وهو قديم جدًا على TunisiaFlicks. حدّثه من متجر Play، ثم افتح TunisiaFlicks من جديد.</string>
+    <string name="webview_update">افتح متجر Play</string>
+    <string name="webview_continue">جرّب على أي حال</string>
+    <string name="webview_no_store">لا يوجد متجر Play على هذا التلفاز. ابحث عن «Android System WebView» في متجر تطبيقاته أو في تحديثات النظام.</string>
+    <string name="offline_title">لا يوجد اتصال</string>
+    <string name="offline_text">تعذّر الوصول إلى TunisiaFlicks. تحقّق من اتصال التلفاز بالإنترنت.</string>
+    <string name="offline_retry">حاول مجددًا</string>
+</resources>
