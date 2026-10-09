@@ -1,7 +1,7 @@
 // The weekly digest's "Your friends this week": up to five titles friends watched or rated during
 // the week the e-mail covers, as far as each of them shares it (the same feed as /friends, so the
 // same rules: day only, the delay, nothing from before they shared). Nothing for Kids profiles,
-// profiles without a page, or a quiet week. Integration registers it in DIGEST_PROVIDERS.
+// profiles without a page, or a quiet week. Registered in src/lib/digest/registry.ts.
 import 'server-only'
 import { ObjectId } from 'mongodb'
 import type { DigestProvider, DigestTile } from '@/src/lib/digest/providers'

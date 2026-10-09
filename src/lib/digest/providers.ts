@@ -3,8 +3,8 @@
 // when it has nothing worth saying. Each one gets 3 seconds; a slow or failing provider is left
 // out of that e-mail, never holds it back. Streaks are never part of an e-mail (they'd read as
 // pressure in an inbox): a section whose id mentions a streak is dropped.
-//
-// Integration registers the providers below after wave 2.
+// The providers themselves are registered in ./registry.ts (this file stays free of them, so it
+// can be tested on its own).
 import type { Locale } from '@/src/lib/i18n/locales'
 import type { Translate } from '@/src/lib/i18n/translate'
 
@@ -37,8 +37,6 @@ export type DigestContext = {
 
 export type DigestProvider = { id: string; build: (ctx: DigestContext) => Promise<DigestSection | null> }
 
-export const DIGEST_PROVIDERS: DigestProvider[] = []
-
 export const PROVIDER_TIMEOUT_MS = 3000
 
 /** One provider's section, or null when it fails or takes longer than `ms`. */
@@ -58,7 +56,7 @@ async function buildWithin(provider: DigestProvider, ctx: DigestContext, ms: num
 }
 
 /** Every provider's section for one profile, in registration order; the empty and failed ones left out. */
-export async function providerSections(ctx: DigestContext, providers: DigestProvider[] = DIGEST_PROVIDERS, ms = PROVIDER_TIMEOUT_MS): Promise<DigestSection[]> {
+export async function providerSections(ctx: DigestContext, providers: DigestProvider[], ms = PROVIDER_TIMEOUT_MS): Promise<DigestSection[]> {
   const sections = await Promise.all(providers.map((provider) => buildWithin(provider, ctx, ms)))
   return sections.filter((section, index): section is DigestSection => {
     if (!section || typeof section !== 'object') return false
