@@ -175,7 +175,7 @@
   .steps i { width: 26px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.14); transition: background .3s; }
   .steps i.on { background: var(--red); }
   .err .icon { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.08); font-size: 22px; font-weight: 800; }
-  .err .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 18px; }
+  .screen .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 18px; }
   .buffer { position: absolute; top: 50%; left: 50%; z-index: 2; transform: translate(-50%, -50%); pointer-events: none; }
   .sheet { position: absolute; inset: 0; z-index: 7; display: grid; place-items: center; padding: 20px; background: rgba(0,0,0,.78); backdrop-filter: blur(10px); }
   .sheet .box { width: min(26rem, 100%); text-align: left; }
@@ -265,6 +265,10 @@
       <div id="stage" class="stage" role="status">Finding the best copy…</div>
       <div id="detail" class="detail"></div>
       <div class="steps"><i class="on"></i><i></i><i></i></div>
+      <div id="loadingActions" class="actions" hidden>
+        <button id="loadingFaster" class="btn" type="button"><svg class="i" data-icon="zap"></svg>Try a faster copy</button>
+        <button id="loadingSources" class="btn ghost" type="button"><svg class="i" data-icon="layers"></svg>Choose a source</button>
+      </div>
     </div>
   </div>
 
@@ -274,8 +278,9 @@
       <div id="errTitle" class="stage" role="alert">Not available here</div>
       <div id="errText" class="detail"></div>
       <div class="actions">
-        <button id="retry" class="btn" type="button">Try again</button>
-        <button id="errSources" class="btn ghost" type="button" hidden><svg class="i" data-icon="layers"></svg>Choose another source</button>
+        <button id="errFaster" class="btn" type="button" hidden><svg class="i" data-icon="zap"></svg>Try another copy</button>
+        <button id="errSources" class="btn ghost" type="button" hidden><svg class="i" data-icon="layers"></svg>Choose a source</button>
+        <button id="retry" class="btn ghost" type="button">Try again</button>
       </div>
     </div>
   </div>
@@ -409,6 +414,8 @@
     player.classList.add('loading')
     $('errTitle').textContent = title
     $('errText').textContent = text
+    $('loadingActions').hidden = true
+    $('errFaster').hidden = !nextUntried()
     $('errSources').hidden = !(offerSources && sources.length > 1)
     $('error').hidden = false
   }
@@ -445,13 +452,26 @@
     await play(null, resumeAt && resumeAt.t > 30 ? resumeAt.t : 0, { resumed: !!(resumeAt && resumeAt.t > 30) })
   }
 
+  // The copies already played this session, so "try another/faster copy" moves on to a fresh one.
+  const tried = new Set()
+  /** The next untried source (the list is best-first), or null when they've all been tried. */
+  const nextUntried = () => sources.find((s) => !tried.has(s.id)) || null
+  function playNextBest() {
+    const next = nextUntried()
+    if (next) play(next.id, now() > 5 ? now() : 0, { wasPaused: video.paused && now() > 5 })
+    else openPanel('sources')
+  }
+  const showLoadingActions = () => { $('loadingActions').hidden = false; $('loadingFaster').hidden = !nextUntried() }
+
   /** Play a source (an id from /sources, or null for the best), from `at` seconds into the film. */
   async function play(sourceId, at = 0, { resumed = false, wasPaused = false } = {}) {
     showLoading()
+    $('loadingActions').hidden = true
     video.pause()
+    if (sourceId) tried.add(sourceId)
     setStage(0, sourceId ? 'Opening this copy…' : 'Finding the best copy…', episodeLabel)
     // The swarm join happens inside /resolve; move the stage on so the wait reads as progress.
-    const joining = setTimeout(() => setStage(1, 'Connecting to peers…', 'This takes a few seconds the first time'), 2500)
+    const joining = setTimeout(() => { setStage(1, 'Connecting to peers…', 'This takes a few seconds the first time'); showLoadingActions() }, 4000)
     let answer
     try {
       const q = sourceId ? new URLSearchParams({ source: sourceId }) : titleQuery()
@@ -461,13 +481,14 @@
       clearTimeout(joining)
       const none = /no torrent/i.test(err.message)
       return fail(
-        none ? 'No copy found for this one' : 'Couldn’t start this copy',
-        none ? 'Add a source extension (Extensions, bottom right), or pick another source below the player.' : 'It didn’t answer. Try again, or choose another source.',
+        none ? 'No copy found for this one' : 'This copy didn’t start',
+        none ? 'Nothing was found for this title. Add a source extension (Extensions), or try again.' : 'It didn’t answer. Try another copy, or choose one yourself.',
         { offerSources: true },
       )
     }
     clearTimeout(joining)
     current = answer
+    if (answer.sourceId) tried.add(answer.sourceId)
     knownDuration = answer.durationSec || 0
     // The viewer's audio language, when this copy has it as another track.
     audioTrack = Math.max(0, (answer.audioTracks || []).findIndex((track) => prefs.audioLang && sameLanguage(track.lang, prefs.audioLang)))
@@ -475,13 +496,15 @@
     $('castBtn').hidden = answer.kind !== 'torrent'
     setStage(2, 'Buffering…', [answer.quality, answer.decision === 'direct' ? null : 'converted live'].filter(Boolean).join(', '))
 
-    // A copy with almost no one sharing it would buffer forever: after a while, say so.
+    // A copy with almost no one sharing it would buffer forever: once it's clearly slow, offer the
+    // next (best-ranked, well-seeded) copy and the full list — the viewer decides.
     const bufferingSince = Date.now()
     startStats((s) => {
       if ($('loading').hidden) return
-      const crawling = Date.now() - bufferingSince > 25000 && s.downloadSpeed < 50e3
+      const crawling = Date.now() - bufferingSince > 18000 && s.downloadSpeed < 60e3
+      if (crawling) showLoadingActions()
       $('detail').textContent = crawling
-        ? `This copy is slow (${s.peers} peers). Choose another source (s).`
+        ? `This copy is slow — ${s.peers} peers, ${fmtSpeed(s.downloadSpeed)}`
         : `${s.peers} peers, ${fmtSpeed(s.downloadSpeed)}`
     })
 
@@ -1480,6 +1503,9 @@
   $('castFwd').addEventListener('click', castNudge(30))
   $('castStop').addEventListener('click', () => endCast(true))
 
+  $('loadingFaster').addEventListener('click', playNextBest)
+  $('loadingSources').addEventListener('click', () => openPanel('sources'))
+  $('errFaster').addEventListener('click', playNextBest)
   $('retry').addEventListener('click', () => (current?.sourceId ? play(current.sourceId, now()) : start()))
   addEventListener('pagehide', stopStats)
   start()
