@@ -202,3 +202,12 @@ Restore the GOOGLE PLAY APP prep for PHONES (the owner asked: "wrap the PWA as a
 - Manifest quality check in src/app/manifest.ts (maskable icons, id, scope, shortcuts, screenshots if available): request changes from integration if the file isn't yours.
 - docs/play-store.md: step-by-step for the owner (Bubblewrap init/build, keystore safety, Play Console one-time fee, Data safety form answers, content rating, privacy policy URL /privacy, testing track), and how to get the SHA-256 for ANDROID_TWA_SHA256 (Play App Signing).
 - /app page: 'Get it on Google Play' when NEXT_PUBLIC_PLAY_STORE_URL is set (official badge text, no image hotlinking), alongside the TV APK panel.
+
+
+## OWNER UPDATE (latest; overrides everything above, including the earlier OWNER OVERRIDES)
+
+The owner has DEFERRED the app packaging:
+- The Google Play app (Trusted Web Activity: assetlinks.json route, android/twa/twa-manifest.json, docs/play-store.md, the 'Get it on Google Play' panel) — SKIPPED for now.
+- The Android TV APK (the WebView app on GitHub Releases, android-tv.yml, signing secrets, the APK panel and checksums on /app) — SKIPPED for now.
+- Chromecast / AirPlay — not in scope.
+Do NOT build any more of these, and do NOT spend review time on them. Do NOT delete what already exists either: the lead moves those parts to a separate branch after this wave. Everything else in TV mode stays and is the priority: TvShell + focus engine on the same URLs, the remote-friendly home/detail/search/player, TV mode in any TV browser (?tv=1, the offer, the setting), and /activate (approving a TV from the phone, scoped revocable sessions). /app should still work without the app panels (TV mode in a browser + installing the site as a PWA).

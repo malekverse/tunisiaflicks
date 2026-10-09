@@ -41,3 +41,12 @@ Restore DARKER and OLDER in "More like this, but…" (the owner listed: lighter,
 ## foundations
 
 Owner override support: add the stub `getSeasonSkin(kids: boolean, today?: string): { id: string, light: string, glow?: string } | null` (returns null) to src/lib/seasons.ts, and mount it in the root layout: `data-season={skin?.id}` on <html> and `style={{ '--season-light': skin?.light }}` when set. The seasons track implements it and owns src/components/shell/RoomLight.tsx in wave 1 (it reads --season-light as its default).
+
+
+## OWNER UPDATE (latest; overrides everything above, including the earlier OWNER OVERRIDES)
+
+The owner has DEFERRED the app packaging:
+- The Google Play app (Trusted Web Activity: assetlinks.json route, android/twa/twa-manifest.json, docs/play-store.md, the 'Get it on Google Play' panel) — SKIPPED for now.
+- The Android TV APK (the WebView app on GitHub Releases, android-tv.yml, signing secrets, the APK panel and checksums on /app) — SKIPPED for now.
+- Chromecast / AirPlay — not in scope.
+Do NOT build any more of these, and do NOT spend review time on them. Do NOT delete what already exists either: the lead moves those parts to a separate branch after this wave. Everything else in TV mode stays and is the priority: TvShell + focus engine on the same URLs, the remote-friendly home/detail/search/player, TV mode in any TV browser (?tv=1, the offer, the setting), and /activate (approving a TV from the phone, scoped revocable sessions). /app should still work without the app panels (TV mode in a browser + installing the site as a PWA).
