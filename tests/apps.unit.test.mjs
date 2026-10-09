@@ -1,0 +1,104 @@
+// The apps: reading the GitHub release (src/lib/app-releases.ts) and telling devices apart
+// (src/lib/device-platform.ts).
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { formatCertificate, pickRelease, readNotes } from '@/src/lib/app-releases'
+import { detectPlatform, isMacSafari } from '@/src/lib/device-platform'
+
+const SHA_A = 'a'.repeat(64)
+const SHA_T = 'b'.repeat(64)
+const CERT = 'C'.repeat(2) + ':' + Array.from({ length: 31 }, () => 'D4').join(':')
+
+const notes = [
+  'TunisiaFlicks for Android phones and for Android TV / TV boxes, version 1.2.0.',
+  '',
+  `- tunisiaflicks-android.apk SHA-256: \`${SHA_A}\``,
+  `- tunisiaflicks-tv.apk SHA-256: \`${SHA_T.toUpperCase()}\``,
+  `- Signing certificate SHA-256: \`${CERT}\``,
+].join('\n')
+
+const asset = (name, size = 2_000_000) => ({ name, size, state: 'uploaded', browser_download_url: `https://github.com/malekverse/tunisiaflicks/releases/download/android-v1.2.0/${name}` })
+
+const release = (tag, extra = {}) => ({
+  tag_name: tag,
+  draft: false,
+  prerelease: false,
+  published_at: '2026-10-09T10:00:00Z',
+  html_url: `https://github.com/malekverse/tunisiaflicks/releases/tag/${tag}`,
+  body: notes,
+  assets: [asset('tunisiaflicks-android.apk'), asset('tunisiaflicks-tv.apk', 1_500_000), asset('SHA256SUMS', 200)],
+  ...extra,
+})
+
+test('the release notes give each file its checksum, and the certificate', () => {
+  const read = readNotes(notes)
+  assert.equal(read.files['tunisiaflicks-android.apk'], SHA_A)
+  assert.equal(read.files['tunisiaflicks-tv.apk'], SHA_T, 'lower-cased')
+  assert.equal(read.cert, CERT)
+  assert.deepEqual(readNotes('nothing here'), { files: {}, cert: null })
+})
+
+test('certificates are written AB:CD:… whatever their spelling', () => {
+  assert.equal(formatCertificate('ab'.repeat(32)), Array.from({ length: 32 }, () => 'AB').join(':'))
+  assert.equal(formatCertificate('not a fingerprint'), null)
+})
+
+test('the newest android-v release wins; drafts, pre-releases and other tags are skipped', () => {
+  const picked = pickRelease([
+    release('desktop-v9.0.0'),
+    release('android-v2.0.0', { draft: true }),
+    release('android-v1.9.0', { prerelease: true }),
+    release('android-v1.2.0'),
+    release('android-v1.1.0'),
+  ])
+  assert.equal(picked.version, '1.2.0')
+  assert.equal(picked.apps.android.sha256, SHA_A)
+  assert.equal(picked.apps.android.size, 2_000_000)
+  assert.equal(picked.apps.tv.sha256, SHA_T)
+  assert.equal(picked.certSha256, CERT)
+  assert.match(picked.releaseUrl, /^https:\/\/github\.com\//)
+})
+
+test('a release offers only the files it has; one without APKs, or with odd links, is passed over', () => {
+  const tvOnly = pickRelease([release('android-v1.0.0', { assets: [asset('tunisiaflicks-tv.apk')] })])
+  assert.equal(tvOnly.apps.android, undefined)
+  assert.ok(tvOnly.apps.tv)
+  assert.equal(pickRelease([release('android-v1.0.0', { assets: [asset('SHA256SUMS')] })]), null)
+  const elsewhere = { ...asset('tunisiaflicks-android.apk'), browser_download_url: 'https://evil.example/app.apk' }
+  assert.equal(pickRelease([release('android-v1.0.0', { assets: [elsewhere] })]), null)
+  assert.equal(pickRelease(null), null)
+  assert.equal(pickRelease({ message: 'API rate limit exceeded' }), null)
+})
+
+const UA = {
+  pixel: 'Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36',
+  googleTv: 'Mozilla/5.0 (Linux; Android 12; Chromecast) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+  fireTv: 'Mozilla/5.0 (Linux; Android 9; AFTMM Build/PS7633) AppleWebKit/537.36 (KHTML, like Gecko) Silk/120 like Chrome/120.0 Safari/537.36',
+  iphone: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1',
+  ipadDesktop: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Safari/605.1.15',
+  windows: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0',
+  macChrome: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+  linux: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+  chromebook: 'Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+}
+
+test('devices are told apart by their user agent', () => {
+  assert.equal(detectPlatform({ userAgent: UA.pixel }), 'android')
+  assert.equal(detectPlatform({ userAgent: UA.googleTv }), 'android-tv')
+  assert.equal(detectPlatform({ userAgent: UA.fireTv }), 'android-tv')
+  assert.equal(detectPlatform({ userAgent: UA.pixel, likelyTv: true }), 'android-tv', 'a box that looks like a phone, but acts like a TV')
+  assert.equal(detectPlatform({ userAgent: UA.iphone }), 'ios')
+  assert.equal(detectPlatform({ userAgent: UA.ipadDesktop, maxTouchPoints: 5 }), 'ios', 'an iPad asking for the desktop site')
+  assert.equal(detectPlatform({ userAgent: UA.ipadDesktop, maxTouchPoints: 0 }), 'mac')
+  assert.equal(detectPlatform({ userAgent: UA.windows }), 'windows')
+  assert.equal(detectPlatform({ userAgent: UA.macChrome }), 'mac')
+  assert.equal(detectPlatform({ userAgent: UA.linux }), 'linux')
+  assert.equal(detectPlatform({ userAgent: UA.chromebook }), 'chromeos')
+  assert.equal(detectPlatform({ userAgent: '' }), 'other')
+})
+
+test('Safari on a Mac is Safari, Chrome on a Mac is not', () => {
+  assert.equal(isMacSafari(UA.ipadDesktop), true)
+  assert.equal(isMacSafari(UA.macChrome), false)
+  assert.equal(isMacSafari(UA.windows), false)
+})
