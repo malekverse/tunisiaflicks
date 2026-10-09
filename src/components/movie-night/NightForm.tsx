@@ -237,7 +237,10 @@ export default function NightForm({ mode, initial, prefill, account: initialAcco
               <ChipGroup label={t('movieNight.form.when')} mode="single" scroll>
                 {chips.map((chip) => (
                   <Chip key={chip.id} active={day === chip.day} onClick={() => pickDay(chip.day)}>
-                    {t(`movieNight.chip.${chip.id}`)}
+                    {/* On a Friday, "Friday" is a week away: say so, so it isn't read as tonight. */}
+                    {(chip.id === 'friday' || chip.id === 'saturday') && chip.day === addDays(zonedDay(now, tz), 7)
+                      ? t(chip.id === 'friday' ? 'movieNight.chip.nextFriday' : 'movieNight.chip.nextSaturday')
+                      : t(`movieNight.chip.${chip.id}`)}
                   </Chip>
                 ))}
               </ChipGroup>
