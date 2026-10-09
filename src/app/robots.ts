@@ -23,6 +23,7 @@ export default function robots(): MetadataRoute.Robots {
           '/surprise',
           // Approving a TV from a phone, the friends feed and the bell: private.
           '/activate',
+          '/download/',
           '/friends',
           '/notifications',
           // Personal dashboards (exact path only; the public share pages below them stay crawlable).

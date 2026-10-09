@@ -1,33 +1,30 @@
-// /.well-known/assetlinks.json: proves to Android that the Google Play app (a Trusted Web Activity,
-// android/twa/) belongs to this site, so it opens full screen with no browser bar.
+// /.well-known/assetlinks.json: tells Android that the TunisiaFlicks phone app (android/phone, a
+// Trusted Web Activity) belongs to this site, so Chrome shows it full screen with no address bar.
 //
-// Built from the environment, 404 until both are set:
-// - ANDROID_TWA_PACKAGE: the app's package name (com.tunisiaflicks.app)
-// - ANDROID_TWA_SHA256: the signing certificate's SHA-256 fingerprints, comma-separated (the Play
-//   App Signing key from the Play Console, plus the upload key while testing). See docs/play-store.md.
+// Nothing to configure: the signing certificate comes from the newest Android release's notes
+// (src/lib/app-releases.ts). Optional overrides:
+// - ANDROID_TWA_PACKAGE: the package name (default com.tunisiaflicks.app)
+// - ANDROID_TWA_SHA256: more certificate fingerprints, comma-separated (e.g. a debug key while testing)
+// 404 until there's at least one fingerprint.
 import { NextResponse } from 'next/server'
+import { formatCertificate, getAppReleases } from '@/src/lib/app-releases'
 
 export const dynamic = 'force-dynamic'
 
-const PACKAGE = /^[a-zA-Z][\w]*(\.[a-zA-Z][\w]*)+$/
-const FINGERPRINT = /^([0-9A-F]{2}:){31}[0-9A-F]{2}$/
+const PACKAGE = /^[a-zA-Z]\w*(\.[a-zA-Z]\w*)+$/
 
-/** 'ab:cd…' or 'ABCD…' (64 hex digits) as 'AB:CD:…', or null when it isn't a SHA-256. */
-function fingerprint(value: string): string | null {
-  const hex = value.replace(/[^a-fA-F0-9]/g, '').toUpperCase()
-  if (hex.length !== 64) return null
-  const formatted = hex.match(/.{2}/g)!.join(':')
-  return FINGERPRINT.test(formatted) ? formatted : null
-}
+export async function GET() {
+  const packageName = process.env.ANDROID_TWA_PACKAGE?.trim() || 'com.tunisiaflicks.app'
+  const fingerprints = new Set(
+    (process.env.ANDROID_TWA_SHA256 ?? '')
+      .split(',')
+      .map((value) => formatCertificate(value.trim()))
+      .filter((value): value is string => value !== null),
+  )
+  const released = (await getAppReleases())?.certSha256
+  if (released) fingerprints.add(released)
 
-export function GET() {
-  const packageName = process.env.ANDROID_TWA_PACKAGE?.trim() ?? ''
-  const fingerprints = (process.env.ANDROID_TWA_SHA256 ?? '')
-    .split(',')
-    .map((value) => fingerprint(value.trim()))
-    .filter((value): value is string => value !== null)
-
-  if (!PACKAGE.test(packageName) || fingerprints.length === 0) {
+  if (!PACKAGE.test(packageName) || fingerprints.size === 0) {
     return new NextResponse('Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } })
   }
 
@@ -35,7 +32,7 @@ export function GET() {
     [
       {
         relation: ['delegate_permission/common.handle_all_urls'],
-        target: { namespace: 'android_app', package_name: packageName, sha256_cert_fingerprints: fingerprints },
+        target: { namespace: 'android_app', package_name: packageName, sha256_cert_fingerprints: Array.from(fingerprints) },
       },
     ],
     { headers: { 'Cache-Control': 'public, max-age=3600' } },
