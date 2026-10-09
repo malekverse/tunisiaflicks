@@ -2,7 +2,9 @@
 // '@/src/lib/...' the way the app does, without a bundler:
 // - '@/x' is the repository root (tsconfig "paths").
 // - Extensionless or directory specifiers try .ts, .mts, .mjs and .js, then /index.ts.
-// - 'next/cache', 'next/headers' and 'server-only' resolve to small stand-ins in ./stubs.
+// - 'next/cache', 'next/headers', 'server-only' and 'react' (for `cache`) resolve to small stand-ins
+//   in ./stubs, and so does '@/src/lib/auth' (no sign-in in a unit test).
+// - 'next/server' resolves to Next's own file (the package has no exports map for ESM).
 // - .tsx is not supported (Node can strip types but has no JSX transform): keep testable logic in
 //   .ts files.
 import { statSync } from 'node:fs'
@@ -17,6 +19,8 @@ const STUBS = {
   'next/cache': 'next-cache.mjs',
   'next/headers': 'next-headers.mjs',
   'server-only': 'empty.mjs',
+  react: 'react.mjs',
+  '@/src/lib/auth': 'auth.mjs',
 }
 
 const isFile = (file) => {
@@ -38,6 +42,7 @@ function probe(file) {
 export async function resolve(specifier, context, nextResolve) {
   const stub = STUBS[specifier]
   if (stub) return { url: pathToFileURL(path.join(TESTS, 'stubs', stub)).href, shortCircuit: true }
+  if (specifier === 'next/server') return nextResolve('next/server.js', context)
 
   let candidate = null
   if (specifier.startsWith('@/')) {
