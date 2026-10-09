@@ -102,6 +102,8 @@ const baseMetadata: Metadata = {
   category: 'Entertainment',
   // Installable app (see app/manifest.ts): iOS home-screen icon and standalone mode.
   icons: {
+    // The vector "A" (app/icon.svg), sharp at every size; favicon.ico stays for older browsers.
+    icon: [{ url: '/icon.svg', type: 'image/svg+xml', sizes: 'any' }],
     apple: '/icons/apple-touch-icon.png',
   },
   appleWebApp: {
