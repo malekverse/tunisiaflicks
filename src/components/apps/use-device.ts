@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react'
 import { detectPlatform, type DevicePlatform } from '@/src/lib/device-platform'
 import { isStandalone } from '@/src/hooks/use-install-prompt'
+import { isDesktopApp } from '@/src/hooks/use-desktop-app'
 import { useInTvApp, useLikelyTv } from '@/src/hooks/use-tv-mode'
 
 /** Set once the Android app has opened the site (its start address carries ?source=android-app). */
@@ -11,7 +12,7 @@ const ANDROID_APP_KEY = 'tf-android-app'
 
 export type Device = {
   platform: DevicePlatform
-  /** Inside the Android TV app, the Android app, or the site installed from a browser. */
+  /** Inside the Android TV app, the Android app, the desktop app, or the site installed from a browser. */
   inApp: boolean
   userAgent: string
 }
@@ -36,7 +37,7 @@ export function useDevice(): Device | null {
     } catch { /* private mode: no mark, no harm */ }
     setDevice({
       platform: detectPlatform({ userAgent: navigator.userAgent, maxTouchPoints: navigator.maxTouchPoints ?? 0, likelyTv }),
-      inApp: inTvApp || androidApp || isStandalone(),
+      inApp: inTvApp || androidApp || isDesktopApp() || isStandalone(),
       userAgent: navigator.userAgent,
     })
   }, [likelyTv, inTvApp])

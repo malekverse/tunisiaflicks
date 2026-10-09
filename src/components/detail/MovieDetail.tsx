@@ -95,6 +95,7 @@ export default function MovieDetail({ id, data, similar, providers, kids, signed
       <div className="space-y-16 pt-10">
         <StreamSection
           services={streamServices}
+          media={{ type: 'movie', id }}
           downloadSlot={imdbId ? <DownloadDialog type="movie" imdbId={imdbId} title={data.title} /> : undefined}
         />
         {ratings && <RatingsBand id="ratings" media={media} />}

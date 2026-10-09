@@ -147,6 +147,7 @@ export default function TvDetail({ id, data, similar, resume, providers, kids, s
       <div className="space-y-16 pt-10">
         <StreamSection
           services={streamServices}
+          media={episode ? { type: 'tv', id, season: episode.season, episode: episode.episode } : undefined}
           enabled={episode !== null}
           backdrop={data.backdrop_path}
           placeholder={{

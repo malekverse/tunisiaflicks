@@ -8,6 +8,7 @@ import { cn } from '@/src/lib/utils'
 import { spring } from '@/src/lib/motion'
 import { useT } from '@/src/components/I18nProvider'
 import { useStreamSource } from '@/src/hooks/use-stream-source'
+import { useWithLocalPlayer, type LocalMedia } from '@/src/hooks/use-desktop-app'
 import { useTvMode } from '@/src/hooks/use-tv-mode'
 import { pushTvBackHandler } from '@/src/components/tv/use-focus-engine'
 import KeyGlyph from '@/src/components/tv/KeyGlyph'
@@ -30,14 +31,18 @@ const SLOW_MS = 12_000
  * Streams come from several third-party providers (lib/stream-providers.ts) so the viewer can switch
  * when one is down. The source that last played for this viewer is reopened, and sources other
  * viewers report as broken move to the end (crowd-sourced, see use-stream-source / lib/stream-health).
+ * Inside the desktop app, its ad-free local player comes first in the bar (`media` says what to
+ * play; see hooks/use-desktop-app).
  *
  * In TV mode the player waits for the remote: a briefing ("Ready on {source}", the keys, [Start
  * watching]) comes first, then Start goes full screen, keeps the screen awake and hands the remote
  * to the player. Back while playing opens the player menu (back to the video, next episode,
  * sources, the next source, leave); a second Back leaves the player.
  */
-export default function StreamSection({ services, downloadSlot, enabled = true, placeholder, backdrop, onNext, nextLabel, className }: {
+export default function StreamSection({ services: providerServices, media, downloadSlot, enabled = true, placeholder, backdrop, onNext, nextLabel, className }: {
     services: StreamProvider[]
+    /** The title (and episode) playing: lets the desktop app's local player join the sources. */
+    media?: LocalMedia
     /** Rendered at the end of the controls (the Download control). */
     downloadSlot?: React.ReactNode
     enabled?: boolean
@@ -55,6 +60,7 @@ export default function StreamSection({ services, downloadSlot, enabled = true, 
     const [isLoading, setIsLoading] = useState(true)
     const [lightsOff, setLightsOff] = useState(false)
     const sectionRef = useRef<HTMLElement>(null)
+    const services = useWithLocalPlayer(providerServices, media)
     const source = useStreamSource(services, { playing: enabled && !isLoading })
     const url = source.ready ? source.current?.url : undefined
 
