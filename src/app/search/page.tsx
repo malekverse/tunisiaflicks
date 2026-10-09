@@ -18,7 +18,6 @@ import { MAX_QUERY, cleanInput, wordCount } from '@/src/lib/ai-search/normalize'
 import { decodePlan, encodePlan, removeFacet } from '@/src/lib/ai-search/plan-codec'
 import { quote } from '@/src/lib/i18n/format'
 import { toast } from '@/src/hooks/use-toast'
-import { useMediaQuery } from '@/src/hooks/use-media-query'
 import { spring } from '@/src/lib/motion'
 import { cn } from '@/src/lib/utils'
 import type { AskChip } from '@/src/lib/ai-search/types'
@@ -40,8 +39,6 @@ const UNDO_MS = 5000
 export default function Page({ searchParams }: { searchParams: Params }) {
   const { t, locale } = useI18n()
   const askAvailable = useAskAvailable()
-  // Phones get a shorter Ask placeholder: the full one would be cut mid-word.
-  const narrow = useMediaQuery('(max-width: 639px)')
   const pillId = useId()
   const input = useRef<HTMLInputElement>(null)
   const [mode, setMode] = useState<SearchMode>(askAvailable && searchParams.mode === 'ask' ? 'ask' : 'titles')
@@ -262,8 +259,10 @@ export default function Page({ searchParams }: { searchParams: Params }) {
                 className={cn(
                   'h-16 w-full text-ellipsis rounded-full border border-white/10 bg-white/[0.06] ps-14 text-lg text-white outline-none transition-[border-color,background-color,box-shadow] duration-200 placeholder:text-white/50 hover:border-white/20 focus:border-white/30 focus:bg-white/[0.08] focus:shadow-[0_0_0_6px_rgb(255_255_255/0.05)] [&::-webkit-search-cancel-button]:hidden',
                   !query ? 'pe-6' : titles ? 'pe-14' : 'pe-[6.5rem]',
+                  // Ask draws its own placeholder (below), so it can be shorter on phones and end in an ellipsis.
+                  !titles && 'placeholder:text-transparent',
                 )}
-                placeholder={t(titles ? 'search.placeholderPeople' : narrow ? 'ai.placeholderShort' : 'ai.placeholder')}
+                placeholder={t(titles ? 'search.placeholderPeople' : 'ai.placeholder')}
                 autoComplete="off"
                 enterKeyHint="search"
                 type="search"
@@ -281,6 +280,12 @@ export default function Page({ searchParams }: { searchParams: Params }) {
                 }}
                 autoFocus
               />
+              {!titles && !query && (
+                <span aria-hidden className="pointer-events-none absolute inset-y-0 end-6 start-14 flex min-w-0 items-center text-lg text-white/50">
+                  <span className="truncate sm:hidden">{t('ai.placeholderShort')}</span>
+                  <span className="hidden truncate sm:block">{t('ai.placeholder')}</span>
+                </span>
+              )}
               {query && (
                 <div className="absolute inset-y-0 end-3 my-auto flex h-10 items-center gap-1">
                   <button
