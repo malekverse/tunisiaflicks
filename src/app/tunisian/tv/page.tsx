@@ -21,7 +21,7 @@ export const maxDuration = 20
 
 export function generateMetadata() {
   const t = getT()
-  return pageMetadata({ title: t('ttv.title'), description: t('ttv.subtitle'), path: '/tunisian/tv', card: 'tunisian' })
+  return pageMetadata({ title: t('ttv.title'), description: t('ttv.subtitle'), path: '/tunisian/tv', card: 'tunisian-tv' })
 }
 
 const TUNISIAN_RED = '231 0 19'

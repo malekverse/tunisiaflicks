@@ -3,6 +3,9 @@ import { SITE_HOST } from '@/src/lib/seo'
 import { tmdbFetchSafe } from '@/src/lib/tmdb'
 import { getTunisianTitles } from '@/src/lib/tunisian'
 import { activeMoments, MOMENT_IDS } from '@/src/lib/moments'
+import { ARAB_COUNTRY_CODES } from '@/src/lib/arab-countries'
+import { tunisianTvSitemap } from '@/src/lib/tunisian-tv/read'
+import { supportUrl } from '@/src/lib/support-url'
 
 // /sitemap.xml: tells search engines which pages exist. Rebuilt at most once a day.
 export const revalidate = 86400
@@ -23,12 +26,13 @@ async function collectIds(kind: Kind): Promise<number[]> {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
-  const [movieIds, tvIds, movieGenres, tvGenres, tunisian] = await Promise.all([
+  const [movieIds, tvIds, movieGenres, tvGenres, tunisian, tunisianTv] = await Promise.all([
     collectIds('movie'),
     collectIds('tv'),
     tmdbFetchSafe<{ genres: { id: number }[] }>('genre/movie/list', {}, 86400),
     tmdbFetchSafe<{ genres: { id: number }[] }>('genre/tv/list', {}, 86400),
     getTunisianTitles(),
+    tunisianTvSitemap().catch(() => []),
   ])
 
   const entry = (path: string, priority: number, changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency']) =>
@@ -41,10 +45,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry('/dramas', 0.8, 'daily'),
     entry('/dramas/turkish', 0.8, 'daily'),
     entry('/dramas/korean', 0.8, 'daily'),
+    // The hub and its channels, once they have something to show.
+    ...tunisianTv.map((page) => entry(page.path, page.priority, 'daily')),
+    entry('/arab-cinema', 0.8, 'daily'),
+    // Tunisia's own page is /tunisian/cinema.
+    ...ARAB_COUNTRY_CODES.filter((code) => code !== 'tn').map((code) => entry(`/arab-cinema/${code}`, 0.6, 'weekly')),
     entry('/discover', 0.8, 'daily'),
     entry('/top-rated', 0.7, 'weekly'),
     entry('/upcoming', 0.7, 'daily'),
     entry('/ramadan', 0.7, 'weekly'),
+    entry('/app', 0.4, 'monthly'),
+    ...(supportUrl() ? [entry('/support', 0.3, 'monthly')] : []),
     // The moments on now rank higher than the ones out of season.
     ...MOMENT_IDS.filter((id) => id !== 'ramadan').map((id) => entry(`/moments/${id}`, activeMoments(false).some((moment) => moment.id === id) ? 0.7 : 0.3, 'daily')),
     ...(movieGenres?.genres ?? []).map((genre) => entry(`/genres/${genre.id}`, 0.5, 'weekly')),
