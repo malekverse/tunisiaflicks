@@ -3,7 +3,7 @@
 // Which strings go to the browser (see clientMessages in ./index.ts): the root layout sends every
 // key that is in neither list below (the shell), a <ClientMessages scope> adds its scope's keys to
 // the pages under it, and the server-only keys never leave the server.
-// 579 of 2486 keys on every page, 1378 in 29 scopes, 529 server-only.
+// 579 of 2503 keys on every page, 1382 in 29 scopes, 542 server-only.
 
 export type MessageScope =
   | 'activate/layout'
@@ -538,9 +538,22 @@ export const SERVER_ONLY_KEYS: readonly string[] = [
   'tvMode.activate.tvTitle',
   'tvMode.app.metaDesc',
   'tvMode.app.metaTitle',
+  'tvMode.app.play.getItOn',
+  'tvMode.app.play.text',
+  'tvMode.app.play.title',
   'tvMode.app.qr.alt',
   'tvMode.app.qr.title',
   'tvMode.app.subtitle',
+  'tvMode.app.tv.address',
+  'tvMode.app.tv.cert',
+  'tvMode.app.tv.download',
+  'tvMode.app.tv.release',
+  'tvMode.app.tv.sha',
+  'tvMode.app.tv.stepsTitle',
+  'tvMode.app.tv.text',
+  'tvMode.app.tv.title',
+  'tvMode.app.tv.verifyText',
+  'tvMode.app.tv.verifyTitle',
   'tvPage.airingToday',
   'tvPage.description',
   'tvPage.onTheAir',
@@ -636,6 +649,10 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'tvMode.app.pwa.otherTitle',
     'tvMode.app.pwa.text',
     'tvMode.app.pwa.title',
+    'tvMode.app.tv.step1',
+    'tvMode.app.tv.step2',
+    'tvMode.app.tv.step3',
+    'tvMode.app.tv.step4',
     'tvMode.setting.exitHint',
     'tvMode.setting.failed',
     'tvMode.setting.getApp',
