@@ -25,6 +25,8 @@ const DWELL = 120
 const WARM = 400
 /** A finger has to slide this far sideways before it scrubs (otherwise it's a tap or a scroll). */
 const SCRUB_SLOP = 8
+/** Typeahead: letters typed within this long of each other make one word. */
+const TYPEAHEAD_PAUSE = 700
 
 const CARD_WIDTH = 248
 
@@ -135,6 +137,8 @@ export default function ArabMap({ countries, kids }: { countries: MapCountry[], 
   // ----- Scrub (touch) ------------------------------------------------------------------------
   const drag = useRef<{ id: number, x: number, y: number, scrubbing: boolean, code: ArabCountryCode | null } | null>(null)
   const swallowClick = useRef(false)
+  const swallowTimer = useRef<number>()
+  useEffect(() => () => window.clearTimeout(swallowTimer.current), [])
 
   const tileAt = (x: number, y: number): ArabCountryCode | null => {
     const element = document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-country]')
@@ -143,6 +147,8 @@ export default function ArabMap({ countries, kids }: { countries: MapCountry[], 
   }
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    // A new touch: whatever a slide left behind no longer applies (a tap right after it opens).
+    swallowClick.current = false
     if (event.pointerType === 'mouse' || drag.current) return
     drag.current = { id: event.pointerId, x: event.clientX, y: event.clientY, scrubbing: false, code: null }
   }
@@ -173,9 +179,12 @@ export default function ArabMap({ countries, kids }: { countries: MapCountry[], 
     if (!state || state.id !== event.pointerId) return
     drag.current = null
     if (!state.scrubbing) return
-    // Lifting the finger after a slide never opens anything: the click that may follow is eaten.
+    // Lifting the finger after a slide never opens anything: the click that may follow is eaten,
+    // even when a busy phone delivers it late. The next touch or key clears the flag at once, and
+    // it lapses on its own after a while (a screen reader's click comes without a touch).
     swallowClick.current = true
-    window.setTimeout(() => { swallowClick.current = false }, 60)
+    window.clearTimeout(swallowTimer.current)
+    swallowTimer.current = window.setTimeout(() => { swallowClick.current = false }, 600)
   }
 
   const onClickCapture = (event: React.MouseEvent) => {
@@ -194,7 +203,11 @@ export default function ArabMap({ countries, kids }: { countries: MapCountry[], 
   }
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    swallowClick.current = false
     const from = ((event.target as HTMLElement).closest<HTMLElement>('[data-country]')?.dataset.country ?? current) as ArabCountryCode
+    const now = performance.now()
+    // Typing a name ('United Arab Emirates', 'المملكة العربية'): a space inside it is part of it.
+    const typing = typed.current.text !== '' && now - typed.current.at <= TYPEAHEAD_PAUSE
     const direction = ARROWS[event.key]
     if (direction) {
       event.preventDefault()
@@ -207,7 +220,7 @@ export default function ArabMap({ countries, kids }: { countries: MapCountry[], 
       focusTile(event.key === 'Home' ? FIRST_TILE : LAST_TILE)
       return
     }
-    if (event.key === ' ') {
+    if (event.key === ' ' && !typing) {
       // A link opens with Enter; Space opens it too here (it would scroll the page otherwise).
       event.preventDefault()
       tiles.current.get(from)?.click()
@@ -218,9 +231,10 @@ export default function ArabMap({ countries, kids }: { countries: MapCountry[], 
       return
     }
     if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
-      const now = performance.now()
-      const text = now - typed.current.at > 700 ? event.key : typed.current.text + event.key
+      const text = typing ? typed.current.text + event.key : event.key
       typed.current = { text, at: now }
+      // A space waits for the next word (it would scroll the page otherwise).
+      if (event.key === ' ') return event.preventDefault()
       const found = typeahead(text, entries, from)
       if (found) {
         event.preventDefault()
