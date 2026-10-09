@@ -92,7 +92,8 @@ export default function RevealMoment({ candidates, winner, onClose }: { candidat
           {t('movieNight.reveal.kicker')}
         </m.p>
 
-        <div aria-hidden className="relative mt-8 aspect-[10/8] w-[min(84vw,440px)]">
+        {/* Room above the fan for the winner's lift (up 7% and 10% bigger), so it never covers the line above. */}
+        <div aria-hidden className="relative mt-[calc(2rem+min(9vw,44px))] aspect-[10/8] w-[min(84vw,440px)]">
           {cards.map((card, index) => {
             const spot = SPOTS[index]
             const isWinner = index === 0
