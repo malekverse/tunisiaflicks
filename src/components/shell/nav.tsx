@@ -4,7 +4,7 @@
 import {
   Drama,
   Bookmark, CalendarClock, CalendarHeart, Clapperboard, Compass, Dices, Flag, Heart, HeartHandshake, History, House,
-  Library, ListVideo, MoonStar, Search, Sparkles, Trophy, Tv, type LucideIcon,
+  Library, ListVideo, Map as MapIcon, MoonStar, Popcorn, Search, Trophy, Tv, UsersRound, type LucideIcon,
 } from 'lucide-react'
 import TunisiaMark from '@/src/components/tunisian/TunisiaMark'
 import type { TKey } from '@/src/lib/i18n'
@@ -45,6 +45,8 @@ export const BROWSE: NavItem[] = [
 export const WORLD: NavItem[] = [
   { href: '/tunisian', label: 'nav.tunisian', icon: TunisiaIcon, kidsHref: '/tunisian/cinema' },
   { href: '/dramas', label: 'dramas.nav', icon: Drama, grownUp: true },
+  // Kids get a dimmed, filtered map (no grownUp).
+  { href: '/arab-cinema', label: 'arabMap.nav', icon: MapIcon },
 ]
 
 /** Saved first: the Library landing page is the first tab (LibraryTabs and the menu sheet follow this order). */
@@ -55,14 +57,14 @@ export const LIBRARY: NavItem[] = [
   { href: '/lists', label: 'nav.myLists', icon: ListVideo },
 ]
 
-/**
- * What's yours. Final shape: Friends, Movie night (Kids: Swipe), Library. Until those ship, Swipe
- * keeps the Movie night slot and My Year stays after Library.
- */
+/** What's yours: Friends, Movie night (Kids: Swipe), Library. Your year lives on /me. */
 export const YOURS: NavItem[] = [
-  { href: '/swipe', label: 'swipe.title', icon: HeartHandshake },
+  { href: '/friends', label: 'social.nav', icon: UsersRound, grownUp: true },
+  {
+    href: '/movie-night', label: 'movieNight.nav', icon: Popcorn, grownUp: true,
+    kidsAlt: { href: '/swipe', label: 'swipe.title', icon: HeartHandshake },
+  },
   { href: '/saved', label: 'nav.library', icon: Library, match: ['/favorites', '/history', '/lists'] },
-  { href: '/wrapped', label: 'nav.myYear', icon: Sparkles },
 ]
 
 /** The mobile tab bar: the four places people go most, plus "You" (the menu sheet). */
