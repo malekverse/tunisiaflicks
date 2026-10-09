@@ -56,7 +56,7 @@ export default async function ListPage({ params, searchParams }: Props) {
     const own = list ? (await resolveAccess(list, viewer)).access === 'owner' : false
     if (!list || !own) {
       const next = `/lists/${encodeURIComponent(params.slug)}${token ? `?invite=${encodeURIComponent(token)}` : ''}`
-      return <KidsBlocked what="social" next={next} />
+      return <KidsBlocked what="social" title={t('sharedLists.kids.title')} description={t('sharedLists.kids.text')} next={next} />
     }
   }
   if (!list) notFound()
