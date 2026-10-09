@@ -29,6 +29,8 @@ import TvModeOffer from "@/src/components/tv/TvModeOffer";
 import AppOffer from "@/src/components/apps/AppOffer";
 import { getAppReleases } from "@/src/lib/app-releases";
 import { INSTALL_PROMPT_SCRIPT } from "@/src/lib/install-prompt-script";
+import { LAUNCH_SCRIPT } from "@/src/lib/launch-script";
+import AppLaunch from "@/src/components/brand/AppLaunch";
 import { withTimeout } from "@/src/lib/with-timeout";
 import { clientMessages, dirOf, htmlLang } from "@/src/lib/i18n";
 import { getLocale, getT } from "@/src/lib/i18n/server";
@@ -183,10 +185,13 @@ export default async function RootLayout({
         {/* Almost every picture comes from TMDB: open that connection while the HTML is parsed. */}
         <link rel="preconnect" href="https://image.tmdb.org" />
         <link rel="dns-prefetch" href="https://image.tmdb.org" />
+        {/* Before the first paint: is this the start of an app? Then the launch screen shows (AppLaunch). */}
+        <script dangerouslySetInnerHTML={{ __html: LAUNCH_SCRIPT }} />
       </head>
       <body>
         {/* Before anything else: keep the browser's one-time "install this site" offer for later. */}
         <script dangerouslySetInnerHTML={{ __html: INSTALL_PROMPT_SCRIPT }} />
+        <AppLaunch />
         <NextTopLoader color="#FF2414" height={2} showSpinner={false} shadow={false} easing="cubic-bezier(0.23, 1, 0.32, 1)" speed={260} />
         <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:start-3 focus:top-3 focus:z-[100] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-black">
           {t('nav.skipToContent')}
