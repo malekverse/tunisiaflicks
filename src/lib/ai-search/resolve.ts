@@ -11,7 +11,7 @@ import { genreNames } from '@/src/lib/genres'
 import { createTranslator, isArabicScript, type Locale, type TKey } from '@/src/lib/i18n'
 import { languageName, regionName } from '@/src/lib/i18n/format'
 import { chipIds, emptyPlan } from './plan-codec'
-import { CAPS, KEYWORD_LABELS, genreLabelId, isRegionKey, type GenreKey, type RegionKey } from './vocab'
+import { CAPS, KEYWORD_LABELS, genreLabelId, isRegionKey, yearBounds, type GenreKey, type RegionKey } from './vocab'
 import { normalizeQuery } from './normalize'
 import type { AskChip, AskNotice, Kind, RawPlan, SearchPlan } from './types'
 
@@ -230,7 +230,7 @@ export async function resolveRaw(raw: RawPlan, locale: Locale): Promise<{ plan: 
 // ---------------------------------------------------------------------------------------------
 // Chips
 
-const DECADES = new Set([1950, 1960, 1970, 1980, 1990, 2000])
+const DECADES = new Set([1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020])
 
 /** The genre's name in the viewer's language (lowercase inside a sentence in Latin scripts). */
 function genreName(key: GenreKey, locale: Locale, inSentence = false): string {
@@ -273,7 +273,7 @@ export function chipsFor(plan: SearchPlan, names: Names, locale: Locale): AskChi
       case 'y': {
         const { from, to } = plan.years!
         if (from != null && to != null && from === to) return String(from)
-        if (from != null && to != null && from % 10 === 0 && to === from + 9 && DECADES.has(from)) return t(`ai.decade.${from}` as TKey)
+        if (from != null && to != null && DECADES.has(from) && (to === from + 9 || (from + 9 > yearBounds().max && to === yearBounds().max))) return t(`ai.decade.${from}` as TKey)
         if (from != null && to != null) return t('ai.chip.years', { from, to })
         return from != null ? t('ai.chip.from', { year: from }) : t('ai.chip.until', { year: to! })
       }

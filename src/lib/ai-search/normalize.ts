@@ -77,7 +77,7 @@ const CUES = new Set(words(
   // moods and genres
   'funny hilarious comedy comedies romantic romcom scary horror creepy thriller thrillers action drama dramas animated cartoon cartoons anime ' +
   'documentary documentaries scifi fantasy mystery crime war western heartwarming uplifting emotional inspiring sad gritty twist heist ' +
-  'zombie zombies vampire vampires superhero superheroes dystopian cozy relaxing mindless ' +
+  'zombie zombies vampire vampires superhero superheroes dystopian cozy relaxing mindless family kids children ' +
   // quality, time, length
   'best greatest underrated acclaimed classic classics recent latest short long tonight ' +
   // where from

@@ -119,7 +119,9 @@ export function sanitizeRawPlan(input: unknown, query: string, now = new Date())
   let years: RawPlan['years'] = null
   const yearsParsed = spanned({ from: optionalNumber, to: optionalNumber }).safeParse(raw.years)
   if (yearsParsed.success && own(yearsParsed.data.span)) {
-    const { from, to, span } = yearsParsed.data
+    const { from, span } = yearsParsed.data
+    // "The 2020s" ends in the future: it is cut at next year rather than dropped.
+    const to = yearsParsed.data.to != null && yearsParsed.data.to > bounds.max && (from == null || from <= bounds.max) ? bounds.max : yearsParsed.data.to
     if ((from != null || to != null) && inYears(from) && inYears(to) && (from == null || to == null || from <= to)) years = { from, to, span }
   }
 

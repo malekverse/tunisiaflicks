@@ -78,7 +78,8 @@ export type AskItem = {
 
 /** The lines of POST /api/ai/search's NDJSON answer. */
 export type AskEvent =
-  | { t: 'plan', p: string, chips: AskChip[], ai: boolean, notices: AskNotice[] }
+  /** `src`: where the meaning came from (a plan sent back is 'plan'); for the logs and the tests. */
+  | { t: 'plan', p: string, chips: AskChip[], ai: boolean, notices: AskNotice[], src: 'cache' | 'model' | 'parser' | 'plan' }
   | { t: 'results', items: AskItem[], page: number, hasMore: boolean, tryWithout: string | null }
   | { t: 'switch', q: string, reason: 'title' | 'resting' }
   | { t: 'error', code: 'tmdb' | 'failed' }

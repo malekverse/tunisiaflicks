@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
       try {
         if (plan && names) {
           countStat('plans')
-          send({ t: 'plan', p: encodePlan(plan), chips: chipsFor(plan, names, locale), ai: true, notices: [] })
+          send({ t: 'plan', p: encodePlan(plan), chips: chipsFor(plan, names, locale), ai: true, notices: [], src: 'plan' })
           send({ t: 'results', ...(await executePlan(plan, { locale, page })), page })
         } else {
           countStat('asks')
@@ -151,7 +151,10 @@ export async function POST(request: NextRequest) {
               send({ t: 'switch', q: question, reason: meaning.resting ? 'resting' : 'title' })
             } else {
               const notices: AskNotice[] = [...(meaning.resting ? [{ code: 'resting' as const }] : []), ...resolved.notices]
-              send({ t: 'plan', p: encodePlan(resolved.plan), chips: chipsFor(resolved.plan, resolved.names, locale), ai: meaning.ai, notices })
+              send({
+                t: 'plan', p: encodePlan(resolved.plan), chips: chipsFor(resolved.plan, resolved.names, locale), ai: meaning.ai, notices,
+                src: meaning.source === 'title' ? 'parser' : meaning.source,
+              })
               send({ t: 'results', ...(await executePlan(resolved.plan, { locale, page: 1 })), page: 1 })
             }
           }

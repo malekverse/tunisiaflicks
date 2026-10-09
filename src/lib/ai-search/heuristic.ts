@@ -160,8 +160,8 @@ const DECADE_WORDS: Record<string, number> = {
 }
 const FROM_WORDS = new Set(['after', 'since', 'from', 'depuis', 'apres', 'بعد', 'منذ', 'من'])
 const TO_WORDS = new Set(['before', 'until', 'avant', 'jusqu', 'قبل', 'حتى'])
-const UNDER = new Set(['under', 'less', 'max', 'maximum', 'moins', 'اقل', 'اقصر'])
-const OVER = new Set(['over', 'more', 'plus', 'اكثر', 'اطول'])
+const UNDER = new Set(['under', 'less', 'shorter', 'max', 'maximum', 'moins', 'اقل', 'اقصر'])
+const OVER = new Set(['over', 'more', 'longer', 'plus', 'اكثر', 'اطول'])
 const MINUTE_WORDS = new Set(['min', 'mins', 'minute', 'minutes', 'mn', 'دقيقه', 'دقائق', 'دقيقة'])
 const HOUR_WORDS = new Set(['h', 'hour', 'hours', 'heure', 'heures', 'ساعه', 'ساعات', 'ساعتين'])
 const LIKE_TRIGGERS = [['similar', 'to'], ['like'], ['comme'], ['genre', 'de'], ['مثل'], ['كيف'], ['kif'], ['kima'], ['كما']]

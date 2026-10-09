@@ -11,6 +11,9 @@
 // Keys are hashed (hashId): no account id, cookie or IP is stored.
 import 'server-only'
 import { aiDb, hashId } from './cache'
+import { ipKey } from './net'
+
+export { ipKey }
 
 export type Asker = { userId: string | null, guestId: string | null, ip: string }
 
@@ -31,19 +34,6 @@ export const LIMITS = {
 
 const MINUTE = 60
 const DAY = 86400
-
-/** The address a limit counts: IPv4 as is, IPv6 by its /64 network (one home or phone gets many). */
-export function ipKey(ip: string): string {
-  const value = (ip || 'unknown').trim().toLowerCase()
-  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(value)
-  if (mapped) return mapped[1]
-  if (!value.includes(':')) return value
-  const [head, tail = ''] = value.split('::')
-  const left = head ? head.split(':') : []
-  const right = tail ? tail.split(':') : []
-  const groups = value.includes('::') ? [...left, ...Array(Math.max(0, 8 - left.length - right.length)).fill('0'), ...right] : left
-  return `${groups.slice(0, 4).map((group) => group.replace(/^0+(?=.)/, '') || '0').join(':')}::/64`
-}
 
 type Count = { ok: boolean, retryAfter: number }
 
