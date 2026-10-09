@@ -58,6 +58,14 @@ const isVideo = (name) => VIDEO_EXT.includes(path.extname(name).toLowerCase())
 const isTorrentId = (s) =>
   typeof s === 'string' && (/^magnet:\?/i.test(s.trim()) || /^[0-9a-f]{40}$/i.test(s.trim()) || /^[a-z2-7]{32}$/i.test(s.trim()))
 
+// The download folder is only a streaming cache. A swarm's files are deleted when it's dropped,
+// but a player that's killed (closing the desktop app ends it at once) never gets to, and every
+// title watched would stay on disk for good. So each start clears what the last run left behind.
+// Only our own default folder: a DOWNLOAD_DIR someone set by hand is never emptied.
+const DEFAULT_DOWNLOAD_DIR = path.join(os.tmpdir(), 'tunisiaflicks-stream')
+if (path.resolve(DOWNLOAD_DIR) === path.resolve(DEFAULT_DOWNLOAD_DIR)) {
+  try { fs.rmSync(DOWNLOAD_DIR, { recursive: true, force: true }) } catch (err) { console.error('[cache] could not clear', err.message) }
+}
 fs.mkdirSync(DOWNLOAD_DIR, { recursive: true })
 
 // NOTE on seeding: we do NOT throttle upload to 0 — that would block the BitTorrent handshake
