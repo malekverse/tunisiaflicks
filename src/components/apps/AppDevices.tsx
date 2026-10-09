@@ -2,7 +2,7 @@
 // /app's cards, one per kind of device, the visitor's own first and marked "This device":
 // Android phones (the APK), Android TV (the APK, typed into Downloader), Windows (the desktop app,
 // with its own ad-free player), iPhone and iPad (Home Screen), computers (installed from the
-// browser) and other smart TVs (TV mode in their browser).
+// browser) and Samsung / LG / other smart TVs (TV mode in their own browser, or cast to them).
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { CircleCheck, Download, Monitor, MonitorDown, PlusSquare, Share, Smartphone, TabletSmartphone, Tv, TvMinimal } from 'lucide-react'
@@ -24,6 +24,7 @@ const ORDER: CardId[] = ['android', 'tv', 'desktop', 'ios', 'computer', 'smart-t
 function cardFor(platform: DevicePlatform): CardId | null {
   if (platform === 'android') return 'android'
   if (platform === 'android-tv') return 'tv'
+  if (platform === 'smart-tv') return 'smart-tv'
   if (platform === 'ios') return 'ios'
   if (platform === 'windows') return 'desktop'
   return COMPUTERS.includes(platform) ? 'computer' : null
@@ -113,7 +114,10 @@ export default function AppDevices({ releases, desktop, tv }: { releases: AppRel
   const [switching, setSwitching] = useState(false)
   const [desktopApp, setDesktopApp] = useState(false)
   useEffect(() => setDesktopApp(isDesktopApp()), [])
-  const host = typeof window === 'undefined' ? 'tunisiaflicks.vercel.app' : window.location.host
+  // The address to type on a TV: this site's own host, known in the browser only (the server and
+  // the first render use the production one, so they agree).
+  const [host, setHost] = useState('tunisiaflicks.vercel.app')
+  useEffect(() => setHost(window.location.host), [])
 
   const mine = device ? cardFor(device.platform) : null
   const order = mine ? [mine, ...ORDER.filter((id) => id !== mine)] : ORDER
@@ -222,11 +226,10 @@ export default function AppDevices({ releases, desktop, tv }: { releases: AppRel
       </Card>
     ),
     'smart-tv': (
-      <Card key="smart-tv" id="smart-tv" mine={false} icon={<TvMinimal aria-hidden className="h-5 w-5" strokeWidth={1.9} />} title="apps.smartTv.title" text="apps.smartTv.text">
-        {tv ? done('apps.smartTv.isOn') : (
+      <Card key="smart-tv" id="smart-tv" mine={mine === 'smart-tv'} icon={<TvMinimal aria-hidden className="h-5 w-5" strokeWidth={1.9} />} title="apps.smartTv.title" text="apps.smartTv.text">
+        {tv ? done('apps.smartTv.isOn') : mine === 'smart-tv' ? (
           <Button
             size="lg"
-            variant="secondary"
             className="mt-5"
             disabled={switching}
             onClick={async () => {
@@ -238,7 +241,21 @@ export default function AppDevices({ releases, desktop, tv }: { releases: AppRel
             <TvMinimal aria-hidden className="h-[18px] w-[18px]" />
             {t('apps.smartTv.on')}
           </Button>
+        ) : (
+          <>
+            <Steps keys={['apps.smartTv.step1', 'apps.smartTv.step2', 'apps.smartTv.step3']} />
+            <div className="mt-4">
+              <p className="text-[13px] font-medium text-white/60">{t('apps.tv.address')}</p>
+              <p dir="ltr" className="mt-1 inline-block select-all rounded-xl bg-white/[0.07] px-3.5 py-2 font-mono text-[17px] font-semibold text-white">{host}</p>
+            </div>
+          </>
         )}
+        <h3 className="mt-6 text-[14px] font-semibold text-white/85">{t('apps.smartTv.cast')}</h3>
+        <ul className="mt-2 space-y-2 text-[14px] leading-relaxed text-white/60">
+          <li>{t('apps.smartTv.castIos')}</li>
+          <li>{t('apps.smartTv.castAndroid')}</li>
+        </ul>
+        <p className="mt-4 text-[13.5px] leading-relaxed text-white/50">{t('apps.smartTv.stick')}</p>
       </Card>
     ),
   }

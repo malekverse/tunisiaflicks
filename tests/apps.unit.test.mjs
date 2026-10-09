@@ -3,7 +3,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { DESKTOP_ASSET, formatCertificate, pickDesktopRelease, pickRelease, readNotes } from '@/src/lib/app-releases'
-import { detectPlatform, isMacSafari } from '@/src/lib/device-platform'
+import { detectPlatform, isMacSafari, isSmartTvBrowser } from '@/src/lib/device-platform'
 
 const SHA_A = 'a'.repeat(64)
 const SHA_T = 'b'.repeat(64)
@@ -114,6 +114,8 @@ const UA = {
   macChrome: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
   linux: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
   chromebook: 'Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+  samsungTv: 'Mozilla/5.0 (SMART-TV; LINUX; Tizen 7.0) AppleWebKit/537.36 (KHTML, like Gecko) 94.0.4606.31/7.0 TV Safari/537.36',
+  lgTv: 'Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.128 Safari/537.36 WebAppManager',
 }
 
 test('devices are told apart by their user agent', () => {
@@ -128,7 +130,16 @@ test('devices are told apart by their user agent', () => {
   assert.equal(detectPlatform({ userAgent: UA.macChrome }), 'mac')
   assert.equal(detectPlatform({ userAgent: UA.linux }), 'linux')
   assert.equal(detectPlatform({ userAgent: UA.chromebook }), 'chromeos')
+  assert.equal(detectPlatform({ userAgent: UA.samsungTv }), 'smart-tv', 'a Samsung TV says Linux too, but it is no computer')
+  assert.equal(detectPlatform({ userAgent: UA.lgTv }), 'smart-tv')
   assert.equal(detectPlatform({ userAgent: '' }), 'other')
+})
+
+test('Samsung and LG TV browsers are smart TVs; Android TVs and computers are not', () => {
+  assert.equal(isSmartTvBrowser(UA.samsungTv), true)
+  assert.equal(isSmartTvBrowser(UA.lgTv), true)
+  assert.equal(isSmartTvBrowser(UA.googleTv), false, 'an Android TV gets the app instead')
+  assert.equal(isSmartTvBrowser(UA.linux), false)
 })
 
 test('Safari on a Mac is Safari, Chrome on a Mac is not', () => {
