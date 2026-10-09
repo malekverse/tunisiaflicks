@@ -96,21 +96,30 @@ export default function ProfileSetupCard({ onCreated, variant = 'page' }: { onCr
         body: JSON.stringify({ handle: normalizeHandle(handle), name, bio, usePhoto: usePhoto && !!self?.owner && !!self?.hasPhoto }),
       })
       const body = await response.json().catch(() => ({}))
-      if (response.status === 201 && body.identity) {
+      const finish = (identity: PublicIdentity) => {
         haptic(12)
         invalidateSocialSelf()
-        setCreated(body.identity)
+        setCreated(identity)
         // Let the moment land, then hand over.
         setTimeout(() => {
-          if (onCreated) onCreated(body.identity)
+          if (onCreated) onCreated(identity)
           else router.refresh()
         }, 900)
+      }
+      if (response.status === 201 && body.identity) return finish(body.identity)
+      if (body.code === 'has_handle') {
+        // The page was made meanwhile (another tab, another device): carry on with that one, so
+        // an invitation waiting on it goes through instead of showing this form again.
+        const mine = await fetch('/api/social/handle', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null)
+        if (mine?.identity) return finish(mine.identity)
+        invalidateSocialSelf()
+        reload()
+        router.refresh()
         return
       }
       if (body.code === 'unverified') setUnverified(true)
       else if (body.code === 'taken') setCheck({ state: 'taken', suggestions: [] })
       else if (body.code === 'invalid_name') setNameError(true)
-      else if (body.code === 'has_handle') { invalidateSocialSelf(); reload(); router.refresh() }
       else setError(body.code ? socialErrorText(t, body) : t('social.setup.failed'))
     } catch {
       setError(t('social.setup.failed'))
