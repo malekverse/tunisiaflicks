@@ -6,6 +6,8 @@ import { defineStrings } from '../define'
 export const badges = defineStrings({
   en: {
     'badges.supporter.title': 'Supporter',
+    'badges.error.title': 'Couldn’t load your badges',
+    'badges.error.retry': 'Try again',
 
     // The shelf (/me#badges, /u/[handle])
     'badges.title': 'Badges',
@@ -76,11 +78,8 @@ export const badges = defineStrings({
     // Settings > Friends and privacy (#privacy)
     'badges.setting.label': 'Badges and streak',
     'badges.setting.hint': 'Keeps a private daily log of which days you pressed play, for 13 months.',
-    'badges.setting.offToast': 'Badges are off',
-    'badges.setting.offToastDesc': 'Your daily log was deleted.',
-    'badges.setting.onToast': 'Badges are on',
-    'badges.setting.onToastDesc': 'A fresh log starts today.',
     'badges.setting.failed': 'Couldn’t save that. Try again.',
+    'badges.setting.loadFailed': 'Couldn’t load this setting.',
 
     // Settings > Supporter (#supporter)
     'support.settings.desc': 'For your account.',
@@ -137,6 +136,8 @@ export const badges = defineStrings({
   },
   ar: {
     'badges.supporter.title': 'الدعم',
+    'badges.error.title': 'تعذّر تحميل شاراتك',
+    'badges.error.retry': 'إعادة المحاولة',
 
     'badges.title': 'الشارات',
     'badges.shelfLabel': 'الشارات المكتسبة',
@@ -201,11 +202,8 @@ export const badges = defineStrings({
 
     'badges.setting.label': 'الشارات والسلسلة',
     'badges.setting.hint': 'سجلّ يومي خاص بالأيام التي ضغطت فيها تشغيل، يُحفظ سنةً وشهرًا.',
-    'badges.setting.offToast': 'الشارات متوقفة',
-    'badges.setting.offToastDesc': 'حُذف سجلّك اليومي.',
-    'badges.setting.onToast': 'الشارات مفعّلة',
-    'badges.setting.onToastDesc': 'سجلّ جديد يبدأ اليوم.',
     'badges.setting.failed': 'تعذّر الحفظ. حاول مرة أخرى.',
+    'badges.setting.loadFailed': 'تعذّر تحميل هذا الإعداد.',
 
     'support.settings.desc': 'لحسابك.',
     'support.status.yes': 'الدعم منذ {date}. شكرًا لك.',
@@ -268,8 +266,6 @@ export const badges = defineStrings({
     'badges.onlyYou': 'حتى حد ما يشوفها كان إنت',
     'badges.desc.openingNight': 'إضغط تشغيل على أول فيلم ولا حلقة.',
     'badges.setting.hint': 'سجلّ يومي خاص بالنهارات اللي ضغطت فيهم تشغيل، يتخبّى عام وشهر.',
-    'badges.setting.offToastDesc': 'السجلّ اليومي متاعك تفسخ.',
-    'badges.setting.onToastDesc': 'سجلّ جديد يبدا اليوم.',
     'support.subtitle': 'بلاش للناس الكل، وشويّة قهاوي يخلّوه ماشي.',
     'support.coffee.title': 'شريلنا قهوة',
     'support.already.title': 'تدعم فينا من قبل؟',
@@ -277,6 +273,8 @@ export const badges = defineStrings({
   },
   fr: {
     'badges.supporter.title': 'Soutien',
+    'badges.error.title': 'Impossible de charger vos badges',
+    'badges.error.retry': 'Réessayer',
 
     'badges.title': 'Badges',
     'badges.shelfLabel': 'Badges obtenus',
@@ -286,7 +284,7 @@ export const badges = defineStrings({
     'badges.unseen': 'Nouveau',
     'badges.open': 'Ouvrir {badge}',
     'badges.artLabel': '{name}, {tier}',
-    'badges.empty.title': 'Votre premier badge est à un film d’ici',
+    'badges.empty.title': 'Votre premier badge n’est qu’à un film',
     'badges.empty.text': 'Lancez un film ou un épisode, et il arrive ici.',
     'badges.empty.action': 'Trouver quoi regarder',
     'badges.off.title': 'Badges et série désactivés',
@@ -341,14 +339,11 @@ export const badges = defineStrings({
 
     'badges.setting.label': 'Badges et série',
     'badges.setting.hint': 'Tient un journal privé des jours où vous avez lancé une lecture, pendant 13 mois.',
-    'badges.setting.offToast': 'Badges désactivés',
-    'badges.setting.offToastDesc': 'Votre journal quotidien a été supprimé.',
-    'badges.setting.onToast': 'Badges activés',
-    'badges.setting.onToastDesc': 'Un nouveau journal commence aujourd’hui.',
     'badges.setting.failed': 'Impossible d’enregistrer. Réessayez.',
+    'badges.setting.loadFailed': 'Impossible de charger ce réglage.',
 
     'support.settings.desc': 'Pour votre compte.',
-    'support.status.yes': 'Soutien depuis le {date}. Merci.',
+    'support.status.yes': 'Soutien depuis {date}. Merci.',
     'support.status.no': 'Pas encore de soutien. TunisiaFlicks reste gratuit dans tous les cas.',
     'support.status.closed': 'Le soutien n’est pas encore ouvert. TunisiaFlicks reste gratuit dans tous les cas.',
     'support.status.loadFailed': 'Impossible de charger votre statut de soutien.',
@@ -388,7 +383,7 @@ export const badges = defineStrings({
     'support.already.copyFailed': 'Impossible de copier. Sélectionnez le code.',
     'support.already.signIn': 'Se connecter pour obtenir son code',
     'support.already.thanks': 'Vous nous soutenez. Merci.',
-    'support.already.since': 'Depuis le {date}',
+    'support.already.since': 'Depuis {date}',
     'support.credits.title': 'Merci',
     'support.credits.text': 'Les soutiens qui ont demandé à être remerciés par leur nom.',
     'support.credits.empty': 'Les premiers noms apparaîtront ici.',
