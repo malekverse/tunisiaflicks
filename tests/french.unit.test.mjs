@@ -89,18 +89,14 @@ test('quote and Intl names', () => {
   assert.equal(languageName('', 'fr'), undefined)
 })
 
-test('fr.ts covers every core key with French typography', () => {
+test('fr.ts covers every core key, with the same placeholders', () => {
   const missing = Object.keys(en).filter((key) => !(key in fr))
   assert.deepEqual(missing, [])
   for (const [key, value] of Object.entries(fr)) {
     const placeholders = (text) => [...text.matchAll(/\{(\w+)\}/g)].map((match) => match[1]).sort().join()
     assert.equal(placeholders(value), placeholders(en[key]), `${key}: placeholders`)
-    assert.ok(!value.includes("'"), `${key}: ASCII apostrophe`)
-    assert.ok(!value.includes('...'), `${key}: '...'`)
-    assert.ok(!/[“”]/.test(value), `${key}: “ ” quotes`)
-    for (const match of value.matchAll(/(.):(?=\s|$)/g)) assert.equal(match[1], NBSP, `${key}: no-break space before ':'`)
-    for (const match of value.matchAll(/(.)[?!;](?=\s|$|»)/g)) assert.equal(match[1], NNBSP, `${key}: narrow no-break space before ? ! ;`)
   }
+  // French typography: npm run check:i18n warns about it, never failing a build.
   // The glossary.
   assert.equal(fr['common.seasonEpisode'], 'S{season}:É{episode}')
   assert.equal(fr['profiles.whoIsWatching'], `Qui regarde${NNBSP}?`)

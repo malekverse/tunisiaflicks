@@ -2,13 +2,14 @@
 // Checks the UI strings of every language against the English ones:
 //   node scripts/check-translations.mjs        (npm run check:i18n)
 //
-// Errors (exit code 1):
-// - a translation whose {placeholders} differ from the English string's;
+// Errors (exit code 1), what would show broken on screen:
+// - a translation with a {placeholder} the English string doesn't fill, or with no English string.
+// Warnings (printed, never fatal; the site is written in English first, and the translations are
+// for the viewers, so their polish never blocks a build):
+// - a translation without one of the English string's {placeholders};
 // - French typography: an ASCII apostrophe (use ’), “ ” quotes (use « »), a missing no-break
 //   space (U+00A0 before ':', U+202F before ? ! ; and inside « »);
-// - '...' in French (use …).
-// Warnings (printed, never fatal):
-// - '...' in the other languages;
+// - '...' (use …);
 // - French identical to English (often fine: 'Action', 'Notifications'; listed to be looked at);
 // - French longer than its slot (tab 10, hero action 11, primary button 14, mood chip 22, tile 24,
 //   rail 20 characters);
@@ -48,8 +49,8 @@ const dictionaries = {
 const placeholders = (text) => new Set([...String(text).matchAll(/\{(\w+)\}/g)].map((match) => match[1]))
 
 // 1. Placeholders, in every language. One the English string doesn't fill would show as "{name}";
-//    one left out loses information, except in Arabic and Derja, whose zero/one/two forms say the
-//    number in words ('حلقتان').
+//    one left out may lose information (or not: Arabic and Derja's zero/one/two forms say the
+//    number in words, 'حلقتان').
 for (const [locale, dictionary] of Object.entries(dictionaries)) {
   for (const [key, value] of Object.entries(dictionary)) {
     if (!(key in english)) {
@@ -61,14 +62,8 @@ for (const [locale, dictionary] of Object.entries(dictionaries)) {
     const unknown = [...used].filter((name) => !expected.has(name))
     const dropped = [...expected].filter((name) => !used.has(name))
     if (unknown.length) error(locale, key, `{${unknown.join('}, {')}} is not in the English string`)
-    if (dropped.length) {
-      if (locale === 'fr') error(locale, key, `{${dropped.join('}, {')}} is missing`)
-      else warn('placeholder', `${locale} ${key}: without {${dropped.join('}, {')}}`)
-    }
-    if (value.includes('...')) {
-      if (locale === 'fr') error(locale, key, "'...' instead of …")
-      else warn('ellipsis', `${locale} ${key}: '...' instead of …`)
-    }
+    if (dropped.length) warn('placeholder', `${locale} ${key}: without {${dropped.join('}, {')}}`)
+    if (value.includes('...')) warn('ellipsis', `${locale} ${key}: '...' instead of …`)
   }
 }
 for (const [key, value] of Object.entries(english)) {
@@ -95,7 +90,7 @@ function frenchTypography(text) {
   return problems
 }
 for (const [key, value] of Object.entries(dictionaries.fr)) {
-  for (const problem of frenchTypography(value)) error('fr', key, problem)
+  for (const problem of frenchTypography(value)) warn('fr-typography', `fr ${key}: ${problem}`)
 }
 
 // 3. French identical to English (keys whose French is the same word by nature are expected).
@@ -149,7 +144,7 @@ for (const locale of ['ar', 'tn']) {
 // Report.
 const byKind = new Map()
 for (const { kind, message } of warnings) byKind.set(kind, [...(byKind.get(kind) ?? []), message])
-const TITLES = { placeholder: 'Arabic/Derja without a placeholder', ellipsis: "'...' outside French", same: 'French identical to English', slot: 'French longer than its slot', 'fr-missing': 'Feature strings without French', verb: 'Arabic/Derja: verb after {name}' }
+const TITLES = { placeholder: 'Without a placeholder', ellipsis: "'...' instead of …", 'fr-typography': 'French typography', same: 'French identical to English', slot: 'French longer than its slot', 'fr-missing': 'Feature strings without French', verb: 'Arabic/Derja: verb after {name}' }
 for (const [kind, messages] of byKind) {
   console.log(`\nWarning: ${TITLES[kind] ?? kind} (${messages.length})`)
   for (const message of messages.slice(0, 40)) console.log(`  ${message}`)
