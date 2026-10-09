@@ -24,6 +24,7 @@ export type VariationItem = {
   first_air_date?: string
   genre_ids: number[]
   overview?: string
+  original_language?: string
 }
 
 const DAY = 86400
@@ -49,6 +50,7 @@ const slim = (item: any, kind: Kind): VariationItem => ({
   vote_count: item.vote_count ?? 0,
   genre_ids: Array.isArray(item.genre_ids) ? item.genre_ids : [],
   overview: typeof item.overview === 'string' ? item.overview.slice(0, 400) : undefined,
+  original_language: typeof item.original_language === 'string' ? item.original_language : undefined,
 })
 
 /**
@@ -78,9 +80,15 @@ export async function fetchVariation(kind: Kind, id: string, variation: Variatio
       seen.add(key)
       found.push(slim(item, attempt.kind))
     }
-    if (found.length >= ENOUGH) break
+    // The Arab world asks all three (the last one, films in Arabic, is the one that matters most).
+    if (found.length >= ENOUGH && variation !== 'arab') break
   }
   if (!reached) return null
   const target: Kind = variation === 'kind' ? (kind === 'movie' ? 'tv' : 'movie') : kind
-  return rankResults(found, referenceGenres(variation, facts), { kind, id }, target).slice(0, LIMIT)
+  const ranked = rankResults(found, referenceGenres(variation, facts), { kind, id }, target)
+  // From the Arab world: films in Arabic before co-productions that merely list an Arab country.
+  const ordered = variation === 'arab'
+    ? [...ranked.filter((item) => item.original_language === 'ar'), ...ranked.filter((item) => item.original_language !== 'ar')]
+    : ranked
+  return ordered.slice(0, LIMIT)
 }

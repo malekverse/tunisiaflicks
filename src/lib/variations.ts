@@ -203,10 +203,13 @@ export function discoverAttempts(variation: Variation, facts: VariationFacts, ke
   const either = [g1, g2].filter((id) => id !== undefined).join('|')
   const minVotes = kind === 'movie' ? 50 : 20
 
-  /** Keywords, then both top genres, then either of them; each with the variation's own rule. */
+  /**
+   * Keywords (with one of the top genres at least, so a broad keyword can't drag in anything),
+   * then both top genres, then either of them; each with the variation's own rule.
+   */
   const ladder = (target: Kind, rule: Params, genres = { both, either }): Attempt[] => {
     const steps: Params[] = []
-    if (keywords) steps.push({ with_keywords: keywords })
+    if (keywords) steps.push(genres.either ? { with_keywords: keywords, with_genres: genres.either } : { with_keywords: keywords })
     if (genres.both) steps.push({ with_genres: genres.both })
     if (genres.either && genres.either !== genres.both) steps.push({ with_genres: genres.either })
     if (!steps.length) steps.push({})

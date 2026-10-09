@@ -47,6 +47,12 @@ export default function MoreLikeThis({ kind, id, kids, closest, tabs }: {
 }) {
   const { t, locale } = useI18n()
   const [active, setActive] = useState<VariationTab>(tabs[0]?.id ?? 'closest')
+  // The first row is there from the start (no fade, and visible without JavaScript); a switch fades.
+  const [switched, setSwitched] = useState(false)
+  const show = (tab: VariationTab) => {
+    setSwitched(true)
+    setActive(tab)
+  }
   const current = tabs.find((tab) => tab.id === active) ?? tabs[0]
   const variation: Variation | null = current && current.id !== 'closest' ? current.id : null
   const result = useVariation({ type: kind, id, but: variation, kids, locale })
@@ -54,7 +60,7 @@ export default function MoreLikeThis({ kind, id, kids, closest, tabs }: {
 
   const hasClosest = tabs.some((tab) => tab.id === 'closest')
   const title = t(variationTitle(current.id, kind) as TKey)
-  const hint = current.hint ? t(current.hint.key as TKey, current.hint.vars) : null
+  const hint = current.hint ? t(current.hint.key as TKey, current.hint.vars) : current.id === 'closest' ? t('more.hint.closest' as TKey) : null
 
   const prefetch = (target: EventTarget | null) => {
     if (typeof window === 'undefined' || !window.matchMedia('(pointer: fine)').matches) return
@@ -90,7 +96,7 @@ export default function MoreLikeThis({ kind, id, kids, closest, tabs }: {
         icon={<SearchX className="h-5 w-5" />}
         title={t('more.empty' as TKey)}
         text={t('more.emptyText' as TKey)}
-        action={hasClosest ? <Button variant="secondary" onClick={() => setActive('closest')}>{t('more.showClosest' as TKey)}</Button> : undefined}
+        action={hasClosest ? <Button variant="secondary" onClick={() => show('closest')}>{t('more.showClosest' as TKey)}</Button> : undefined}
       />
     )
   } else {
@@ -115,7 +121,7 @@ export default function MoreLikeThis({ kind, id, kids, closest, tabs }: {
         <div className="page-x mb-4" onPointerOver={(event) => prefetch(event.target)} onFocus={(event) => prefetch(event.target)}>
           <ChipGroup label={t('more.chips' as TKey)} mode="tabs" scroll>
             {tabs.map((tab) => (
-              <Chip key={tab.id} active={tab.id === current.id} controls={PANEL} onClick={() => setActive(tab.id)}>
+              <Chip key={tab.id} active={tab.id === current.id} controls={PANEL} onClick={() => show(tab.id)}>
                 <span data-variation={tab.id}>{t(variationChip(tab.id, kind) as TKey)}</span>
               </Chip>
             ))}
@@ -123,7 +129,7 @@ export default function MoreLikeThis({ kind, id, kids, closest, tabs }: {
         </div>
       )}
       <div id={PANEL} role={tabs.length > 1 ? 'tabpanel' : undefined} aria-label={title} aria-busy={variation !== null && result.status === 'loading'}>
-        <m.div key={current.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={tween.base}>
+        <m.div key={current.id} initial={switched ? { opacity: 0 } : false} animate={{ opacity: 1 }} transition={tween.base}>
           {body}
         </m.div>
       </div>
