@@ -48,7 +48,7 @@ export default async function TunisianTvPage() {
         subtitle={t('ttv.subtitle')}
         accent={TUNISIAN_RED}
         watermark={<TunisiaMark />}
-        end={<ChannelStack channels={hub.channels} />}
+        end={empty ? undefined : <ChannelStack channels={hub.channels} />}
       />
 
       {empty ? (
