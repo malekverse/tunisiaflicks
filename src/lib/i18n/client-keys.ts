@@ -3,7 +3,7 @@
 // Which strings go to the browser (see clientMessages in ./index.ts): the root layout sends every
 // key that is in neither list below (the shell), a <ClientMessages scope> adds its scope's keys to
 // the pages under it, and the server-only keys never leave the server.
-// 608 of 2623 keys on every page, 1469 in 30 scopes, 546 server-only.
+// 608 of 2610 keys on every page, 1456 in 30 scopes, 546 server-only.
 
 export type MessageScope =
   | 'activate/layout'
@@ -894,19 +894,6 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'desktop.steps.install.title',
     'desktop.steps.play.text',
     'desktop.steps.play.title',
-    'desktop.updates.auto',
-    'desktop.updates.autoHint',
-    'desktop.updates.check',
-    'desktop.updates.checking',
-    'desktop.updates.desc',
-    'desktop.updates.downloading',
-    'desktop.updates.error',
-    'desktop.updates.latest',
-    'desktop.updates.ready',
-    'desktop.updates.restart',
-    'desktop.updates.title',
-    'desktop.updates.unsupported',
-    'desktop.updates.version',
     'tvMode.setting.exitHint',
     'tvMode.setting.failed',
     'tvMode.setting.getApp',
@@ -1882,19 +1869,6 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'badges.setting.loadFailed',
     'badges.setting.offDone',
     'badges.supporter.title',
-    'desktop.updates.auto',
-    'desktop.updates.autoHint',
-    'desktop.updates.check',
-    'desktop.updates.checking',
-    'desktop.updates.desc',
-    'desktop.updates.downloading',
-    'desktop.updates.error',
-    'desktop.updates.latest',
-    'desktop.updates.ready',
-    'desktop.updates.restart',
-    'desktop.updates.title',
-    'desktop.updates.unsupported',
-    'desktop.updates.version',
     'digest.language.label',
     'digest.loadFailed',
     'digest.locked',
