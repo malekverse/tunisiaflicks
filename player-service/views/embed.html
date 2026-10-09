@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TunisiaFlicks Player</title>
+<!--
+  The local player as an embed: the TunisiaFlicks site (inside the desktop app) puts this page in its
+  player frame as one more source, next to the third-party ones. Served from /embed/movie/:tmdb and
+  /embed/tv/:tmdb/:season/:episode; it resolves the title to a torrent (/resolve) and plays it here.
+-->
+<style>
+  :root { --red: #ff0f00; --text: #fff; --muted: rgba(255,255,255,.62); --faint: rgba(255,255,255,.4); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #000; color: var(--text); overflow: hidden;
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  video { position: absolute; inset: 0; width: 100%; height: 100%; background: #000; outline: none; }
+  .screen { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center;
+    background: radial-gradient(ellipse at center, rgba(229,9,20,.10), transparent 60%), #000; transition: opacity .4s ease; }
+  .screen[hidden] { display: none; }
+  .stack { display: flex; flex-direction: column; align-items: center; max-width: 30rem; }
+  /* The site's loader (BrandLoader, "chase"): the A's three strokes light up in turn. */
+  .mark { width: 44px; height: 44px; fill: var(--red); }
+  .mark > path { animation: chase 1.2s ease-in-out infinite; }
+  .mark > path:nth-child(2) { animation-delay: .4s; }
+  .mark > path:nth-child(3) { animation-delay: .8s; }
+  @keyframes chase { 0%, 100% { opacity: .18; } 20%, 40% { opacity: 1; } 60% { opacity: .18; } }
+  @media (prefers-reduced-motion: reduce) { .mark > path { animation-duration: 2.4s; } }
+  .brand { margin-top: 18px; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--faint); }
+  .brand b { color: var(--red); font-weight: 800; }
+  .stage { margin-top: 6px; font-size: 17px; font-weight: 600; }
+  .detail { margin-top: 4px; min-height: 1.4em; color: var(--muted); font-size: 13px; }
+  .steps { display: flex; gap: 6px; margin-top: 16px; }
+  .steps i { width: 26px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.14); transition: background .3s; }
+  .steps i.on { background: var(--red); }
+  .err .icon { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
+    background: rgba(255,255,255,.08); font-size: 22px; }
+  button { margin-top: 16px; height: 36px; padding: 0 18px; border: 0; border-radius: 999px; cursor: pointer;
+    background: #fff; color: #000; font: 600 13px system-ui, sans-serif; }
+  .badge { position: absolute; top: 12px; inset-inline-start: 12px; padding: 5px 10px; border-radius: 999px;
+    background: rgba(0,0,0,.55); backdrop-filter: blur(8px); font-size: 11px; color: var(--muted);
+    opacity: 0; transition: opacity .3s; pointer-events: none; }
+  body:hover .badge.show { opacity: 1; }
+  .buffer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+  .buffer[hidden] { display: none; }
+</style>
+</head>
+<body>
+<video id="video" controls playsinline hidden></video>
+<span id="badge" class="badge"></span>
+<div id="buffer" class="buffer" hidden><svg class="mark" viewBox="0 6 100 88" aria-hidden="true"><path d="M50 11.03 48.38 13.84 44.66 20.31 44.13 21.25 44.66 22.19 70.41 66.78 45.66 66.78 45.13 67.72 41.41 74.22 39.78 77 43 77 84.88 77.03 88.09 77 86.47 74.19 51.63 13.84Z"/><path d="M43.09 23 41.47 25.81 6.63 86.19 5 88.97 16.81 88.97 17.34 88.03 43.09 43.44 54.94 63.91 55.44 64.84 67.25 64.84 65.63 62.06 44.72 25.81Z"/><path d="M42.97 47.13 41.38 49.94 20.44 86.16 18.81 88.97 95 88.97 93.38 86.16 89.66 79.69 89.09 78.75 36.53 78.75 48.34 58.28 48.88 57.34 48.34 56.41 44.59 49.94Z"/></svg></div>
+
+<div id="loading" class="screen">
+  <div class="stack">
+    <svg class="mark" viewBox="0 6 100 88" aria-hidden="true"><path d="M50 11.03 48.38 13.84 44.66 20.31 44.13 21.25 44.66 22.19 70.41 66.78 45.66 66.78 45.13 67.72 41.41 74.22 39.78 77 43 77 84.88 77.03 88.09 77 86.47 74.19 51.63 13.84Z"/><path d="M43.09 23 41.47 25.81 6.63 86.19 5 88.97 16.81 88.97 17.34 88.03 43.09 43.44 54.94 63.91 55.44 64.84 67.25 64.84 65.63 62.06 44.72 25.81Z"/><path d="M42.97 47.13 41.38 49.94 20.44 86.16 18.81 88.97 95 88.97 93.38 86.16 89.66 79.69 89.09 78.75 36.53 78.75 48.34 58.28 48.88 57.34 48.34 56.41 44.59 49.94Z"/></svg>
+    <div class="brand"><b>TunisiaFlicks</b> player · ad-free</div>
+    <div id="stage" class="stage">Finding the best copy…</div>
+    <div id="detail" class="detail"></div>
+    <div class="steps"><i class="on"></i><i></i><i></i></div>
+  </div>
+</div>
+
+<div id="error" class="screen err" hidden>
+  <div class="stack">
+    <div class="icon">!</div>
+    <div id="errTitle" class="stage">Not available here</div>
+    <div id="errText" class="detail"></div>
+    <button id="retry" type="button">Try again</button>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id)
+  const video = $('video')
+
+  // /embed/movie/:tmdb  or  /embed/tv/:tmdb/:season/:episode
+  const parts = location.pathname.split('/').filter(Boolean)   // ['embed', type, id, s, e]
+  const type = parts[1] === 'tv' ? 'tv' : 'movie'
+  const tmdb = /^\d+$/.test(parts[2] || '') ? parts[2] : null
+  const season = Number(parts[3]) || 1
+  const episode = Number(parts[4]) || 1
+
+  const steps = [...document.querySelectorAll('.steps i')]
+  const setStage = (n, text, detail = '') => {
+    steps.forEach((s, i) => s.classList.toggle('on', i <= n))
+    $('stage').textContent = text
+    $('detail').textContent = detail
+  }
+
+  const fail = (title, text) => {
+    stopStats()
+    $('loading').hidden = true
+    video.hidden = true
+    $('buffer').hidden = true
+    $('errTitle').textContent = title
+    $('errText').textContent = text
+    $('error').hidden = false
+  }
+
+  // Peers + speed while the swarm warms up / the video buffers.
+  let statsTimer = null
+  let infoHash = null
+  const stopStats = () => { clearInterval(statsTimer); statsTimer = null }
+  const fmtSpeed = (b) => b > 1e6 ? `${(b / 1e6).toFixed(1)} MB/s` : `${Math.round(b / 1e3)} KB/s`
+  function startStats(onStats) {
+    stopStats()
+    const tick = async () => {
+      if (!infoHash) return
+      try {
+        const s = await fetch(`/stats/${infoHash}`).then((r) => r.json())
+        onStats(s)
+      } catch {}
+    }
+    tick()
+    statsTimer = setInterval(tick, 1500)
+  }
+
+  async function play() {
+    $('error').hidden = true
+    $('loading').hidden = false
+    video.hidden = true
+    if (!tmdb) return fail('Nothing to play', 'This title has no id.')
+
+    setStage(0, 'Finding the best copy…', type === 'tv' ? `Season ${season}, episode ${episode}` : '')
+    // The swarm join happens inside /resolve; move the stage on so the wait reads as progress.
+    const joining = setTimeout(() => setStage(1, 'Connecting to peers…', 'This takes a few seconds the first time'), 2500)
+
+    let data
+    try {
+      const q = new URLSearchParams({ type, tmdb })
+      if (type === 'tv') { q.set('season', season); q.set('episode', episode) }
+      const res = await fetch(`/resolve?${q}`)
+      data = await res.json()
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
+    } catch (err) {
+      clearTimeout(joining)
+      const none = /no torrent/i.test(err.message)
+      return fail(
+        none ? 'No copy found for this one' : 'Couldn’t start the stream',
+        none ? 'Pick another source below the player.' : 'The swarm didn’t answer. Try again, or pick another source below.',
+      )
+    }
+    clearTimeout(joining)
+
+    infoHash = data.infoHash
+    const label = [data.quality, data.decision === 'direct' ? null : 'converted live'].filter(Boolean).join(' · ')
+    $('badge').textContent = `TunisiaFlicks · ${label || 'ad-free'}`
+    setStage(2, 'Buffering…', label)
+    // A copy with almost no one sharing it would buffer forever: after a while, say so.
+    const bufferingSince = Date.now()
+    startStats((s) => {
+      if ($('loading').hidden) return
+      const crawling = Date.now() - bufferingSince > 25000 && s.downloadSpeed < 50e3
+      $('detail').textContent = crawling
+        ? `This copy is slow (${s.peers} peers). Pick another source below the player.`
+        : `${s.peers} peers · ${fmtSpeed(s.downloadSpeed)}`
+    })
+
+    video.src = data.playUrl
+    video.play().catch(() => {})   // autoplay may need a click; the controls are there
+  }
+
+  video.addEventListener('playing', () => {
+    stopStats()
+    $('loading').hidden = true
+    $('buffer').hidden = true
+    video.hidden = false
+    $('badge').classList.add('show')
+  })
+  video.addEventListener('loadeddata', () => {
+    // Paused but ready (autoplay refused): show the player so the viewer can press play.
+    $('loading').hidden = true
+    video.hidden = false
+  })
+  video.addEventListener('waiting', () => { if (!video.hidden) $('buffer').hidden = false })
+  video.addEventListener('canplay', () => { $('buffer').hidden = true })
+  video.addEventListener('error', () => {
+    if (video.hidden && !$('error').hidden) return
+    fail('Playback stopped', 'The stream was interrupted. Try again, or pick another source below.')
+  })
+
+  $('retry').addEventListener('click', play)
+  addEventListener('pagehide', stopStats)
+  play()
+</script>
+</body>
+</html>

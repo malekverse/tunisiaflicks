@@ -24,7 +24,7 @@ import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import * as ffbin from 'ffmpeg-ffprobe-static'
 import { analyze, ffmpegArgs } from './codec.js'
-import { tmdbToImdb, movieMagnets, tvMagnets, pickBest } from './resolve.js'
+import { tmdbTitle, movieMagnets, tvMagnets, rankOptions } from './resolve.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -93,8 +93,9 @@ async function infoHashOf(input) {
   }
 }
 
-/** Add a magnet/infohash, or return the already-running swarm. Resolves once metadata is ready. */
-async function getTorrent(magnetOrHash) {
+/** Add a magnet/infohash, or return the already-running swarm. Resolves once metadata is ready;
+ *  a swarm that doesn't answer in time is dropped again (so a dead copy doesn't linger). */
+async function getTorrent(magnetOrHash, timeoutMs = 60000) {
   const hash = await infoHashOf(magnetOrHash)
   if (hash && active.has(hash)) {
     touch(hash)
@@ -104,7 +105,11 @@ async function getTorrent(magnetOrHash) {
   if (active.size >= MAX_TORRENTS) evictOldest()
 
   const p = new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error("Timed out fetching torrent metadata (no seeders reachable?)")), 60000)
+    let added = null
+    const timeout = setTimeout(() => {
+      try { added?.destroy({ destroyStore: true }) } catch {}
+      reject(new Error('Timed out fetching torrent metadata (no seeders reachable?)'))
+    }, timeoutMs)
     const onReady = (torrent) => {
       clearTimeout(timeout)
       torrent.files.forEach((f) => f.deselect())     // stream on demand, don't pull the whole torrent
@@ -113,7 +118,7 @@ async function getTorrent(magnetOrHash) {
       resolve(torrent)
     }
     try {
-      const added = client.add(magnetOrHash, { path: DOWNLOAD_DIR }, onReady)
+      added = client.add(magnetOrHash, { path: DOWNLOAD_DIR }, onReady)
       added.on('error', (err) => { clearTimeout(timeout); reject(err) })
     } catch (err) {
       clearTimeout(timeout)
@@ -269,21 +274,43 @@ async function handleAdd(req, res) {
 app.get('/add', requireAllowedOrigin, handleAdd)
 app.post('/add', requireAllowedOrigin, handleAdd)
 
-/** Given a title (TMDB or IMDB id), find the best magnet, join the swarm and return a play URL. */
+/** Given a title (TMDB or IMDB id), find the best magnet, join the swarm and return a play URL.
+ *  Copies are tried best-first (see rankOptions); one whose swarm doesn't answer makes way for the
+ *  next, so a single dead torrent doesn't mean "not available". */
+const RESOLVE_ATTEMPTS = [30000, 20000, 20000]   // metadata timeout per copy tried
 app.get('/resolve', requireAllowedOrigin, async (req, res) => {
   const type = req.query.type === 'tv' ? 'tv' : 'movie'
   try {
     let imdb = typeof req.query.imdb === 'string' ? req.query.imdb : null
-    if (!imdb && req.query.tmdb) imdb = await tmdbToImdb(type, req.query.tmdb, TMDB_KEY)
+    let names = []
+    if (req.query.tmdb) {
+      const title = await tmdbTitle(type, req.query.tmdb, TMDB_KEY)
+      imdb = imdb || title?.imdb || null
+      names = title?.names ?? []
+    }
     if (!imdb) return res.status(400).json({ error: 'Provide imdb, or tmdb with a TMDB key' })
 
     const options = type === 'movie'
       ? await movieMagnets(imdb)
-      : await tvMagnets(imdb, Number(req.query.season) || 1, Number(req.query.episode) || 1)
-    const choice = pickBest(options)
-    if (!choice) return res.status(404).json({ error: 'No torrent found for this title' })
+      : await tvMagnets(imdb, Number(req.query.season) || 1, Number(req.query.episode) || 1, names)
+    const ranked = rankOptions(options).slice(0, RESOLVE_ATTEMPTS.length)
+    if (!ranked.length) return res.status(404).json({ error: 'No torrent found for this title' })
 
-    const torrent = await getTorrent(choice.magnet)
+    let torrent = null
+    let choice = null
+    let lastError = null
+    for (const [i, option] of ranked.entries()) {
+      try {
+        torrent = await getTorrent(option.magnet, RESOLVE_ATTEMPTS[i])
+        choice = option
+        break
+      } catch (err) {
+        lastError = err
+        console.error('[resolve] copy failed, trying the next:', option.label, '-', err.message)
+      }
+    }
+    if (!torrent) throw lastError || new Error('No copy answered')
+
     const entry = active.get(torrent.infoHash)
     const file = pickBestFile(torrent)
     const index = file ? torrent.files.indexOf(file) : -1
@@ -306,6 +333,25 @@ app.get('/resolve', requireAllowedOrigin, async (req, res) => {
     res.status(502).json({ error: err.message })
   }
 })
+
+/** Swarm stats for the embed's loading screen (peers, speed). Read-only, no input but a hash. */
+app.get('/stats/:infoHash', (req, res) => {
+  const entry = active.get(String(req.params.infoHash).toLowerCase())
+  if (!entry) return res.status(404).json({ error: 'Not active' })
+  const { torrent } = entry
+  res.json({ peers: torrent.numPeers, downloadSpeed: Math.round(torrent.downloadSpeed), progress: torrent.progress })
+})
+
+// The player as an embed for the TunisiaFlicks site (a source in its player frame, desktop app only).
+// Only the site's own origins (and loopback) may frame it — no other page can put it in an iframe.
+const FRAME_ANCESTORS = ["'self'", 'http://127.0.0.1:*', 'http://localhost:*', ...ALLOWED_ORIGINS].join(' ')
+const sendEmbed = (_req, res) => {
+  res.set('Content-Security-Policy', `frame-ancestors ${FRAME_ANCESTORS}`)
+  res.set('Cache-Control', 'no-store')
+  res.sendFile(path.join(__dirname, 'views', 'embed.html'))
+}
+app.get('/embed/movie/:tmdb', sendEmbed)
+app.get('/embed/tv/:tmdb/:season/:episode', sendEmbed)
 
 // Minimal TMDB browse proxy for the desktop app's own page (keeps the key server-side).
 app.get('/api/tmdb/:kind', requireAllowedOrigin, async (req, res) => {

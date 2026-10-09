@@ -37,7 +37,9 @@ Each file is probed with `ffprobe`, then one of three paths is chosen (see `code
 | Route | Purpose |
 | --- | --- |
 | `GET /health` | liveness + byte counters |
-| `GET /resolve?type=movie&tmdb=550` | title → magnet → swarm → `playUrl`. Takes `imdb`, or `tmdb` (+ a TMDB key). TV: `?type=tv&tmdb=…&season=1&episode=1`. Auto-picks 1080p/720p x264 over 2160p (which needs transcoding). |
+| `GET /resolve?type=movie&tmdb=550` | title → magnet → swarm → `playUrl`. Takes `imdb`, or `tmdb` (+ a TMDB key). TV: `?type=tv&tmdb=…&season=1&episode=1`. Ranks copies 1080p > 720p, x264 over x265/HEVC/AV1 (which need transcoding), then seeds, and tries up to 3 in turn if a swarm doesn't answer. TV releases must be named after the show (EZTV files some under the wrong show). |
+| `GET /embed/movie/:tmdb` · `GET /embed/tv/:tmdb/:season/:episode` | the player as an embed, for the TunisiaFlicks site's player frame (desktop app). Only the site's origins and loopback may frame it (`frame-ancestors`). |
+| `GET /stats/:infoHash` | peers / speed / progress of an active swarm (the embed's loading screen) |
 | `GET\|POST /add?magnet=…` | join the swarm; returns the file list + `best` with `decision`, codecs and a ready-to-play `playUrl` |
 | `GET /stream/:infoHash/:index` | native byte-range stream (direct path), `206` |
 | `GET /play/:infoHash/:index` | ffmpeg remux/transcode → progressive MP4 (redirects to `/stream` for direct files) |
