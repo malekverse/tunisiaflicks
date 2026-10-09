@@ -39,6 +39,7 @@ export const tunisianTv = defineStrings({
 
     'ttv.episode': 'Episode {n}',
     'ttv.seasonEpisode': 'Season {s}, episode {n}',
+    'ttv.titleEpisode': '{series}, {episode}',
     'ttv.episodes': 'Episodes: {count}',
     'ttv.parts': 'In {count} parts',
     'ttv.partOf': 'Part {n} of {total}',
@@ -126,6 +127,7 @@ export const tunisianTv = defineStrings({
 
     'ttv.episode': 'الحلقة {n}',
     'ttv.seasonEpisode': 'الموسم {s}، الحلقة {n}',
+    'ttv.titleEpisode': '{series}، {episode}',
     'ttv.episodes': 'الحلقات: {count}',
     'ttv.parts': 'عدد الأجزاء: {count}',
     'ttv.partOf': 'الجزء {n} من {total}',
@@ -259,6 +261,7 @@ export const tunisianTv = defineStrings({
 
     'ttv.episode': 'Épisode {n}',
     'ttv.seasonEpisode': 'Saison {s}, épisode {n}',
+    'ttv.titleEpisode': '{series}, {episode}',
     'ttv.episodes': 'Épisodes : {count}',
     'ttv.parts': 'En {count} parties',
     'ttv.partOf': 'Partie {n} sur {total}',

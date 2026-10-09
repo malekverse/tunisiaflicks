@@ -228,7 +228,7 @@ async function buildHub(): Promise<TvHub> {
   const live: TvVideoView[] = channels.filter((channel) => channel.live).map((channel) => ({
     id: channel.live!.videoId, title: channel.live!.title, subtitle: null, channel: channel.slug, seriesId: null, seriesTitle: null, seriesTitleAlt: null,
     episode: null, season: null, parts: [{ id: channel.live!.videoId, part: null, blocked: false }], publishedAt: now.toISOString(), views: null, duration: null,
-    blocked: false, live: true,
+    blocked: false, live: true, liveChannelId: channel.youtubeId,
   }))
 
   const seriesEpisodes = all.filter((video) => video.seriesId && seriesById.has(video.seriesId) && visibleSeries(seriesById.get(video.seriesId)!) && !video.live)
@@ -279,7 +279,8 @@ async function buildHub(): Promise<TvHub> {
     onAir: onAir.map(view),
     mostWatched,
     talk: talk.map(view),
-    complete: complete.map(view),
+    // A complete series starts from its first episode.
+    complete: complete.map((item) => { const episodes = bySeries.get(item._id) ?? []; return seriesView(item, episodes[episodes.length - 1] ?? null) }),
     fresh: freshDrama ? { seriesTitle: freshDrama.seriesTitle ?? freshDrama.title, seriesTitleAlt: freshDrama.seriesTitleAlt, episode: freshDrama.episode } : null,
     updatedAt: data.updatedAt,
     bootstrap: data.bootstrap,

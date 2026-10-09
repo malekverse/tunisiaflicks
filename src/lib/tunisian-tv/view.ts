@@ -43,6 +43,8 @@ export type TvVideoView = {
   /** The owner forbids embedding: it opens on YouTube. */
   blocked: boolean
   live: boolean
+  /** A live tile plays the channel's current broadcast (whatever it is when Play is pressed). */
+  liveChannelId?: string | null
 }
 
 export type TvSeriesView = {
