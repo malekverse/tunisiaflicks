@@ -39,7 +39,7 @@ function Ballot({ candidate, view, max, onVote, act }: { candidate: CandidateVie
   const canRemove = view.vote.open && (isHost || candidate.addedByMe)
 
   return (
-    <li className="min-w-0">
+    <li className="group/ballot min-w-0">
       <div className="relative">
         <button
           type="button"
@@ -53,7 +53,7 @@ function Ballot({ candidate, view, max, onVote, act }: { candidate: CandidateVie
             candidate.mine && 'shadow-[0_18px_40px_-16px_rgb(229_15_5/0.75)]',
           )}
         >
-          <TmdbImage kind="poster" path={candidate.media.poster_path} alt="" fill sizes="(min-width: 1024px) 220px, (min-width: 640px) 30vw, 45vw" className="object-cover" />
+          <TmdbImage kind="poster" path={candidate.media.poster_path} alt="" fill sizes="(min-width: 1280px) 190px, (min-width: 640px) 30vw, 45vw" className="object-cover" />
           <span aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
           {/* Your vote: the red ring (the room's signal) and a check. */}
           <span aria-hidden className={cn('pointer-events-none absolute inset-0 rounded-poster ring-[3px] ring-inset transition-colors duration-200', candidate.mine ? 'ring-red-500' : 'ring-transparent')} />
@@ -86,7 +86,7 @@ function Ballot({ candidate, view, max, onVote, act }: { candidate: CandidateVie
             aria-label={t('movieNight.vote.remove', { title: candidate.media.title })}
             disabled={busy}
             onClick={async () => { setBusy(true); await act('removeCandidate', { key: candidate.key }); setBusy(false) }}
-            className="pressable absolute start-1 top-1 grid h-11 w-11 place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+            className="pressable absolute start-1 top-1 grid h-11 w-11 place-items-center rounded-full outline-none transition-opacity duration-150 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-red-500 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/ballot:opacity-100"
           >
             <span aria-hidden className="grid h-8 w-8 place-items-center rounded-full bg-black/60 text-white/85 backdrop-blur-md transition-colors hover:bg-black/80 hover:text-white">
               <Trash2 className="h-4 w-4" />
@@ -225,7 +225,7 @@ export default function FilmSection({ view, act, onVote, onAdd }: { view: NightV
           )}
         </div>
       ) : (
-        <ul className="mt-5 grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 sm:gap-x-4">
+        <ul className="mt-5 grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 sm:gap-x-4 xl:grid-cols-4">
           {view.candidates.map((candidate) => (
             <Ballot key={candidate.key} candidate={candidate} view={view} max={max} onVote={onVote} act={act} />
           ))}
