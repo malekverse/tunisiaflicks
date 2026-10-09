@@ -860,3 +860,50 @@ export async function renderProfileCard({ name, handle, color, initial, image, c
     </div>
   )
 }
+
+// ---------------------------------------------------------------------------------------------
+// Movie nights.
+
+export type NightCardData = {
+  /** The host's first name only: never the guests, the place or the note. */
+  host: string
+  /** "Friday 9 October, 21:00", already in the night's time zone. */
+  when: string
+  /** The film, once chosen. */
+  film?: string | null
+  /** Up to three TMDB poster paths (the film, or the films being voted on). */
+  posters: string[]
+  cancelled?: boolean
+}
+
+/**
+ * An invitation to a movie night (/movie-night/[id]): who's hosting (first name), when, the
+ * film or the films on the ballot fanned out, and a call to see the invitation. Nothing about who
+ * else is coming or where.
+ */
+export async function renderNightCard({ host, when, film, posters, cancelled }: NightCardData) {
+  const kicker = host ? `${isolate(clip(host, 20))} is planning a movie night` : 'You are invited to a movie night'
+  const [kickerRun, whenRun, filmRun, fan] = await Promise.all([
+    prepareText(kicker, { size: 24, width: 560, bold: true, alpha: 0.6, ltr: true }),
+    prepareText(when, { size: 34, width: 560, bold: true, ltr: true }),
+    prepareText(film ? `Watching ${isolate(clip(film, 40))}` : 'Friends vote on the film', { size: 27, width: 560, alpha: 0.72, ltr: true }),
+    pictures(posters.slice(0, 3).map((path) => tmdbImage(path, 'w342')), 260),
+  ])
+  const glow = cancelled ? '255 255 255' : ROOM_RED
+  return render(
+    <div style={CARD}>
+      <Room glow={glow} strength={cancelled ? 0.25 : 0.7} />
+      <Fill background={`radial-gradient(circle at 78% 50%, ${rgba(glow, cancelled ? 0.08 : 0.22)} 0%, rgba(0,0,0,0) 45%)`} />
+      {fan.length > 0 ? <Fan posters={fan} /> : null}
+      <Column width={560}>
+        <Text run={kickerRun} type={KICKER_TYPE} />
+        <div style={{ display: 'flex', marginTop: 8, ...TITLE_TYPE, fontSize: 100, lineHeight: 0.93 }}>{cancelled ? 'Cancelled' : 'Movie night'}</div>
+        <Text run={whenRun} box={{ marginTop: 22 }} type={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 40, lineHeight: 1.05, color: 'white' }} />
+        <Text run={filmRun} box={{ marginTop: 12 }} type={LINE_TYPE} />
+        <div style={{ display: 'flex', marginTop: 34 }}>
+          <Footer cta={cancelled ? 'Plan another night' : 'See the invitation'} play={false} />
+        </div>
+      </Column>
+    </div>
+  )
+}
