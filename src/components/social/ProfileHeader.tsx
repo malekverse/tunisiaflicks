@@ -169,6 +169,12 @@ export default function ProfileHeader({ person, bio, isOwner, viewer, relationsh
       <Share2 aria-hidden className="h-[18px] w-[18px]" />{t('social.page.share')}
     </Button>
   )
+  // Three or more actions on a phone: Share keeps its icon only, so the row stays one line.
+  const compactShare = (
+    <Button variant="secondary" className={cn(big, 'max-sm:w-12 max-sm:px-0')} onClick={share} aria-label={t('social.page.share')}>
+      <Share2 aria-hidden className="h-[18px] w-[18px]" /><span className="max-sm:hidden">{t('social.page.share')}</span>
+    </Button>
+  )
   const blockMenu = (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
@@ -225,7 +231,7 @@ export default function ProfileHeader({ person, bio, isOwner, viewer, relationsh
       <>
         <Button className={big} onClick={() => void answer(true)} disabled={busy}><Check aria-hidden className="h-[18px] w-[18px]" />{t('social.inbox.accept')}</Button>
         <Button variant="ghost" className={cn(big, 'ring-1 ring-inset ring-white/[0.14]')} onClick={() => void answer(false)} disabled={busy}><X aria-hidden className="h-[18px] w-[18px]" />{t('social.inbox.decline')}</Button>
-        {shareButton}
+        {compactShare}
         {blockMenu}
       </>
     )
@@ -243,7 +249,7 @@ export default function ProfileHeader({ person, bio, isOwner, viewer, relationsh
             <DropdownMenuItem className={menuItem} onSelect={() => void cancelRequest()}><X aria-hidden className="h-4 w-4" />{t('social.page.cancelRequest')}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        {shareButton}
+        {compactShare}
         {blockMenu}
       </>
     )
@@ -251,7 +257,7 @@ export default function ProfileHeader({ person, bio, isOwner, viewer, relationsh
     actions = (
       <>
         {!requestsOff && !invitePending && <Button className={big} onClick={() => void addFriend()} disabled={busy}><UserPlus aria-hidden className="h-[18px] w-[18px]" />{t('social.add.addFriend')}</Button>}
-        {shareButton}
+        {viewer === 'member' ? compactShare : shareButton}
         {viewer === 'member' && blockMenu}
       </>
     )
