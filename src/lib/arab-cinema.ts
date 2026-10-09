@@ -145,7 +145,10 @@ export type CountryCinema = {
   first: MapTitle | null
   pick: CountryPick | null
   rows: { id: 'new' | 'favourites' | 'series' | 'classics', kind: 'movie' | 'tv', items: any[] }[]
-  /** Fewer than 12 titles on record: all of them, in one grid, instead of the rows. */
+  /**
+   * Fewer than 12 titles on record (or no row reaches 4 titles): all of them, in one grid,
+   * instead of the rows.
+   */
   everything: any[] | null
   /** TMDB didn't answer at all (not the same as nothing on record). */
   failed: boolean
@@ -204,16 +207,18 @@ export async function getCountryCinema(code: ArabCountryCode, locale: Locale, ki
   const pick = await pickDetails(filmOfTheDay(code, date, { known, popular, series }), language, pool)
 
   const total = films + shows
-  const everything = total > 0 && total < GRID_UNDER
-    ? dedupe([...itemsOf(popular, 'movie'), ...itemsOf(known, 'movie'), ...itemsOf(series, 'tv')])
-      .sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0))
-    : null
-  const rows: CountryCinema['rows'] = everything ? [] : ([
+  const rows: CountryCinema['rows'] = total < GRID_UNDER ? [] : ([
     { id: 'new', kind: 'movie', items: itemsOf(recent, 'movie') },
     { id: 'favourites', kind: 'movie', items: itemsOf(favourites, 'movie') },
     { id: 'series', kind: 'tv', items: itemsOf(series, 'tv') },
     { id: 'classics', kind: 'movie', items: itemsOf(classics, 'movie') },
   ] as const).map((row) => ({ ...row, items: row.items.slice(0, 20) })).filter((row) => row.items.length >= ROW_MIN)
+  // Few titles on record, or enough of them but too few in every row to make one (a dozen films,
+  // a handful of them recent, a handful classics): all of them in one grid, never none.
+  const everything = total > 0 && rows.length === 0
+    ? dedupe([...itemsOf(popular, 'movie'), ...itemsOf(known, 'movie'), ...itemsOf(series, 'tv')])
+      .sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0))
+    : null
 
   return {
     code,

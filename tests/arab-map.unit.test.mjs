@@ -10,7 +10,7 @@ import {
   rippleDelay, sortByName, step, typeahead,
 } from '@/src/lib/arab-map'
 import { bornIn, filmOfTheDay, withoutMislabelled } from '@/src/lib/country-cinema'
-import { buildArabMapIndex, indexCacheKey, mapLimit, namesOnlyIndex } from '@/src/lib/arab-cinema'
+import { buildArabMapIndex, getCountryCinema, indexCacheKey, mapLimit, namesOnlyIndex } from '@/src/lib/arab-cinema'
 
 describe('the grid', () => {
   test('holds the 22 members once each, inside 9 by 5, no two on one square', () => {
@@ -326,6 +326,19 @@ describe('the index', () => {
     const egypt = index.countries.find((country) => country.code === 'eg')
     assert.equal(egypt.name, 'مصر')
     assert.equal(egypt.en, 'Egypt')
+  })
+
+  test('a country page: no row of 4 means everything in one grid, never nothing (Kids: safe titles only)', async () => {
+    // Egypt has 760 titles on record here, but each request brings back two at most.
+    const grown = await getCountryCinema('eg', 'en', false)
+    assert.equal(grown.rows.length, 0)
+    assert.deepEqual(grown.everything.map((item) => `${item.media_type}-${item.id}`).sort(), ['movie-1', 'movie-2', 'tv-3'])
+    const kids = await getCountryCinema('eg', 'en', true)
+    assert.deepEqual(kids.everything.map((item) => item.id), [1])
+    const oman = await getCountryCinema('om', 'en', false)
+    assert.equal(oman.films + oman.series, 0)
+    assert.equal(oman.everything, null)
+    assert.equal(oman.failed, false)
   })
 
   test('TMDB down: the build throws (nothing cached), and the fallback is names only', async () => {
