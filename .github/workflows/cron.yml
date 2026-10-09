@@ -15,10 +15,9 @@ on:
     - cron: '41 16 * * 5'
     - cron: '41 20 * * 5'
     - cron: '17 8 * * 6,0'
-    # Added by integration after wave 2 (also add them to the case below and to the job options):
-    # - cron: '5 */3 * * *'    # nights
-    # - cron: '10 2 * * *'     # badges
-    # - cron: '23 */3 * * *'   # tunisian-tv
+    - cron: '5 */3 * * *'    # nights: movie-night reminders and closing votes
+    - cron: '10 2 * * *'     # badges: 03:10 Tunis
+    - cron: '23 */3 * * *'   # tunisian-tv: the channels' new videos
   workflow_dispatch:
     inputs:
       job:
@@ -28,6 +27,9 @@ on:
         default: digest
         options:
           - digest
+          - nights
+          - badges
+          - tunisian-tv
 
 permissions: {}
 
@@ -49,15 +51,14 @@ jobs:
         run: |
           case "$SCHEDULE" in
             '41 16 * * 5'|'41 20 * * 5'|'17 8 * * 6,0') JOB=digest ;;
-            # '5 */3 * * *') JOB=nights ;;
-            # '10 2 * * *') JOB=badges ;;
-            # '23 */3 * * *') JOB=tunisian-tv ;;
+            '5 */3 * * *') JOB=nights ;;
+            '10 2 * * *') JOB=badges ;;
+            '23 */3 * * *') JOB=tunisian-tv ;;
             '') JOB="$INPUT_JOB" ;;
             *) echo "::error::No job for the schedule '$SCHEDULE'"; exit 1 ;;
           esac
           case "$JOB" in
-            digest) ;;
-            # nights|badges|tunisian-tv) ;;
+            digest|nights|badges|tunisian-tv) ;;
             *) echo "::error::Unknown job"; exit 1 ;;
           esac
           echo "job=$JOB" >> "$GITHUB_OUTPUT"

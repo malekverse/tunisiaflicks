@@ -7,7 +7,7 @@ schedulers call those routes:
 | Scheduler | What it calls | Secret | Time budget per call |
 |---|---|---|---|
 | **Vercel Cron** (Hobby: one cron a day) | `/api/cron/notify` (release alerts), daily 08:00 UTC, from `vercel.json` | `CRON_SECRET` | 45s |
-| **cron-job.org** (primary for everything else) | `/api/cron/digest`, and after wave 2 `nights`, `badges`, `tunisian-tv` | its own entry in `CRON_SECRETS_EXTRA` | 22s (it aborts requests at 30s) |
+| **cron-job.org** (primary for everything else) | `/api/cron/digest`, `nights`, `badges`, `tunisian-tv` | its own entry in `CRON_SECRETS_EXTRA` | 22s (it aborts requests at 30s) |
 | **GitHub Actions** (fallback), `.github/workflows/cron.yml` | the same routes a few times a week, looping while the answer says `more` | its own entry in `CRON_SECRETS_EXTRA` (`CRON_SECRET_GH` in GitHub) | 45s |
 
 How a route behaves (`src/lib/cron.ts`):
@@ -59,9 +59,9 @@ Recommended schedules (Africa/Tunis):
 | Route | Schedule | Why |
 |---|---|---|
 | `/api/cron/digest` | every 10 minutes, Friday to Sunday | The weekly digest opens Friday 17:00 (21:30 during Ramadan) and stays open three days; each call sends a slice. |
-| `/api/cron/nights` | every 15 minutes | Movie-night reminders and vote closing (after wave 2). |
-| `/api/cron/badges` | daily at 03:10 | Badges and streaks (after wave 2). |
-| `/api/cron/tunisian-tv` | every 30 minutes | Tunisian TV ingest (after wave 2). |
+| `/api/cron/nights` | every 15 minutes | Movie-night reminders (a day and an hour before) and closing votes. GitHub fallback: `5 */3 * * *`. |
+| `/api/cron/badges` | daily at 03:10 | Badges and streaks: profiles that played in the last 2 days or have a level to announce, 50 per call (`more: true` when there are more). GitHub fallback: `10 2 * * *`. |
+| `/api/cron/tunisian-tv` | every 30 minutes | Tunisian TV: the official channels' new videos (`?scope=full` rereads every playlist). GitHub fallback: `23 */3 * * *`. |
 
 ## GitHub Actions (fallback)
 
