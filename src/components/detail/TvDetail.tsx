@@ -33,9 +33,11 @@ const scrollToPlayer = () => {
 }
 
 /** A show page: the hero, the player, the episodes, ratings, similar shows, extras, the cast and the facts. */
-export default function TvDetail({ id, data, similar, resume, providers, kids, signedIn, ratings, tabs, trailers, extras, soundtrack: initialSoundtrack }: DetailServerProps & {
+export default function TvDetail({ id, data, similar, resume, providers, kids, signedIn, ratings, tabs, trailers, extras, soundtrack: initialSoundtrack, englishName }: DetailServerProps & {
   /** Episode to reopen (from "Continue watching" links: /tv/:id?s=&e=). */
   resume?: Pick
+  /** TMDB's English name, when the page shows a translated one (torrent releases use it). */
+  englishName?: string
 }) {
   const t = useT()
   const soundtrack = useSoundtrack({ type: 'tv', id, kids, initial: initialSoundtrack })
@@ -129,6 +131,8 @@ export default function TvDetail({ id, data, similar, resume, providers, kids, s
 
   const streamServices = useMemo(() => fillProviders(providers, 'tv', id, episode?.season, episode?.episode), [providers, id, episode?.season, episode?.episode])
   const imdbId: string | undefined = data.external_ids?.imdb_id || undefined
+  // The names a release can be filed under, to keep other shows' releases out of the downloads.
+  const releaseNames = useMemo(() => Array.from(new Set([englishName, data.name, data.original_name].filter((name): name is string => !!name))), [englishName, data.name, data.original_name])
   const cast: any[] = data.credits?.cast ?? []
   const media = useMemo(() => ({ media_type: 'tv' as const, id, title: data.name ?? '', poster_path: data.poster_path ?? null }), [id, data.name, data.poster_path])
 
@@ -164,6 +168,7 @@ export default function TvDetail({ id, data, similar, resume, providers, kids, s
               title={episode ? t('tv.downloadTitle', { name: data.name, season: episode.season, episode: episode.episode }) : data.name}
               season={episode?.season ?? 1}
               episode={episode?.episode ?? 1}
+              names={releaseNames}
               disabled={!episode}
               disabledHint={t('tv.pickFirst')}
             />

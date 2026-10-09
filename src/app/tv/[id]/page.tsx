@@ -86,6 +86,7 @@ export default async function TvPage({ params, searchParams }: Props) {
     <TvDetail
       id={id}
       data={data}
+      englishName={show.name}
       similar={similar}
       resume={parseResume(searchParams)}
       providers={getProviderTemplates()}
