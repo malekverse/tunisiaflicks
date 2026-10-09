@@ -173,7 +173,7 @@ async function phaseFeeds(db: TtvCollections, defs: TvChannelDef[], docs: Map<st
   // Least recently read first.
   due.sort((a, b) => (docs.get(a.slug)?.feedReadAt?.getTime() ?? 0) - (docs.get(b.slug)?.feedReadAt?.getTime() ?? 0))
   // A channel gets 7 seconds (its retries and the fallback included); the phase leaves 9 for the rest.
-  const { results, skipped } = await inBatches(due, FEED_BATCH, o.deadline, 9000, (def) => readChannel(def, Math.min(o.deadline - 6000, Date.now() + 7000)))
+  const { results, skipped } = await inBatches(due, FEED_BATCH, o.deadline, 11000, (def) => readChannel(def, Math.min(o.deadline - 6000, Date.now() + 7000)))
   stats.feedsDue = due.length
   const failed = results.filter((read) => !read.ok).length
   stats.feedsRead = results.length - failed
@@ -479,7 +479,8 @@ async function phaseVerify(db: TtvCollections, docs: Map<string, TtvChannelDoc>,
     })
   }
   if (writes.length) await db.videos.bulkWrite(writes, { ordered: false })
-  Object.assign(stats, { verified: writes.length, ok, blocked, gone })
+  // Not 'ok': runCron's own answer has that key.
+  Object.assign(stats, { verified: writes.length, playable: ok, blocked, gone })
 
   // A live channel whose broadcast the API says is over: no longer live.
   for (const doc of docs.values()) {
@@ -605,7 +606,9 @@ export async function runTunisianTvIngest(o: { deadline: number, scope?: IngestS
   if (scope === 'full' && timeLeft(o.deadline) > 7000) await timed('Playlists', () => phasePlaylists(db, defs, docs, ctx, stats))
   else if (scope === 'full') stats.more = true
   await timed('Derive', () => phaseDerive(db, defs, ctx, stats))
-  await timed('Prune', () => phasePrune(db, ctx, stats))
+  // Pruning can wait for the next run when this one is out of time.
+  if (timeLeft(o.deadline) > 1500) await timed('Prune', () => phasePrune(db, ctx, stats))
+  else stats.more = true
   if (youtubeApiKey()) stats.units = await unitsToday(db)
 
   await db.meta.updateOne({ _id: 'state' }, { $set: { lastRunAt: new Date() } })
