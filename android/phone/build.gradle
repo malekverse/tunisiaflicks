@@ -1,0 +1,63 @@
+plugins {
+    id 'com.android.application'
+}
+
+// The site the app shows, full screen in Chrome (a Trusted Web Activity). Android checks that the
+// site agrees: /.well-known/assetlinks.json must list this app and its signing certificate
+// (ANDROID_TWA_PACKAGE and ANDROID_TWA_SHA256 in Vercel). Until it does, Chrome shows its address bar.
+def siteHost = 'tunisiaflicks.vercel.app'
+
+// Release signing comes from the environment, like the TV app (the same key for both).
+def keystorePath = System.getenv('TF_KEYSTORE_PATH')
+def signed = keystorePath != null && !keystorePath.isEmpty()
+
+android {
+    namespace 'com.tunisiaflicks.app'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'com.tunisiaflicks.app'
+        minSdk 21
+        targetSdk 36
+        versionCode((System.getenv('TF_VERSION_CODE') ?: '1') as int)
+        versionName System.getenv('TF_VERSION_NAME') ?: '1.0.0'
+        manifestPlaceholders = [
+            siteHost: siteHost,
+            // ?source=android-app tells the site it runs in the app (no "get the app" offers there).
+            launchUrl: "https://${siteHost}/?source=android-app",
+        ]
+        resValue 'string', 'asset_statements',
+            "[{\\\"relation\\\": [\\\"delegate_permission/common.handle_all_urls\\\"], \\\"target\\\": {\\\"namespace\\\": \\\"web\\\", \\\"site\\\": \\\"https://${siteHost}\\\"}}]"
+    }
+
+    signingConfigs {
+        if (signed) {
+            release {
+                storeFile file(keystorePath)
+                storePassword System.getenv('TF_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('TF_KEY_ALIAS')
+                keyPassword System.getenv('TF_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+            if (signed) signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    // Google's Trusted Web Activity launcher (what Bubblewrap generates around), with the splash
+    // screen, notification delegation and the Custom Tabs fallback when no browser supports TWAs.
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+}
