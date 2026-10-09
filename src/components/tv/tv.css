@@ -1,0 +1,130 @@
+/*
+  TV mode (html[data-tv], set by the root layout from the tf-tv cookie). Imported by TvShell; every rule is
+  scoped to html[data-tv], so nothing changes outside TV mode. Sized for ten feet away through the shell tokens and font sizes: never
+  CSS zoom (old Android WebViews get it wrong). Animations use transform and opacity only.
+*/
+
+html[data-tv] {
+  /* The TV's overscan-safe area. */
+  --tv-safe-x: 5vw;
+  --tv-safe-y: 5vh;
+  --tv-nav-h: 56px;
+  /* The shell tokens: no rail, the gutter is the safe area, the "top bar" is the TV bar. */
+  --rail: 0px;
+  --gutter: var(--tv-safe-x);
+  --topbar: calc(var(--tv-nav-h) + var(--tv-safe-y));
+  --tabbar-space: var(--tv-safe-y);
+  font-size: 16px;
+  scrollbar-width: none;
+}
+html[data-tv]::-webkit-scrollbar,
+html[data-tv] ::-webkit-scrollbar {
+  display: none;
+}
+
+/* Bigger screens at 1:1 pixels (a computer on a TV, older boxes): everything a notch bigger. */
+@media (min-width: 1280px) {
+  html[data-tv] { --tv-nav-h: 64px; font-size: 18px; }
+}
+@media (min-width: 1600px) {
+  html[data-tv] { --tv-nav-h: 76px; font-size: 21px; }
+  html[data-tv] .text-\[11px\] { font-size: 14px; }
+  html[data-tv] .text-\[11\.5px\] { font-size: 15px; }
+  html[data-tv] .text-\[12px\] { font-size: 15.5px; }
+  html[data-tv] .text-\[12\.5px\] { font-size: 16px; }
+  html[data-tv] .text-\[13px\] { font-size: 17px; }
+  html[data-tv] .text-\[13\.5px\] { font-size: 17.5px; }
+  html[data-tv] .text-\[14px\] { font-size: 18px; }
+  html[data-tv] .text-\[14\.5px\] { font-size: 19px; }
+  html[data-tv] .text-\[15px\] { font-size: 19.5px; }
+  html[data-tv] .text-\[16px\] { font-size: 21px; }
+  html[data-tv] .text-\[17px\] { font-size: 22px; }
+  html[data-tv] .text-\[21px\] { font-size: 27px; }
+  html[data-tv] .sm\:text-\[26px\] { font-size: 33px; }
+  /* Row cards: about six posters across, as on TV platforms. */
+  html[data-tv] .\32xl\:w-\[196px\] { width: 250px; }
+  html[data-tv] .\32xl\:w-\[360px\] { width: 440px; }
+}
+
+/* Old WebViews without dvh. */
+html[data-tv] .min-h-dvh { min-height: 100vh; }
+@supports (min-height: 100dvh) {
+  html[data-tv] .min-h-dvh { min-height: 100dvh; }
+}
+
+/* Old WebViews paint backdrop-filter badly (or not at all): solid glass. */
+html[data-tv] .glass,
+html[data-tv] .glass-strong {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: rgb(18 18 18 / 0.97);
+}
+
+/* Phone-only things hide in TV mode. */
+html[data-tv] [data-tv-hide] { display: none !important; }
+
+/* Rows and chip rails clip what sticks out: room for the focus ring and the lift. */
+html[data-tv] main .no-scrollbar.overflow-x-auto {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+/* Card actions (remove from a list…) have no hover to reveal them: always shown. */
+html[data-tv] .group\/action { opacity: 1 !important; }
+
+/* Where a focused element lands when the page scrolls to it: a third of the way down. */
+html[data-tv] a[href],
+html[data-tv] button,
+html[data-tv] input,
+html[data-tv] select,
+html[data-tv] textarea,
+html[data-tv] [tabindex],
+html[data-tv] [data-tv-focusable] {
+  scroll-margin-top: 34vh;
+  scroll-margin-bottom: 8vh;
+}
+
+/*
+  Focus: a 3px white ring with a black gap, a soft glow, and small things (cards, buttons) lift a
+  little. The ring is drawn at once; only the lift animates.
+*/
+html[data-tv] :focus { outline: none; }
+html[data-tv] .tv-focus {
+  outline: none !important;
+  box-shadow: 0 0 0 3px #000, 0 0 0 6px #fff, 0 0 34px 4px rgb(255 255 255 / 0.3) !important;
+}
+html[data-tv] .tv-lift {
+  transition: transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+html[data-tv] .tv-focus.tv-lift { transform: scale(1.04); }
+
+/* A poster card: the ring and the lift go on the poster, not around the title under it. */
+html[data-tv] .group\/card.tv-focus { box-shadow: none !important; transform: none; }
+html[data-tv] .group\/card > div:first-child { transition: transform 140ms cubic-bezier(0.23, 1, 0.32, 1); }
+html[data-tv] .group\/card.tv-focus > div:first-child {
+  box-shadow: 0 0 0 3px #000, 0 0 0 6px #fff, 0 0 34px 4px rgb(255 255 255 / 0.3) !important;
+  transform: scale(1.04);
+}
+
+/* The TV bar: the focused item is a white pill (the red bar under it marks the page you're on). */
+html[data-tv] [data-tv-nav] .tv-focus {
+  box-shadow: none !important;
+  background: #fff;
+  color: #000;
+}
+html[data-tv] [data-tv-nav] .tv-focus.tv-lift { transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-tv] .tv-focus.tv-lift,
+  html[data-tv] .group\/card.tv-focus > div:first-child { transform: none; }
+}
+
+/* Toasts, read from the sofa: wider, bigger, inside the safe area. */
+html[data-tv] [data-sonner-toaster] {
+  --width: min(560px, 60vw) !important;
+}
+html[data-tv] [data-sonner-toaster][data-y-position='bottom'] {
+  bottom: var(--tv-safe-y) !important;
+}
+html[data-tv] [data-sonner-toast] [data-title] { font-size: 1.15rem !important; }
+html[data-tv] [data-sonner-toast] [data-description] { font-size: 1rem !important; }

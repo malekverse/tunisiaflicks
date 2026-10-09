@@ -16,11 +16,13 @@ import { useCanAutoplay } from '@/src/hooks/use-autoplay'
 import { fetchTrailerKey } from '@/src/hooks/use-hover-trailer'
 import { useLibraryToggle } from '@/src/hooks/use-library-toggle'
 import { cancelClose, scheduleClose } from '@/src/hooks/use-peek-trigger'
-import { toast } from '@/src/hooks/use-toast'
+import { openShare } from '@/src/store/share-sheet'
 import { useInLibrary } from '@/src/store/library'
 import { usePeek, type PeekItem } from '@/src/store/peek'
 
 const TRAILER_DELAY_MS = 650
+/** How long the quick-view sheet takes to slide away (vaul), before the ShareSheet opens. */
+const SHEET_CLOSE_MS = 320
 
 const detailHref = (item: PeekItem) => `/${item.kind}/${item.id}`
 const playHref = (item: PeekItem) => item.kind === 'tv' ? `/tv/${item.id}?s=1&e=1` : `/movie/${item.id}#streamSection`
@@ -170,16 +172,12 @@ function QuickSheet({ item, onClose }: { item: PeekItem | null, onClose: () => v
     const current = item ?? shown
     const actions = useLibraryActions(current ?? { id: '', kind: 'movie', title: '' })
 
-    const share = async () => {
+    // One sheet at a time: this one slides away first, then the ShareSheet comes up.
+    const share = () => {
         if (!current) return
-        const url = `${window.location.origin}${detailHref(current)}`
-        try {
-            if (navigator.share) await navigator.share({ title: current.title, url })
-            else {
-                await navigator.clipboard.writeText(url)
-                toast({ title: t('common.linkCopied'), description: t('common.linkCopiedDesc', { title: current.title }) })
-            }
-        } catch { /* cancelled */ }
+        const media = { media_type: current.kind, id: current.id, title: current.title, poster_path: current.poster ?? null }
+        onClose()
+        setTimeout(() => openShare({ kind: 'title', media }), SHEET_CLOSE_MS)
     }
 
     return (

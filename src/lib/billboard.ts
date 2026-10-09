@@ -1,9 +1,10 @@
 // The home page billboard: today's most talked-about movies and shows, with what a cinematic
 // header needs (backdrop, title logo, trailer, a few facts). Refreshed with TMDB's daily trending
 // list, so it follows what people are watching without anyone curating it.
-import { tmdbFetchSafe, withTranslatedFields } from '@/src/lib/tmdb'
+import { tmdbFetchSafe } from '@/src/lib/tmdb'
+import { localizeDetail, logoLanguages, translatedRecord } from '@/src/lib/tmdb-locale'
 import { filterKidSafe } from '@/src/lib/kids'
-import { isArabicScript, type Locale } from '@/src/lib/i18n'
+import type { Locale } from '@/src/lib/i18n'
 import { pickLogo, pickTrailer } from '@/src/lib/media-assets'
 
 export type BillboardItem = {
@@ -35,16 +36,15 @@ export async function getBillboard(kids: boolean, locale: Locale, only?: 'movie'
     .filter((item) => (item.media_type === 'movie' || item.media_type === 'tv') && item.backdrop_path && item.overview)
   if (kids) candidates = await filterKidSafe(candidates)
 
-  const arabic = isArabicScript(locale)
   const items = await Promise.all(candidates.slice(0, SLIDES).map(async (item): Promise<BillboardItem | null> => {
     const kind: 'movie' | 'tv' = item.media_type
     const [detail, translated] = await Promise.all([
-      tmdbFetchSafe(`${kind}/${item.id}`, { append_to_response: 'images,videos', include_image_language: 'en,null' }, DETAIL_TTL),
-      // Arabic UI: TMDB's Arabic overview and genre names where they exist.
-      arabic ? tmdbFetchSafe(`${kind}/${item.id}`, { language: 'ar' }, DETAIL_TTL) : null,
+      tmdbFetchSafe(`${kind}/${item.id}`, { append_to_response: 'images,videos', include_image_language: logoLanguages(locale) }, DETAIL_TTL),
+      // Arabic: overviews and genre names; French: titles, overviews, genres and a French logo.
+      translatedRecord(kind, String(item.id), locale, DETAIL_TTL),
     ])
     if (!detail) return null
-    const data = withTranslatedFields(detail, translated, ['overview', 'genres'])
+    const data = localizeDetail(detail, translated, locale)
     return {
       id: item.id,
       kind,

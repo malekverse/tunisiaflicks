@@ -1,7 +1,7 @@
 "use client"
 import React, { useId, useState } from 'react'
-import { signOut } from 'next-auth/react'
-import { Download, KeyRound, Trash2 } from 'lucide-react'
+import { signIn, signOut, useSession } from 'next-auth/react'
+import { Download, KeyRound, LogIn, ShieldCheck, Trash2 } from 'lucide-react'
 import { Button } from '@/src/components/ui/button'
 import { Input } from '@/src/components/ui/input'
 import { Label } from '@/src/components/ui/label'
@@ -11,18 +11,71 @@ import SettingsSection from '@/src/components/profile/SettingsSection'
 import { useT } from '@/src/components/I18nProvider'
 import { useAccount } from '@/src/hooks/use-account'
 import { toast } from '@/src/hooks/use-toast'
-import { translateApiMessage } from '@/src/lib/i18n'
+import { translateApiMessage } from '@/src/lib/i18n/translate'
+import { cn } from '@/src/lib/utils'
 
 // 16px on phones: smaller text makes iOS zoom into the field.
 const input = 'text-base sm:text-[15px]'
 const label = 'text-[13px] font-medium text-white/70'
 const inner = 'rounded-[20px] bg-white/[0.03] p-5 ring-1 ring-inset'
 
-/** Settings > Security (#security: password) and Your data (#data: export, delete account). */
-export default function AccountSecurity() {
+/** How recent a sign-in must be to set a first password or change the email without one (as on the server). */
+const FRESH_LOGIN_MS = 10 * 60 * 1000
+
+/** Whether this session signed in recently enough for a change that has no password to confirm it. */
+export function useFreshLogin() {
+  const { data: session } = useSession()
+  const loginAt = session?.loginAt
+  return session?.scope !== 'tv' && typeof loginAt === 'number' && Date.now() - loginAt < FRESH_LOGIN_MS
+}
+
+/**
+ * Shown when a change needs a recent sign-in (accounts that only use Google have no password to
+ * confirm it with): says why, and signs in with Google again, coming back to `callbackUrl`.
+ */
+export function ReauthNotice({ message, callbackUrl, className }: { message: string, callbackUrl: string, className?: string }) {
+  const t = useT()
+  const [busy, setBusy] = useState(false)
+  return (
+    <div role="status" className={cn('flex flex-col gap-4 rounded-2xl bg-amber-400/[0.07] p-4 ring-1 ring-inset ring-amber-300/15 sm:flex-row sm:items-center sm:gap-5 sm:p-5', className)}>
+      <div className="flex min-w-0 flex-1 items-start gap-3">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber-400/15 text-amber-300">
+          <ShieldCheck aria-hidden className="h-[18px] w-[18px]" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-[15px] font-semibold text-amber-50">{t('accountSecurity.reauthTitle')}</p>
+          <p className="mt-0.5 text-pretty text-[13.5px] leading-relaxed text-amber-100/75">{message}</p>
+        </div>
+      </div>
+      <Button
+        type="button"
+        variant="secondary"
+        disabled={busy}
+        onClick={() => { setBusy(true); signIn('google', { callbackUrl }) }}
+        className="h-11 shrink-0 self-start sm:self-center"
+      >
+        <LogIn aria-hidden className="h-4 w-4 rtl:rotate-180" />
+        {t('accountSecurity.reauthButton')}
+      </Button>
+    </div>
+  )
+}
+
+/** The slot under the password form, set apart by a hairline; it disappears when its content renders nothing. */
+function SecurityExtra({ children }: { children?: React.ReactNode }) {
+  if (!children) return null
+  return <div className="mt-8 border-t border-white/[0.07] pt-7 empty:hidden">{children}</div>
+}
+
+/**
+ * Settings > Security (#security: password, then `securityExtra`, e.g. the TVs signed in) and Your
+ * data (#data: export, delete account).
+ */
+export default function AccountSecurity({ securityExtra }: { securityExtra?: React.ReactNode } = {}) {
   const t = useT()
   const id = useId()
   const { account, refresh } = useAccount()
+  const freshLogin = useFreshLogin()
 
   // --- password ---
   const [currentPassword, setCurrentPassword] = useState('')
@@ -30,6 +83,8 @@ export default function AccountSecurity() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [savingPassword, setSavingPassword] = useState(false)
   const [passwordError, setPasswordError] = useState<string | null>(null)
+  // The server asked for a recent sign-in (setting a first password).
+  const [reauthRequired, setReauthRequired] = useState(false)
 
   const savePassword = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -45,7 +100,12 @@ export default function AccountSecurity() {
       })
       const data = await response.json().catch(() => ({}))
       if (!response.ok) {
-        setPasswordError(data.error === 'wrongPassword' ? t('account.wrongPassword') : translateApiMessage(t, data.message) ?? t('auth.genericError'))
+        if (data.code === 'reauth') return setReauthRequired(true)
+        setPasswordError(
+          data.code === 'tv_session' ? t('accountSecurity.tvSession')
+            : data.error === 'wrongPassword' ? t('account.wrongPassword')
+              : translateApiMessage(t, data.message) ?? t('auth.genericError')
+        )
         return
       }
       setCurrentPassword(''); setNewPassword(''); setConfirmPassword('')
@@ -75,9 +135,10 @@ export default function AccountSecurity() {
       })
       const data = await response.json().catch(() => ({}))
       if (!response.ok) {
-        setDeleteError(data.error === 'notConfirmed'
-          ? t(account?.hasPassword ? 'account.wrongPassword' : 'account.emailMismatch')
-          : translateApiMessage(t, data.message) ?? t('auth.genericError'))
+        setDeleteError(data.code === 'tv_session' ? t('accountSecurity.tvSession')
+          : data.error === 'notConfirmed'
+            ? t(account?.hasPassword ? 'account.wrongPassword' : 'account.emailMismatch')
+            : translateApiMessage(t, data.message) ?? t('auth.genericError'))
         setDeleting(false)
         return
       }
@@ -97,6 +158,7 @@ export default function AccountSecurity() {
           <div aria-busy className="max-w-md space-y-4">
             <Skeleton className="h-11 rounded-xl" /><Skeleton className="h-11 rounded-xl" /><Skeleton className="h-10 w-36 rounded-full" />
           </div>
+          <SecurityExtra>{securityExtra}</SecurityExtra>
         </SettingsSection>
         <SettingsSection id="data" title={t('settings.data')} description={t('settings.dataDesc')}>
           <div aria-busy className="grid gap-4 md:grid-cols-2">
@@ -110,31 +172,44 @@ export default function AccountSecurity() {
   return (
     <>
       <SettingsSection id="security" title={t('settings.security')} description={t('settings.securityDesc')}>
-        <form onSubmit={savePassword} className="max-w-md space-y-5">
-          <h3 className="flex items-center gap-2.5 text-[15px] font-semibold text-white">
-            <KeyRound aria-hidden className="h-[18px] w-[18px] text-white/70" />
-            {t(account.hasPassword ? 'account.changePassword' : 'account.setPassword')}
-          </h3>
-          {!account.hasPassword && <p className="-mt-2 text-[14px] leading-relaxed text-white/55">{t('account.setPasswordDesc')}</p>}
-          {account.hasPassword && (
+        {!account.hasPassword && (reauthRequired || !freshLogin) ? (
+          // A first password opens a second way in: only right after signing in with Google.
+          <div className="max-w-xl space-y-4">
+            <h3 className="flex items-center gap-2.5 text-[15px] font-semibold text-white">
+              <KeyRound aria-hidden className="h-[18px] w-[18px] text-white/70" />
+              {t('account.setPassword')}
+            </h3>
+            <p className="-mt-2 text-[14px] leading-relaxed text-white/55">{t('account.setPasswordDesc')}</p>
+            <ReauthNotice message={t('accountSecurity.reauthPassword')} callbackUrl="/profile#security" />
+          </div>
+        ) : (
+          <form onSubmit={savePassword} className="max-w-md space-y-5">
+            <h3 className="flex items-center gap-2.5 text-[15px] font-semibold text-white">
+              <KeyRound aria-hidden className="h-[18px] w-[18px] text-white/70" />
+              {t(account.hasPassword ? 'account.changePassword' : 'account.setPassword')}
+            </h3>
+            {!account.hasPassword && <p className="-mt-2 text-[14px] leading-relaxed text-white/55">{t('account.setPasswordDesc')}</p>}
+            {account.hasPassword && (
+              <div className="space-y-2">
+                <Label htmlFor={`${id}-current`} className={label}>{t('account.currentPassword')}</Label>
+                <Input id={`${id}-current`} type="password" autoComplete="current-password" className={input} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+              </div>
+            )}
             <div className="space-y-2">
-              <Label htmlFor={`${id}-current`} className={label}>{t('account.currentPassword')}</Label>
-              <Input id={`${id}-current`} type="password" autoComplete="current-password" className={input} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+              <Label htmlFor={`${id}-new`} className={label}>{t('auth.newPassword')}</Label>
+              <Input id={`${id}-new`} type="password" autoComplete="new-password" className={input} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={8} />
             </div>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor={`${id}-new`} className={label}>{t('auth.newPassword')}</Label>
-            <Input id={`${id}-new`} type="password" autoComplete="new-password" className={input} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={8} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor={`${id}-confirm`} className={label}>{t('auth.confirmPassword')}</Label>
-            <Input id={`${id}-confirm`} type="password" autoComplete="new-password" className={input} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={8} aria-describedby={passwordError ? `${id}-password-error` : undefined} />
-            {passwordError && <p id={`${id}-password-error`} className="text-[13px] text-red-400" role="alert">{passwordError}</p>}
-          </div>
-          <Button type="submit" disabled={savingPassword} className="max-sm:w-full">
-            {savingPassword ? t('form.sending') : t('account.savePassword')}
-          </Button>
-        </form>
+            <div className="space-y-2">
+              <Label htmlFor={`${id}-confirm`} className={label}>{t('auth.confirmPassword')}</Label>
+              <Input id={`${id}-confirm`} type="password" autoComplete="new-password" className={input} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={8} aria-describedby={passwordError ? `${id}-password-error` : undefined} />
+              {passwordError && <p id={`${id}-password-error`} className="text-[13px] text-red-400" role="alert">{passwordError}</p>}
+            </div>
+            <Button type="submit" disabled={savingPassword} className="max-sm:w-full">
+              {savingPassword ? t('form.sending') : t('account.savePassword')}
+            </Button>
+          </form>
+        )}
+        <SecurityExtra>{securityExtra}</SecurityExtra>
       </SettingsSection>
 
       <SettingsSection id="data" title={t('settings.data')} description={t('settings.dataDesc')}>

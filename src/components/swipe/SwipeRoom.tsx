@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { AnimatePresence } from 'framer-motion'
-import { Heart, Popcorn, RotateCcw, Share2 } from 'lucide-react'
+import { ChevronLeft, Heart, Popcorn, RotateCcw, Share2 } from 'lucide-react'
 import { Button } from '@/src/components/ui/button'
 import { Input } from '@/src/components/ui/input'
 import { Label } from '@/src/components/ui/label'
@@ -25,6 +25,8 @@ type RoomState = {
   match: SwipeCard | null
   favorites: { card: SwipeCard, likes: number }[]
   me: { id: string, voted: string[] } | null
+  /** The movie night this room picks for ('Pick together'): its id only. */
+  night?: { id: string } | null
 }
 
 const POLL_MS = 3000
@@ -87,6 +89,9 @@ export default function SwipeRoom({ code }: { code: string }) {
   const [dismissedMatch, setDismissedMatch] = useState<string | null>(null)
   const deckId = useRef('')
   const deck = useRef<SwipeCard[]>([])
+  // The room only knows its night's id; the night itself says its name, and only to its members
+  // (anyone with the room's code can be in the room).
+  const [night, setNight] = useState<{ id: string, title: string } | null>(null)
 
   const load = useCallback(async (withDeck: boolean, creds: SwipeCredentials | null) => {
     const response = await fetch(`/api/swipe/${code}${withDeck ? '?deck=1' : ''}`, {
@@ -116,6 +121,19 @@ export default function SwipeRoom({ code }: { code: string }) {
     setName(getSavedName())
     load(true, creds)
   }, [code, load])
+
+  const nightId = state?.night?.id ?? null
+  useEffect(() => {
+    if (!nightId) return setNight(null)
+    let cancelled = false
+    fetch(`/api/movie-night/${encodeURIComponent(nightId)}`, { cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.access === 'member') setNight({ id: nightId, title: typeof data.title === 'string' ? data.title : '' })
+      })
+      .catch(() => undefined)
+    return () => { cancelled = true }
+  }, [nightId])
 
   // Live updates (others joining, progress, the match) while the tab is visible.
   const hasMatch = !!state?.match
@@ -223,6 +241,15 @@ export default function SwipeRoom({ code }: { code: string }) {
         <div className="mx-auto max-w-[1080px] lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-16">
           {/* The room: its code, the invite, and everyone's progress through the deck. */}
           <aside className="lg:sticky lg:top-[calc(var(--topbar)+28px)] lg:self-start lg:pt-6">
+            {night && (
+              <div className="mb-5 lg:mb-7">
+                <Link href={`/movie-night/${night.id}`} className="-ms-1 inline-flex min-h-11 items-center gap-1 rounded-full pe-3 ps-1 text-[14px] text-white/60 outline-none transition-colors hover:text-white focus-visible:ring-2 focus-visible:ring-red-500">
+                  <ChevronLeft aria-hidden className="h-4 w-4 rtl:rotate-180" />{t('movieNight.swipe.back')}
+                </Link>
+                <p className="mt-1 text-[13px] text-white/55">{t('movieNight.swipe.pickingFor')}</p>
+                <p className="mt-0.5 truncate font-display text-[22px] font-bold leading-tight text-white"><bdi>{night.title || t('movieNight.defaultTitle')}</bdi></p>
+              </div>
+            )}
             <div className="flex items-end justify-between gap-4 lg:block">
               <div className="min-w-0">
                 <p className="text-[13px] text-white/50">{t('swipe.roomCode')}</p>
@@ -339,7 +366,7 @@ export default function SwipeRoom({ code }: { code: string }) {
 
       <AnimatePresence>
         {showMatch && state.match && (
-          <MatchMoment key={state.match.key} card={state.match} names={names} onNewDeck={newDeck} onClose={closeMatch} />
+          <MatchMoment key={state.match.key} card={state.match} names={names} onNewDeck={newDeck} onClose={closeMatch} night={night} />
         )}
       </AnimatePresence>
     </div>

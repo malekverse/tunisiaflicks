@@ -4,6 +4,12 @@
 //     follow's marker move forward (a crash in between just retries, it never loses or doubles an alert);
 //  2. each user's pending notifications are claimed, sent as ONE email, then marked sent.
 // New notifications are also pushed right away to the follower's devices that opted in (lib/push.ts).
+//
+// Each notification is stamped `kidSafe` when it's created (Kids profiles only see those in the
+// bell, and devices bound to a Kids profile only get those pushed). An account that turned off
+// "Release alerts by email" (users.emailPrefs.releaseAlerts === false) keeps the bell and the
+// pushes, never the e-mail. Every e-mail takes a slot of the day's shared bulk budget
+// (reserveMail in lib/email.ts); once it's spent the rest waits for the next run.
 import { randomUUID } from 'crypto'
 import { MongoServerError, ObjectId } from 'mongodb'
 import clientPromise from '@/src/lib/mongodb'
@@ -13,6 +19,8 @@ import {
 } from '@/src/lib/follows'
 import type { FollowMediaType, ReleaseNotification } from '@/src/lib/models/Follow'
 import { pushToUser } from '@/src/lib/push'
+import { isKidSafe } from '@/src/lib/kids'
+import { tmdbFetchSafe } from '@/src/lib/tmdb'
 import { createTranslator } from '@/src/lib/i18n'
 
 const TMDB_CONCURRENCY = 6
@@ -30,6 +38,10 @@ export type ReleaseAlertStats = {
   usersEmailed: number
   emailsFailed: number
   emailsDeferred: number
+  /** Accounts with release e-mails turned off: their alerts were marked done without an e-mail. */
+  emailsSkipped: number
+  /** Left for the next run because today's bulk mail budget is spent. */
+  emailsOverQuota: number
 }
 
 const isDuplicateKey = (error: unknown) => error instanceof MongoServerError && error.code === 11000
@@ -68,6 +80,7 @@ export async function runReleaseAlerts({ deadline = Date.now() + 50_000 }: { dea
   const timeUp = () => Date.now() > deadline
   const stats: ReleaseAlertStats = {
     titlesChecked: 0, titlesFailed: 0, titlesSkipped: 0, notificationsCreated: 0, usersEmailed: 0, emailsFailed: 0, emailsDeferred: 0,
+    emailsSkipped: 0, emailsOverQuota: 0,
   }
 
   // ---- 1. Detect releases / new episodes -------------------------------------------------------
@@ -79,19 +92,36 @@ export async function runReleaseAlerts({ deadline = Date.now() + 50_000 }: { dea
     { $sort: { checked_at: 1 } },
   ]).toArray()
 
+  // Whether a title may reach Kids profiles: worked out once per title, only when someone is due.
+  const kidSafeOf = new Map<string, Promise<boolean>>()
+  const kidSafeTitle = (snapshot: TitleSnapshot) => {
+    const key = `${snapshot.media_type}:${snapshot.tmdbId}`
+    let pending = kidSafeOf.get(key)
+    if (!pending) {
+      pending = tmdbFetchSafe(`${snapshot.media_type}/${snapshot.tmdbId}`, {}, 86400)
+        .then((detail) => (detail ? isKidSafe(detail, snapshot.media_type) : false))
+        .catch(() => false)
+      kidSafeOf.set(key, pending)
+    }
+    return pending
+  }
+
   const notify = async (snapshot: TitleSnapshot, userId: string, doc: Pick<ReleaseNotification, 'kind' | 'event_key' | 'episode'>) => {
+    const kidSafe = await kidSafeTitle(snapshot)
     try {
-      await notifications.insertOne({
+      const notification: ReleaseNotification & { kidSafe: boolean } = {
         userId,
         media_type: snapshot.media_type,
         tmdbId: snapshot.tmdbId,
         title: snapshot.title,
         poster_path: snapshot.poster_path,
         ...doc,
+        kidSafe,
         created_at: now,
         read: false,
         email_status: 'pending',
-      })
+      }
+      await notifications.insertOne(notification)
       stats.notificationsCreated++
     } catch (error) {
       if (!isDuplicateKey(error)) throw error // already created by an earlier (interrupted) run
@@ -109,7 +139,7 @@ export async function runReleaseAlerts({ deadline = Date.now() + 50_000 }: { dea
         url: `/${snapshot.media_type}/${snapshot.tmdbId}`,
         tag: doc.event_key,
       }
-    }).catch((error) => console.error('Release alert push failed:', error))
+    }, 'alerts', { kidSafe }).catch((error) => console.error('Release alert push failed:', error))
   }
 
   const checkTitle = async ({ _id: { media_type, tmdbId } }: (typeof titles)[number]) => {
@@ -175,7 +205,12 @@ export async function runReleaseAlerts({ deadline = Date.now() + 50_000 }: { dea
   const users = (await clientPromise).db().collection('users')
   const claim = randomUUID()
 
+  let overQuota = false
   for (const userId of userIds) {
+    if (overQuota) {
+      stats.emailsOverQuota++
+      continue
+    }
     if (stats.usersEmailed + stats.emailsFailed >= MAX_EMAILS_PER_RUN || timeUp()) {
       stats.emailsDeferred++
       continue
@@ -189,10 +224,16 @@ export async function runReleaseAlerts({ deadline = Date.now() + 50_000 }: { dea
     if (docs.length === 0) continue
     const ids = docs.map((doc) => doc._id)
 
-    const user = ObjectId.isValid(userId) ? await users.findOne({ _id: new ObjectId(userId) }, { projection: { email: 1, name: 1 } }) : null
+    const user = ObjectId.isValid(userId) ? await users.findOne({ _id: new ObjectId(userId) }, { projection: { email: 1, name: 1, emailPrefs: 1 } }) : null
     if (!user?.email) {
       // Account gone or without an email: keep the in-app notifications, never try to email them.
       await notifications.updateMany({ _id: { $in: ids } }, { $set: { email_status: 'failed', email_claim: null } })
+      continue
+    }
+    if (user.emailPrefs?.releaseAlerts === false) {
+      // Release e-mails turned off: the bell and the pushes already have them; done, no e-mail.
+      await notifications.updateMany({ _id: { $in: ids } }, { $set: { email_status: 'sent', emailed_at: null, email_claim: null } })
+      stats.emailsSkipped++
       continue
     }
 
@@ -211,7 +252,14 @@ export async function runReleaseAlerts({ deadline = Date.now() + 50_000 }: { dea
     }))
 
     try {
-      await sendReleaseAlertsEmail(user.email, user.name, alerts)
+      const result = await sendReleaseAlertsEmail(user.email, user.name, alerts)
+      if (result === 'quota') {
+        // Today's bulk budget is spent: back to pending (not an attempt), and stop e-mailing.
+        await notifications.updateMany({ _id: { $in: ids }, email_claim: claim }, { $set: { email_status: 'pending', email_claim: null } })
+        stats.emailsOverQuota++
+        overQuota = true
+        continue
+      }
       await notifications.updateMany({ _id: { $in: ids } }, { $set: { email_status: 'sent', emailed_at: new Date(), email_claim: null } })
       stats.usersEmailed++
     } catch (error) {

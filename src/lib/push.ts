@@ -1,12 +1,13 @@
-// Web push (free, standard VAPID): browser/installed-app notifications for the daily pick and for
-// followed titles. Off unless VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY are set
-// (generate them once with `npx web-push generate-vapid-keys`).
+// Web push (free, standard VAPID): browser/installed-app notifications for the daily pick, followed
+// titles, friends and movie nights. Off unless VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY are set
+// (generate them once with `npx web-push generate-vapid-keys`). A signed-in device is bound to the
+// profile in use on it, so a profile's friends reach that profile's devices only.
 import { createHash } from 'crypto'
 import webpush from 'web-push'
 import clientPromise from '@/src/lib/mongodb'
 import type { Locale } from '@/src/lib/i18n'
 
-export type PushTopic = 'pick' | 'alerts'
+export type PushTopic = 'pick' | 'alerts' | 'friends' | 'nights'
 
 export type PushPayload = {
   title: string
@@ -24,6 +25,10 @@ export type PushSubscriptionDoc = {
   endpoint: string
   keys: { p256dh: string, auth: string }
   userId: string | null
+  /** The profile in use on the device when it last subscribed (null: none picked, or a guest). */
+  profileId?: string | null
+  /** That profile is a Kids profile: no adult titles, and never the friends or nights topics. */
+  profileKids?: boolean
   topics: PushTopic[]
   locale: Locale
   created_at: Date
@@ -109,9 +114,27 @@ export async function sendPushToAll(
   return stats
 }
 
-/** A signed-in user's devices that want release alerts. */
-export async function pushToUser(userId: string, payloadFor: (doc: PushSubscriptionDoc) => PushPayload) {
+/**
+ * Pushes to a signed-in user's devices that want `topic` (release alerts by default). With
+ * `profileId`, only the devices bound to that profile; `kidSafe: false` skips the devices bound to
+ * a Kids profile. `payloadFor` may answer null to skip a device.
+ */
+export async function pushToUser(
+  userId: string,
+  payloadFor: (sub: PushSubscriptionDoc & { locale: Locale; profileId: string | null }) => PushPayload | null,
+  topic: PushTopic = 'alerts',
+  opts: { profileId?: string; kidSafe?: boolean } = {},
+) {
   if (!pushEnabled()) return
-  const docs = await (await pushCollection()).find({ userId, topics: 'alerts' }).toArray()
-  if (docs.length) await sendPushToAll(docs, payloadFor, Date.now() + 5_000)
+  const filter: Record<string, unknown> = { userId, topics: topic }
+  if (opts.profileId) filter.profileId = opts.profileId
+  if (opts.kidSafe === false) filter.profileKids = { $ne: true }
+  const docs = await (await pushCollection()).find(filter).toArray()
+  const payloads = new Map<string, PushPayload>()
+  for (const doc of docs) {
+    const payload = payloadFor({ ...doc, profileId: doc.profileId ?? null })
+    if (payload) payloads.set(doc._id, payload)
+  }
+  const due = docs.filter((doc) => payloads.has(doc._id))
+  if (due.length) await sendPushToAll(due, (doc) => payloads.get(doc._id)!, Date.now() + 5_000)
 }

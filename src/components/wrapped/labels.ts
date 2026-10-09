@@ -27,8 +27,8 @@ export function personaOf(personality: { title: string, blurb: string }, t: Tran
 // Every TMDB movie and TV genre id, to look English names up in lib/genres.
 const GENRE_IDS = [28, 12, 16, 35, 80, 99, 18, 10751, 14, 36, 27, 10402, 9648, 10749, 878, 10770, 53, 10752, 37, 10759, 10762, 10763, 10764, 10765, 10766, 10767, 10768]
 
+/** A stored English genre name in the viewer's language (French and Arabic included); as stored when unknown. */
 export function genreLabel(name: string, locale: Locale) {
-  if (locale === 'en') return name
   const id = GENRE_IDS.find((genre) => genreNames([genre], 'en')[0] === name)
   return (id && genreNames([id], locale)[0]) || name
 }

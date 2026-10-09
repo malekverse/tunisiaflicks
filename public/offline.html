@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -11,29 +11,63 @@
   body {
     margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
     color: #fff; text-align: center; padding: 24px;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Arabic", Tahoma, sans-serif;
     /* The room light, dimmed: nothing is playing. */
     background: radial-gradient(110% 60% at 50% -10%, rgb(255 36 20 / 0.16), transparent 70%), #000;
   }
   img { width: 72px; height: 72px; border-radius: 18px; filter: drop-shadow(0 0 24px rgb(255 16 0 / 0.45)); }
   h1 { margin: 24px 0 8px; font-size: 1.75rem; letter-spacing: -0.02em; }
+  [dir="rtl"] h1 { letter-spacing: 0; }
   p { margin: 0 auto; max-width: 340px; color: rgb(255 255 255 / 0.6); line-height: 1.6; }
+  [dir="rtl"] p { line-height: 1.8; }
   button {
     margin-top: 28px; padding: 0 26px; height: 46px; border: 0; border-radius: 999px; cursor: pointer;
-    background: #e50f05; color: #fff; font-weight: 600; font-size: .95rem;
+    background: #e50f05; color: #fff; font: inherit; font-weight: 600; font-size: .95rem;
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22), 0 10px 30px -10px rgb(229 15 5 / 0.7);
     transition: transform 140ms cubic-bezier(0.23, 1, 0.32, 1), background-color 150ms ease;
+    touch-action: manipulation;
   }
-  button:hover { background: #ff2414; }
+  @media (hover: hover) { button:hover { background: #ff2414; } }
   button:active { transform: scale(0.97); }
 </style>
 </head>
 <body>
   <main>
     <img src="/icons/icon-192.png" alt="TunisiaFlicks" />
-    <h1>You're offline</h1>
-    <p>TunisiaFlicks needs an internet connection. Check your connection and try again.</p>
-    <button type="button" onclick="location.reload()">Try again</button>
+    <h1 id="title">You're offline</h1>
+    <p id="text">TunisiaFlicks needs an internet connection. Check your connection and try again.</p>
+    <button type="button" id="retry" onclick="location.reload()">Try again</button>
   </main>
+  <script>
+    // The page is cached by the service worker, so it can't be rendered in the visitor's language
+    // on the server: it reads the language cookie (or the browser's languages) and translates itself.
+    (function () {
+      var strings = {
+        en: { dir: 'ltr', doc: "You're offline | TunisiaFlicks", title: "You're offline", text: 'TunisiaFlicks needs an internet connection. Check your connection and try again.', retry: 'Try again' },
+        fr: { dir: 'ltr', doc: 'Vous êtes hors ligne | TunisiaFlicks', title: 'Vous êtes hors ligne', text: 'TunisiaFlicks a besoin d’une connexion internet. Vérifiez votre connexion, puis réessayez.', retry: 'Réessayer' },
+        ar: { dir: 'rtl', doc: 'أنت غير متصل | TunisiaFlicks', title: 'أنت غير متصل بالإنترنت', text: 'يحتاج TunisiaFlicks إلى اتصال بالإنترنت. تحقّق من اتصالك ثم حاول مجددًا.', retry: 'حاول مجددًا' },
+        tn: { dir: 'rtl', doc: 'ماكش متصل | TunisiaFlicks', title: 'ماكش متصل بالإنترنت', text: 'TunisiaFlicks يستحق الإنترنت. ثبّت في الكونيكسيون متاعك وعاود جرّب.', retry: 'عاود جرّب' }
+      };
+      var lang = 'en';
+      try {
+        var match = document.cookie.match(/(?:^|;\s*)tf-locale=([a-z]+)/);
+        if (match && Object.prototype.hasOwnProperty.call(strings, match[1])) lang = match[1];
+        else {
+          var wanted = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || 'en'];
+          for (var i = 0; i < wanted.length; i++) {
+            var code = String(wanted[i]).toLowerCase().split('-')[0];
+            if (code === 'en' || code === 'fr' || code === 'ar') { lang = code; break; }
+          }
+        }
+      } catch (e) {}
+      var s = strings[lang];
+      document.documentElement.lang = lang === 'tn' ? 'ar-TN' : lang;
+      document.documentElement.dir = s.dir;
+      document.title = s.doc;
+      document.getElementById('title').textContent = s.title;
+      document.getElementById('text').textContent = s.text;
+      document.getElementById('retry').textContent = s.retry;
+    })();
+  </script>
 </body>
 </html>

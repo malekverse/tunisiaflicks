@@ -5,27 +5,37 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/src/lib/utils'
 import { useI18n } from '@/src/components/I18nProvider'
 
-/** A section title, aligned with the page column, with an optional "See all" link. */
-export function SectionHeader({ title, href, subtitle, className, as: Heading = 'h2' }: {
+/**
+ * A section title, aligned with the page column, with an optional "See all" link and an optional
+ * `end` slot (a small action, a filter, a count) on the inline end, before "See all".
+ */
+export function SectionHeader({ title, href, subtitle, end, className, as: Heading = 'h2' }: {
     title: React.ReactNode
     href?: string
     subtitle?: React.ReactNode
+    end?: React.ReactNode
     className?: string
     as?: 'h1' | 'h2'
 }) {
     const { t } = useI18n()
+    const seeAll = href && (
+        <Link href={href} className="group/see -my-2 inline-flex shrink-0 items-center gap-0.5 rounded-full py-2 ps-3 text-[13px] font-medium text-white/55 transition-colors hover:text-white">
+            {t('common.seeAll')}
+            <ChevronRight aria-hidden className="h-4 w-4 transition-transform duration-200 ease-out group-hover/see:translate-x-0.5 rtl:rotate-180 rtl:group-hover/see:-translate-x-0.5" />
+        </Link>
+    )
     return (
         <div className={cn('page-x mb-3 flex items-end justify-between gap-4 sm:mb-4', className)}>
             <div className="min-w-0">
                 <Heading className="font-display text-[21px] font-bold leading-tight text-white sm:text-[26px]">{title}</Heading>
                 {subtitle && <p className="mt-0.5 text-[13px] text-white/50">{subtitle}</p>}
             </div>
-            {href && (
-                <Link href={href} className="group/see -my-2 inline-flex shrink-0 items-center gap-0.5 rounded-full py-2 ps-3 text-[13px] font-medium text-white/55 transition-colors hover:text-white">
-                    {t('common.seeAll')}
-                    <ChevronRight aria-hidden className="h-4 w-4 transition-transform duration-200 ease-out group-hover/see:translate-x-0.5 rtl:rotate-180 rtl:group-hover/see:-translate-x-0.5" />
-                </Link>
-            )}
+            {end ? (
+                <div className="flex shrink-0 items-center gap-1">
+                    {end}
+                    {seeAll}
+                </div>
+            ) : seeAll}
         </div>
     )
 }

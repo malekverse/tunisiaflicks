@@ -1,43 +1,52 @@
 "use client"
 import { useEffect, useRef, useState } from 'react'
 import { useRoom } from '@/src/store/room'
+import { cn } from '@/src/lib/utils'
 
-// With nothing on screen to borrow from, the room keeps a faint red: the exit sign in the dark.
-const DEFAULT_LIGHT = '255 36 20'
+// With nothing on screen to borrow from, the room keeps the season's light: lantern gold through
+// Ramadan and the Eids, champagne at New Year, the flag's red (dimmed) on the national days. The
+// root layout sets it on <html> (data-season, --season-light and --season-glow, from
+// getSeasonSkin in src/lib/seasons.ts), so the very first paint already has it. Out of season, a
+// faint red: the exit sign in the dark.
+const DEFAULT_LIGHT = 'var(--season-glow, var(--season-light, 255 36 20))'
 
-const glow = (color: string, strength: number) =>
-  `radial-gradient(110% 62% at 50% -12%, rgb(${color} / ${0.34 * strength}), rgb(${color} / ${0.1 * strength}) 42%, transparent 72%)`
+const glow = (color: string) =>
+  `radial-gradient(110% 62% at 50% -12%, rgb(${color} / 0.34), rgb(${color} / 0.1) 42%, transparent 72%)`
+
+/** `fallback`: the default light, dimmed by CSS (more softly in season). */
+type Layer = { color: string, fallback: boolean }
 
 /**
  * The light in the room: a glow at the top of the viewport tinted by what the viewer is looking at.
  * Two stacked layers cross-fade (opacity only, so the compositor does the work) whenever the
- * colour changes.
+ * colour changes. Pages with a picture keep their picture's light; the season only lights the
+ * room when nothing else does, a little brighter than the exit sign (CSS decides, from
+ * data-season, so server and browser agree).
  */
 export default function RoomLight() {
   const base = useRoom((state) => state.base)
   const hover = useRoom((state) => state.hover)
-  const color = hover ?? base ?? DEFAULT_LIGHT
-  const strength = hover || base ? 1 : 0.45
+  const lit = hover ?? base
+  const color = lit ?? DEFAULT_LIGHT
+  const fallback = !lit
 
-  const [layers, setLayers] = useState<[{ color: string, strength: number }, { color: string, strength: number }]>(
-    () => [{ color, strength }, { color, strength }]
-  )
+  const [layers, setLayers] = useState<[Layer, Layer]>(() => [{ color, fallback }, { color, fallback }])
   const [front, setFront] = useState(0)
   const frontRef = useRef(0)
 
   useEffect(() => {
     const current = layers[frontRef.current]
-    if (current.color === color && current.strength === strength) return
+    if (current.color === color && current.fallback === fallback) return
     const back = 1 - frontRef.current
     setLayers((previous) => {
       const next = [...previous] as typeof previous
-      next[back] = { color, strength }
+      next[back] = { color, fallback }
       return next
     })
     frontRef.current = back
     setFront(back)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [color, strength])
+  }, [color, fallback])
 
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-black">
@@ -45,8 +54,13 @@ export default function RoomLight() {
         <div
           key={index}
           className="absolute inset-0 transition-opacity [transition-duration:1100ms] ease-out"
-          style={{ backgroundImage: glow(layer.color, layer.strength), opacity: index === front ? 1 : 0 }}
-        />
+          style={{ opacity: index === front ? 1 : 0 }}
+        >
+          <div
+            className={cn('absolute inset-0', layer.fallback && 'opacity-[0.45] [[data-season]_&]:opacity-[0.65]')}
+            style={{ backgroundImage: glow(layer.color) }}
+          />
+        </div>
       ))}
     </div>
   )

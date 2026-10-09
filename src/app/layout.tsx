@@ -20,9 +20,20 @@ import ServiceWorkerRegister from "@/src/components/ServiceWorkerRegister";
 import DailyPushTrigger from "@/src/components/DailyPushTrigger";
 import ErrorReporter from "@/src/components/ErrorReporter";
 import { I18nProvider } from "@/src/components/I18nProvider";
-import { dirOf, htmlLang } from "@/src/lib/i18n";
+import ShareSheetHost from "@/src/components/share/ShareSheetHost";
+import AddToListHost from "@/src/components/lists/AddToListHost";
+import LanguageHint from "@/src/components/shell/LanguageHint";
+import TvModeProvider from "@/src/components/tv/TvModeProvider";
+import TvShell from "@/src/components/tv/TvShell";
+import TvModeOffer from "@/src/components/tv/TvModeOffer";
+import { dictionaryFor, dirOf, htmlLang } from "@/src/lib/i18n";
 import { getLocale, getT } from "@/src/lib/i18n/server";
-import { SITE_DESCRIPTION, SITE_URL } from "@/src/lib/seo";
+import { getKidsMode } from "@/src/lib/profiles";
+import { SEASONS_TODAY_COOKIE, getSeasonalNav, getSeasonSkin, seasonClock } from "@/src/lib/seasons";
+import { isTvMode } from "@/src/lib/tv-mode";
+import { aiSearchEnabled } from "@/src/lib/ai-search/config";
+import { SITE_DESCRIPTION, SITE_URL, siteMetadata } from "@/src/lib/seo";
+import { cookies, headers } from "next/headers";
 
 import type { Viewport } from 'next'
 
@@ -33,7 +44,7 @@ const text = Readex_Pro({ subsets: ['latin'], variable: '--font-text', display: 
 const display = Bricolage_Grotesque({ subsets: ['latin'], axes: ['opsz', 'wdth'], variable: '--font-display', display: 'swap' });
 const displayArabic = Alexandria({ subsets: ['arabic'], variable: '--font-display-ar', display: 'swap', preload: false });
 
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   title: 'TunisiaFlicks: movies, TV shows and Tunisian series',
   description: SITE_DESCRIPTION,
   keywords: ['Movies', 'TV shows', 'Tunisian series', 'Ramadan series', 'Trailers', 'Top 10', 'مسلسلات تونسية', 'مسلسلات رمضان', 'TunisiaFlicks'],
@@ -94,6 +105,12 @@ export const metadata: Metadata = {
   },
 };
 
+/** The site's title, description and og:locale in the page's language (the cookie). */
+export function generateMetadata(): Metadata {
+  const site = siteMetadata(getLocale(), getT());
+  return { ...baseMetadata, ...site, openGraph: { ...baseMetadata.openGraph, ...site.openGraph } };
+}
+
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -106,7 +123,7 @@ export const viewport: Viewport = {
 };
 
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -115,11 +132,42 @@ export default function RootLayout({
   // in the right language and direction.
   const locale = getLocale();
   const t = getT();
+  // Who's watching (Kids hide grown-up items from the nav without a flash), TV mode (cookie
+  // tf-tv=1, see src/middleware.ts), the Android TV app (its WebView adds this token to the user
+  // agent), and the season (the nav slot, and the room's default light).
+  const kids = await getKidsMode().catch(() => false);
+  const tv = isTvMode();
+  // The search pill offers Ask (AI search) too: never for Kids or in TV mode.
+  const ask = aiSearchEnabled() && !kids && !tv;
+  const inApp = (headers().get('user-agent') ?? '').includes('TunisiaFlicksTV/');
+  // In development a cookie can preview another day's season (seasonClock ignores it in production).
+  const { today: seasonDay } = seasonClock(cookies().get(SEASONS_TODAY_COOKIE)?.value);
+  const seasonal = getSeasonalNav(kids, seasonDay);
+  const skin = getSeasonSkin(kids, seasonDay);
+  const seasonStyle = skin
+    ? ({ '--season-light': skin.light, ...(skin.glow ? { '--season-glow': skin.glow } : {}) } as React.CSSProperties)
+    : undefined;
+
+  // The page column. In TV mode the remote-friendly shell wraps it instead of the usual chrome.
+  const page = (
+    <div className="relative flex min-h-dvh flex-col">
+      <VerifyEmailBanner />
+      {!tv && <TvModeOffer />}
+      <main id="main" role="main" className="flex-1 min-w-0">
+        {children}
+      </main>
+      {!tv && <Footer kids={kids} />}
+    </div>
+  );
+
   return (
     <html
       lang={htmlLang(locale)}
       dir={dirOf(locale)}
       className={`dark ${text.variable} ${display.variable} ${displayArabic.variable}`}
+      data-tv={tv ? '1' : undefined}
+      data-season={skin?.id}
+      style={seasonStyle}
       suppressHydrationWarning
     >
       <head>
@@ -132,26 +180,34 @@ export default function RootLayout({
         <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:start-3 focus:top-3 focus:z-[100] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-black">
           {t('nav.skipToContent')}
         </a>
-        <I18nProvider locale={locale}>
-          <SessionProvider>
-            <MotionProvider>
-              <RoomLight />
-              <Rail />
-              <TopBar />
-              <ShellEffects />
-              <div className="relative flex min-h-dvh flex-col">
-                <VerifyEmailBanner />
-                <main id="main" role="main" className="flex-1 min-w-0">
-                  {children}
-                </main>
-                <Footer />
-              </div>
-              <TabBar />
-              <SearchPaletteHost />
-              <PeekLayer />
-            </MotionProvider>
-          </SessionProvider>
-          <Toaster />
+        <I18nProvider locale={locale} messages={dictionaryFor(locale)}>
+          <TvModeProvider tv={tv} inApp={inApp}>
+            <SessionProvider>
+              <MotionProvider>
+                <RoomLight />
+                {tv ? (
+                  <>
+                    <ShellEffects />
+                    <TvShell>{page}</TvShell>
+                  </>
+                ) : (
+                  <>
+                    <Rail kids={kids} seasonal={seasonal} />
+                    <TopBar kids={kids} ask={ask} />
+                    <ShellEffects />
+                    {page}
+                    <TabBar kids={kids} seasonal={seasonal} />
+                    <SearchPaletteHost />
+                    <PeekLayer />
+                    <ShareSheetHost />
+                    <AddToListHost />
+                  </>
+                )}
+              </MotionProvider>
+            </SessionProvider>
+            <Toaster />
+            <LanguageHint />
+          </TvModeProvider>
         </I18nProvider>
         <div aria-hidden className="tf-grain" />
         <SpeedInsights />

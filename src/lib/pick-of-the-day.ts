@@ -11,11 +11,13 @@
 // and the evening notification read it. Without the database the choice is still deterministic.
 import clientPromise from '@/src/lib/mongodb'
 import { tmdbFetchSafe, tmdbLanguage } from '@/src/lib/tmdb'
+import { localizeDetail, logoLanguages, translatedRecord } from '@/src/lib/tmdb-locale'
+import { formatDate } from '@/src/lib/i18n/format'
 import { filterKidSafe, kidsDiscoverParams } from '@/src/lib/kids'
 import { activeMoments, anniversaries, momentItems, sequelCatchUps, type MomentId } from '@/src/lib/moments'
 import { addDays, tunisDate } from '@/src/lib/hijri'
 import { hash } from '@/src/lib/seed'
-import { createTranslator, dateLocale, type Locale, type TKey } from '@/src/lib/i18n'
+import { createTranslator, isArabicScript, type Locale, type TKey } from '@/src/lib/i18n'
 
 type Kind = 'movie' | 'tv'
 type Params = Record<string, string | number | boolean | undefined>
@@ -193,7 +195,7 @@ async function describe(reason: PickReason, locale: Locale): Promise<string> {
       const sequel = await tmdbFetchSafe<any>(`movie/${reason.sequelId}`, { language: tmdbLanguage(locale) }, 86400)
       const title = sequel?.title || ''
       if (reason.date <= tunisToday()) return t('pick.why.sequelOut', { title })
-      const date = new Date(`${reason.date}T12:00:00Z`).toLocaleDateString(dateLocale(locale) ?? 'en-GB', { day: 'numeric', month: 'long', timeZone: 'UTC' })
+      const date = formatDate(reason.date, locale, { day: 'numeric', month: 'long' })
       return t('pick.why.sequel', { title, date })
     }
     case 'newSeason':
@@ -210,12 +212,17 @@ async function describe(reason: PickReason, locale: Locale): Promise<string> {
 export async function getPickOfTheDay(kids: boolean, locale: Locale, date = tunisToday()): Promise<PickOfTheDay | null> {
   const pick = await choose(date, kids)
   if (!pick) return null
-  const [data, english, why] = await Promise.all([
-    tmdbFetchSafe(`${pick.kind}/${pick.id}`, { language: tmdbLanguage(locale), append_to_response: 'images', include_image_language: 'en,null' }, 86400),
-    locale === 'en' ? null : tmdbFetchSafe(`${pick.kind}/${pick.id}`, {}, 86400),
+  const [english, translated, why] = await Promise.all([
+    tmdbFetchSafe(`${pick.kind}/${pick.id}`, { append_to_response: 'images', include_image_language: logoLanguages(locale) }, 86400),
+    translatedRecord(pick.kind, String(pick.id), locale, 86400),
     describe(pick.reason, locale),
   ])
-  if (!data) return null
-  // Not every title has an Arabic overview: fall back to the English one.
-  return { kind: pick.kind, date, data: { ...data, overview: data.overview || english?.overview || '' }, reason: pick.reason, why }
+  if (!english) return null
+  // The viewer's language where TMDB has it, English otherwise (see lib/tmdb-locale). In Arabic the
+  // pick also takes TMDB's Arabic title and tagline, as it always has (and no English tagline).
+  let data = localizeDetail(english, translated, locale)
+  if (isArabicScript(locale) && translated) {
+    data = { ...data, title: translated.title || data.title, name: translated.name || data.name, tagline: translated.tagline || '' }
+  }
+  return { kind: pick.kind, date, data: { ...data, overview: data.overview || '' }, reason: pick.reason, why }
 }

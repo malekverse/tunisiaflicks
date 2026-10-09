@@ -1,6 +1,8 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { Clapperboard, Info } from 'lucide-react'
+import { Clapperboard, Info, Map as MapIcon } from 'lucide-react'
+import HubDoor from '@/src/components/hubs/HubDoor'
+import { MAP_ACCENT } from '@/src/lib/arab-map'
 import { PosterSlider } from '@/src/components/Sliders'
 import { Row, SectionHeader } from '@/src/components/rows/Row'
 import TmdbImage from '@/src/components/TmdbImage'
@@ -78,6 +80,18 @@ export default async function TunisianCinemaPage() {
           </div>
         </div>
       </section>
+
+      {/* Tunisia's tile on the Arab cinema map opens this page: the way back to the other 21. */}
+      <div className="page-x">
+        <HubDoor
+          href="/arab-cinema"
+          title={t('arabMap.door.title')}
+          text={t('arabMap.door.text')}
+          icon={<MapIcon className="h-5 w-5 sm:h-6 sm:w-6" />}
+          accent={MAP_ACCENT}
+          className="max-w-[640px]"
+        />
+      </div>
 
       <PosterSlider title={t('tnCinema.recent')} items={data.recent} kind="movie" />
       <PosterSlider title={t('tnCinema.loved')} items={data.loved} kind="movie" />

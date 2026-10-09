@@ -1,63 +1,117 @@
-// In-app release / new-episode notifications (the navbar bell). Always scoped to the signed-in user.
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/src/lib/auth';
-import { alertCollections } from '@/src/lib/follows';
-import type { NotificationItem } from '@/src/lib/models/Follow';
+// The inbox (the bell and /notifications): release alerts for the account plus everything social
+// for the profile in use. Rows waiting for an answer (a friend request, an invitation) come first.
+// Kids profiles only get kid-safe release alerts and what is explicitly marked for them (badges).
+import { ObjectId, type Filter } from 'mongodb'
+import { alertCollections } from '@/src/lib/follows'
+import { requireActiveProfile } from '@/src/lib/profiles'
+import { socialDb, type SocialNotificationDoc } from '@/src/lib/social/db'
+import { blockedAccounts } from '@/src/lib/social/friends'
+import { getIdentities } from '@/src/lib/social/identity'
+import { readJson, socialError, socialJson } from '@/src/lib/social/session'
+import { NOTIFICATION_FILTERS, type AvatarPerson } from '@/src/lib/social/types'
+import { RELEASE_KINDS, type NotificationItem } from '@/src/lib/models/Follow'
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'
 
-async function getUserId() {
-  const session = await getServerSession(authOptions);
-  return session?.user?.id ?? null;
+const MAX_LIMIT = 50
+
+type Scope = { userId: string; profileId: string; kids: boolean; blocked: string[] }
+
+/**
+ * What this profile may see: the account's alerts and its own rows (Kids: the kid-safe ones).
+ * Nothing from an account on either side of a block: a block also takes back what they had
+ * already sent (a request from another of their profiles, a note).
+ */
+function visibleTo(scope: Scope, filter?: string | null): Filter<SocialNotificationDoc> {
+  const clauses: Filter<SocialNotificationDoc>[] = [
+    { userId: scope.userId, profileId: { $in: [null, scope.profileId] } },
+  ]
+  if (scope.blocked.length) clauses.push({ 'actor.userId': { $nin: scope.blocked } })
+  if (scope.kids) {
+    clauses.push({ $or: [{ kind: { $in: [...RELEASE_KINDS] }, kidSafe: true }, { kidsVisible: true }] })
+  }
+  if (filter && filter in NOTIFICATION_FILTERS) {
+    clauses.push({ kind: { $in: NOTIFICATION_FILTERS[filter as keyof typeof NOTIFICATION_FILTERS] } })
+  }
+  return clauses.length === 1 ? clauses[0] : { $and: clauses }
 }
 
-// GET: the latest notifications and how many are unread
-export async function GET() {
-  try {
-    const userId = await getUserId();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+async function scopeOrError() {
+  const owner = await requireActiveProfile()
+  if ('error' in owner) return owner
+  const blocked = Array.from(await blockedAccounts(owner.userId))
+  return { scope: { userId: owner.userId, profileId: owner.profile.id, kids: owner.profile.kids, blocked } as Scope }
+}
 
-    const { notifications } = await alertCollections();
-    const [docs, unread] = await Promise.all([
-      notifications.find({ userId }).sort({ created_at: -1 }).limit(20).toArray(),
-      notifications.countDocuments({ userId, read: false }),
-    ]);
-
-    const items: NotificationItem[] = docs.map((doc) => ({
-      id: doc._id.toString(),
-      media_type: doc.media_type,
-      tmdbId: doc.tmdbId,
-      title: doc.title,
-      poster_path: doc.poster_path ?? null,
-      kind: doc.kind,
-      episode: doc.episode ?? null,
-      created_at: new Date(doc.created_at).toISOString(),
-      read: doc.read,
-    }));
-
-    return NextResponse.json({ items, unread });
-  } catch (error) {
-    console.error('Error fetching notifications:', error);
-    return NextResponse.json({ error: 'Failed to fetch notifications' }, { status: 500 });
+function toItem(doc: SocialNotificationDoc & { _id: ObjectId }, people: Map<string, AvatarPerson>): NotificationItem {
+  const actorId = doc.actor?.profileId ?? doc.actors?.[0]?.profileId
+  const actor = actorId ? people.get(actorId) ?? null : null
+  const count = doc.actorCount ?? (doc.actor ? 1 : 0)
+  const release = RELEASE_KINDS.includes(doc.kind)
+  return {
+    id: String(doc._id),
+    kind: doc.kind,
+    created_at: new Date(doc.created_at).toISOString(),
+    read: !!doc.read,
+    href: doc.href ?? (release && doc.media_type && doc.tmdbId ? `/${doc.media_type}/${doc.tmdbId}` : '/'),
+    actor,
+    others: Math.max(0, count - 1),
+    media: doc.media ?? (release && doc.media_type && doc.tmdbId
+      ? { media_type: doc.media_type, id: doc.tmdbId, title: doc.title ?? '', poster_path: doc.poster_path ?? null }
+      : null),
+    image: doc.image ?? null,
+    note: doc.note ?? null,
+    text: doc.text ?? null,
+    episode: doc.episode ?? null,
+    action: doc.action ?? null,
+    ...(release ? { media_type: doc.media_type, tmdbId: doc.tmdbId, title: doc.title, poster_path: doc.poster_path ?? null } : {}),
   }
 }
 
-// PATCH: mark every notification as read
-export async function PATCH() {
-  try {
-    const userId = await getUserId();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+// GET ?limit=20&before=<ISO date>&filter=all|friends|alerts|nights -> { items, unread, next }
+export async function GET(request: Request) {
+  const result = await scopeOrError()
+  if ('error' in result) return result.error
+  const { scope } = result
+  const params = new URL(request.url).searchParams
+  const limit = Math.min(Math.max(Number(params.get('limit')) || 20, 1), MAX_LIMIT)
+  const before = params.get('before')
+  const beforeDate = before && !Number.isNaN(Date.parse(before)) ? new Date(before) : null
+  const filter = params.get('filter')
 
-    const { notifications } = await alertCollections();
-    await notifications.updateMany({ userId, read: false }, { $set: { read: true } });
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error marking notifications as read:', error);
-    return NextResponse.json({ error: 'Failed to update notifications' }, { status: 500 });
-  }
+  await alertCollections() // the unique {userId, event_key} index and the TTL live there
+  const { notifications } = await socialDb()
+  const base = visibleTo(scope, filter === 'all' ? null : filter)
+  const pendingFilter: Filter<SocialNotificationDoc> = { $and: [base, { 'action.state': 'pending' }] }
+  const [pending, rows, unread] = await Promise.all([
+    beforeDate ? [] : notifications.find(pendingFilter).sort({ created_at: -1 }).limit(20).toArray(),
+    notifications.find({
+      $and: [base, { 'action.state': { $ne: 'pending' } }, ...(beforeDate ? [{ created_at: { $lt: beforeDate } }] : [])],
+    }).sort({ created_at: -1 }).limit(limit).toArray(),
+    notifications.countDocuments({ $and: [visibleTo(scope), { read: false }] }),
+  ])
+  const docs = [...pending, ...rows] as (SocialNotificationDoc & { _id: ObjectId })[]
+  const people = await getIdentities(docs.flatMap((doc) => [doc.actor?.profileId, doc.actors?.[0]?.profileId].filter((id): id is string => !!id)))
+  const items = docs.map((doc) => toItem(doc, people))
+  const next = rows.length === limit ? new Date(rows[rows.length - 1].created_at).toISOString() : null
+  return socialJson({ items, unread, next })
+}
+
+// PATCH {all: true} | {ids: string[]} (no body = all): marks the visible rows read. Rows waiting
+// for an answer stay pinned (their action is still pending) but stop counting as unread.
+export async function PATCH(request: Request) {
+  const result = await scopeOrError()
+  if ('error' in result) return result.error
+  const { scope } = result
+  const body = await readJson(request)
+  const { notifications } = await socialDb()
+  const ids = Array.isArray(body?.ids)
+    ? (body.ids as unknown[]).filter((id): id is string => typeof id === 'string' && ObjectId.isValid(id)).slice(0, 200).map((id) => new ObjectId(id))
+    : null
+  if (body && !body.all && !ids) return socialError(400, 'invalid')
+  await notifications.updateMany(
+    { $and: [visibleTo(scope), { read: false }, ...(ids ? [{ _id: { $in: ids } }] : [])] },
+    { $set: { read: true } },
+  )
+  return socialJson({ success: true })
 }

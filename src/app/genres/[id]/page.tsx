@@ -3,7 +3,7 @@ import PageHeader from '@/src/components/browse/PageHeader'
 import SegmentedLinks from '@/src/components/browse/SegmentedLinks'
 import PageNav from '@/src/components/PageNav'
 import { getList, parsePage } from '@/src/lib/lists'
-import { tmdbFetchSafe, tmdbLanguage } from '@/src/lib/tmdb'
+import { catalogueLanguage, genreList } from '@/src/lib/tmdb-locale'
 import { createTranslator } from '@/src/lib/i18n'
 import { getLocale } from '@/src/lib/i18n/server'
 import { kidsDiscoverParams } from '@/src/lib/kids'
@@ -16,8 +16,8 @@ export async function generateMetadata({ params, searchParams }: { params: { id:
   const kind = searchParams.type === 'tv' ? 'tv' : 'movie'
   const locale = getLocale()
   const t = createTranslator(locale)
-  const genres = await tmdbFetchSafe<{ genres: { id: number, name: string }[] }>(`genre/${kind}/list`, { language: tmdbLanguage(locale) }, 86400)
-  const genre = genres?.genres.find((item) => String(item.id) === params.id)?.name ?? t('genre.fallback')
+  const genres = await genreList(kind, locale)
+  const genre = genres.find((item) => String(item.id) === params.id)?.name ?? t('genre.fallback')
   const kindLabel = t(kind === 'tv' ? 'common.tvShows' : 'common.movies')
   return pageMetadata({
     title: t('genre.heading', { genre, kind: kindLabel }),
@@ -35,10 +35,10 @@ export default async function GenrePage({ params, searchParams }: { params: { id
   const kids = await getKidsMode()
 
   const [{ results, totalPages, failed }, genres] = await Promise.all([
-    getList(`discover/${kind}`, page, kids ? kidsDiscoverParams(kind, { with_genres: params.id }) : { with_genres: params.id }),
-    tmdbFetchSafe<{ genres: { id: number, name: string }[] }>(`genre/${kind}/list`, { language: tmdbLanguage(locale) }, 86400),
+    getList(`discover/${kind}`, page, { ...(kids ? kidsDiscoverParams(kind, { with_genres: params.id }) : { with_genres: params.id }), language: catalogueLanguage(locale) }),
+    genreList(kind, locale),
   ])
-  const genreName = genres?.genres.find((genre) => String(genre.id) === params.id)?.name
+  const genreName = genres.find((genre) => String(genre.id) === params.id)?.name
 
   const kindLabel = t(kind === 'tv' ? 'common.tvShows' : 'common.movies')
   return (

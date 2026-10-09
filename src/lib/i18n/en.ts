@@ -1,3 +1,4 @@
+import type { FeatureKey } from './features'
 // English UI strings. Keys are the source of truth: `ar.ts` must define every one of them.
 // `{name}` placeholders are filled by `t(key, { name })`.
 export const en = {
@@ -1081,7 +1082,7 @@ export const en = {
 
   // Page descriptions (search engines and link previews)
   'tvPage.description': "The shows everyone is watching this week, what's on the air tonight and the best of all time.",
-  'search.description': 'Search every movie, show and actor, in English or Arabic.',
+  'search.description': 'Search every movie, show and actor, in English, French or Arabic.',
 
   // Moments (calendar, anniversaries, sequels)
   'moment.ramadan.title': 'Ramadan series',
@@ -1142,4 +1143,7 @@ export const en = {
   'mood.scary': 'Something scary',
 } satisfies Record<string, string>
 
-export type TKey = keyof typeof en
+/** Keys of this file (ar.ts and tn.ts translate exactly these). */
+export type CoreKey = keyof typeof en
+/** Every key: this file's and the features' (./features). */
+export type TKey = CoreKey | FeatureKey

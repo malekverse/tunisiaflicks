@@ -1,7 +1,7 @@
 "use client"
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Star } from 'lucide-react'
+import { Eye, Star } from 'lucide-react'
 import TmdbImage from '@/src/components/TmdbImage'
 import { Button } from '@/src/components/ui/button'
 import { useT } from '@/src/components/I18nProvider'
@@ -14,6 +14,8 @@ export type Credit = {
   role: string
   poster_path: string | null
   vote_average: number
+  /** In the viewer's own watch history (only ever shown to them). */
+  watched?: boolean
 }
 
 const INITIAL = 24
@@ -21,6 +23,7 @@ const INITIAL = 24
 /**
  * The career as a timeline: years down the start side (they stay pinned while their titles
  * scroll by), each title with its poster, the role, and its rating. Upcoming work comes first.
+ * Titles the viewer has watched carry an eye.
  */
 export default function Filmography({ credits }: { credits: Credit[] }) {
   const t = useT()
@@ -58,10 +61,13 @@ export default function Filmography({ credits }: { credits: Credit[] }) {
                     <span className="min-w-0 flex-1">
                       <span dir="auto" className="block truncate text-start text-[15px] font-medium text-white/90 group-hover/credit:text-white">{credit.title}</span>
                       {credit.role && <span className="mt-0.5 block truncate text-[13px] text-white/50"><bdi>{credit.role}</bdi></span>}
-                      <span className="mt-1 flex items-center gap-3 text-[12px] text-white/40">
+                      <span className="mt-1 flex items-center gap-3 text-[12px] text-white/50">
                         <span>{credit.media_type === 'tv' ? t('common.tvShow') : t('common.movie')}</span>
                         {credit.vote_average > 0 && (
                           <span className="inline-flex items-center gap-1"><Star aria-hidden className="h-3 w-3 fill-star text-star" />{credit.vote_average.toFixed(1)}</span>
+                        )}
+                        {credit.watched && (
+                          <span className="inline-flex items-center gap-1 text-white/70"><Eye aria-hidden className="h-3.5 w-3.5" />{t('seen.watched')}</span>
                         )}
                       </span>
                     </span>

@@ -12,6 +12,7 @@ import { toast } from '@/src/hooks/use-toast'
 import { haptic, spring, tween } from '@/src/lib/motion'
 import { cn } from '@/src/lib/utils'
 import type { TKey } from '@/src/lib/i18n'
+import { formatDate } from '@/src/lib/i18n/format'
 import type { ContentItem, WatchHistoryItem } from '@/src/lib/models/UserContent'
 import {
   addToFavorites, getFavorites, getSavedItems, getWatchHistory, removeFromFavorites, removeFromSaved,
@@ -118,7 +119,7 @@ function insertAt<T>(list: T[], index: number, value: T) {
  */
 export default function LibraryCollection({ kind }: { kind: LibraryKind }) {
   const { status } = useSession()
-  const { t, dateLocale } = useI18n()
+  const { t, locale } = useI18n()
   const config = CONFIG[kind]
   const [items, setItems] = useState<Item[] | null>(null)
   const [type, setType] = useState<TypeFilter>('all')
@@ -164,17 +165,17 @@ export default function LibraryCollection({ kind }: { kind: LibraryKind }) {
       if (!group || group.key !== key) {
         const label = key === dayKey(today) ? t('library.today')
           : key === dayKey(yesterday) ? t('library.yesterday')
-            : date.toLocaleDateString(dateLocale, {
+            : formatDate(date, locale, {
               weekday: 'long', day: 'numeric', month: 'long',
               ...(date.getFullYear() !== today.getFullYear() ? { year: 'numeric' } : {}),
-            })
+            }, { headline: true })
         group = { key, label, items: [] }
         result.push(group)
       }
       group.items.push(item)
     }
     return result
-  }, [visible, kind, t, dateLocale])
+  }, [visible, kind, t, locale])
 
   const restore = async (item: Item, index: number) => {
     setItems((current) => (current && !current.some((other) => keyOf(other) === keyOf(item)) ? insertAt(current, index, item) : current))
@@ -276,7 +277,7 @@ export default function LibraryCollection({ kind }: { kind: LibraryKind }) {
                 {group.label && (
                   <h2 className="mb-4 flex items-baseline gap-3 font-display text-[19px] font-bold text-white sm:text-[22px]">
                     {group.label}
-                    <span className="font-sans text-[13px] font-normal text-white/45">{group.items.length}</span>
+                    <span className="font-sans text-[13px] font-normal text-white/50">{group.items.length}</span>
                   </h2>
                 )}
                 <div className={cn(GRID_CLASS, 'relative')}>
@@ -340,7 +341,7 @@ const LibraryCard = React.forwardRef<HTMLDivElement, { item: Item, kind: Library
         {/* The caption repeats the poster's link for the pointer; screen readers get the poster's. */}
         <Link href={href} aria-hidden tabIndex={-1} className="mt-2.5 block px-0.5">
           <p className="truncate text-[13.5px] font-medium text-white/90 transition-colors group-hover/item:text-white"><bdi>{item.title}</bdi></p>
-          <p className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[12px] text-white/45">
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[12px] text-white/50">
             <span>{t(item.media_type === 'tv' ? 'common.tvShow' : 'common.movie')}</span>
             {episode && <span>{episode}</span>}
             {kind === 'history'

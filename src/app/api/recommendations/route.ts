@@ -8,6 +8,8 @@ import clientPromise from '@/src/lib/mongodb'
 import { tmdbFetchSafe } from '@/src/lib/tmdb'
 import { filterKidSafe } from '@/src/lib/kids'
 import { requireActiveProfile } from '@/src/lib/profiles'
+import { getLocale } from '@/src/lib/i18n/server'
+import { catalogueLanguage } from '@/src/lib/tmdb-locale'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,9 +51,11 @@ export async function GET() {
       if (seeds.length >= MAX_SEEDS) break
     }
 
+    // French: the recommended titles come back with their French titles.
+    const language = catalogueLanguage(getLocale())
     const recommendations = await Promise.all(
       seeds.map(async (seed) => {
-        const data = await tmdbFetchSafe<{ results: any[] }>(`${seed.media_type}/${seed.id}/recommendations`, { page: 1 }, 86400)
+        const data = await tmdbFetchSafe<{ results: any[] }>(`${seed.media_type}/${seed.id}/recommendations`, { page: 1, language }, 86400)
         // Kids profiles only get titles rated for them.
         return data && profile.kids ? { results: await filterKidSafe(data.results ?? [], seed.media_type) } : data
       })

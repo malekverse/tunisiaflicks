@@ -1,62 +1,50 @@
 // UI language: a tiny typed dictionary per locale (no i18n framework). The active locale lives in
 // a cookie so server components and the root layout (<html lang dir>) can read it on every request.
+//
+// This module holds the dictionaries. The dependency-free parts live in ./locales (languages,
+// direction, date locale) and ./translate (building `t()`), and are re-exported here; client
+// components import those two files directly so the dictionaries stay out of their bundle (the
+// root layout hands the I18nProvider just the active language's strings, see dictionaryFor).
 import { en, type TKey } from './en'
 import { ar } from './ar'
 import { tn } from './tn'
+import { fr } from './fr'
+import { featureStrings } from './features'
+import { type Locale } from './locales'
+import { translatorFrom, type Translate } from './translate'
 
 export type { TKey }
-/** English, Modern Standard Arabic, and Tunisian Arabic (Derja). */
-export type Locale = 'en' | 'ar' | 'tn'
-export type Dir = 'ltr' | 'rtl'
-export type TVars = Record<string, string | number>
-export type Translate = (key: TKey, vars?: TVars) => string
+export * from './locales'
+export * from './translate'
 
-export const LOCALES: Locale[] = ['en', 'ar', 'tn']
-export const DEFAULT_LOCALE: Locale = 'en'
-export const LOCALE_COOKIE = 'tf-locale'
-
-// Derja only overrides what it translates; the rest comes from Arabic, then English.
-const dictionaries: Record<Locale, Partial<Record<TKey, string>>> = { en, ar, tn: { ...ar, ...tn } }
-
-export const isLocale = (value: unknown): value is Locale => value === 'en' || value === 'ar' || value === 'tn'
-/** Arabic and Derja: right-to-left, Arabic font, Arabic TMDB data. */
-export const isArabicScript = (locale: Locale) => locale !== 'en'
-export const dirOf = (locale: Locale): Dir => (isArabicScript(locale) ? 'rtl' : 'ltr')
-/** BCP 47 tag for <html lang>. */
-export const htmlLang = (locale: Locale) => (locale === 'tn' ? 'ar-TN' : locale)
-
-/**
- * Locale for `Intl` / `toLocaleDateString`. Arabic uses Tunisian month names with Latin digits
- * (`-u-nu-latn`); English keeps the browser default, as before.
- */
-export const dateLocale = (locale: Locale): string | undefined => (isArabicScript(locale) ? 'ar-TN-u-nu-latn' : undefined)
+// Each feature's strings (./features) join the core ones. English is complete. Arabic covers every
+// key; Derja only overrides what it translates (the rest comes from Arabic, then English); French
+// covers the core keys and whatever each feature translates (the rest comes from English).
+const english: Record<TKey, string> = { ...en, ...featureStrings('en') } as Record<TKey, string>
+const arabic = { ...ar, ...featureStrings('ar') }
+const dictionaries: Record<Locale, Partial<Record<TKey, string>>> = {
+  en: english,
+  fr: { ...fr, ...featureStrings('fr') },
+  ar: arabic,
+  tn: { ...arabic, ...tn, ...featureStrings('tn') },
+}
 
 /** `t('key', { name })` replaces `{name}` placeholders; a missing translation falls back to English. */
 export function createTranslator(locale: Locale): Translate {
-  const dictionary = dictionaries[locale]
-  return (key, vars) => {
-    const text = dictionary[key] ?? en[key] ?? key
-    return vars ? text.replace(/\{(\w+)\}/g, (match, name) => (name in vars ? String(vars[name]) : match)) : text
+  return translatorFrom(dictionaries[locale] as Record<string, string>, english)
+}
+
+const complete = new Map<Locale, Record<string, string>>()
+
+/**
+ * Every string of `locale`, English filling the gaps: what the root layout hands the I18nProvider
+ * (`messages`), so client components translate without bundling every language.
+ */
+export function dictionaryFor(locale: Locale): Record<string, string> {
+  let messages = complete.get(locale)
+  if (!messages) {
+    messages = { ...english, ...dictionaries[locale] } as Record<string, string>
+    complete.set(locale, messages)
   }
-}
-
-// Messages the /api/auth/* routes answer with (always English), mapped to dictionary keys.
-const API_MESSAGES: Record<string, TKey> = {
-  'Email is required': 'api.emailRequired',
-  'If your email is registered, you will receive a password reset link': 'api.resetIfRegistered',
-  'An error occurred while processing your request': 'api.requestFailed',
-  'Token and password are required': 'api.tokenRequired',
-  'Invalid or expired reset token': 'api.invalidToken',
-  'An error occurred while resetting your password': 'api.resetFailed',
-  'Missing required fields': 'api.missingFields',
-  'Password must be at least 8 characters': 'api.passwordMin8',
-  'User already exists': 'api.userExists',
-  'Error creating user': 'api.createFailed',
-  'Too many attempts. Please try again later.': 'api.tooManyAttempts',
-}
-
-/** Translates a known API message; anything else is returned unchanged. */
-export function translateApiMessage(t: Translate, message?: string): string | undefined {
-  const key = message ? API_MESSAGES[message] : undefined
-  return key ? t(key) : message
+  return messages
 }

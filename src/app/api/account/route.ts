@@ -6,14 +6,18 @@ import { authOptions } from '@/src/lib/auth'
 import clientPromise from '@/src/lib/mongodb'
 import { deleteUserData } from '@/src/lib/account'
 import { rateLimit, tooManyRequests } from '@/src/lib/rate-limit'
+import { denyLimitedSession } from '@/src/lib/session-scope'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * Permanently delete the signed-in account. Confirmed with the password, or (accounts without
- * one, e.g. Google-only) by typing the account's email.
+ * one, e.g. Google-only) by typing the account's email. Never from a TV session.
  */
 export async function DELETE(request: Request) {
+  const denied = await denyLimitedSession()
+  if (denied) return denied
+
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

@@ -16,6 +16,8 @@ type Props = {
   title: string
   /** Message that goes with the link on WhatsApp / Telegram / X. */
   text?: string
+  /** A glass pill instead of the red button (inside a sheet whose primary action is elsewhere). */
+  quiet?: boolean
 }
 
 // Glass pills; each network keeps its colour on the icon only. Phones get round icon buttons (the
@@ -24,7 +26,7 @@ const pill = 'pressable inline-flex h-11 select-none items-center justify-center
 const label = 'max-sm:sr-only'
 
 /** Share row: phone share sheet, WhatsApp, Facebook, Telegram, X and copy-link. */
-export default function ShareButtons({ url, title, text }: Props) {
+export default function ShareButtons({ url, title, text, quiet = false }: Props) {
   const t = useT()
   const [absolute, setAbsolute] = useState(url)
   const [canNativeShare, setCanNativeShare] = useState(false)
@@ -66,10 +68,16 @@ export default function ShareButtons({ url, title, text }: Props) {
   return (
     <div className="flex flex-wrap gap-1 sm:gap-2">
       {canNativeShare && (
-        <Button type="button" onClick={nativeShare} className="h-11 gap-1.5 px-4 text-[14px] sm:h-10 sm:gap-2 sm:px-5">
-          <Share aria-hidden className="h-[18px] w-[18px]" strokeWidth={2.1} />
-          {t('hero.share')}
-        </Button>
+        quiet ? (
+          <button type="button" onClick={nativeShare} title={t('hero.share')} className={pill}>
+            <Share aria-hidden className="h-[18px] w-[18px]" strokeWidth={2.1} /><span className={label}>{t('hero.share')}</span>
+          </button>
+        ) : (
+          <Button type="button" onClick={nativeShare} className="h-11 gap-1.5 px-4 text-[14px] sm:h-10 sm:gap-2 sm:px-5">
+            <Share aria-hidden className="h-[18px] w-[18px]" strokeWidth={2.1} />
+            {t('hero.share')}
+          </Button>
+        )
       )}
       <button type="button" onClick={() => open(`https://wa.me/?text=${encodeURIComponent(`${message} ${absolute}`)}`)} title="WhatsApp" className={pill}>
         <FaWhatsapp aria-hidden className="h-[18px] w-[18px] text-[#25D366]" /><span className={label}>WhatsApp</span>

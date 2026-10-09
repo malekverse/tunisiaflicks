@@ -1,0 +1,89 @@
+# The fallback scheduler (free GitHub Actions minutes). cron-job.org is the primary one and
+# Vercel's single cron keeps /api/cron/notify; see docs/SCHEDULER.md for the whole picture.
+#
+# Each run calls one job's route with this repository's own secret and loops while the answer says
+# `"more": true` (the route stops after ~45s and resumes where it left off).
+#
+# Repository secrets: CRON_SECRET_GH (also listed in the site's CRON_SECRETS_EXTRA) and SITE_URL
+# (https://..., no trailing path).
+name: Cron
+
+on:
+  schedule:
+    # digest (UTC; Tunis is UTC+1): Friday 17:41 and 21:41 Tunis (after iftar during Ramadan),
+    # then Saturday and Sunday mornings for what is left.
+    - cron: '41 16 * * 5'
+    - cron: '41 20 * * 5'
+    - cron: '17 8 * * 6,0'
+    - cron: '5 */3 * * *'    # nights: movie-night reminders and closing votes
+    - cron: '10 2 * * *'     # badges: 03:10 Tunis
+    - cron: '23 */3 * * *'   # tunisian-tv: the channels' new videos
+  workflow_dispatch:
+    inputs:
+      job:
+        description: Job to run now
+        type: choice
+        required: true
+        default: digest
+        options:
+          - digest
+          - nights
+          - badges
+          - tunisian-tv
+
+permissions: {}
+
+concurrency:
+  group: cron-${{ inputs.job || github.event.schedule }}
+  cancel-in-progress: false
+
+jobs:
+  call:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Choose the job
+        id: choose
+        # Event values reach the script only through env vars, never through ${{ }} inside it.
+        env:
+          SCHEDULE: ${{ github.event.schedule }}
+          INPUT_JOB: ${{ inputs.job }}
+        run: |
+          case "$SCHEDULE" in
+            '41 16 * * 5'|'41 20 * * 5'|'17 8 * * 6,0') JOB=digest ;;
+            '5 */3 * * *') JOB=nights ;;
+            '10 2 * * *') JOB=badges ;;
+            '23 */3 * * *') JOB=tunisian-tv ;;
+            '') JOB="$INPUT_JOB" ;;
+            *) echo "::error::No job for the schedule '$SCHEDULE'"; exit 1 ;;
+          esac
+          case "$JOB" in
+            digest|nights|badges|tunisian-tv) ;;
+            *) echo "::error::Unknown job"; exit 1 ;;
+          esac
+          echo "job=$JOB" >> "$GITHUB_OUTPUT"
+
+      - name: Call it until it is done
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET_GH }}
+          SITE_URL: ${{ secrets.SITE_URL }}
+          JOB: ${{ steps.choose.outputs.job }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CRON_SECRET:-}" ] || [ -z "${SITE_URL:-}" ]; then
+            echo "::error::Set the CRON_SECRET_GH and SITE_URL repository secrets (docs/SCHEDULER.md)"
+            exit 1
+          fi
+          SITE_URL="${SITE_URL%/}"
+          for i in $(seq 1 15); do
+            body=$(curl -sS --fail-with-body --max-time 58 \
+              -H "Authorization: Bearer ${CRON_SECRET}" \
+              -H 'X-Cron-Source: github' \
+              "${SITE_URL}/api/cron/${JOB}")
+            echo "$body" | jq -c '{job, status, more, ms}'
+            if [ "$(echo "$body" | jq -r '.more // false')" != "true" ]; then
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "Still more to do after 15 calls; the next scheduled run picks it up."

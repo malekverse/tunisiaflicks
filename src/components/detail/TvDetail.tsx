@@ -5,14 +5,18 @@ import StreamSection from '@/src/components/detail/StreamSection'
 import SectionNav from '@/src/components/detail/SectionNav'
 import EpisodeBrowser, { type Episode, type Season } from '@/src/components/detail/EpisodeBrowser'
 import { CastRow, DetailsGrid } from '@/src/components/detail/DetailSections'
-import { PosterSlider } from '@/src/components/Sliders'
+import MoreLikeThis from '@/src/components/detail/MoreLikeThis'
+import ExtrasSection from '@/src/components/detail/ExtrasSection'
+import { detailSections, type DetailServerProps } from '@/src/components/detail/MovieDetail'
+import RatingsBand from '@/src/components/social/RatingsBand'
 import DownloadDialog from '@/src/components/detail/DownloadDialog'
 import { useRoomLight } from '@/src/components/shell/RoomLight'
 import { useMarkWatched } from '@/src/hooks/use-media-lists'
 import { ambientStyle, useAmbientColor } from '@/src/hooks/use-ambient-color'
 import { toast } from '@/src/hooks/use-toast'
 import { getSeasonDetails } from '@/src/app/tv/[id]/actions'
-import { getStreamProviders } from '@/src/lib/stream-providers'
+import { useSoundtrack } from '@/src/hooks/use-soundtrack'
+import { fillProviders } from '@/src/lib/media-assets'
 import { useT } from '@/src/components/I18nProvider'
 
 type Pick = { season: number, episode: number }
@@ -28,15 +32,13 @@ const scrollToPlayer = () => {
   }, 120)
 }
 
-/** A show page: the hero, the player, the episodes, similar shows, the cast and the facts. */
-export default function TvDetail({ id, data, similar, resume }: {
-  id: string
-  data: any
-  similar: any[]
+/** A show page: the hero, the player, the episodes, ratings, similar shows, extras, the cast and the facts. */
+export default function TvDetail({ id, data, similar, resume, providers, kids, signedIn, ratings, tabs, trailers, extras, soundtrack: initialSoundtrack }: DetailServerProps & {
   /** Episode to reopen (from "Continue watching" links: /tv/:id?s=&e=). */
   resume?: Pick
 }) {
   const t = useT()
+  const soundtrack = useSoundtrack({ type: 'tv', id, kids, initial: initialSoundtrack })
   const ambient = useAmbientColor(data.poster_path)
   useRoomLight(ambient)
   const markWatched = useMarkWatched({ id, title: data.name, poster_path: data.poster_path, media_type: 'tv' })
@@ -125,21 +127,22 @@ export default function TvDetail({ id, data, similar, resume }: {
     ? t('detail.playEpisode', { episode: code(episode) })
     : firstSeason !== undefined ? t('detail.playEpisode', { episode: code({ season: firstSeason, episode: 1 }) }) : t('billboard.play')
 
-  const streamServices = getStreamProviders('tv', id, episode?.season, episode?.episode)
+  const streamServices = useMemo(() => fillProviders(providers, 'tv', id, episode?.season, episode?.episode), [providers, id, episode?.season, episode?.episode])
   const imdbId: string | undefined = data.external_ids?.imdb_id || undefined
   const cast: any[] = data.credits?.cast ?? []
+  const media = useMemo(() => ({ media_type: 'tv' as const, id, title: data.name ?? '', poster_path: data.poster_path ?? null }), [id, data.name, data.poster_path])
 
-  const sections = useMemo(() => [
-    { id: 'streamSection', label: t('detail.watch') },
-    ...(seasons.length ? [{ id: 'episodes', label: t('tv.episodes') }] : []),
-    ...(similar.length ? [{ id: 'similar', label: t('detail.moreLikeThis') }] : []),
-    ...(cast.length ? [{ id: 'cast', label: t('detail.cast') }] : []),
-    { id: 'details', label: t('detail.details') },
-  ], [t, seasons.length, similar.length, cast.length])
+  const sections = useMemo(() => detailSections(t, {
+    episodes: seasons.length > 0,
+    ratings,
+    similar: tabs.length > 0,
+    extras: extras.length > 0 || initialSoundtrack.state === 'found',
+    cast: cast.length > 0,
+  }), [t, seasons.length, ratings, tabs.length, extras.length, initialSoundtrack.state, cast.length])
 
   return (
     <div className="w-full min-w-0 pb-6" {...ambientStyle(ambient)}>
-      <MediaHero kind="tv" data={data} playLabel={playLabel} onPlay={playFromStart} />
+      <MediaHero kind="tv" data={data} playLabel={playLabel} onPlay={playFromStart} trailers={trailers} kids={kids} />
       <SectionNav sections={sections} />
       <div className="space-y-16 pt-10">
         <StreamSection
@@ -179,13 +182,11 @@ export default function TvDetail({ id, data, similar, resume }: {
           />
         )}
 
-        {similar.length > 0 && (
-          <div id="similar" className="scroll-mt-[calc(var(--topbar)+72px)]">
-            <PosterSlider title={t('detail.moreLikeThis')} items={similar} kind="tv" />
-          </div>
-        )}
-        <CastRow id="cast" cast={cast} />
-        <DetailsGrid id="details" kind="tv" data={data} />
+        {ratings && <RatingsBand id="ratings" media={media} />}
+        {tabs.length > 0 && <MoreLikeThis kind="tv" id={id} kids={kids} closest={similar} tabs={tabs} />}
+        <ExtrasSection type="tv" id={id} title={data.name ?? ''} kids={kids} groups={extras} soundtrack={soundtrack} />
+        <CastRow id="cast" cast={cast} mediaType="tv" mediaId={id} signedIn={signedIn} />
+        <DetailsGrid id="details" kind="tv" data={data} soundtrack={soundtrack.status} kids={kids} />
       </div>
     </div>
   )

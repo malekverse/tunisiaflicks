@@ -2,7 +2,7 @@
 import React, { useEffect, useId, useRef } from 'react'
 import Link from 'next/link'
 import { m, useReducedMotion } from 'framer-motion'
-import { Heart, Info, Play, RotateCcw, X } from 'lucide-react'
+import { CalendarHeart, Heart, Info, Play, RotateCcw, X } from 'lucide-react'
 import TmdbImage from '@/src/components/TmdbImage'
 import { Button } from '@/src/components/ui/button'
 import { useT } from '@/src/components/I18nProvider'
@@ -46,13 +46,15 @@ function Burst() {
 
 /**
  * "It's a match!": the poster everyone said yes to grows into the light, with one short burst.
- * Watch it now, or keep swiping (or deal a new deck).
+ * Watch it now, or keep swiping (or deal a new deck). In a movie night's room the match is the
+ * night's film: the way back to the night comes first.
  */
-export default function MatchMoment({ card, names, onNewDeck, onClose }: {
+export default function MatchMoment({ card, names, onNewDeck, onClose, night = null }: {
   card: SwipeCard
   names: string
   onNewDeck: () => void
   onClose: () => void
+  night?: { id: string, title: string } | null
 }) {
   const t = useT()
   const reduceMotion = useReducedMotion()
@@ -142,9 +144,15 @@ export default function MatchMoment({ card, names, onNewDeck, onClose }: {
           <p className="mt-4 text-balance font-display text-2xl font-bold text-white"><bdi>{card.title}</bdi></p>
 
           <div className="mt-7 flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
-            <Button asChild size="lg" className="px-8">
-              <Link ref={primary} href={`${href}#streamSection`}><Play aria-hidden className="h-5 w-5 fill-current" />{t('hero.watchNow')}</Link>
-            </Button>
+            {night ? (
+              <Button asChild size="lg" className="px-8">
+                <Link ref={primary} href={`/movie-night/${night.id}`}><CalendarHeart aria-hidden className="h-5 w-5" />{t('movieNight.swipe.back')}</Link>
+              </Button>
+            ) : (
+              <Button asChild size="lg" className="px-8">
+                <Link ref={primary} href={`${href}#streamSection`}><Play aria-hidden className="h-5 w-5 fill-current" />{t('hero.watchNow')}</Link>
+              </Button>
+            )}
             <Button asChild size="lg" variant="secondary">
               <Link href={href}><Info aria-hidden className="h-5 w-5" />{t('pick.moreInfo')}</Link>
             </Button>

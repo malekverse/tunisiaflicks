@@ -3,9 +3,43 @@ import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '@/src/lib/mongodb';
 import { ContentItem, WatchHistoryItem } from '@/src/lib/models/UserContent';
 import { requireActiveProfile } from '@/src/lib/profiles';
+import { cleanText } from '@/src/lib/lists-db';
+import { forgetTitle, recordPlay } from '@/src/lib/badges/activity';
+import { safeTimeZone } from '@/src/lib/badges/time';
 
 // Every list belongs to one profile of the signed-in user: the active profile from the profile
 // cookie, checked against the session user's own profiles (see lib/profiles.ts).
+
+const isEpisodeNumber = (value: unknown): value is number => Number.isInteger(value) && (value as number) >= 0 && (value as number) <= 999
+
+type ParsedItem = { id: string, title: string, poster_path: string | null, media_type: 'movie' | 'tv', season?: number, episode?: number, progress?: number }
+
+/**
+ * The item as the client sent it, checked field by field (these titles are shown back on other
+ * pages, and later to other people): null when anything is malformed. The same rules as lists
+ * (toListItem in lib/lists-db.ts); scripts/clean-user-content.mjs applies them to older data.
+ */
+function parseItem(raw: any): ParsedItem | null {
+  if (!raw || typeof raw !== 'object') return null
+  const id = typeof raw.id === 'number' ? String(raw.id) : raw.id
+  if (typeof id !== 'string' || !/^[0-9]{1,9}$/.test(id)) return null
+  if (raw.media_type !== 'movie' && raw.media_type !== 'tv') return null
+  const title = cleanText(raw.title, 200)
+  if (!title) return null
+  const poster = raw.poster_path ?? null
+  if (poster !== null && (typeof poster !== 'string' || !/^[/][A-Za-z0-9._-]+$/.test(poster))) return null
+  const item: ParsedItem = { id, title, poster_path: poster, media_type: raw.media_type }
+  if (raw.season !== undefined || raw.episode !== undefined) {
+    if (!isEpisodeNumber(raw.season) || !isEpisodeNumber(raw.episode)) return null
+    item.season = raw.season
+    item.episode = raw.episode
+  }
+  // Optional and only informative: kept when it's a sensible percentage.
+  if (typeof raw.progress === 'number' && Number.isFinite(raw.progress) && raw.progress >= 0 && raw.progress <= 100) {
+    item.progress = raw.progress
+  }
+  return item
+}
 
 // GET handler for retrieving user content lists
 export async function GET(request: NextRequest) {
@@ -53,13 +87,15 @@ export async function POST(request: NextRequest) {
     const userId = owner.userId;
     const profileId = owner.profile.id;
 
-    const { type, item } = await request.json();
+    const body = await request.json().catch(() => null);
+    const type = body?.type;
 
     if (!type || !['favorites', 'saved', 'history'].includes(type)) {
       return NextResponse.json({ error: 'Invalid list type' }, { status: 400 });
     }
 
-    if (!item || !item.id || !item.title || !item.media_type) {
+    const item = parseItem(body?.item);
+    if (!item) {
       return NextResponse.json({ error: 'Invalid item data' }, { status: 400 });
     }
 
@@ -71,7 +107,8 @@ export async function POST(request: NextRequest) {
     const contentItem: ContentItem = {
       id: item.id,
       title: item.title,
-      poster_path: item.poster_path,
+      // Stored as before (absent rather than null when there is no poster).
+      poster_path: item.poster_path ?? undefined,
       media_type: item.media_type,
       added_at: new Date()
     };
@@ -83,18 +120,19 @@ export async function POST(request: NextRequest) {
         (contentItem as WatchHistoryItem).progress = item.progress;
       }
       // TV: remember the episode so "Continue Watching" can resume it.
-      if (Number.isInteger(item.season) && Number.isInteger(item.episode)) {
+      if (item.season !== undefined && item.episode !== undefined) {
         contentItem.season = item.season;
         contentItem.episode = item.episode;
       }
     }
 
     // Update or insert the item in the user's content list
-    const result = await userContentCollection.updateOne(
+    await userContentCollection.updateOne(
       { userId: userId, profileId: profileId, type: type },
       {
         $setOnInsert: { userId: userId, profileId: profileId, type: type },
-        $pull: { items: { id: item.id } } // Remove if exists to avoid duplicates
+        // Remove if exists to avoid duplicates (older entries may hold the id as a number).
+        $pull: { items: { id: { $in: [item.id, Number(item.id)] } } } as any
       },
       { upsert: true }
     );
@@ -104,6 +142,16 @@ export async function POST(request: NextRequest) {
       { userId: userId, profileId: profileId, type: type },
       { $push: { items: { $each: [contentItem], $position: 0 } } } // Add to beginning of array
     );
+
+    // Badges: the day of this play goes into the profile's private log (skipped when the profile
+    // turned badges off). The browser's time zone only places the play on a day; it isn't kept.
+    if (type === 'history') {
+      try {
+        await recordPlay({ userId, profileId }, item, { timeZone: safeTimeZone(body?.item?.tz), kids: owner.profile.kids });
+      } catch (error) {
+        console.error('Recording the play for badges failed:', error);
+      }
+    }
 
     return NextResponse.json({ success: true, message: `Item added to ${type}` });
   } catch (error) {
@@ -136,11 +184,21 @@ export async function DELETE(request: NextRequest) {
     const db = client.db();
     const userContentCollection = db.collection('userContent');
 
-    // Remove the item from the user's content list
+    // Remove the item from the user's content list (older entries may hold the id as a number).
+    const ids: (string | number)[] = /^[0-9]{1,9}$/.test(itemId) ? [itemId, Number(itemId)] : [itemId];
     const result = await userContentCollection.updateOne(
       { userId: userId, profileId: profileId, type: type },
-      { $pull: { items: { id: itemId } } }
+      { $pull: { items: { id: { $in: ids } } } as any }
     );
+
+    // Badges: a title taken out of the history leaves the daily log too.
+    if (type === 'history') {
+      try {
+        await forgetTitle({ userId, profileId }, itemId);
+      } catch (error) {
+        console.error('Forgetting the title for badges failed:', error);
+      }
+    }
 
     if (result.modifiedCount === 0) {
       return NextResponse.json({ error: 'Item not found' }, { status: 404 });

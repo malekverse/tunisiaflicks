@@ -6,7 +6,7 @@ import { Check } from 'lucide-react'
 import { useT } from '@/src/components/I18nProvider'
 import { Button } from '@/src/components/ui/button'
 import { LoadingButton } from '@/src/components/auth/fields'
-import { translateApiMessage } from '@/src/lib/i18n'
+import { translateApiMessage } from '@/src/lib/i18n/translate'
 import { cn } from '@/src/lib/utils'
 
 /**

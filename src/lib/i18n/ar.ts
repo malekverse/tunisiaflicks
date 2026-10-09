@@ -1,9 +1,9 @@
 // Arabic UI strings. Typed against the English keys, so a missing or misspelled key fails `tsc`.
 // Numbers stay in Latin digits (as used in Tunisia); counts are phrased "Label: {n}" to sidestep
 // Arabic plural forms.
-import type { TKey } from './en'
+import type { CoreKey } from './en'
 
-export const ar: Record<TKey, string> = {
+export const ar: Record<CoreKey, string> = {
   // Shared
   'common.movie': 'فيلم',
   'common.tvShow': 'مسلسل',
@@ -1083,7 +1083,7 @@ export const ar: Record<TKey, string> = {
 
   // Page descriptions (search engines and link previews)
   'tvPage.description': 'المسلسلات التي يشاهدها الجميع هذا الأسبوع، وما يُعرض الليلة، وأفضل المسلسلات على الإطلاق.',
-  'search.description': 'ابحث عن أي فيلم أو مسلسل أو ممثل، بالعربية أو بالإنجليزية.',
+  'search.description': 'ابحث عن أي فيلم أو مسلسل أو ممثل، بالعربية أو الفرنسية أو الإنجليزية.',
 
   // Moments (calendar, anniversaries, sequels)
   'moment.ramadan.title': 'مسلسلات رمضان',

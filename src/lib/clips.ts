@@ -1,8 +1,9 @@
 // Clips: a vertical feed of trailers for what's trending today and this week. Finite on purpose
 // (about two dozen): it ends with "You're all caught up" instead of scrolling forever.
-import { tmdbFetchSafe, withTranslatedFields } from '@/src/lib/tmdb'
+import { tmdbFetchSafe } from '@/src/lib/tmdb'
+import { localizeDetail, logoLanguages, translatedRecord } from '@/src/lib/tmdb-locale'
 import { filterKidSafe } from '@/src/lib/kids'
-import { isArabicScript, type Locale } from '@/src/lib/i18n'
+import type { Locale } from '@/src/lib/i18n'
 import { pickLogo, pickTrailer } from '@/src/lib/media-assets'
 
 export type Clip = {
@@ -39,16 +40,16 @@ export async function getClips(kids: boolean, locale: Locale): Promise<Clip[]> {
   })
   if (kids) candidates = await filterKidSafe(candidates)
 
-  const arabic = isArabicScript(locale)
+  const params = { ...DETAIL_PARAMS, include_image_language: logoLanguages(locale) }
   const clips = await Promise.all(candidates.slice(0, MAX_CLIPS + 10).map(async (item): Promise<Clip | null> => {
     const kind: 'movie' | 'tv' = item.media_type
     const [detail, translated] = await Promise.all([
-      tmdbFetchSafe(`${kind}/${item.id}`, DETAIL_PARAMS, DETAIL_TTL),
-      arabic ? tmdbFetchSafe(`${kind}/${item.id}`, { language: 'ar' }, DETAIL_TTL) : null,
+      tmdbFetchSafe(`${kind}/${item.id}`, params, DETAIL_TTL),
+      translatedRecord(kind, String(item.id), locale, DETAIL_TTL),
     ])
     const trailer = pickTrailer(detail?.videos?.results)
     if (!detail || !trailer) return null
-    const data = withTranslatedFields(detail, translated, ['overview', 'genres'])
+    const data = localizeDetail(detail, translated, locale)
     return {
       id: item.id,
       kind,

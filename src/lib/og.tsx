@@ -798,3 +798,112 @@ function BrandCard() {
 export function renderFallbackCard() {
   return render(<BrandCard />)
 }
+
+// ---------------------------------------------------------------------------------------------
+// Social.
+
+export type ProfileCardData = {
+  name: string
+  handle: string
+  /** The profile colour, '#rrggbb'. */
+  color: string
+  initial: string
+  /** The page's photo (absolute URL), only when its owner shows it. */
+  image?: string | null
+  /** The footer's call to action, in the page's language (default English). */
+  cta?: string
+}
+
+const hexToRgb = (hex: string) => {
+  const match = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex.trim())
+  return match ? `${parseInt(match[1], 16)} ${parseInt(match[2], 16)} ${parseInt(match[3], 16)}` : ROOM_RED
+}
+
+/**
+ * Someone's page (/u/[handle]): their name, their handle and their avatar, in a room lit by their
+ * colour. Public fields only: never a poster, never what they watch.
+ */
+export async function renderProfileCard({ name, handle, color, initial, image, cta = 'See the page' }: ProfileCardData) {
+  const glow = hexToRgb(color)
+  const size = Math.min(titleSize(name) + 6, 104)
+  const letter = Array.from(initial.trim())[0] ?? '?'
+  const [title, photo, mark] = await Promise.all([
+    prepareText(clip(name, 40), { size: Math.round(size * 0.72), width: 620, bold: true }),
+    pictureData(image, 320),
+    prepareText(letter, { size: 140, width: 300, bold: true }),
+  ])
+  return render(
+    <div style={CARD}>
+      <Room glow={glow} strength={0.6} />
+      <Fill background={`radial-gradient(circle at 78% 46%, ${rgba(glow, 0.28)} 0%, ${rgba(glow, 0)} 42%)`} />
+      <div style={{ position: 'absolute', right: 110, top: 125, display: 'flex' }}>
+        {photo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={photo} alt="" width={320} height={320} style={{ width: 320, height: 320, objectFit: 'cover', borderRadius: 999, border: '4px solid rgba(255,255,255,0.12)', boxShadow: `0 40px 90px -10px ${rgba(glow, 0.55)}` }} />
+        ) : (
+          <div style={{
+            width: 320, height: 320, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backgroundColor: color, backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 100%)',
+            boxShadow: `0 40px 90px -10px ${rgba(glow, 0.55)}`, fontFamily: DISPLAY, fontWeight: 800, fontSize: 170, color: 'white',
+          }}>
+            <Text run={'text' in mark ? { text: mark.text.toUpperCase() } : mark} type={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 170, lineHeight: 1 }} />
+          </div>
+        )}
+      </div>
+      <Column width={620}>
+        <Text run={title} type={{ ...TITLE_TYPE, fontSize: size }} />
+        <div style={{ display: 'flex', marginTop: 16, fontFamily: TEXT, fontSize: 32, color: 'rgba(255,255,255,0.6)' }}>{`@${handle}`}</div>
+        <div style={{ display: 'flex', marginTop: 36 }}>
+          <Footer cta={cta} play={false} />
+        </div>
+      </Column>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------------------------
+// Movie nights.
+
+export type NightCardData = {
+  /** The host's first name only: never the guests, the place or the note. */
+  host: string
+  /** "Friday 9 October, 21:00", already in the night's time zone. */
+  when: string
+  /** The film, once chosen. */
+  film?: string | null
+  /** Up to three TMDB poster paths (the film, or the films being voted on). */
+  posters: string[]
+  cancelled?: boolean
+}
+
+/**
+ * An invitation to a movie night (/movie-night/[id]): who's hosting (first name), when, the
+ * film or the films on the ballot fanned out, and a call to see the invitation. Nothing about who
+ * else is coming or where.
+ */
+export async function renderNightCard({ host, when, film, posters, cancelled }: NightCardData) {
+  const kicker = host ? `${isolate(clip(host, 20))} is planning a movie night` : 'You are invited to a movie night'
+  const [kickerRun, whenRun, filmRun, fan] = await Promise.all([
+    prepareText(kicker, { size: 24, width: 560, bold: true, alpha: 0.6, ltr: true }),
+    prepareText(when, { size: 34, width: 560, bold: true, ltr: true }),
+    prepareText(film ? `Watching ${isolate(clip(film, 40))}` : 'Friends vote on the film', { size: 27, width: 560, alpha: 0.72, ltr: true }),
+    pictures(posters.slice(0, 3).map((path) => tmdbImage(path, 'w342')), 260),
+  ])
+  const glow = cancelled ? '255 255 255' : ROOM_RED
+  return render(
+    <div style={CARD}>
+      <Room glow={glow} strength={cancelled ? 0.25 : 0.7} />
+      <Fill background={`radial-gradient(circle at 78% 50%, ${rgba(glow, cancelled ? 0.08 : 0.22)} 0%, rgba(0,0,0,0) 45%)`} />
+      {fan.length > 0 ? <Fan posters={fan} /> : null}
+      <Column width={560}>
+        <Text run={kickerRun} type={KICKER_TYPE} />
+        <div style={{ display: 'flex', marginTop: 8, ...TITLE_TYPE, fontSize: 100, lineHeight: 0.93 }}>{cancelled ? 'Cancelled' : 'Movie night'}</div>
+        <Text run={whenRun} box={{ marginTop: 22 }} type={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 40, lineHeight: 1.05, color: 'white' }} />
+        <Text run={filmRun} box={{ marginTop: 12 }} type={LINE_TYPE} />
+        <div style={{ display: 'flex', marginTop: 34 }}>
+          <Footer cta={cancelled ? 'Plan another night' : 'See the invitation'} play={false} />
+        </div>
+      </Column>
+    </div>
+  )
+}

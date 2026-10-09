@@ -3,7 +3,7 @@
 // It lets the site be installed as an app, shows a branded offline page when a page navigation
 // fails because there's no network, and displays push notifications (daily pick, release alerts). It never caches app pages, scripts or
 // API responses, so a new deploy is always picked up immediately (no stale-app bugs).
-const VERSION = 'v2'
+const VERSION = 'v4'
 const CACHE = `tunisiaflicks-${VERSION}`
 const OFFLINE_URL = '/offline.html'
 const PRECACHE = [OFFLINE_URL, '/icons/icon-192.png']

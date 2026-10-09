@@ -3,7 +3,7 @@ import { Info, Play, Sparkles, Star } from 'lucide-react'
 import TmdbImage from '@/src/components/TmdbImage'
 import { Button } from '@/src/components/ui/button'
 import { getLocale, getT } from '@/src/lib/i18n/server'
-import { dateLocale } from '@/src/lib/i18n'
+import { formatDate, quote } from '@/src/lib/i18n/format'
 import type { PickOfTheDay as Pick } from '@/src/lib/pick-of-the-day'
 
 /**
@@ -26,9 +26,9 @@ export default function PickOfTheDay({ pick }: { pick: Pick | null }) {
   const genres = (data.genres ?? []).slice(0, 2).map((genre: any) => genre.name)
   const href = `/${kind}/${data.id}`
   const play = kind === 'tv' ? `/tv/${data.id}?s=1&e=1` : `${href}#streamSection`
-  const day = new Date(`${pick.date}T12:00:00Z`)
-  const weekday = day.toLocaleDateString(dateLocale(locale), { weekday: 'long', timeZone: 'UTC' })
-  const date = day.toLocaleDateString(dateLocale(locale), { day: 'numeric', month: 'long', timeZone: 'UTC' })
+  // The headline: "Mercredi" over "8 octobre" (French writes day names in lowercase).
+  const weekday = formatDate(pick.date, locale, { weekday: 'long' }, { headline: true })
+  const date = formatDate(pick.date, locale, { day: 'numeric', month: 'long' })
 
   return (
     <section aria-label={t('pick.title')} className="page-x">
@@ -54,7 +54,7 @@ export default function PickOfTheDay({ pick }: { pick: Pick | null }) {
             <p className="text-[13px] font-medium text-white/60">{t('pick.title')}</p>
             <p className="mt-1 font-display text-[clamp(30px,4vw,52px)] font-extrabold leading-[0.95] text-white">
               {weekday}
-              <span className="block text-white/45">{date}</span>
+              <span className="block text-white/50">{date}</span>
             </p>
             {/* Why this one, today: the news, the season or the day of the week. */}
             <p className="mt-3 flex items-start gap-2 text-[15px] font-medium leading-snug text-white/85">
@@ -80,7 +80,7 @@ export default function PickOfTheDay({ pick }: { pick: Pick | null }) {
             {length && <span>{length}</span>}
             {genres.length > 0 && <span className="text-white/55">{genres.join(' / ')}</span>}
           </p>
-          {data.tagline && <p dir="auto" className="text-pretty text-lg leading-snug text-white/90 md:text-xl">“{data.tagline}”</p>}
+          {data.tagline && <p dir="auto" className="text-pretty text-lg leading-snug text-white/90 md:text-xl">{quote(data.tagline, locale)}</p>}
           <p className="line-clamp-3 max-w-[60ch] text-sm leading-relaxed text-white/65 md:text-[15px]">{data.overview}</p>
           <div className="mt-1 flex flex-wrap gap-3">
             <Button asChild size="lg">

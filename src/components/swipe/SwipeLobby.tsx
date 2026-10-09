@@ -3,13 +3,14 @@ import React, { useEffect, useId, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { m } from 'framer-motion'
-import { ChevronRight, Popcorn } from 'lucide-react'
+import { CalendarPlus, ChevronRight, Popcorn } from 'lucide-react'
 import { Button } from '@/src/components/ui/button'
 import { Input } from '@/src/components/ui/input'
 import { Label } from '@/src/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select'
 import { useI18n } from '@/src/components/I18nProvider'
-import { dateLocale } from '@/src/lib/i18n'
+import { useProfiles } from '@/src/hooks/use-profiles'
+import { dateLocale } from '@/src/lib/i18n/locales'
 import { spring } from '@/src/lib/motion'
 import { cn } from '@/src/lib/utils'
 import CodeInput from './CodeInput'
@@ -35,6 +36,7 @@ export default function SwipeLobby({ genres, posters }: { genres: { id: number, 
   const [createError, setCreateError] = useState<string | null>(null)
   const [joinError, setJoinError] = useState<string | null>(null)
   const [rooms, setRooms] = useState<SavedRoom[]>([])
+  const { active } = useProfiles()
 
   useEffect(() => {
     setName(getSavedName())
@@ -209,6 +211,21 @@ export default function SwipeLobby({ genres, posters }: { genres: { id: number, 
               </div>
               {joinError && <p id={`${ids}-join-error`} role="alert" className={errorText}>{joinError}</p>}
             </form>
+
+            {/* Not tonight? A movie night: a date, friends, and a vote on the film. */}
+            {!active?.kids && (
+              <Link
+                href="/movie-night/new"
+                className="group pressable flex min-h-[64px] items-center gap-4 rounded-[22px] px-5 py-4 outline-none ring-1 ring-inset ring-white/[0.07] transition-colors duration-150 hover:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-red-500 sm:px-6"
+              >
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/[0.07]"><CalendarPlus aria-hidden className="h-5 w-5 text-white/85" /></span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[15px] font-semibold text-white">{t('movieNight.swipe.planLater')}</span>
+                  <span className="mt-0.5 block text-[13px] text-white/60">{t('movieNight.swipe.planLaterText')}</span>
+                </span>
+                <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-white/45 transition-transform duration-200 ease-out group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" />
+              </Link>
+            )}
           </div>
 
           <ol className="col-span-2 row-start-4 grid gap-x-6 gap-y-4 pt-2 sm:grid-cols-3 lg:col-span-1">

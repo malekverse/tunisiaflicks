@@ -5,6 +5,8 @@ import { renderSectionCard, type SectionCard } from '@/src/lib/og'
 import { tmdbFetchSafe } from '@/src/lib/tmdb'
 import { getTunisianTitles } from '@/src/lib/tunisian'
 import { arabRamadanSeries, ramadanSeasons, tunisianRamadanSeries } from '@/src/lib/ramadan'
+import { dramaShareSection } from '@/src/lib/dramas'
+import { arabCinemaShareSection } from '@/src/lib/arab-cinema'
 
 const posters = (items: any[] | null | undefined, count = 12) =>
   (items ?? []).filter((item) => item.poster_path).slice(0, count).map((item) => `https://image.tmdb.org/t/p/w342${item.poster_path}`)
@@ -64,6 +66,13 @@ export const SHARE_SECTIONS = {
     emblem: 'tunisia',
     posters: async () => ((await getTunisianTitles()) ?? []).flatMap((title) => (title.poster?.startsWith('http') ? [title.poster] : [])).slice(0, 12),
   },
+  'tunisian-tv': {
+    title: 'Tunisian TV',
+    subtitle: "The official channels' series, shows and live streams, in one place. Free, straight from YouTube.",
+    cta: 'Watch now',
+    emblem: 'tunisia',
+    posters: async () => ((await getTunisianTitles()) ?? []).flatMap((title) => (title.poster?.startsWith('http') ? [title.poster] : [])).slice(12, 24),
+  },
   cinema: {
     title: 'Tunisian cinema',
     subtitle: "From the classics of the golden age to today's festival winners: the films, series and faces of Tunisian cinema.",
@@ -91,9 +100,12 @@ export const SHARE_SECTIONS = {
     glow: '245 190 80',
     posters: () => list('trending/all/week'),
   },
+  'dramas-turkish': dramaShareSection('turkish'),
+  'dramas-korean': dramaShareSection('korean'),
+  'arab-cinema': arabCinemaShareSection(),
   search: {
     title: 'Find anything',
-    subtitle: 'Every movie, show and actor, in English and Arabic.',
+    subtitle: 'Every movie, show and actor, in English, French and Arabic.',
     cta: 'Search',
     posters: () => list('trending/all/week'),
   },

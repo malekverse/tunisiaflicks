@@ -1,8 +1,10 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
-import { MoonStar, Play } from 'lucide-react'
+import { MoonStar, Play, Tv } from 'lucide-react'
 import { PosterSlider } from '@/src/components/Sliders'
 import RamadanCountdown from '@/src/components/ramadan/RamadanCountdown'
 import RoomTint from '@/src/components/shell/RoomTint'
+import RamadanTvRows from '@/src/components/tunisian-tv/RamadanTvRows'
 import { Button } from '@/src/components/ui/button'
 import { getKidsMode } from '@/src/lib/profiles'
 import { getLocale, getT } from '@/src/lib/i18n/server'
@@ -20,7 +22,7 @@ export function generateMetadata() {
 // Lantern gold: during Ramadan the room is lit warm.
 const LANTERN = '245 190 80'
 
-/** Ramadan hub: countdown / "day N", then each Ramadan's Tunisian and Arab series. */
+/** Ramadan hub: countdown / "day N", the series on the Tunisian channels, then each Ramadan's Tunisian and Arab series. */
 export default async function RamadanPage() {
   const t = getT()
   const locale = getLocale()
@@ -61,11 +63,22 @@ export default async function RamadanPage() {
               <p className="text-xs text-amber-100/50">{t('ramadan.moonNote')}</p>
             </div>
           )}
-          <Button asChild size="lg" className="animate-focus-in [animation-delay:180ms]">
-            <Link href="/tunisian?type=series"><Play aria-hidden className="h-5 w-5 fill-current rtl:-scale-x-100" />{t('ramadan.streamTunisian')}</Link>
-          </Button>
+          <div className="flex animate-focus-in flex-wrap items-center gap-3 [animation-delay:180ms]">
+            <Button asChild size="lg">
+              <Link href="/tunisian?type=series"><Play aria-hidden className="h-5 w-5 fill-current rtl:-scale-x-100" />{t('ramadan.streamTunisian')}</Link>
+            </Button>
+            {!kids && (
+              <Button asChild size="lg" variant="secondary">
+                <Link href="/tunisian/tv"><Tv aria-hidden className="h-5 w-5" />{t('ttv.ramadan.watch')}</Link>
+              </Button>
+            )}
+          </div>
         </div>
       </section>
+
+      <Suspense fallback={null}>
+        <RamadanTvRows kids={kids} />
+      </Suspense>
 
       {latest && (
         <PosterSlider title={isNow(latest.hijriYear) ? t('ramadan.arabNow') : t('ramadan.arabOf', { year: latest.year })} items={arab} kind="tv" />

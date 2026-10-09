@@ -105,3 +105,88 @@ export function buildIcs(event: ReleaseEvent, appUrl: string) {
   ]
   return lines.map(fold).join('\r\n') + '\r\n'
 }
+
+// ---------------------------------------------------------------------------------------------
+// Timed events (movie nights): a start and an end in UTC, a reminder, and a SEQUENCE so a
+// calendar that imported the file replaces the event when it changes (a new time, the film).
+
+export type TimedEvent = {
+  /** Stable across versions ('night-ABC@tunisiaflicks'): the calendar updates the same event. */
+  uid: string
+  /** Goes up with every change people should see; calendars keep the highest one. */
+  sequence: number
+  start: Date
+  end: Date
+  summary: string
+  description?: string
+  location?: string
+  url?: string
+  /** A reminder this many minutes before the start (VALARM). */
+  alarmMinutes?: number
+  alarmText?: string
+  cancelled?: boolean
+  /** DTSTAMP; now by default. */
+  stamp?: Date
+}
+
+/** 20261009T200000Z */
+export const icsUtc = (date: Date) => date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+
+/** Text for an iCalendar property value (backslash, comma, semicolon and newlines escaped). */
+export const escapeIcsText = escapeIcs
+/** One iCalendar content line, folded at 75 octets (CRLF + space). */
+export const foldIcsLine = fold
+
+/** An iCalendar file for a timed event, with CRLF line ends, folded lines and an optional alarm. */
+export function buildTimedIcs(event: TimedEvent, prodId = '-//TunisiaFlicks//Movie nights//EN') {
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    `PRODID:${prodId}`,
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `UID:${event.uid}`,
+    `SEQUENCE:${Math.max(0, Math.floor(event.sequence))}`,
+    `DTSTAMP:${icsUtc(event.stamp ?? new Date())}`,
+    `DTSTART:${icsUtc(event.start)}`,
+    `DTEND:${icsUtc(event.end)}`,
+    `SUMMARY:${escapeIcs(event.summary)}`,
+    ...(event.description ? [`DESCRIPTION:${escapeIcs(event.description)}`] : []),
+    ...(event.location ? [`LOCATION:${escapeIcs(event.location)}`] : []),
+    ...(event.url ? [`URL:${event.url}`] : []),
+    `STATUS:${event.cancelled ? 'CANCELLED' : 'CONFIRMED'}`,
+    ...(event.alarmMinutes && !event.cancelled
+      ? ['BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${escapeIcs(event.alarmText ?? event.summary)}`, `TRIGGER:-PT${Math.round(event.alarmMinutes)}M`, 'END:VALARM']
+      : []),
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ]
+  return lines.map(fold).join('\r\n') + '\r\n'
+}
+
+/** Google Calendar's "create event" link for a timed event. */
+export function googleTimedUrl(event: Pick<TimedEvent, 'start' | 'end' | 'summary' | 'description' | 'location'>) {
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: event.summary,
+    dates: `${icsUtc(event.start)}/${icsUtc(event.end)}`,
+    ...(event.description ? { details: event.description } : {}),
+    ...(event.location ? { location: event.location } : {}),
+  })
+  return `https://calendar.google.com/calendar/render?${params.toString()}`
+}
+
+/** Outlook on the web's "new event" link for a timed event. */
+export function outlookTimedUrl(event: Pick<TimedEvent, 'start' | 'end' | 'summary' | 'description' | 'location'>) {
+  const params = new URLSearchParams({
+    path: '/calendar/action/compose',
+    rru: 'addevent',
+    subject: event.summary,
+    startdt: event.start.toISOString(),
+    enddt: event.end.toISOString(),
+    ...(event.description ? { body: event.description } : {}),
+    ...(event.location ? { location: event.location } : {}),
+  })
+  return `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`
+}
