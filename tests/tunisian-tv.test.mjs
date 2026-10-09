@@ -171,13 +171,16 @@ describe('with the database', { skip: !CAN_SEED && 'needs MONGODB_URI (local) an
   })
 
   test('a Kids profile gets KidsBlocked, a grown-up the hub', TIMEOUT, async () => {
+    // Rendered markup, not strings: every page carries the whole dictionary for the client.
+    const blocked = /available on Kids profiles<\/h1>/
     for (const path of ['/tunisian/tv', '/tunisian/tv/watania-2']) {
       const kids = await page(path, { headers: as(person.kids) })
-      assert.match(kids, /The Tunisian catalogue isn(&#x27;|')t available on Kids profiles/, path)
-      assert.doesNotMatch(kids, /official YouTube pages/, path)
+      assert.match(kids, blocked, path)
+      // No channel links: the hub isn't there.
+      assert.doesNotMatch(kids, /href="\/tunisian\/tv\/[a-z]/, path)
     }
     const grownUp = await page('/tunisian/tv', { headers: as(person.profile) })
-    assert.doesNotMatch(grownUp, /available on Kids profiles/)
+    assert.doesNotMatch(grownUp, blocked)
   })
 
   test('a live channel lights the /tunisian door and the home tile', { ...TIMEOUT, skip: !CRON_SECRET && 'no CRON_SECRET (the cron clears the cache)' }, async () => {
