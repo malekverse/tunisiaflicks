@@ -5,8 +5,9 @@ plugins {
 // The site the app opens. Navigations to any other host are cancelled (see MainActivity).
 def siteHost = 'tunisiaflicks.vercel.app'
 
-// Release signing comes from the environment (the android-tv.yml workflow decodes the keystore
-// from repository secrets). Without it, assembleRelease builds an unsigned APK.
+// Release signing comes from the environment (the android-apps.yml workflow decodes the keystore
+// from repository secrets; both apps use the same key). Without it, assembleRelease builds an
+// unsigned APK.
 def keystorePath = System.getenv('TF_KEYSTORE_PATH')
 def signed = keystorePath != null && !keystorePath.isEmpty()
 
@@ -19,7 +20,7 @@ android {
         // Android 5.0: the oldest Android TV, and most cheap TV boxes.
         minSdk 21
         targetSdk 36
-        // The workflow passes the tag's numbers: tv-v1.2.3 -> 1.2.3, code 10203.
+        // The workflow passes the tag's numbers: android-v1.2.3 -> 1.2.3, code 10203.
         versionCode((System.getenv('TF_VERSION_CODE') ?: '1') as int)
         versionName System.getenv('TF_VERSION_NAME') ?: '1.0.0'
         buildConfigField 'String', 'SITE_HOST', "\"${siteHost}\""

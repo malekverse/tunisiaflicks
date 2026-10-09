@@ -14,5 +14,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = 'TunisiaFlicksTV'
-include ':app'
+rootProject.name = 'TunisiaFlicks'
+// tv: Android TV and TV boxes (a WebView on the site in TV mode).
+// phone: Android phones and tablets (a Trusted Web Activity: the site in Chrome, full screen).
+include ':tv', ':phone'

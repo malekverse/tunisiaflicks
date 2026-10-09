@@ -1,4 +1,0 @@
-# Bubblewrap writes the Android project here; only twa-manifest.json is kept in git.
-*
-!.gitignore
-!twa-manifest.json
