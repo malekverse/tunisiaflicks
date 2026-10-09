@@ -62,7 +62,7 @@ export const fr: Record<LegalPageId, LegalDoc> = {
       {
         heading: 'Avec qui nous les partageons',
         paragraphs: [
-          'Nous ne vendons ni ne louons vos données. Elles ne sont traitées que par les prestataires qui font tourner le service\u00a0: l’hébergement (Vercel), la base de données (MongoDB Atlas) et l’envoi des e-mails. Quand vous lancez la lecture, le lecteur choisi est un service tiers qui a sa propre politique de confidentialité, tout comme les bandes-annonces YouTube.',
+          'Nous ne vendons ni ne louons vos données. Elles ne sont traitées que par les prestataires qui font tourner le service\u00a0: l’hébergement (Vercel), la base de données (MongoDB Atlas) et l’envoi des e-mails, et, seulement pour ce que décrit chaque section ci-dessous, la recherche par IA (Groq, seulement les mots tapés dans Demander), les bandes originales (Deezer) et les paiements de soutien (Ko-fi). Quand vous lancez la lecture, le lecteur choisi est un service tiers qui a sa propre politique de confidentialité, tout comme les vidéos YouTube.',
         ],
       },
       {
@@ -82,6 +82,50 @@ export const fr: Record<LegalPageId, LegalDoc> = {
         heading: 'Langue de l’interface',
         paragraphs: [
           'Nous retenons la langue de l’interface (anglais, français, arabe ou tunisien) dans un cookie, et dans votre compte quand vous êtes connecté, pour que le site s’ouvre dans votre langue.',
+        ],
+      },
+      {
+        heading: 'Listes partagées',
+        paragraphs: [
+          'Vous choisissez qui voit chaque liste\u00a0: vous seul (ou les personnes qui y participent), vos amis, ou toute personne ayant le lien. Les listes créées avant ce choix restent visibles par toute personne ayant leur lien. Les personnes que vous invitez voient votre nom et votre photo à côté des titres que vous ajoutez, ainsi que les dernières modifications. Les liens d’invitation fonctionnent 30 jours et pour 8 personnes au plus\u00a0; vous pouvez les désactiver.',
+          'Si vous supprimez votre compte, une liste que d’autres construisent avec vous revient à la personne qui y est depuis le plus longtemps\u00a0; vos autres listes sont supprimées et votre nom disparaît des listes auxquelles vous avez participé.',
+        ],
+      },
+      {
+        heading: 'Soirées film',
+        paragraphs: [
+          'Seules les personnes invitées à une soirée voient son nom, son lieu et sa note. Une personne qui a le lien ne voit que la date, le prénom de l’hôte et les affiches\u00a0; quand un lieu ou une note est indiqué, l’hôte approuve chaque personne qui rejoint par le lien. Les votes sont visibles par les membres de la soirée, et une salle de swipe liée à une soirée n’affiche son nom qu’à eux. Le fichier de calendrier n’est servi qu’à l’hôte et aux invités qui viennent. Les soirées sont supprimées 14 jours après leur fin.',
+        ],
+      },
+      {
+        heading: 'Badges et série',
+        paragraphs: [
+          'Badges et série tient, pour chaque profil, un journal privé des jours où vous avez lancé la lecture\u00a0: les titres lancés ce jour-là et, pour les profils adultes seulement, si c’était la nuit (00:00–04:59) ou tôt le matin (05:00–08:59). Aucune heure n’est enregistrée. Le fuseau horaire de votre navigateur sert seulement à choisir le jour et n’est jamais enregistré. Le journal est gardé 13 mois, et désactiver Badges et série dans les Réglages le supprime. Les autres ne voient jamais les badges de nuit et du matin, ni si vous avez regardé cette semaine.',
+        ],
+      },
+      {
+        heading: 'Nous soutenir',
+        paragraphs: [
+          'Les cafés se paient sur Ko-fi, jamais sur ce site. Pour relier un café à un compte, nous gardons seulement une empreinte à clé de l’adresse e-mail du payeur, l’identifiant de la transaction Ko-fi, le code TF- s’il figure dans le message, et la date, pendant 400 jours. Jamais l’adresse elle-même, un nom, un montant ou le message. Le nom d’un soutien n’apparaît sur la page de soutien que s’il le choisit.',
+        ],
+      },
+      {
+        heading: 'Demander (recherche par IA)',
+        paragraphs: [
+          'Quand vous utilisez Demander, les mots que vous tapez sont envoyés à Groq, qui fait tourner le modèle d’IA qui les transforme en recherche\u00a0; les adresses e-mail, liens et numéros de téléphone sont retirés avant. Rien d’autre n’est envoyé\u00a0: ni votre compte, ni votre profil, ni votre adresse IP, ni ce que vous regardez. Nous gardons ce qu’une demande voulait dire, rangé sous une empreinte à sens unique des mots et non sous les mots eux-mêmes, jusqu’à 14 jours pour répondre plus vite à la même question, et des compteurs quotidiens sans texte pendant 90 jours.',
+          'Les visiteurs non connectés reçoivent un cookie aléatoire du site (tf-gid, un an), utilisé seulement pour les limites d’usage. Demander n’est pas proposé sur les profils Enfants ni en mode TV.',
+        ],
+      },
+      {
+        heading: 'Vidéos, TV tunisienne et bandes originales',
+        paragraphs: [
+          'Les bandes-annonces, les bonus et les vidéos des chaînes tunisiennes viennent de YouTube. Leurs images passent par notre serveur, si bien que YouTube n’est contacté que lorsque vous lancez la lecture\u00a0; la vidéo est alors lue depuis YouTube (youtube-nocookie.com), selon sa propre politique de confidentialité. Les bandes originales viennent de Deezer\u00a0: nous gardons quel album correspond à un titre, jamais rien sur vous, et un extrait n’est lu depuis Deezer que lorsque vous l’appuyez. Un signalement d’album erroné est compté une fois par adresse réseau, sans enregistrer cette adresse.',
+        ],
+      },
+      {
+        heading: 'Télés connectées depuis un téléphone',
+        paragraphs: [
+          'Pour connecter une télé, vous approuvez depuis votre téléphone le code qu’elle affiche. Une session TV est liée à un seul profil et ne peut changer ni votre adresse e-mail, ni votre mot de passe, ni vos profils, ni votre page. Chaque télé connectée apparaît dans les Réglages, avec son type d’appareil et sa dernière utilisation, et vous pouvez la déconnecter\u00a0; elle l’est dans les 5 minutes. Les codes d’appairage expirent après 10 minutes.',
         ],
       },
       {
@@ -129,7 +173,7 @@ export const fr: Record<LegalPageId, LegalDoc> = {
         bullets: [
           'N’utilisez pas le service à des fins illégales, ni pour porter atteinte aux droits d’autrui.',
           'N’attaquez pas le service, ne le surchargez pas, n’en aspirez pas les données et ne tentez pas d’en contourner la sécurité.',
-          'Les listes publiques et tout ce que vous publiez ne doivent être ni offensants, ni trompeurs, ni contrefaisants. Nous pouvons retirer ces contenus.',
+          'Les listes que vous partagez et tout ce que vous publiez ne doivent être ni offensants, ni trompeurs, ni contrefaisants. Nous pouvons retirer ces contenus.',
         ],
       },
       {

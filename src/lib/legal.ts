@@ -72,7 +72,7 @@ const en: Record<LegalPageId, LegalDoc> = {
       {
         heading: 'Who we share it with',
         paragraphs: [
-          'We do not sell or rent your data. It is processed only by the providers that run the service: hosting (Vercel), database (MongoDB Atlas) and email delivery. When you press play, the video player you chose is a third-party service with its own privacy policy, as are YouTube trailers.',
+          'We do not sell or rent your data. It is processed only by the providers that run the service: hosting (Vercel), database (MongoDB Atlas) and email delivery, and, only for what each feature below describes, AI search (Groq, only the words you type in Ask), soundtracks (Deezer) and support payments (Ko-fi). When you press play, the video player you chose is a third-party service with its own privacy policy, as are YouTube videos.',
         ],
       },
       {
@@ -92,6 +92,50 @@ const en: Record<LegalPageId, LegalDoc> = {
         heading: 'Interface language',
         paragraphs: [
           'We remember your interface language (English, French, Arabic or Tunisian) in a cookie, and in your account when you are signed in, so the site opens in your language.',
+        ],
+      },
+      {
+        heading: 'Shared lists',
+        paragraphs: [
+          'You choose who can see each list: only you (or the people in it), your friends, or anyone with the link. Lists made before this choice existed stay visible to anyone with their link. People you invite to build a list see your name and photo next to the titles you add, and the list’s recent changes. Invitation links work for 30 days and for up to 8 people, and you can turn them off.',
+          'If you delete your account, a list others build with you goes to the person who has been in it longest; your other lists are deleted, and your name is taken off lists you helped build.',
+        ],
+      },
+      {
+        heading: 'Movie nights',
+        paragraphs: [
+          'Only the people invited to a movie night see its name, place and note. Someone holding its link sees only the date, the host’s first name and the posters; when a place or a note is set, the host approves anyone joining through the link. Votes are visible to the night’s members, and a swipe room linked to a night shows the night’s name only to them. The calendar file is served only to the host and to the guests who are going. Nights are deleted 14 days after they end.',
+        ],
+      },
+      {
+        heading: 'Badges and streak',
+        paragraphs: [
+          'Badges and streak keeps, per profile, a private daily log of the days you pressed play: which titles were played that day and, for grown-up profiles only, whether it was at night (00:00–04:59) or early (05:00–08:59). No times are stored. Your browser’s time zone is used only to choose the day and is never stored. The log is kept for 13 months, and turning Badges and streak off in Settings deletes it. Others never see the night and early badges, or whether you played this week.',
+        ],
+      },
+      {
+        heading: 'Supporting us',
+        paragraphs: [
+          'Coffees are paid on Ko-fi, never on this site. To match a coffee to an account we keep only a keyed hash of the payer’s e-mail address, the Ko-fi transaction id, the TF- code if one was written in the message, and the date, for 400 days. Never the e-mail address itself, a name, an amount or the message. A supporter’s name appears on the support page only if they choose so.',
+        ],
+      },
+      {
+        heading: 'Ask (AI search)',
+        paragraphs: [
+          'When you use Ask, the words you type are sent to Groq, which runs the AI model that turns them into a search; e-mail addresses, links and phone numbers are removed first. Nothing else is sent: not your account, your profile, your IP address or what you watch. We keep what a request meant, filed under a one-way fingerprint of the words rather than the words themselves, for up to 14 days so the same question is answered faster, and daily counts with no text for 90 days.',
+          'Visitors who are not signed in get a random first-party cookie (tf-gid, one year) used only for fair-use limits. Ask is not offered on Kids profiles or in TV mode.',
+        ],
+      },
+      {
+        heading: 'Videos, Tunisian TV and soundtracks',
+        paragraphs: [
+          'Trailers, extras and the Tunisian channels’ videos come from YouTube. Their pictures reach you through our server, so YouTube is only contacted when you press play; the video then plays from YouTube (youtube-nocookie.com), under its own privacy policy. Soundtracks come from Deezer: we keep which album matches a title, never anything about you, and a track preview plays from Deezer only when you press it. A report that an album is wrong is counted once per network address, without storing that address.',
+        ],
+      },
+      {
+        heading: 'TVs signed in from a phone',
+        paragraphs: [
+          'To sign a TV in, you approve the code it shows from your phone. A TV session is tied to one profile and cannot change your e-mail address, password, profiles or page. You see every signed-in TV in Settings, with its device type and when it was last used, and can sign it out there; it is signed out within 5 minutes. Pairing codes expire after 10 minutes.',
         ],
       },
       {
@@ -139,7 +183,7 @@ const en: Record<LegalPageId, LegalDoc> = {
         bullets: [
           'Do not use the service for anything unlawful, or to infringe the rights of others.',
           'Do not attack, overload, scrape or try to break the service or its security.',
-          'Public lists and anything else you publish must not be offensive, misleading or infringing. We may remove such content.',
+          'Lists you share and anything else you publish must not be offensive, misleading or infringing. We may remove such content.',
         ],
       },
       {
@@ -248,7 +292,7 @@ const ar: Record<LegalPageId, LegalDoc> = {
       {
         heading: 'مع من نشاركها',
         paragraphs: [
-          'لا نبيع بياناتك ولا نؤجرها. تتم معالجتها فقط من قبل مزودي الخدمات الذين يشغّلون الموقع: الاستضافة (Vercel) وقاعدة البيانات (MongoDB Atlas) وخدمة البريد الإلكتروني. عند الضغط على تشغيل، يكون المشغّل الذي اخترته خدمة خارجية لها سياسة خصوصيتها، وكذلك مقاطع يوتيوب الدعائية.',
+          'لا نبيع بياناتك ولا نؤجرها. تتم معالجتها فقط من قبل مزودي الخدمات الذين يشغّلون الموقع: الاستضافة (Vercel) وقاعدة البيانات (MongoDB Atlas) وخدمة البريد الإلكتروني، وفي حدود ما تصفه الأقسام أدناه فقط: البحث بالذكاء الاصطناعي (Groq، الكلمات التي تكتبها في «اسأل» فقط)، والموسيقى التصويرية (Deezer)، ومدفوعات الدعم (Ko-fi). عند الضغط على تشغيل، يكون المشغّل الذي اخترته خدمة خارجية لها سياسة خصوصيتها، وكذلك فيديوهات يوتيوب.',
         ],
       },
       {
@@ -268,6 +312,50 @@ const ar: Record<LegalPageId, LegalDoc> = {
         heading: 'لغة الواجهة',
         paragraphs: [
           'نتذكر لغة الواجهة التي اخترتها (الإنجليزية أو الفرنسية أو العربية أو التونسية) في ملف تعريف ارتباط، وفي حسابك عندما تكون مسجّل الدخول، حتى يُفتح الموقع بلغتك.',
+        ],
+      },
+      {
+        heading: 'القوائم المشتركة',
+        paragraphs: [
+          'أنت من يختار من يرى كل قائمة: أنت وحدك (أو أعضاؤها)، أو أصدقاؤك، أو كل من يملك الرابط. القوائم التي أُنشئت قبل وجود هذا الخيار تبقى ظاهرة لكل من يملك رابطها. يرى من تدعوهم لبناء قائمة معك اسمك وصورتك بجانب العناوين التي تضيفها، وآخر التغييرات في القائمة. تعمل روابط الدعوة 30 يومًا ولثمانية أشخاص على الأكثر، ويمكنك إيقافها.',
+          'إذا حذفت حسابك، تنتقل القائمة التي يبنيها معك آخرون إلى أقدم عضو فيها، وتُحذف قوائمك الأخرى، ويُزال اسمك من القوائم التي ساهمت فيها.',
+        ],
+      },
+      {
+        heading: 'سهرات الأفلام',
+        paragraphs: [
+          'لا يرى اسم السهرة ومكانها وملاحظتها إلا المدعوون إليها. من يملك رابطها يرى التاريخ والاسم الأول للمضيف والملصقات فقط، وعندما يُحدَّد مكان أو ملاحظة يوافق المضيف على كل من ينضم عبر الرابط. الأصوات ظاهرة لأعضاء السهرة، وغرفة الاختيار المرتبطة بسهرة لا تُظهر اسمها إلا لهم. لا يُقدَّم ملف التقويم إلا للمضيف وللضيوف الحاضرين. تُحذف السهرات بعد 14 يومًا من انتهائها.',
+        ],
+      },
+      {
+        heading: 'الشارات والسلسلة',
+        paragraphs: [
+          'تحتفظ «الشارات والسلسلة»، لكل ملف، بسجل يومي خاص بالأيام التي ضغطت فيها على تشغيل: ما العناوين التي شُغّلت ذلك اليوم، ولملفات الكبار فقط، هل كان ذلك ليلًا (00:00–04:59) أو باكرًا (05:00–08:59). لا نخزّن أي توقيت. تُستعمل المنطقة الزمنية لمتصفحك لتحديد اليوم فقط ولا تُخزَّن. يُحفظ السجل 13 شهرًا، وإيقاف «الشارات والسلسلة» من الإعدادات يحذفه. لا يرى الآخرون أبدًا شارات الليل والصباح الباكر، ولا إن كنت شاهدت هذا الأسبوع.',
+        ],
+      },
+      {
+        heading: 'دعمنا',
+        paragraphs: [
+          'تُدفع القهوة على Ko-fi، لا على هذا الموقع أبدًا. لربط قهوة بحساب، لا نحتفظ إلا ببصمة مشفّرة بمفتاح لبريد الدافع الإلكتروني، ومعرّف عملية Ko-fi، ورمز TF- إن كُتب في الرسالة، والتاريخ، لمدة 400 يوم. لا نحتفظ أبدًا بالبريد نفسه ولا بالاسم ولا بالمبلغ ولا بالرسالة. لا يظهر اسم الداعم في صفحة الدعم إلا إذا اختار ذلك.',
+        ],
+      },
+      {
+        heading: '«اسأل» (البحث بالذكاء الاصطناعي)',
+        paragraphs: [
+          'عندما تستعمل «اسأل»، تُرسَل الكلمات التي تكتبها إلى Groq التي تشغّل نموذج الذكاء الاصطناعي الذي يحوّلها إلى بحث، بعد حذف عناوين البريد الإلكتروني والروابط وأرقام الهاتف. لا يُرسَل شيء آخر: لا حسابك ولا ملفك الشخصي ولا عنوان IP ولا ما تشاهده. نحتفظ بمعنى الطلب، مسجّلًا ببصمة أحادية الاتجاه للكلمات لا بالكلمات نفسها، مدة أقصاها 14 يومًا كي يُجاب السؤال نفسه أسرع، وبإحصاءات يومية بلا نص مدة 90 يومًا.',
+          'يحصل الزوار غير المسجّلين على ملف تعريف ارتباط عشوائي من الموقع نفسه (tf-gid، لمدة سنة) لا يُستعمل إلا لحدود الاستخدام العادل. لا تتوفر «اسأل» في ملفات الأطفال ولا في وضع التلفاز.',
+        ],
+      },
+      {
+        heading: 'الفيديوهات والتلفزة التونسية والموسيقى التصويرية',
+        paragraphs: [
+          'تأتي الإعلانات والمقاطع الإضافية وفيديوهات القنوات التونسية من يوتيوب. تصلك صورها عبر خادمنا، فلا يُتّصل بيوتيوب إلا عند الضغط على تشغيل، ثم يُشغَّل الفيديو من يوتيوب (youtube-nocookie.com) وفق سياسة خصوصيته. تأتي الموسيقى التصويرية من Deezer: نحتفظ بالألبوم المطابق لكل عنوان، ولا شيء عنك، ولا يُشغَّل مقطع من Deezer إلا عند الضغط عليه. يُحتسب البلاغ عن ألبوم خاطئ مرة واحدة لكل عنوان شبكة، دون تخزين هذا العنوان.',
+        ],
+      },
+      {
+        heading: 'أجهزة التلفاز المتصلة من الهاتف',
+        paragraphs: [
+          'لربط تلفاز، توافق من هاتفك على الرمز الذي يظهر عليه. جلسة التلفاز مرتبطة بملف واحد ولا يمكنها تغيير بريدك الإلكتروني أو كلمة مرورك أو ملفاتك أو صفحتك. ترى كل تلفاز متصل في الإعدادات، مع نوع الجهاز وآخر استعمال، ويمكنك فصله من هناك، فيُفصل خلال 5 دقائق. تنتهي صلاحية رموز الربط بعد 10 دقائق.',
         ],
       },
       {
@@ -315,7 +403,7 @@ const ar: Record<LegalPageId, LegalDoc> = {
         bullets: [
           'لا تستخدم الخدمة لأي غرض غير قانوني أو لانتهاك حقوق الآخرين.',
           'لا تهاجم الخدمة أو تُثقلها أو تستخرج بياناتها آليًا أو تحاول اختراقها.',
-          'يجب ألا تكون القوائم العامة وأي محتوى تنشره مسيئًا أو مضللًا أو منتهكًا للحقوق، ويحق لنا حذفه.',
+          'يجب ألا تكون القوائم التي تشاركها وأي محتوى تنشره مسيئًا أو مضللًا أو منتهكًا للحقوق، ويحق لنا حذفه.',
         ],
       },
       {
