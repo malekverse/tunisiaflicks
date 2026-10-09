@@ -4,6 +4,8 @@ import clientPromise from '@/src/lib/mongodb';
 import { ContentItem, WatchHistoryItem } from '@/src/lib/models/UserContent';
 import { requireActiveProfile } from '@/src/lib/profiles';
 import { cleanText } from '@/src/lib/lists-db';
+import { forgetTitle, recordPlay } from '@/src/lib/badges/activity';
+import { safeTimeZone } from '@/src/lib/badges/time';
 
 // Every list belongs to one profile of the signed-in user: the active profile from the profile
 // cookie, checked against the session user's own profiles (see lib/profiles.ts).
@@ -141,6 +143,16 @@ export async function POST(request: NextRequest) {
       { $push: { items: { $each: [contentItem], $position: 0 } } } // Add to beginning of array
     );
 
+    // Badges: the day of this play goes into the profile's private log (skipped when the profile
+    // turned badges off). The browser's time zone only places the play on a day; it isn't kept.
+    if (type === 'history') {
+      try {
+        await recordPlay({ userId, profileId }, item, { timeZone: safeTimeZone(body?.item?.tz), kids: owner.profile.kids });
+      } catch (error) {
+        console.error('Recording the play for badges failed:', error);
+      }
+    }
+
     return NextResponse.json({ success: true, message: `Item added to ${type}` });
   } catch (error) {
     console.error('Error adding item to user content:', error);
@@ -178,6 +190,15 @@ export async function DELETE(request: NextRequest) {
       { userId: userId, profileId: profileId, type: type },
       { $pull: { items: { id: { $in: ids } } } as any }
     );
+
+    // Badges: a title taken out of the history leaves the daily log too.
+    if (type === 'history') {
+      try {
+        await forgetTitle({ userId, profileId }, itemId);
+      } catch (error) {
+        console.error('Forgetting the title for badges failed:', error);
+      }
+    }
 
     if (result.modifiedCount === 0) {
       return NextResponse.json({ error: 'Item not found' }, { status: 404 });

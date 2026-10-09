@@ -31,11 +31,21 @@ export async function getSavedItems() {
   return getUserContent('saved');
 }
 
+/** The browser's time zone ('Europe/Paris'): the server only uses it to file a play under the right day (badges). */
+function browserTimeZone(): string | undefined {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 // Add an item to watch history
 export async function addToWatchHistory(item: ContentItem, progress?: number) {
   const historyItem = {
     ...item,
     progress: progress || 100, // Default to 100% if not specified
+    tz: browserTimeZone(),
   };
   return addToUserContent('history', historyItem);
 }
