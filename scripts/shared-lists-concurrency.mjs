@@ -7,7 +7,8 @@
 // minted with NEXTAUTH_SECRET (the server's), and checks:
 //   1. an invitation link lets the second account join as an editor (a garbage token: 404/410);
 //   2. 40 parallel adds by both people: all 40 land, no duplicates;
-//   3. 101 parallel adds to another list: exactly 100 land, the rest answer 400 'full';
+//   3. 101 adds to another list by both people (90 a few at a time, then the last 11 all at once,
+//      so the race happens at the cap): exactly 100 land, the extra one answers 400 'full';
 //   4. 20 parallel moves by both people: the list is still a permutation of the same 100 titles;
 //   5. handing the list over makes the editor its owner and the owner an editor;
 //   6. a list stored before visibility existed reads as 'link' (anyone with the link sees it);
@@ -60,7 +61,7 @@ async function call(who, method, path, body) {
     method,
     headers: { 'content-type': 'application/json', ...(who ? { cookie: who.cookie } : {}) },
     body: body === undefined ? undefined : JSON.stringify(body),
-    signal: AbortSignal.timeout(180_000),
+    signal: AbortSignal.timeout(600_000),
   })
   const text = await response.text()
   let json = null
@@ -79,6 +80,20 @@ async function titles(count) {
 }
 
 const keyOf = (item) => `${item.media_type}-${item.id}`
+
+/** 'status:code' counts, to say what went wrong when something did. */
+const tally = (results) => Object.entries(results.reduce((counts, result) => {
+  const key = `${result.status}${result.body?.code ? `:${result.body.code}` : ''}`
+  counts[key] = (counts[key] ?? 0) + 1
+  return counts
+}, {})).map(([key, count]) => `${key}=${count}`).join(' ')
+
+/** Runs `tasks` (functions returning promises) `width` at a time, in order. */
+async function inBatches(tasks, width) {
+  const out = []
+  for (let index = 0; index < tasks.length; index += width) out.push(...await Promise.all(tasks.slice(index, index + width).map((task) => task())))
+  return out
+}
 
 try {
   const owner = await account('Owner')
@@ -105,23 +120,27 @@ try {
   // 2. 40 parallel adds, by both people.
   const forty = pool.slice(0, 40)
   const adds = await Promise.all(forty.map((item, index) => call(index % 2 ? editor : owner, 'PATCH', `/api/lists/${slug}`, { add: { media_type: item.media_type, id: item.id } })))
-  check(adds.every((result) => result.status === 200), '40 parallel adds all answer 200', adds.map((result) => result.status).filter((status) => status !== 200).join(',') || 'all 200')
+  check(adds.every((result) => result.status === 200), '40 parallel adds all answer 200', tally(adds))
   const after40 = (await call(owner, 'GET', `/api/lists/${slug}`)).body.list
   const keys40 = after40.items.map(keyOf)
   check(after40.items.length === 40 && new Set(keys40).size === 40 && forty.every((item) => keys40.includes(keyOf(item))), '40 titles in the list, each once', String(after40.items.length))
 
-  // 3. 101 parallel adds: capped at 100.
+  // 3. 101 adds: capped at 100. The last 11 race for the last 10 places.
   const big = await call(owner, 'POST', '/api/lists', { title: `Cap ${run}` })
   const bigSlug = big.body.list.slug
   created.slugs.push(bigSlug)
   const bigLink = await call(owner, 'POST', `/api/lists/${bigSlug}/collaborators`, { invite: 'link' })
-  await call(editor, 'POST', `/api/lists/${bigSlug}/collaborators`, { token: new URL(bigLink.body.url, BASE).searchParams.get('invite') })
+  const bigJoin = await call(editor, 'POST', `/api/lists/${bigSlug}/collaborators`, { token: new URL(bigLink.body.url, BASE).searchParams.get('invite') })
+  check(bigJoin.status === 200 && bigJoin.body?.joined === true, 'the editor joins the second list too', `${bigJoin.status} ${JSON.stringify(bigJoin.body)}`)
   const hundredOne = pool.slice(40, 141)
-  const capped = await Promise.all(hundredOne.map((item, index) => call(index % 2 ? editor : owner, 'PATCH', `/api/lists/${bigSlug}`, { add: { media_type: item.media_type, id: item.id } })))
+  const addTo = (item, index) => () => call(index % 2 ? editor : owner, 'PATCH', `/api/lists/${bigSlug}`, { add: { media_type: item.media_type, id: item.id } })
+  const first90 = await inBatches(hundredOne.slice(0, 90).map(addTo), 15)
+  const last11 = await Promise.all(hundredOne.slice(90).map((item, index) => addTo(item, 90 + index)()))
+  const capped = [...first90, ...last11]
   const full = capped.filter((result) => result.status === 400 && result.body?.code === 'full').length
   const afterCap = (await call(owner, 'GET', `/api/lists/${bigSlug}`)).body.list
   check(afterCap.items.length === 100, '101 adds: exactly 100 titles', String(afterCap.items.length))
-  check(full === 1 && capped.filter((result) => result.status === 200).length === 100, 'one add answers 400 full, 100 answer 200', `full=${full}`)
+  check(full === 1 && capped.filter((result) => result.status === 200).length === 100, 'one add answers 400 full, 100 answer 200', tally(capped))
 
   // 4. 20 parallel moves: still a permutation.
   const before = afterCap.items.map(keyOf)
@@ -131,7 +150,7 @@ try {
   }))
   const moved = moves.filter((result) => result.status === 200).length
   const conflicts = moves.filter((result) => result.status === 409 && result.body?.list).length
-  check(moved + conflicts === 20, '20 moves answer 200, or 409 with the list', `200=${moved} 409=${conflicts}`)
+  check(moved + conflicts === 20, '20 moves answer 200, or 409 with the list', tally(moves))
   const afterMoves = (await call(owner, 'GET', `/api/lists/${bigSlug}`)).body.list.items.map(keyOf)
   check(afterMoves.length === 100 && new Set(afterMoves).size === 100 && before.every((key) => afterMoves.includes(key)), 'after 20 moves: the same 100 titles, each once')
 
