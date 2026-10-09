@@ -261,6 +261,7 @@ test('public view: never the time badges, Supporter only when opted in, no progr
   }
   assert.deepEqual(view.upNext, [])
   assert.equal(view.streak.current, 3, 'the streak number is shown')
+  assert.equal(view.streak.thisWeek, false, 'not whether they pressed play this week')
   const opted = toView(doc, { view: 'public', kids: false, supporterPublic: true, now: NOT_RAMADAN })
   assert.ok(opted.earned.some((card) => card.id === 'supporter'))
 })
@@ -402,6 +403,9 @@ describe('badges with a database', { skip: !HAS_DB && 'no MONGODB_URI' }, () => 
     const { recordPlay } = await import('@/src/lib/badges/activity')
     const { runBadgesCron } = await import('@/src/lib/badges/cron')
     await recordPlay({ userId: USER, profileId: SECOND }, { media_type: 'movie', id: '551' }, { timeZone: 'Africa/Tunis', now: new Date('2026-10-07T12:00:00Z') })
+    // The plays above carry fixed dates: mark them as just played, so the cron's two-day window
+    // holds them whatever day the tests run.
+    await db.collection('badges').updateMany({}, { $set: { dirtyAt: new Date() } })
     const result = await runBadgesCron({ deadline: Date.now() + 40000 })
     assert.ok(result.profiles >= 3)
     const rows = await db.collection('notifications').find({ userId: USER, kind: 'badge_earned' }).toArray()

@@ -101,8 +101,9 @@ export function toView(doc: StoredBadges | null, o: { view: 'owner' | 'public'; 
     .map((card) => ({ id: card.id, level: card.level, tier: card.tier, value: card.value, next: card.next, onlyYou: card.onlyYou }))
 
   const streakAllowed = allowed.has('streakWeeks')
+  // Others get the numbers only: whether the owner pressed play this week is the owner's to know.
   const streak = streakAllowed && doc.streak && (doc.streak.current >= 2 || doc.streak.best >= 2)
-    ? { current: doc.streak.current ?? 0, best: doc.streak.best ?? 0, thisWeek: doc.streak.thisWeek === true }
+    ? { current: doc.streak.current ?? 0, best: doc.streak.best ?? 0, thisWeek: owner && doc.streak.thisWeek === true }
     : null
   return { view: o.view, kids: o.kids, disabled: false, earned, upNext: owner ? upNext : [], streak }
 }
