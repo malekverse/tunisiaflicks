@@ -54,9 +54,10 @@ export function TvTile({ video, mode, channelName, views = false, onPlay }: {
     if (mode === 'inSeries' && video.subtitle && episode) meta.push(<span key="ep">{episode}</span>)
     else if (mode !== 'inSeries' && mode !== 'upload' && episode && title !== video.title) meta.push(<span key="ep">{episode}</span>)
     if (channelName) meta.push(<bdi key="ch">{channelName}</bdi>)
-    meta.push(<time key="at" dateTime={video.publishedAt}>{timeAgo(video.publishedAt, dateLocale)}</time>)
+    // Relative to now: the server and the browser can be a minute apart.
+    meta.push(<time key="at" dateTime={video.publishedAt} suppressHydrationWarning>{timeAgo(video.publishedAt, dateLocale)}</time>)
     if (video.parts.length > 1) meta.push(<span key="parts">{t('ttv.parts', { count: video.parts.length })}</span>)
-    if (views && video.views) meta.push(<span key="views">{t('ttv.views', { count: compactCount(video.views, dateLocale) })}</span>)
+    if (views && video.views) meta.push(<span key="views" suppressHydrationWarning>{t('ttv.views', { count: compactCount(video.views, dateLocale) })}</span>)
   }
 
   return (
