@@ -8,6 +8,10 @@ import { PROFILE_COLORS, PROFILE_COOKIE, cleanProfileName, isProfileId } from '@
 import { denyLimitedSession } from '@/src/lib/session-scope'
 import { deleteSocialProfile, resetSocialVisibility } from '@/src/lib/social/account'
 import { deleteDigestPrefs } from '@/src/lib/digest/db'
+import { onProfileRemovedFromLists } from '@/src/lib/shared-lists/account'
+import { forgetProfileInNights } from '@/src/lib/movie-night'
+import { deleteBadgeData } from '@/src/lib/badges/view'
+import { revokeTvSessionsForProfile } from '@/src/lib/tv-sessions'
 
 export const dynamic = 'force-dynamic'
 
@@ -91,8 +95,13 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
   // The profile's favorites, bookmarks and history go with it.
   await db.collection('userContent').deleteMany({ userId, profileId: target.id })
   // Its page, friendships, ratings and invites, and its weekly digest.
+  // In this order: shared lists and movie nights still read the profile's page and name.
+  await onProfileRemovedFromLists(userId, target.id)
+  await forgetProfileInNights(userId, target.id)
   await deleteSocialProfile({ userId, profileId: target.id })
   await deleteDigestPrefs(target.id)
+  await deleteBadgeData(userId, target.id)
+  await revokeTvSessionsForProfile(userId, target.id)
 
   const response = NextResponse.json({ success: true })
   if (active.profile?.id === target.id) response.cookies.delete(PROFILE_COOKIE)
