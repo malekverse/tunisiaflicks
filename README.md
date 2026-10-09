@@ -58,7 +58,9 @@ English, French, Arabic (MSA) and Tunisian Derja. The interface language lives i
 cookie (and in the account when signed in); a first visit negotiates from `Accept-Language` (en, fr or
 ar; Derja is only ever chosen). Core strings are in `src/lib/i18n/{en,fr,ar,tn}.ts`; each feature
 keeps its own in `src/lib/i18n/features/<feature>.ts`. `npm run check:i18n` checks that every key is
-translated (and French typography), and that no client file bundles the dictionaries.
+translated (and French typography), that no client file bundles the dictionaries, and that
+`src/lib/i18n/client-keys.ts` is up to date: which strings each page sends to the browser (the
+chrome's on every page, a segment's own with its pages; `npm run i18n:keys` writes it).
 
 ### Friends
 
@@ -158,5 +160,8 @@ Play app are parked on the `feat/android-apps` branch.)
 - `npm run dev` – development server
 - `npm run build` / `npm start` – production build and server
 - `npm run lint` – ESLint
-- `npm run check:i18n` – translations complete, French typography, no dictionaries in the browser bundle
+- `npm run check:i18n` – translations complete, French typography, no dictionaries in the browser bundle,
+  the strings each page sends up to date
+- `npm run i18n:keys` – works out which strings each page sends to the browser (after using a key in a
+  client component)
 - `npm run test:unit` – unit tests (Node 22)

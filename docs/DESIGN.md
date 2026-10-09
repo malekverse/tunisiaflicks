@@ -91,6 +91,13 @@ fills. Surfaces are white at low alpha so they take the tint of the room light b
   from `@/src/lib/i18n/locales` (languages, direction, `dateLocale`) and `@/src/lib/i18n/translate`
   (`translatorFrom`, `translateApiMessage`), and get `t` from `useT()`. `import type` from the index is
   fine. Never `locale === 'en'` (use `isArabicScript`), never an exhaustive `Record<Locale, ...>`.
+- The strings `useT()` has travel in the page's HTML, so a page only gets the ones its client components
+  may translate: the root layout sends the shell's (the chrome's, and what many pages share), and a
+  segment's layout wraps what it renders in `<ClientMessages scope="<segment>/layout">`, which adds its
+  pages'. After using a key in a client component, run `npm run i18n:keys` (it rewrites
+  `src/lib/i18n/client-keys.ts`; `npm run check:i18n` fails until you do). In development the console
+  warns when a client component translates a key the page doesn't have. A new page without a scope
+  works: its strings go to the shell, on every page; give it a scope once that's more than a few.
 - Sentences with a name or a title in them: `richT(t, key, vars, { bold })` from
   `@/src/lib/i18n/rich` isolates each value in `<bdi>` (and bolds the ones you name), so an Arabic name
   in an English sentence, or the reverse, never scrambles the word order.

@@ -26,7 +26,7 @@ import LanguageHint from "@/src/components/shell/LanguageHint";
 import TvModeProvider from "@/src/components/tv/TvModeProvider";
 import TvShell from "@/src/components/tv/TvShell";
 import TvModeOffer from "@/src/components/tv/TvModeOffer";
-import { dictionaryFor, dirOf, htmlLang } from "@/src/lib/i18n";
+import { clientMessages, dirOf, htmlLang } from "@/src/lib/i18n";
 import { getLocale, getT } from "@/src/lib/i18n/server";
 import { getKidsMode } from "@/src/lib/profiles";
 import { SEASONS_TODAY_COOKIE, getSeasonalNav, getSeasonSkin, seasonClock } from "@/src/lib/seasons";
@@ -180,7 +180,7 @@ export default async function RootLayout({
         <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:start-3 focus:top-3 focus:z-[100] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-black">
           {t('nav.skipToContent')}
         </a>
-        <I18nProvider locale={locale} messages={dictionaryFor(locale)}>
+        <I18nProvider locale={locale} messages={clientMessages(locale)}>
           <TvModeProvider tv={tv} inApp={inApp}>
             <SessionProvider>
               <MotionProvider>

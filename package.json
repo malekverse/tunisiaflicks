@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit --incremental false",
     "test:unit": "node --import ./tests/register.mjs --test \"tests/*.unit.test.*\"",
     "test:smoke": "node --import ./tests/register.mjs --test \"tests/*.test.mjs\"",
-    "check:i18n": "node scripts/check-translations.mjs && node scripts/check-client-i18n.mjs"
+    "check:i18n": "node scripts/check-translations.mjs && node scripts/check-client-i18n.mjs && node scripts/client-i18n-keys.mjs --check",
+    "i18n:keys": "node scripts/client-i18n-keys.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

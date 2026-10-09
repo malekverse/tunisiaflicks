@@ -14,6 +14,8 @@ type I18nContextValue = {
   locale: Locale
   dir: Dir
   t: Translate
+  /** The strings `t` translates with: the shell's, and under an I18nScope the page's too. */
+  messages: Record<string, string>
   /** Locale for `toLocaleDateString` & co. (Arabic with Latin digits). */
   dateLocale: string
   /** Switches the whole page at once (see I18nProvider). */
@@ -32,6 +34,24 @@ const PENDING_ATTRIBUTE = 'data-locale-pending'
 /** Before paint in the browser (no frame with the new strings in the old direction); a no-op on the server. */
 const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect
 
+const warned = new Set<string>()
+
+/**
+ * `t` over `messages`. In development it says when a key isn't there: a client component translating
+ * a key the server doesn't send to this page (scripts/client-i18n-keys.mjs decides which it sends).
+ */
+function translator(messages: Record<string, string>): Translate {
+  const translate = translatorFrom(messages)
+  if (process.env.NODE_ENV === 'production') return translate
+  return (key, vars) => {
+    if (!(key in messages) && !warned.has(key)) {
+      warned.add(key)
+      console.warn(`[i18n] '${key}' isn't among this page's strings: run \`npm run i18n:keys\`.`)
+    }
+    return translate(key, vars)
+  }
+}
+
 function writeCookie(locale: Locale) {
   const secure = location.protocol === 'https:' ? '; secure' : ''
   document.cookie = `${LOCALE_COOKIE}=${locale}; path=/; max-age=${ONE_YEAR}; samesite=lax${secure}`
@@ -41,7 +61,8 @@ function writeCookie(locale: Locale) {
  * UI language for client components.
  *
  * The locale comes from the server (the cookie, read by the root layout) and so does `messages`,
- * the active language's strings. Switching is atomic: there is never a frame where the chrome
+ * the active language's strings that client components translate (the shell's; a page adds its own
+ * with ClientMessages, see I18nScope). Switching is atomic: there is never a frame where the chrome
  * speaks the new language and the page the old one. setLocale writes the cookie, dims the page
  * (globals.css, `html[data-locale-pending]`) and refreshes the server components in a transition;
  * the new locale and strings arrive together with the new server output, in one commit. Then
@@ -50,7 +71,7 @@ function writeCookie(locale: Locale) {
  */
 export function I18nProvider({ locale, messages, children }: {
   locale: Locale
-  /** Every string of `locale` (dictionaryFor), English filling the gaps. */
+  /** The shell's strings in `locale` (clientMessages), English filling the gaps. */
   messages?: Record<string, string>
   children: React.ReactNode
 }) {
@@ -62,7 +83,8 @@ export function I18nProvider({ locale, messages, children }: {
   const waitingOnline = useRef<(() => void) | null>(null)
   const committed = useRef(locale)
 
-  const t = useMemo<Translate>(() => translatorFrom(messages ?? {}), [messages])
+  const shell = useMemo(() => messages ?? {}, [messages])
+  const t = useMemo<Translate>(() => translator(shell), [shell])
   const tRef = useRef(t)
   tRef.current = t
 
@@ -131,11 +153,12 @@ export function I18nProvider({ locale, messages, children }: {
     locale,
     dir: dirOf(locale),
     t,
+    messages: shell,
     dateLocale: dateLocale(locale),
     setLocale,
     pendingLocale,
     switching: pendingLocale !== null,
-  }), [locale, t, setLocale, pendingLocale])
+  }), [locale, t, shell, setLocale, pendingLocale])
 
   return (
     <I18nContext.Provider value={value}>
@@ -143,6 +166,19 @@ export function I18nProvider({ locale, messages, children }: {
       <div role="status" aria-live="polite" className="sr-only">{announcement}</div>
     </I18nContext.Provider>
   )
+}
+
+/**
+ * A page's own strings joining the shell's, for the client components under it. ClientMessages
+ * renders it on the server, so after a language switch they arrive with the page's new server
+ * output, in the same commit as the shell's.
+ */
+export function I18nScope({ messages, children }: { messages: Record<string, string>, children: React.ReactNode }) {
+  const parent = useI18n()
+  const merged = useMemo(() => ({ ...parent.messages, ...messages }), [parent.messages, messages])
+  const t = useMemo<Translate>(() => translator(merged), [merged])
+  const value = useMemo<I18nContextValue>(() => ({ ...parent, messages: merged, t }), [parent, merged, t])
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
 }
 
 export function useI18n() {
