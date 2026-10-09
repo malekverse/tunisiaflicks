@@ -7,7 +7,8 @@ import ProfileSetupCard from '@/src/components/social/ProfileSetupCard'
 import { getLocale, getT } from '@/src/lib/i18n/server'
 import { pageMetadata } from '@/src/lib/seo'
 import { getFriendsActivity } from '@/src/lib/social/activity'
-import { friendRows } from '@/src/lib/social/friends'
+import { friendRows, otherSide } from '@/src/lib/social/friends'
+import { getIdentities } from '@/src/lib/social/identity'
 import { normalizePrivacy } from '@/src/lib/social/privacy'
 import { withTimeout } from '@/src/lib/with-timeout'
 import { tunisToday } from './_lib/feed'
@@ -44,16 +45,21 @@ export default async function FriendsPage() {
     )
   }
 
-  const [feed, someFriends] = await Promise.all([
+  const [feed, rows] = await Promise.all([
     withTimeout(getFriendsActivity(viewer.ref, { limit: 20, locale: getLocale() }), 8000, null).catch(() => null),
-    friendRows(viewer.ref.profileId, 5).then((rows) => rows.length > 0).catch(() => true),
+    friendRows(viewer.ref.profileId).catch(() => null),
   ])
+  // The most recently active few, for the side panel on wide screens.
+  const ids = (rows ?? []).slice(0, 6).map((row) => otherSide(row, viewer.ref.profileId).profileId)
+  const identities = ids.length ? await getIdentities(ids).catch(() => new Map()) : new Map()
+  const friends = ids.flatMap((id) => (identities.has(id) ? [identities.get(id)!] : []))
   const privacy = normalizePrivacy(viewer.social.privacy)
   return (
     <FriendsFeed
       initial={feed}
       today={tunisToday()}
-      hasFriends={someFriends}
+      hasFriends={rows === null || rows.length > 0}
+      friends={{ people: friends, total: rows?.length ?? friends.length }}
       activityPrivate={privacy.activity === 'private' || privacy.paused}
     />
   )

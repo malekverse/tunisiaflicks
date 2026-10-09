@@ -291,6 +291,7 @@ export const social = defineStrings({
 
     // /me
     'social.me.subtitle': 'Your badges, your year and your lists.',
+    'social.me.subtitleKids': 'Your badges and your year.',
     'social.me.yearTitle': 'Your year',
     'social.me.yearText': 'Your {year} in titles, hours and favourites.',
     'social.me.signInTitle': 'A page friends can find',
@@ -626,6 +627,7 @@ export const social = defineStrings({
     'social.page.ratingsEmpty': 'لا تقييمات بعد',
 
     'social.me.subtitle': 'شاراتك وسنتك وقوائمك.',
+    'social.me.subtitleKids': 'شاراتك وسنتك.',
     'social.me.yearTitle': 'سنتك',
     'social.me.yearText': 'سنة {year} بالعناوين والساعات والمفضّلات.',
     'social.me.signInTitle': 'صفحة يجدك عبرها أصدقاؤك',
@@ -821,6 +823,7 @@ export const social = defineStrings({
     'social.page.ratingsEmptyOwner': 'قيّم حاجة وتبان لهنا.',
     'social.page.ratingsEmpty': 'ما فمّا حتى تقييم',
     'social.me.subtitle': 'الشارات متاعك وعامك والقوائم متاعك.',
+    'social.me.subtitleKids': 'الشارات متاعك وعامك.',
     'social.me.yearTitle': 'عامك',
     'social.me.yearText': 'عام {year} متاعك بالعناوين والسوايع واللي حبّيتو.',
     'social.me.signInTitle': 'صفحة يلقاوك بيها صحابك',
@@ -1125,6 +1128,7 @@ export const social = defineStrings({
     'social.page.ratingsEmpty': 'Pas encore de notes',
 
     'social.me.subtitle': 'Vos badges, votre année et vos listes.',
+    'social.me.subtitleKids': 'Vos badges et votre année.',
     'social.me.yearTitle': 'Votre année',
     'social.me.yearText': 'Votre {year} en titres, en heures et en coups de cœur.',
     'social.me.signInTitle': 'Une page où vos amis vous trouvent',

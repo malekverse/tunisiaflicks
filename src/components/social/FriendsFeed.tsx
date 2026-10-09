@@ -15,9 +15,11 @@ import { Skeleton } from '@/src/components/ui/skeleton'
 import { loadAmbientColor } from '@/src/hooks/use-ambient-color'
 import type { TKey } from '@/src/lib/i18n'
 import type { ActivityItem } from '@/src/lib/social/activity'
+import type { PublicIdentity } from '@/src/lib/social/types'
 import { useRoom } from '@/src/store/room'
 import { appendUnique, groupByDay, tunisToday, type DayGroup } from '@/src/app/friends/_lib/feed'
 import ActivityRow from './ActivityRow'
+import { UserAvatar } from './Avatar'
 
 type Feed = { items: ActivityItem[]; next: string | null }
 
@@ -83,7 +85,43 @@ function FeedSkeleton() {
   )
 }
 
-export default function FriendsFeed({ initial, today: serverToday, hasFriends, activityPrivate }: {
+/** Wide screens: a few friends beside the feed, and the way to add one. */
+function FriendsAside({ people, total }: { people: PublicIdentity[]; total: number }) {
+  const { t } = useI18n()
+  return (
+    <aside aria-labelledby="feed-friends" className="hidden xl:block">
+      <div className="sticky top-[calc(var(--topbar)+env(safe-area-inset-top,0px)+20px)] rounded-[22px] bg-white/[0.04] p-2 ring-1 ring-white/[0.07]">
+        <h2 id="feed-friends" className="flex items-baseline gap-2 px-3 pb-1 pt-3 font-display text-[19px] font-bold text-white">
+          {t('social.friends.tabList')}
+          {total > 0 && <span className="font-sans text-[14px] font-medium tabular-nums text-white/50">{total}</span>}
+        </h2>
+        {people.length > 0 && (
+          <ul>
+            {people.map((person) => (
+              <li key={person.handle}>
+                <Link href={`/u/${person.handle}`} className="flex items-center gap-3 rounded-2xl px-3 py-2 outline-none transition-colors hover:bg-white/[0.05] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500">
+                  <UserAvatar person={person} size={32} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[14.5px] font-medium text-white"><bdi>{person.name}</bdi></span>
+                    <span className="block truncate text-[12.5px] text-white/55"><bdi dir="ltr">@{person.handle}</bdi></span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="flex flex-col gap-1 p-2 pt-3">
+          <Button asChild variant="secondary" className="h-11 w-full"><Link href="/friends/list#add"><UserPlus aria-hidden className="h-[18px] w-[18px]" />{t('social.picker.addFriend')}</Link></Button>
+          {total > people.length && (
+            <Button asChild variant="ghost" className="h-11 w-full text-white/75"><Link href="/friends/list">{t('common.seeAll')}</Link></Button>
+          )}
+        </div>
+      </div>
+    </aside>
+  )
+}
+
+export default function FriendsFeed({ initial, today: serverToday, hasFriends, activityPrivate, friends }: {
   /** The first page, rendered on the server (null when it didn't come back in time: loaded here). */
   initial: Feed | null
   /** Today in Tunis as the server saw it (the browser agrees on first render, then keeps it current). */
@@ -91,6 +129,8 @@ export default function FriendsFeed({ initial, today: serverToday, hasFriends, a
   hasFriends: boolean
   /** The viewer's own watching isn't shared: offer to share it. */
   activityPrivate: boolean
+  /** A few friends (most recently active first) and how many there are, for the side panel. */
+  friends: { people: PublicIdentity[]; total: number }
 }) {
   const { t } = useI18n()
   const still = useReducedMotion()
@@ -192,7 +232,7 @@ export default function FriendsFeed({ initial, today: serverToday, hasFriends, a
   const firstLoad = items.length === 0 && status === 'loading'
 
   return (
-    <div ref={root} className="page-x">
+    <div ref={root} className="page-x xl:grid xl:grid-cols-[minmax(0,760px)_320px] xl:items-start xl:gap-12 2xl:gap-16">
       <div className="max-w-[760px] space-y-8 sm:space-y-10">
         {activityPrivate && <PrivacyNudge />}
 
@@ -245,6 +285,7 @@ export default function FriendsFeed({ initial, today: serverToday, hasFriends, a
           </div>
         )}
       </div>
+      {hasFriends && <FriendsAside people={friends.people} total={friends.total} />}
     </div>
   )
 }

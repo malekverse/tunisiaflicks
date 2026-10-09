@@ -38,7 +38,7 @@ function YourYearCard({ color }: { color: string }) {
         style={{ backgroundImage: `linear-gradient(120deg, rgb(${rgb} / 0.34), rgb(${rgb} / 0.1) 55%, rgb(255 255 255 / 0.02))` }}
       >
         {/* The year itself, as an outline on the far side. */}
-        <span aria-hidden dir="ltr" className="numeral-outline pointer-events-none absolute -bottom-6 end-4 -z-10 select-none font-display text-[clamp(96px,16vw,180px)] font-extrabold leading-none opacity-70 transition-transform duration-500 ease-out group-hover:-translate-y-1">
+        <span aria-hidden dir="ltr" className="numeral-outline pointer-events-none absolute -bottom-6 end-4 -z-10 select-none font-display text-[clamp(96px,16vw,180px)] font-extrabold leading-none transition-transform duration-500 ease-out group-hover:-translate-y-1">
           {year}
         </span>
         <span className="max-w-[34ch]">
@@ -80,7 +80,7 @@ export default async function MePage() {
 
   return (
     <div className="pb-10">
-      <PageHeader title={title} subtitle={subtitle} icon={<UserAvatar person={person} size={56} />} />
+      <PageHeader title={title} subtitle={grownUp ? subtitle : t('social.me.subtitleKids')} icon={<UserAvatar person={person} size={56} />} />
       <div className="space-y-10 sm:space-y-12">
         <Suspense fallback={null}>
           <div className="page-x empty:hidden"><ProfileBadges owner={owner} view="owner" /></div>
