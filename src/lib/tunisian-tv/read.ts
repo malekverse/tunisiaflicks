@@ -240,7 +240,11 @@ async function buildHub(): Promise<TvHub> {
       return true
     })
   }
-  const newEpisodes = firstPerSeries(seriesEpisodes.filter((video) => age(video.publishedAt) < 7 * DAY)).slice(0, 20)
+  // Fiction first (the daily radio and talk shows have their own row), newest first within each.
+  const isDrama = (video: TvVideoView) => seriesById.get(video.seriesId!)?.kind === 'drama'
+  const newEpisodes = firstPerSeries(seriesEpisodes.filter((video) => age(video.publishedAt) < 7 * DAY))
+    .sort((a, b) => Number(isDrama(b)) - Number(isDrama(a)))
+    .slice(0, 20)
 
   const target = ramadanTarget(data.series, now)
   const ramadanSeries = target ? shown.filter((item) => item.ramadan === target.hijriYear).sort((a, b) => +b.lastAt - +a.lastAt) : []
