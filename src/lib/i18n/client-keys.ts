@@ -3,7 +3,7 @@
 // Which strings go to the browser (see clientMessages in ./index.ts): the root layout sends every
 // key that is in neither list below (the shell), a <ClientMessages scope> adds its scope's keys to
 // the pages under it, and the server-only keys never leave the server.
-// 608 of 2622 keys on every page, 1468 in 30 scopes, 546 server-only.
+// 608 of 2623 keys on every page, 1469 in 30 scopes, 546 server-only.
 
 export type MessageScope =
   | 'activate/layout'
@@ -668,6 +668,7 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'apps.page.version',
     'apps.smartTv.cast',
     'apps.smartTv.castAndroid',
+    'apps.smartTv.castDesktop',
     'apps.smartTv.castIos',
     'apps.smartTv.isOn',
     'apps.smartTv.on',
@@ -831,6 +832,7 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'apps.page.version',
     'apps.smartTv.cast',
     'apps.smartTv.castAndroid',
+    'apps.smartTv.castDesktop',
     'apps.smartTv.castIos',
     'apps.smartTv.isOn',
     'apps.smartTv.on',

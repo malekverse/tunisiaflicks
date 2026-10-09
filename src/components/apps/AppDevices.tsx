@@ -254,6 +254,7 @@ export default function AppDevices({ releases, desktop, tv }: { releases: AppRel
         <ul className="mt-2 space-y-2 text-[14px] leading-relaxed text-white/60">
           <li>{t('apps.smartTv.castIos')}</li>
           <li>{t('apps.smartTv.castAndroid')}</li>
+          <li>{t('apps.smartTv.castDesktop')}</li>
         </ul>
         <p className="mt-4 text-[13.5px] leading-relaxed text-white/50">{t('apps.smartTv.stick')}</p>
       </Card>
