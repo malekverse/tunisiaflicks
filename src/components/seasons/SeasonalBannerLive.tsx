@@ -56,6 +56,16 @@ export function SeasonalBannerFrame({ entry, label, children }: {
     }
   }, [])
 
+  // The fold ends with the banner gone (onAnimationComplete). When motion's features are still
+  // loading (lazily, after first paint), there is no fold and no completion: the banner would stay
+  // on screen, then turn invisible while its link stays focusable. So it goes anyway, within the
+  // 500ms after the click that layout-shift metrics leave to the person's own action.
+  useEffect(() => {
+    if (!dismissed) return
+    const timer = setTimeout(() => setGone(true), 450)
+    return () => clearTimeout(timer)
+  }, [dismissed])
+
   const dismiss = () => {
     const next = withDismissal(readCookie(SEASON_DISMISS_COOKIE), entry)
     writeDismissed(next)

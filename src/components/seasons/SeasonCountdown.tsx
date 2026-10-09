@@ -1,5 +1,5 @@
 "use client"
-import { m, useReducedMotion } from 'framer-motion'
+import { m } from 'framer-motion'
 import NumberFlow from '@number-flow/react'
 import { useI18n } from '@/src/components/I18nProvider'
 import { useCountdown } from '@/src/hooks/use-countdown'
@@ -11,6 +11,9 @@ type Unit = 'days' | 'hours' | 'minutes' | 'seconds'
 
 const UNIT_LABEL = { days: 'countdown.days', hours: 'countdown.hours', minutes: 'countdown.minutes', seconds: 'seasons.countdown.seconds' } as const
 const INTL_UNIT = { days: 'day', hours: 'hour', minutes: 'minute', seconds: 'second' } as const
+
+/** Beats the inline filter motion writes, for people who ask for less motion. */
+const NO_BLUR = 'motion-reduce:![filter:none]'
 
 /** '1 day, 4 hours and 12 minutes' in the viewer's language, for screen readers. */
 function spoken(parts: CountdownParts, units: Unit[], language: string) {
@@ -40,13 +43,14 @@ export default function SeasonCountdown({ at, initial, seconds = false, zeroTitl
   className?: string
 }) {
   const { t, dir, dateLocale } = useI18n()
-  const reduceMotion = useReducedMotion()
   const { parts, done } = useCountdown(at, { seconds, initial })
   // A days tile only when there are days to count (decided once, so the tiles never reflow).
   const units: Unit[] = [...(initial.days > 0 ? ['days' as const] : []), 'hours', 'minutes', ...(seconds ? ['seconds' as const] : [])]
   const lg = size === 'lg'
-  const hidden = reduceMotion ? { opacity: 0 } : { opacity: 0, filter: 'blur(2px)' }
-  const shown = reduceMotion ? { opacity: 1 } : { opacity: 1, filter: 'blur(0px)' }
+  // The same targets on the server and in the browser (so hydration matches); for people who ask
+  // for less motion, CSS takes the blur out (NO_BLUR) and the crossfade is opacity only.
+  const hidden = { opacity: 0, filter: 'blur(2px)' }
+  const shown = { opacity: 1, filter: 'blur(0px)' }
 
   // Both stay in the same grid cell, so the block keeps its size when the tiles give way.
   return (
@@ -58,7 +62,7 @@ export default function SeasonCountdown({ at, initial, seconds = false, zeroTitl
         animate={done ? hidden : shown}
         transition={tween.base}
         aria-hidden={done || undefined}
-        className={cn('col-start-1 row-start-1', done && 'pointer-events-none')}
+        className={cn('col-start-1 row-start-1', NO_BLUR, done && 'pointer-events-none')}
       >
         <div role="timer" aria-live="off" dir="ltr" className={cn('flex', lg ? 'gap-2.5' : 'gap-2')}>
           {units.map((unit) => (
@@ -87,7 +91,7 @@ export default function SeasonCountdown({ at, initial, seconds = false, zeroTitl
         animate={done ? shown : hidden}
         transition={tween.base}
         className={cn(
-          'col-start-1 row-start-1 self-center font-display font-extrabold leading-tight text-white',
+          'col-start-1 row-start-1 self-center font-display font-extrabold leading-tight text-white', NO_BLUR,
           lg ? 'text-[28px] sm:text-[34px]' : 'text-[22px] sm:text-[26px]',
           !done && 'pointer-events-none',
         )}

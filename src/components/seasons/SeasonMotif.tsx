@@ -21,6 +21,17 @@ const SPARKLES = [
   { x: 160, y: 66, r: 4.5, delay: 2.9, duration: 3.7 },
 ]
 
+/**
+ * A moment page's header: the same sky, except that the two lower ones at the drawing's end side
+ * rise above the countdown, which sits at the header's end from md on. Its tiles start at
+ * y ≈ 130px (y 47 here) and, from 768px to 1440px wide, reach under the drawing beyond x ≈ 105.
+ */
+const PAGE_SPARKLES = [
+  SPARKLES[0], SPARKLES[1], SPARKLES[3], SPARKLES[4],
+  { x: 138, y: 40, r: 6, delay: 2.3, duration: 3.9 },
+  { x: 164, y: 38, r: 4, delay: 2.9, duration: 3.7 },
+]
+
 /** The phone's corner: three of them in a small square, clear of the X above and the text beside. */
 const CORNER_SPARKLES = [
   { x: 20, y: 22, r: 7, delay: 0.4, duration: 3.8 },
@@ -108,7 +119,7 @@ export default function SeasonMotif({ id, accent, variant = 'banner', className 
       {sparkles && (
         <>
           <style>{TWINKLE_CSS}</style>
-          {(variant === 'corner' ? CORNER_SPARKLES : SPARKLES).map((sparkle, index) => (
+          {(variant === 'corner' ? CORNER_SPARKLES : variant === 'page' ? PAGE_SPARKLES : SPARKLES).map((sparkle, index) => (
             // The group places it; the path twinkles (a CSS transform would replace the attribute).
             <g key={index} transform={`translate(${sparkle.x} ${sparkle.y}) scale(${sparkle.r})`}>
               <path
