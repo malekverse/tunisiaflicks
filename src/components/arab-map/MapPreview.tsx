@@ -1,6 +1,7 @@
 "use client"
 import TmdbImage from '@/src/components/TmdbImage'
-import { useT } from '@/src/components/I18nProvider'
+import { useI18n } from '@/src/components/I18nProvider'
+import { dirOf } from '@/src/lib/i18n/locales'
 import { cn } from '@/src/lib/utils'
 import MapStats from './MapStats'
 import type { MapCountry } from '@/src/lib/arab-cinema'
@@ -20,13 +21,15 @@ export default function MapPreview({ country, dim, place, open, instant }: {
   /** Already warm (another country was just previewed): no entrance. */
   instant: boolean
 }) {
-  const t = useT()
+  const { t, locale } = useI18n()
   if (!country || !place) return null
   const pick = country.pick
   return (
     <div
       aria-hidden
       data-map-preview=""
+      // The map is laid out left to right; the card is text, and reads the page's way.
+      dir={dirOf(locale)}
       className={cn(
         'glass pointer-events-none absolute z-30 w-[248px] rounded-[18px] p-3 shadow-[0_24px_60px_-18px_rgb(0_0_0/0.9)]',
         'transition-[opacity,transform] ease-out',
