@@ -175,7 +175,8 @@ export function PeopleRow({ title, people }: { title: string, people: CountryPer
         {people.map((person) => (
           <Link key={person.id} href={`/person/${person.id}`} className="group/person block text-center outline-none">
             <span className="relative mx-auto block aspect-square w-full overflow-hidden rounded-full bg-white/[0.06] ring-1 ring-white/10 transition-[transform,box-shadow] duration-300 ease-out group-hover/person:-translate-y-1 group-hover/person:ring-white/40 group-focus-visible/person:ring-2 group-focus-visible/person:ring-red-500">
-              <TmdbImage kind="profile" path={person.profile_path} fill sizes="104px" alt={person.name} className="object-cover object-[50%_25%]" />
+              {/* The name is right under it: the photo adds nothing for a screen reader. */}
+              <TmdbImage kind="profile" path={person.profile_path} fill sizes="104px" alt="" className="object-cover object-[50%_25%]" />
             </span>
             <bdi className="mt-2 block truncate text-[13px] font-medium text-white/90">{person.name}</bdi>
             <span className="block truncate text-[12px] text-white/50"><bdi>{person.knownFor}</bdi></span>

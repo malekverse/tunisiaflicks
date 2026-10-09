@@ -6,6 +6,7 @@
 import { unstable_cache } from 'next/cache'
 import { tmdbFetchSafe, tmdbLanguage } from '@/src/lib/tmdb'
 import { tunisDate } from '@/src/lib/hijri'
+import { withTimeout } from '@/src/lib/with-timeout'
 import { ARAB_COUNTRY_CODES, arabCountryName, type ArabCountryCode } from '@/src/lib/arab-countries'
 import { MAP_CELLS } from '@/src/lib/arab-map'
 import { countryPeople, filmOfTheDay, itemsOf, runQuery, titleOf, toMapTitle, type CountryPerson, type DiscoverPage, type MapTitle } from '@/src/lib/country-cinema'
@@ -109,18 +110,26 @@ export function namesOnlyIndex(locale: Locale, date: string): ArabMapIndex {
 }
 
 /**
+ * How long a page waits for a day's index that isn't cached yet. TMDB answers in a few seconds;
+ * when it hangs, the map shows the names well before the route's 30s limit. The requests that did
+ * answer are in the data cache, so the next visit picks up where this one stopped.
+ */
+const INDEX_DEADLINE = 20_000
+
+/**
  * The map's index for this viewer: cached for the day, per TMDB language, Kids apart. When TMDB
- * fails for most countries, the names only (not cached, so the next visit tries again).
+ * fails for most countries, or doesn't answer in time, the names only (not cached, so the next
+ * visit tries again).
  */
 export async function getArabMapIndex(locale: Locale, kids: boolean): Promise<ArabMapIndex> {
   const date = tunisDate()
   const language = tmdbLanguage(locale)
-  try {
-    return await unstable_cache(() => buildArabMapIndex(locale, kids, date), indexCacheKey(kids, language, date), { revalidate: DAY })()
-  } catch (error) {
-    console.error(error)
-    return namesOnlyIndex(locale, date)
-  }
+  const index = await withTimeout(
+    unstable_cache(() => buildArabMapIndex(locale, kids, date), indexCacheKey(kids, language, date), { revalidate: DAY })(),
+    INDEX_DEADLINE,
+    null,
+  )
+  return index ?? namesOnlyIndex(locale, date)
 }
 
 // ---------------------------------------------------------------------------------------------
