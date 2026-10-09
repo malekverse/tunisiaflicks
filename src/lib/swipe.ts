@@ -36,8 +36,12 @@ export type SwipeRoom = {
   votes: Record<string, Record<string, boolean>>
   match: string | null
   matched_at: Date | null
-  /** The movie night this room picks for ('Pick together'), if any. */
-  night?: { id: string, title: string } | null
+  /**
+   * The movie night this room picks for ('Pick together'), if any. Only its id: a room is open to
+   * anyone holding its code, and the night's name is for the people invited (the room's page asks
+   * the night for it, and only its members get it).
+   */
+  night?: { id: string } | null
   /** The night's films (card keys) the deck starts with; a new deck starts with them again. */
   seed?: string[]
 }
@@ -154,7 +158,7 @@ export async function createRoom(opts: {
   kind: SwipeKind, genre: number | null, kids: boolean, locale: Locale, name: string
   /** A movie night's films: the deck starts with them. */
   seed?: string[]
-  night?: { id: string, title: string } | null
+  night?: { id: string } | null
 }) {
   const seed = (opts.seed ?? []).filter(isCardKey)
   const deck = seed.length ? await buildSeedDeck(seed, opts.kids, opts.locale) : await buildDeck(opts.kind, opts.genre, opts.kids, opts.locale)
@@ -169,7 +173,7 @@ export async function createRoom(opts: {
         _id: code, created_at: now, expires_at: new Date(now.getTime() + TTL_HOURS * 3600000),
         kind: opts.kind, genre: opts.genre, kids: opts.kids, deck,
         participants: [participant], votes: { [participant.id]: {} }, match: null, matched_at: null,
-        ...(opts.night ? { night: { id: opts.night.id, title: opts.night.title }, seed } : {}),
+        ...(opts.night ? { night: { id: opts.night.id }, seed } : {}),
       })
       return { code, participant: { id: participant.id, secret: participant.secret } }
     } catch (error: any) {
@@ -272,7 +276,7 @@ export function publicState(room: SwipeRoom, withDeck: boolean) {
     match: room.match ? room.deck.find((card) => card.key === room.match) ?? null : null,
     favorites: favorites.map(([key, count]) => ({ card: room.deck.find((card) => card.key === key)!, likes: count })).filter((entry) => entry.card),
     expires_at: room.expires_at,
-    /** The movie night this room picks for: its name and the way back (the night itself stays private). */
-    night: room.night ? { id: room.night.id, title: room.night.title } : null,
+    /** The movie night this room picks for: its id only (its name and details stay with its members). */
+    night: room.night ? { id: room.night.id } : null,
   }
 }

@@ -571,6 +571,9 @@ export async function joinWithLink(id: string, ref: ProfileRef, token: unknown):
   const people = [night.host, ...night.guests.map((guest) => guest.ref)]
   if ((await Promise.all(people.map((person) => isBlockedEitherWay(ref, person)))).some(Boolean)) return fail(403, 'blocked')
   if (night.guests.length >= GUESTS_MAX) return fail(409, 'full')
+  // A link for another night is turned away before it is used (no use of it is spent here).
+  const link = await readInvite('night', token).catch(() => null)
+  if (link && link.targetId !== id) return fail(410, 'invalid')
   const used = await consumeInvite('night', token)
   if ('reason' in used) return fail(410, used.reason)
   if (used.targetId !== id) return fail(410, 'invalid')
@@ -785,7 +788,7 @@ export async function openRoom(night: NightDoc, ref: ProfileRef, name: string, l
   const room = await createRoom({
     kind: 'both', genre: null, kids: false, locale, name: name || 'Host',
     seed: night.candidates.map((candidate) => candidate.key),
-    night: { id: night._id, title: night.title },
+    night: { id: night._id },
   })
   if (!room) return fail(502, 'failed')
   const collection = await nights()
@@ -850,8 +853,10 @@ export async function editNight(night: NightDoc, host: ProfileRef, input: EditIn
       const close = checkVoteClose(parseDate(input.vote_closes_at) ?? NaN, startsAt, now)
       if (!close) return fail(400, 'vote_close')
       set.vote_closes_at = close
-    } else if (moved && night.vote_closes_at.getTime() > startsAt.getTime()) {
-      set.vote_closes_at = defaultVoteClose(startsAt, now)
+    } else if (moved) {
+      // The vote moves with the night: it keeps closing as long before the start as it did.
+      const lead = new Date(night.starts_at).getTime() - new Date(night.vote_closes_at).getTime()
+      set.vote_closes_at = checkVoteClose(startsAt.getTime() - lead, startsAt, now) ?? defaultVoteClose(startsAt, now)
     }
   }
   const visible = moved || ['title', 'place', 'note', 'tz'].some((field) => field in set && (set as Record<string, unknown>)[field] !== (night as unknown as Record<string, unknown>)[field])
@@ -1022,6 +1027,17 @@ export async function exportUserNights(userId: string): Promise<unknown> {
   return Promise.all(docs.map(async (night) => {
     const hosted = night.host.userId === userId
     const me = night.guests.find((guest) => guest.ref.userId === userId)
+    // Still waiting for the host's approval: only what the preview shows (never the name, the
+    // place or the note the host keeps for the people let in).
+    if (!hosted && me?.status === 'requested') {
+      return {
+        starts_at: night.starts_at,
+        time_zone: night.tz,
+        status: night.status,
+        role: 'requested',
+        host: firstName(await nameOf(night.host)),
+      }
+    }
     return {
       title: night.title,
       starts_at: night.starts_at,
