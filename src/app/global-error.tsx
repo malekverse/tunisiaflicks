@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { reportError } from '@/src/lib/report-error';
 import { LOCALE_COOKIE, isLocale, negotiateLocale } from '@/src/lib/i18n/locales';
+import { MARK_STROKES, MARK_VIEWBOX } from '@/src/components/brand/BrandMark';
 
 // Last-resort boundary for errors in the root layout itself (error.tsx can't catch those). It
 // replaces the whole document, so it has its own <html> and can't use the i18n provider, the fonts
@@ -60,6 +61,14 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
         }}
       >
         <main style={{ padding: '48px 24px', maxWidth: 560 }}>
+          {/* The brand's "A", red, in the light (inline: no stylesheet here). */}
+          <svg
+            aria-hidden
+            viewBox={MARK_VIEWBOX}
+            style={{ display: 'block', height: 44, width: 'auto', margin: '0 auto 28px', fill: '#ff0f00', filter: 'drop-shadow(0 0 18px rgba(255,16,0,0.5))' }}
+          >
+            {MARK_STROKES.map((d) => <path key={d} d={d} />)}
+          </svg>
           <div
             aria-hidden
             style={{

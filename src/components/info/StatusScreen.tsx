@@ -1,6 +1,9 @@
+import { BrandMark } from '@/src/components/brand/BrandMark'
+
 /**
- * Not found / something broke: one big word lit from above like a projector hitting an empty
- * screen, what happened in a sentence, and the ways out. Usable from server and client pages.
+ * Not found / something broke: the brand's "A" in the beam, one big word lit from above like a
+ * projector hitting an empty screen, what happened in a sentence, and the ways out. Usable from
+ * server and client pages.
  */
 export default function StatusScreen({ big, title, text, children }: {
   /** The giant word ("404", "Oops"). Decorative: the title says it in words. */
@@ -17,6 +20,7 @@ export default function StatusScreen({ big, title, text, children }: {
       <div aria-hidden className="absolute left-1/2 top-[38%] -z-10 h-40 w-[min(720px,90vw)] -translate-x-1/2 rounded-[100%] bg-white/[0.035] blur-3xl" />
 
       <div className="page-x flex min-h-[calc(100svh-var(--topbar)-env(safe-area-inset-top,0px)-12px-var(--tabbar-space))] flex-col items-center justify-center py-16 text-center">
+        <BrandMark className="mb-7 h-10 w-auto animate-focus-in drop-shadow-[0_0_18px_rgb(255_16_0/0.5)] sm:h-12" />
         <p
           aria-hidden
           className="animate-focus-in select-none bg-gradient-to-b from-white from-10% via-white/60 to-white/0 to-95% bg-clip-text pb-[0.06em] font-display text-[clamp(120px,24vw,300px)] font-extrabold leading-[0.82] text-transparent"
