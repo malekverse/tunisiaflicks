@@ -17,6 +17,7 @@ import SocialPrivacySettings from '@/src/components/social/SocialPrivacySettings
 import DigestSettings from '@/src/components/digest/DigestSettings';
 import SupporterSettings from '@/src/components/support/SupporterSettings';
 import TvSessionsSetting from '@/src/components/tv/TvSessionsSetting';
+import { DesktopAppSettings } from '@/src/components/desktop/DesktopUpdates';
 import clientPromise from '@/src/lib/mongodb';
 import { ObjectId } from 'mongodb';
 import { getT } from '@/src/lib/i18n/server';
@@ -77,6 +78,9 @@ export default async function ProfilePage() {
             <SettingsSection id="playback" title={t('settings.playback')} description={t('settings.playbackDesc')}>
               <PlaybackSettings />
             </SettingsSection>
+
+            {/* Inside the Windows app only: its automatic updates (#desktop-app) */}
+            <DesktopAppSettings />
 
             {/* Push notifications on this device, then email (#email) */}
             <PushSettingsCard>{!kids && <DigestSettings />}</PushSettingsCard>

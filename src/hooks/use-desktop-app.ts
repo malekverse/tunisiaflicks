@@ -2,10 +2,30 @@
 // The TunisiaFlicks desktop app (desktop/ in this repo) opens this site in its own window and runs
 // the ad-free local player next to it. Its preload script puts a small bridge on window; this reads
 // it. In a browser there is no bridge, and everything here is null / false.
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { StreamProvider } from '@/src/lib/stream-providers'
 
-type DesktopBridge = { present?: boolean, player?: unknown }
+type DesktopBridge = { present?: boolean, player?: unknown, updates?: UpdatesBridge }
+
+/** The app's updates as desktop/updater.js reports them. */
+export type DesktopUpdateState = {
+  /** The installed version. */
+  current: string
+  /** Automatic updates (on unless the viewer turned them off). */
+  auto: boolean
+  status: 'idle' | 'checking' | 'downloading' | 'ready' | 'latest' | 'error' | 'unsupported'
+  /** The new version (downloading, ready). */
+  version?: string
+  percent?: number
+}
+
+type UpdatesBridge = {
+  get: () => Promise<DesktopUpdateState | null>
+  setAuto: (on: boolean) => Promise<DesktopUpdateState | null>
+  check: () => Promise<DesktopUpdateState | null>
+  install: () => Promise<DesktopUpdateState | null>
+  onChange: (callback: (state: DesktopUpdateState) => void) => () => void
+}
 
 /** The name the local player has in the player's source bar. */
 export const LOCAL_PLAYER_SOURCE = 'TunisiaFlicks'
@@ -43,4 +63,43 @@ export function useWithLocalPlayer(services: StreamProvider[], media: LocalMedia
     const path = type === 'movie' ? `/embed/movie/${id}` : `/embed/tv/${id}/${season}/${episode}`
     return [{ name: LOCAL_PLAYER_SOURCE, url: `${origin}${path}` }, ...services]
   }, [services, origin, type, id, season, episode])
+}
+
+/** The app's updates bridge (desktop app 1.1.0 and later), or null. */
+function updatesBridge(): UpdatesBridge | null {
+  if (typeof window === 'undefined') return null
+  const updates = (window as { tunisiaflicksDesktop?: DesktopBridge }).tunisiaflicksDesktop?.updates
+  return updates && typeof updates.get === 'function' ? updates : null
+}
+
+/**
+ * The desktop app's updates and what the viewer can do about them; null outside the app and in
+ * versions without an updater (1.0.0). Known only after mount.
+ */
+export function useDesktopUpdates() {
+  const [state, setState] = useState<DesktopUpdateState | null>(null)
+  const [bridge, setBridge] = useState<UpdatesBridge | null>(null)
+
+  useEffect(() => {
+    const updates = updatesBridge()
+    if (!updates) return
+    setBridge(updates)
+    let live = true
+    const stop = updates.onChange((next) => { if (live) setState(next) })
+    updates.get().then((next) => { if (live && next) setState(next) }).catch(() => {})
+    return () => { live = false; stop() }
+  }, [])
+
+  const apply = useCallback((answer: Promise<DesktopUpdateState | null>) => {
+    answer.then((next) => { if (next) setState(next) }).catch(() => {})
+  }, [])
+  const setAuto = useCallback((on: boolean) => {
+    if (!bridge) return
+    setState((current) => (current ? { ...current, auto: on } : current))
+    apply(bridge.setAuto(on))
+  }, [bridge, apply])
+  const check = useCallback(() => { if (bridge) apply(bridge.check()) }, [bridge, apply])
+  const install = useCallback(() => { if (bridge) apply(bridge.install()) }, [bridge, apply])
+
+  return bridge && state ? { state, setAuto, check, install } : null
 }

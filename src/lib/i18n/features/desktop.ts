@@ -1,5 +1,6 @@
 // Strings for: the Windows desktop app (desktop/ in this repo): its page (/desktop), its card and
-// spotlight on /app, and its app offer. Tunisian falls back to Arabic.
+// spotlight on /app, its app offer, the footer link, and its updates (Settings, inside the app).
+// Tunisian falls back to Arabic.
 import { defineStrings } from '../define'
 
 const NBSP = ' '
@@ -83,6 +84,20 @@ export const desktop = defineStrings({
     'desktop.offer.text': 'The desktop app, with its own player: films and series with no ads.',
     'desktop.offer.cta': 'Discover it',
     'desktop.footer': 'Windows app',
+
+    'desktop.updates.title': 'Desktop app',
+    'desktop.updates.desc': 'TunisiaFlicks for Windows on this computer.',
+    'desktop.updates.auto': 'Automatic updates',
+    'desktop.updates.autoHint': 'New versions download in the background and install when you close the app.',
+    'desktop.updates.version': 'Version {version}',
+    'desktop.updates.check': 'Check for updates',
+    'desktop.updates.checking': 'Checking for updates…',
+    'desktop.updates.downloading': 'Downloading version {version}: {percent}%',
+    'desktop.updates.ready': 'Version {version} is ready.',
+    'desktop.updates.restart': 'Restart to update',
+    'desktop.updates.latest': 'You have the latest version.',
+    'desktop.updates.error': 'Couldn\'t check for updates. Try again later.',
+    'desktop.updates.unsupported': 'Updates only work in the installed app.',
   },
   fr: {
     'desktop.meta.title': 'TunisiaFlicks pour Windows',
@@ -160,6 +175,20 @@ export const desktop = defineStrings({
     'desktop.offer.text': 'L’app pour ordinateur, avec son propre lecteur' + NBSP + ': films et séries sans pub.',
     'desktop.offer.cta': 'La découvrir',
     'desktop.footer': 'App Windows',
+
+    'desktop.updates.title': 'App pour ordinateur',
+    'desktop.updates.desc': 'TunisiaFlicks pour Windows sur cet ordinateur.',
+    'desktop.updates.auto': 'Mises à jour automatiques',
+    'desktop.updates.autoHint': 'Les nouvelles versions se téléchargent en arrière-plan et s’installent quand vous fermez l’app.',
+    'desktop.updates.version': 'Version {version}',
+    'desktop.updates.check': 'Rechercher des mises à jour',
+    'desktop.updates.checking': 'Recherche de mises à jour…',
+    'desktop.updates.downloading': 'Téléchargement de la version {version}' + NBSP + ': {percent}' + NNBSP + '%',
+    'desktop.updates.ready': 'La version {version} est prête.',
+    'desktop.updates.restart': 'Redémarrer pour mettre à jour',
+    'desktop.updates.latest': 'Vous avez la dernière version.',
+    'desktop.updates.error': 'Impossible de rechercher les mises à jour. Réessayez plus tard.',
+    'desktop.updates.unsupported': 'Les mises à jour ne fonctionnent que dans l’app installée.',
   },
   ar: {
     'desktop.meta.title': 'TunisiaFlicks على ويندوز',
@@ -237,5 +266,19 @@ export const desktop = defineStrings({
     'desktop.offer.text': 'تطبيق الحاسوب بمشغّله الخاص: أفلام ومسلسلات دون إعلانات.',
     'desktop.offer.cta': 'اكتشفه',
     'desktop.footer': 'تطبيق ويندوز',
+
+    'desktop.updates.title': 'تطبيق الحاسوب',
+    'desktop.updates.desc': 'TunisiaFlicks على ويندوز في هذا الحاسوب.',
+    'desktop.updates.auto': 'التحديثات التلقائية',
+    'desktop.updates.autoHint': 'تُنزَّل الإصدارات الجديدة في الخلفية وتُثبَّت عند إغلاق التطبيق.',
+    'desktop.updates.version': 'الإصدار {version}',
+    'desktop.updates.check': 'ابحث عن تحديثات',
+    'desktop.updates.checking': 'جارٍ البحث عن تحديثات…',
+    'desktop.updates.downloading': 'جارٍ تنزيل الإصدار {version}: {percent}%',
+    'desktop.updates.ready': 'الإصدار {version} جاهز.',
+    'desktop.updates.restart': 'أعد التشغيل للتحديث',
+    'desktop.updates.latest': 'لديك أحدث إصدار.',
+    'desktop.updates.error': 'تعذّر البحث عن تحديثات. حاول لاحقًا.',
+    'desktop.updates.unsupported': 'التحديثات تعمل في التطبيق المثبَّت فقط.',
   },
 })

@@ -1,6 +1,6 @@
 "use client"
 // The download of /desktop, for the device in hand: the Windows installer (then what to do with the
-// file), a pointer to the browser install on a Mac or Linux, and nothing to get inside the app.
+// file), a pointer to the browser install on a Mac or Linux, and inside the app its updates.
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { CircleCheck, Download } from 'lucide-react'
@@ -10,6 +10,7 @@ import { useDevice } from '@/src/components/apps/use-device'
 import { isDesktopApp } from '@/src/hooks/use-desktop-app'
 import type { DesktopRelease } from '@/src/lib/app-releases'
 import { cn } from '@/src/lib/utils'
+import DesktopUpdates from './DesktopUpdates'
 
 const megabytes = (bytes: number) => Math.max(0.1, Math.round(bytes / 104857.6) / 10)
 
@@ -23,9 +24,13 @@ export default function DesktopDownload({ release, centered = false }: { release
 
   if (inApp) {
     return (
-      <p className={cn('inline-flex items-center gap-2 text-[16px] font-medium text-emerald-300', centered && 'justify-center')}>
-        <CircleCheck aria-hidden className="h-5 w-5" />{t('desktop.hero.inApp')}
-      </p>
+      <div className={cn('flex flex-col gap-4', centered ? 'items-center' : 'items-start')}>
+        <p className="inline-flex items-center gap-2 text-[16px] font-medium text-emerald-300">
+          <CircleCheck aria-hidden className="h-5 w-5" />{t('desktop.hero.inApp')}
+        </p>
+        {/* Its updates, once: in the hero, not again in the closing block. */}
+        {!centered && <DesktopUpdates className="w-full max-w-md text-start" />}
+      </div>
     )
   }
 
