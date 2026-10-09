@@ -22,3 +22,43 @@ export function isTvMode(): boolean {
     return false
   }
 }
+
+/** An https URL from the environment, or null (anything else is ignored). */
+function httpsUrl(value: string | undefined): string | null {
+  const url = value?.trim()
+  if (!url) return null
+  try {
+    return new URL(url).protocol === 'https:' ? url : null
+  } catch {
+    return null
+  }
+}
+
+/** A SHA-256 fingerprint as 64 hex digits, shown in pairs ('AB:CD:…'), or null. */
+export function formatFingerprint(value: string | undefined): string | null {
+  const hex = value?.replace(/[^a-fA-F0-9]/g, '').toUpperCase() ?? ''
+  return hex.length === 64 ? hex.match(/.{2}/g)!.join(':') : null
+}
+
+/**
+ * The Android TV app (a signed APK attached to a GitHub Release by .github/workflows/android-tv.yml).
+ * Unset until the first release: the /app page then leaves the TV app panel out.
+ */
+export function androidApkUrl(): string | null {
+  return httpsUrl(process.env.NEXT_PUBLIC_ANDROID_APK_URL)
+}
+
+/** What /app shows next to the APK so it can be checked before installing (from the release notes). */
+export function androidApkChecks(): { apkSha256: string | null; certSha256: string | null; releaseUrl: string | null } {
+  return {
+    apkSha256: formatFingerprint(process.env.NEXT_PUBLIC_ANDROID_APK_SHA256),
+    certSha256: formatFingerprint(process.env.NEXT_PUBLIC_ANDROID_CERT_SHA256),
+    releaseUrl: httpsUrl(process.env.NEXT_PUBLIC_ANDROID_RELEASE_URL),
+  }
+}
+
+/** The phone app on Google Play (a Trusted Web Activity, see docs/play-store.md), or null. */
+export function playStoreUrl(): string | null {
+  const url = httpsUrl(process.env.NEXT_PUBLIC_PLAY_STORE_URL)
+  return url && /^https:\/\/play\.google\.com\//.test(url) ? url : null
+}
