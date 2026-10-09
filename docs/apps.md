@@ -18,7 +18,7 @@ version when the wrapper itself changes (icon, name, a fix in the TV app).
 ## How the site finds the apps (nothing to configure)
 
 The site reads the newest **`android-v…` release** of this repository on GitHub
-(`src/lib/app-releases.ts`, cached for an hour): its two APKs, their sizes, and the checksums and signing
+(`src/lib/app-releases.ts`, cached for 10 minutes): its two APKs, their sizes, and the checksums and signing
 certificate listed in the release notes. From that:
 
 - `/download/android` and `/download/tv` redirect to the newest files (and to `/app` while there's none);
@@ -77,7 +77,7 @@ git push origin android-v1.0.0
 `.github/workflows/android-apps.yml` builds both signed APKs and creates a GitHub Release with
 `tunisiaflicks-android.apk`, `tunisiaflicks-tv.apk`, `SHA256SUMS`, and the checksums in the notes (the site
 reads them: keep their format). Versions are `android-vMAJOR.MINOR.PATCH` (minor and patch up to 99), each
-higher than the last. Within the hour the site offers the new version; nothing to change in Vercel.
+higher than the last. Within minutes the site offers the new version; nothing to change in Vercel.
 
 ## The desktop app (desktop/)
 

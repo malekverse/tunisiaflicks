@@ -148,7 +148,7 @@ export default async function RootLayout({
   // The search pill offers Ask (AI search) too: never for Kids or in TV mode.
   const ask = aiSearchEnabled() && !kids && !tv;
   const inApp = (headers().get('user-agent') ?? '').includes('TunisiaFlicksTV/');
-  // The apps with a release (cached for an hour; see src/lib/app-releases.ts), for the offer.
+  // The apps with a release (cached for 10 minutes; see src/lib/app-releases.ts), for the offer.
   const [releases, desktopRelease] = await Promise.all([
     withTimeout(getAppReleases(), 1500, null),
     withTimeout(getDesktopRelease(), 1500, null),

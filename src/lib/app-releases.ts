@@ -1,11 +1,13 @@
 // The apps the site offers, found by themselves on this repository's GitHub releases:
 // - the Android apps: the newest "android-v…" release (.github/workflows/android-apps.yml);
 // - the Windows desktop app: the newest "desktop-v…" release (.github/workflows/desktop-app.yml).
-// Nothing to configure: push a tag, and within the hour /app, /desktop, the offers and /download/…
+// Nothing to configure: push a tag, and within minutes of the release /app, /desktop, the offers and /download/…
 // serve the new version.
 //
 // - APP_RELEASES_REPO: owner/name of the repository (default malekverse/tunisiaflicks).
-// The GitHub API answer is cached for an hour (60 unauthenticated calls an hour are plenty).
+// The GitHub API answer is cached for 10 minutes, so a new release shows up soon after it's
+// published (6 of the 60 unauthenticated calls an hour). The Android and desktop releases share
+// the list, hence 30 of them.
 
 export type AppId = 'android' | 'tv'
 
@@ -138,10 +140,10 @@ async function listReleases(): Promise<unknown> {
   try {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), 4000)
-    const response = await fetch(`https://api.github.com/repos/${repo}/releases?per_page=20`, {
+    const response = await fetch(`https://api.github.com/repos/${repo}/releases?per_page=30`, {
       headers: { Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' },
       signal: controller.signal,
-      next: { revalidate: 3600, tags: ['app-releases'] },
+      next: { revalidate: 600, tags: ['app-releases'] },
     }).finally(() => clearTimeout(timer))
     if (!response.ok) return null
     return await response.json()
