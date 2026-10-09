@@ -22,7 +22,7 @@ import {
   DEFAULT_TZ, GUESTS_MAX, HOST_PICKS_MAX, NIGHT_NOTE_MAX, PLACE_MAX, TITLE_MAX, addDays, checkStart, checkVoteClose, defaultTime, isTimeZone,
   quickDays, zonedDay, zonedTime, zonedToUtc, type QuickDay, type StartProblem,
 } from '@/src/lib/movie-night-rules'
-import { viewerZone, zoneCity } from '@/src/lib/movie-night-format'
+import { nightDayShort, nightTime, viewerZone, zoneCity } from '@/src/lib/movie-night-format'
 import type { AvatarPerson } from '@/src/lib/social/types'
 import { cn } from '@/src/lib/utils'
 import NightCard from './NightCard'
@@ -89,7 +89,11 @@ export default function NightForm({ mode, initial, prefill, account: initialAcco
   const [picks, setPicks] = useState<PickedFilm[]>(prefill ? [prefill] : [])
   const [pickerOpen, setPickerOpen] = useState(false)
   const [invite, setInvite] = useState<string[]>([])
-  const [closeId, setCloseId] = useState<CloseId>('h2')
+  // Editing: the option the night's vote closes on now (when it is one of them).
+  const initialClose = initial
+    ? CLOSE_OPTIONS.find((option) => new Date(initial.starts_at).getTime() - new Date(initial.vote_closes_at).getTime() === option.before)?.id ?? null
+    : null
+  const [closeId, setCloseId] = useState<CloseId>(initialClose ?? 'h2')
   const [closeTouched, setCloseTouched] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -343,8 +347,14 @@ export default function NightForm({ mode, initial, prefill, account: initialAcco
           <section className={panel}>
             <div className="max-w-[280px] space-y-2">
               <Label htmlFor={`${ids}-close`} className={fieldLabel}>{t('movieNight.form.voteClose')}</Label>
-              <Select value={closeTouched ? closeChoice : undefined} onValueChange={(value) => { setCloseId(value as CloseId); setCloseTouched(true) }}>
-                <SelectTrigger id={`${ids}-close`} className="text-[15px]"><SelectValue placeholder={t('movieNight.form.voteClose.h2')} /></SelectTrigger>
+              <Select
+                value={closeTouched ? closeChoice : initialClose && closeOptions.some((option) => option.id === initialClose) ? initialClose : undefined}
+                onValueChange={(value) => { setCloseId(value as CloseId); setCloseTouched(true) }}
+              >
+                {/* Untouched and not one of the options: the time it closes now. */}
+                <SelectTrigger id={`${ids}-close`} className="text-[15px]">
+                  <SelectValue placeholder={`${nightDayShort(initial!.vote_closes_at, tz, locale)} ${nightTime(initial!.vote_closes_at, tz, locale)}`} />
+                </SelectTrigger>
                 <SelectContent>
                   {closeOptions.map((option) => <SelectItem key={option.id} value={option.id}>{t(`movieNight.form.voteClose.${option.id}`)}</SelectItem>)}
                 </SelectContent>

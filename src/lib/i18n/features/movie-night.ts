@@ -824,7 +824,7 @@ export const movieNight = defineStrings({
 
     'movieNight.push.title': 'Soirée film',
     'movieNight.inbox.invite': 'Invitation à une soirée film de {name}',
-    'movieNight.inbox.request': 'Demande pour venir à votre soirée film de {name}',
+    'movieNight.inbox.request': 'Demande de {name} pour venir à votre soirée film',
     'movieNight.inbox.joined': 'Nouvel invité à votre soirée film : {name}',
     'movieNight.inbox.going': 'Réponse de {name} : oui pour votre soirée film',
     'movieNight.inbox.cant': 'Réponse de {name} : non pour votre soirée film',

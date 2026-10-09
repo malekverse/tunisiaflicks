@@ -47,7 +47,14 @@ export default function RevealMoment({ candidates, winner, onClose }: { candidat
 
   useEffect(() => {
     button.current?.focus({ preventScroll: true })
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+      // A modal moment: its one button keeps the focus (nothing behind it is reachable).
+      if (event.key === 'Tab') {
+        event.preventDefault()
+        button.current?.focus({ preventScroll: true })
+      }
+    }
     window.addEventListener('keydown', onKey)
     const overflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'

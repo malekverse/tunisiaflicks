@@ -140,10 +140,11 @@ export default function NightView({ initial, created = false }: { initial: View;
     }
   }, [created, id])
 
-  // The vote's result, once per person.
+  // The vote's result, once per person (not when nobody voted: there's nothing to reveal).
+  const voted = view.candidates.some((candidate) => candidate.votes > 0)
   useEffect(() => {
-    if (view.chosen && view.chosen_by === 'vote' && view.candidates.length > 0 && !revealSeen(id, view.chosen.key)) setReveal(true)
-  }, [id, view.chosen, view.chosen_by, view.candidates.length])
+    if (view.chosen && view.chosen_by === 'vote' && voted && !revealSeen(id, view.chosen.key)) setReveal(true)
+  }, [id, view.chosen, view.chosen_by, voted])
   const closeReveal = useCallback(() => {
     if (view.chosen) markRevealSeen(id, view.chosen.key)
     setReveal(false)
