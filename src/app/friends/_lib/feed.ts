@@ -82,3 +82,32 @@ export function activityChip(t: Translate, item: Activity): string | null {
   if (item.kind === 'series_finale') return t('social.feed.seriesFinaleChip')
   return null
 }
+
+// The weekly digest's 'Your friends this week' (src/lib/social/digest.ts).
+
+/** One short line under the title: who, and what ('Watched by Sami', 'Season 2 finished by Ines'). */
+export function digestLine(t: Translate, item: Activity & { actor: { name: string } }): string {
+  const name = item.actor.name
+  switch (item.kind) {
+    case 'rated': return t('social.digest.rated', { name, stars: item.stars ?? 0 })
+    case 'on_episode': return t('social.digest.onEpisode', { name, season: item.season ?? '', episode: item.episode ?? '' })
+    case 'season_finale': return t('social.digest.seasonFinale', { name, season: item.season ?? '' })
+    case 'series_finale': return t('social.digest.seriesFinale', { name })
+    default: return t('social.digest.watched', { name })
+  }
+}
+
+/** The week's items, one per title (the newest), at most `max`. */
+export function weekRows<T extends { day: string; media: { media_type: string; id: string } }>(items: T[], sinceDay: string, untilDay: string, max = 5): T[] {
+  const seen = new Set<string>()
+  const rows: T[] = []
+  for (const item of items) {
+    if (item.day < sinceDay || item.day > untilDay) continue
+    const key = `${item.media.media_type}:${item.media.id}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    rows.push(item)
+    if (rows.length >= max) break
+  }
+  return rows
+}
