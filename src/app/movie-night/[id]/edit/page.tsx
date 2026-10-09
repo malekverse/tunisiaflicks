@@ -42,6 +42,14 @@ export default async function EditNightPage({ params }: { params: { id: string }
           tz: view.tz,
           vote_closes_at: view.vote.closes_at,
           voteOpen: view.vote.open,
+          card: {
+            going: view.guests.filter((guest) => guest.status === 'going').slice(0, 3).map(({ name, color, image, handle }) => ({ name, color, image, handle })),
+            goingCount: view.goingCount,
+            posters: (view.chosen ? [view.chosen.media.poster_path] : view.candidates.map((candidate) => candidate.media.poster_path))
+              .filter((path): path is string => !!path).slice(0, 3),
+            film: view.chosen?.media ?? null,
+            candidateCount: view.candidates.length,
+          },
         }}
       />
     </div>

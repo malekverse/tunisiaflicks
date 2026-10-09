@@ -23,6 +23,7 @@ import {
   quickDays, zonedDay, zonedTime, zonedToUtc, type QuickDay, type StartProblem,
 } from '@/src/lib/movie-night-rules'
 import { nightDayShort, nightTime, viewerZone, zoneCity } from '@/src/lib/movie-night-format'
+import type { NightSummary } from '@/src/lib/movie-night'
 import type { AvatarPerson } from '@/src/lib/social/types'
 import { cn } from '@/src/lib/utils'
 import NightCard from './NightCard'
@@ -48,6 +49,8 @@ export type NightFormInitial = {
   tz: string
   vote_closes_at: string
   voteOpen: boolean
+  /** What the night's card shows today (who's going, the films), for the live preview. */
+  card?: Pick<NightSummary, 'going' | 'goingCount' | 'posters' | 'film' | 'candidateCount'>
 }
 
 const panel = 'rounded-[22px] bg-white/[0.04] p-5 ring-1 ring-inset ring-white/[0.07] sm:p-6'
@@ -202,11 +205,14 @@ export default function NightForm({ mode, initial, prefill, account: initialAcco
     status: 'planned' as const,
     role: 'host' as const,
     host,
-    going: [],
-    goingCount: 1,
-    posters: picks.map((pick) => pick.media.poster_path).filter((path): path is string => !!path),
-    film: null,
-    candidateCount: picks.length,
+    // Editing: the night as it is (its guests and films are managed on its page).
+    ...(initial?.card ?? {
+      going: [],
+      goingCount: 1,
+      posters: picks.map((pick) => pick.media.poster_path).filter((path): path is string => !!path),
+      film: null,
+      candidateCount: picks.length,
+    }),
   }
   const disabled = submitting || !mounted || !!problem || account !== 'ok'
 
