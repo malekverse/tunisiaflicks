@@ -1,9 +1,9 @@
 "use client"
 // Keeps a list page in step with the other people in the list, by asking for news (GET ?v=version:
 // 204 = nothing new). Only for lists more than one person builds (or with invitations out), only
-// while the tab is visible: every 6s, then 20s, then a minute while nothing changes; any change or
-// any touch of the page goes back to 6s; after half an hour nobody touched the page it stops, and
-// starts again when they do. While a member looks, it also says so (POST /seen) about once a minute,
+// while the tab is visible: every 6s, then 20s, then a minute while nothing changes; any change, or
+// coming back to the tab, goes back to 6s; after half an hour nobody touched the page it stops, and
+// starts again (at 6s) when they do. While a member looks, it also says so (POST /seen) about once a minute,
 // so nobody's change pings them about a list they are watching.
 import { useEffect, useRef } from 'react'
 import { listFetch } from '@/src/components/lists/list-client'
