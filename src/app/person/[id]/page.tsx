@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import ExpandableText from '@/src/components/ExpandableText'
 import TmdbImage from '@/src/components/TmdbImage'
 import Filmography, { type Credit } from '@/src/components/person/Filmography'
+import SeenWithRow from '@/src/components/person/SeenWithRow'
+import SeenInvite from '@/src/components/person/SeenInvite'
 import RoomTint from '@/src/components/shell/RoomTint'
 import { PosterSlider } from '@/src/components/Sliders'
 import { TmdbError, tmdbFetch, tmdbFetchSafe } from '@/src/lib/tmdb'
@@ -11,8 +13,10 @@ import { createTranslator, type Locale, type TKey } from '@/src/lib/i18n'
 import { formatDate } from '@/src/lib/i18n/format'
 import { getLocale } from '@/src/lib/i18n/server'
 import { filterKidSafe } from '@/src/lib/kids'
-import { getKidsMode } from '@/src/lib/profiles'
+import { getActiveProfile, getKidsMode } from '@/src/lib/profiles'
 import { pageMetadata } from '@/src/lib/seo'
+import { seenInCredits, titleKey, watchedTitles, type Watched } from '@/src/lib/seen-with'
+import { withTimeout } from '@/src/lib/with-timeout'
 
 type Props = { params: { id: string } }
 
@@ -95,12 +99,17 @@ export default async function PersonPage({ params }: Props) {
   // The biography in the viewer's language when TMDB has one (most people only have an English
   // one); in French, the titles of their films and shows in French too.
   const language = catalogueLanguage(locale)
-  const [english, translated, localCredits, kids] = await Promise.all([
+  const [english, translated, localCredits, kids, active] = await Promise.all([
     getPerson(params.id),
     translatedRecord('person', params.id, locale),
     language && isValidId(params.id) ? tmdbFetchSafe<{ cast?: any[], crew?: any[] }>(`person/${params.id}/combined_credits`, { language }) : null,
     getKidsMode(),
+    getActiveProfile(),
   ])
+  // The viewer's own history (signed in with a profile): which of these titles they've watched.
+  const watched: Watched = active?.profile
+    ? await withTimeout(watchedTitles(active.userId, active.profile.id).catch(() => new Map() as Watched), 1500, new Map())
+    : new Map()
   const person = localizeDetail(english, translated, locale)
   if (localCredits) person.combined_credits = localizeCredits(person.combined_credits, localCredits)
   // Kids profiles: only their best-known titles that are rated for kids.
@@ -111,6 +120,11 @@ export default async function PersonPage({ params }: Props) {
     const key = `dept.${name}` as TKey
     return t(key) === key ? name : t(key)
   }
+
+  // "You've seen them in": their titles in the viewer's history, most recently watched first.
+  const seenIn = seenInCredits(credits, watched)
+  const byKey = new Map(credits.map((credit) => [titleKey(credit.media_type, credit.id), credit]))
+  const seenRow = seenIn.map((title) => byKey.get(titleKey(title.media_type, title.id))).filter(Boolean)
 
   // "Known for": what people actually watched (vote count), not just recent noise.
   const knownFor = [...credits].sort((a, b) => (b.vote_count ?? 0) - (a.vote_count ?? 0)).slice(0, 20)
@@ -135,6 +149,7 @@ export default async function PersonPage({ params }: Props) {
     role: credit.character ? t('person.as', { character: credit.character }) : credit.job ?? '',
     poster_path: credit.poster_path ?? null,
     vote_average: credit.vote_average ?? 0,
+    watched: watched.has(titleKey(credit.media_type, credit.id)),
   }))
   // The atmosphere: their best-known title's backdrop, dimmed far behind the portrait.
   const backdrop = knownFor.find((credit) => credit.backdrop_path)?.backdrop_path
@@ -191,7 +206,11 @@ export default async function PersonPage({ params }: Props) {
         )}
       </section>
 
+      {seenRow.length > 0 && <SeenWithRow title={t('seen.in', { name: person.name })} note={t('seen.lockHistory')} items={seenRow} />}
+
       {knownFor.length > 0 && <PosterSlider title={t('person.knownForRow')} items={knownFor} kind="mixed" />}
+
+      {!active && <SeenInvite name={person.name} />}
 
       {timeline.length > 0 && (
         <section aria-label={t('person.filmography')} className="page-x">

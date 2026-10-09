@@ -2,17 +2,19 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Check, Clapperboard, Heart, Pause, Play, Plus, Share2, Star, Volume2, VolumeX } from 'lucide-react'
 import { Button } from '@/src/components/ui/button'
-import { Dialog, DialogContent, DialogTitle } from '@/src/components/ui/dialog'
 import FollowButton from '@/src/components/FollowButton'
 import ReleaseCountdown from '@/src/components/detail/ReleaseCountdown'
 import TmdbImage from '@/src/components/TmdbImage'
 import YouTubeBackdrop from '@/src/components/media/YouTubeBackdrop'
+import YouTubeDialog, { type DialogVideo } from '@/src/components/media/YouTubeDialog'
 import { upcomingRelease } from '@/src/lib/calendar'
 import { pickLogo, pickTrailer } from '@/src/lib/media-assets'
 import { toast } from '@/src/hooks/use-toast'
 import { useCanAutoplay } from '@/src/hooks/use-autoplay'
 import { useLibraryToggle } from '@/src/hooks/use-library-toggle'
 import { useInLibrary } from '@/src/store/library'
+import { openShare } from '@/src/store/share-sheet'
+import { useTvMode } from '@/src/hooks/use-tv-mode'
 import { cn } from '@/src/lib/utils'
 import { useI18n } from '@/src/components/I18nProvider'
 import { isArabicScript } from '@/src/lib/i18n/locales'
@@ -27,6 +29,10 @@ export type MediaHeroProps = {
     /** "Play", "Play S1:E1", "Resume S2:E5"... */
     playLabel: string
     onPlay: () => void
+    /** The trailers and teasers, the main trailer first (from the page; see lib/extras). */
+    trailers?: DialogVideo[]
+    /** A Kids profile: the trailer dialog has no "Watch on YouTube". */
+    kids?: boolean
 }
 
 /** A round action with its label under it on phones, and a tooltip-only icon on desktop. */
@@ -50,8 +56,9 @@ function HeroAction({ label, active, onClick, children }: { label: string, activ
  * it never competes with the player below). Phones get the picture as a band on top with the
  * text under it.
  */
-export default function MediaHero({ kind, data, playLabel, onPlay }: MediaHeroProps) {
+export default function MediaHero({ kind, data, playLabel, onPlay, trailers, kids = false }: MediaHeroProps) {
     const { t, locale } = useI18n()
+    const tv = useTvMode()
     const autoplay = useCanAutoplay()
     const toggle = useLibraryToggle()
     const ref = useRef<HTMLElement>(null)
@@ -62,11 +69,16 @@ export default function MediaHero({ kind, data, playLabel, onPlay }: MediaHeroPr
     const [muted, setMuted] = useState(true)
     const [paused, setPaused] = useState(false)
     const [trailerOpen, setTrailerOpen] = useState(false)
+    const [trailerIndex, setTrailerIndex] = useState(0)
 
     const id = String(data.id)
     const title: string = data.title || data.name || ''
     const logo = useMemo(() => pickLogo(data.images?.logos), [data.images])
-    const trailer = useMemo(() => pickTrailer(data.videos?.results), [data.videos])
+    const trailer = useMemo(() => trailers?.[0]?.key ?? pickTrailer(data.videos?.results), [trailers, data.videos])
+    const trailerList: DialogVideo[] = useMemo(
+        () => trailers?.length ? trailers : trailer ? [{ key: trailer, title: t('hero.trailerTitle', { title: data.title || data.name || '' }) }] : [],
+        [trailers, trailer, t, data.title, data.name],
+    )
     const backdrops = useMemo(() => {
         const paths: string[] = (data.images?.backdrops ?? []).slice(0, 6).map((item: any) => item.file_path)
         return paths.length > 0 ? paths : data.backdrop_path ? [data.backdrop_path] : []
@@ -111,7 +123,8 @@ export default function MediaHero({ kind, data, playLabel, onPlay }: MediaHeroPr
         return () => clearTimeout(timer)
     }, [autoplay, trailer, inView, trailerOn])
 
-    const share = async () => {
+    /** The address itself, shared natively or copied (when the share sheet can't open). */
+    const shareLink = async () => {
         const url = window.location.href.split('#')[0]
         try {
             if (navigator.share) await navigator.share({ title, url })
@@ -121,6 +134,15 @@ export default function MediaHero({ kind, data, playLabel, onPlay }: MediaHeroPr
             }
         } catch (error: any) {
             if (error?.name !== 'AbortError') toast({ title: t('common.error'), description: t('hero.shareFailed'), variant: 'destructive' })
+        }
+    }
+
+    // The share sheet: friends, a movie night, a list, then the usual links.
+    const share = () => {
+        try {
+            openShare({ kind: 'title', media: { media_type: kind, id, title, poster_path: data.poster_path ?? null } })
+        } catch {
+            shareLink()
         }
     }
 
@@ -205,7 +227,7 @@ export default function MediaHero({ kind, data, playLabel, onPlay }: MediaHeroPr
                                 <Play aria-hidden className="h-5 w-5 fill-current rtl:-scale-x-100" />{playLabel}
                             </Button>
                             {trailer && (
-                                <Button size="lg" variant="secondary" onClick={() => setTrailerOpen(true)} className="flex-1 md:flex-none">
+                                <Button size="lg" variant="secondary" onClick={() => { setTrailerIndex(0); setTrailerOpen(true) }} className="flex-1 md:flex-none">
                                     <Clapperboard aria-hidden className="h-5 w-5" />{t('detail.trailer')}
                                 </Button>
                             )}
@@ -217,9 +239,11 @@ export default function MediaHero({ kind, data, playLabel, onPlay }: MediaHeroPr
                             <HeroAction label={favorite ? t('peek.unfavorite') : t('peek.favorite')} active={favorite} onClick={() => toggle('favorites', libraryItem)}>
                                 <Heart aria-hidden className={cn('h-5 w-5', favorite && 'fill-current')} />
                             </HeroAction>
-                            <HeroAction label={t('hero.share')} onClick={share}>
-                                <Share2 aria-hidden className="h-5 w-5" />
-                            </HeroAction>
+                            {!tv && (
+                                <HeroAction label={t('hero.share')} onClick={share}>
+                                    <Share2 aria-hidden className="h-5 w-5" />
+                                </HeroAction>
+                            )}
                             {followable && <div className="self-center"><FollowButton mediaType={kind} id={id} title={title} /></div>}
                         </div>
                     </div>
@@ -248,23 +272,16 @@ export default function MediaHero({ kind, data, playLabel, onPlay }: MediaHeroPr
                 )}
             </div>
 
-            {trailer && (
-                <Dialog open={trailerOpen} onOpenChange={setTrailerOpen}>
-                    <DialogContent className="max-w-5xl overflow-hidden border-0 p-0">
-                        <DialogTitle className="sr-only">{t('hero.trailerTitle', { title })}</DialogTitle>
-                        <div className="aspect-video w-full bg-black">
-                            {trailerOpen && (
-                                <iframe
-                                    src={`https://www.youtube-nocookie.com/embed/${trailer}?autoplay=1&rel=0&modestbranding=1`}
-                                    title={t('hero.trailerTitle', { title })}
-                                    className="h-full w-full"
-                                    allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-                                    allowFullScreen
-                                />
-                            )}
-                        </div>
-                    </DialogContent>
-                </Dialog>
+            {trailerList.length > 0 && (
+                <YouTubeDialog
+                    open={trailerOpen}
+                    onOpenChange={setTrailerOpen}
+                    videos={trailerList}
+                    index={trailerIndex}
+                    onIndexChange={setTrailerIndex}
+                    label={t('extras.trailers', { title })}
+                    external={!kids}
+                />
             )}
         </section>
     )
