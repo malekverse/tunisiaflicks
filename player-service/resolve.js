@@ -46,7 +46,8 @@ export async function tmdbTitle(type, tmdbId, key) {
   const json = await fetchJson(`${TMDB}/${kind}/${encodeURIComponent(tmdbId)}?api_key=${key}&append_to_response=external_ids`)
   if (!json) return null
   const names = [json.name, json.original_name, json.title, json.original_title].filter((n) => typeof n === 'string' && n.trim())
-  return { imdb: json.imdb_id || json.external_ids?.imdb_id || null, names: [...new Set(names)] }
+  const year = Number((json.release_date || json.first_air_date || '').slice(0, 4)) || null
+  return { imdb: json.imdb_id || json.external_ids?.imdb_id || null, names: [...new Set(names)], year }
 }
 
 /** "Marvel's Agents of S.H.I.E.L.D." → "marvels agents of s h i e l d" (for comparing names). */

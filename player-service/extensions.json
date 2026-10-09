@@ -1,6 +1,7 @@
 {
-  "about": "The extensions the player offers ready to use (Extensions > Ready to add). Each entry is the address of an extension's manifest.json; \"default\": true installs it for everyone on first run. Viewers can remove any of them, and add others by address.",
+  "about": "The extensions the player offers ready to use (Extensions > Ready to add). Each entry is the address of an extension's manifest.json; \"default\": true installs it for everyone on first run. Viewers can remove any of them, and add others by address. Built in without an extension (see providers.js / resolve.js): YTS, EZTV and The Pirate Bay for sources; YIFY Subtitles and (with SUBDL_API_KEY) SubDL for subtitles; plus translation.",
   "extensions": [
-    { "url": "https://opensubtitles-v3.strem.io/manifest.json", "default": true }
+    { "url": "https://opensubtitles-v3.strem.io/manifest.json", "default": true },
+    { "url": "https://torrentio.strem.fun/manifest.json", "default": true }
   ]
 }

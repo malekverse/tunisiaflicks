@@ -30,6 +30,7 @@ import { analyze, ffmpegArgs, withAudio } from './codec.js'
 import { tmdbTitle, movieMagnets, tvMagnets, rankOptions } from './resolve.js'
 import * as dlna from './dlna.js'
 import { audioLanguagesOf, createAddonStore, decodeSubtitle, languageOf, sourceFromStream, mediaId } from './addons.js'
+import { extraBuiltIns, rankForTitle } from './providers.js'
 import { createStateStore, isTitleKey } from './state.js'
 import { MAX_CHARS, MAX_LINES, TARGETS, translateLines } from './translate.js'
 import { builtInSubtitles, downloadSubtitle } from './subtitles.js'
@@ -364,14 +365,18 @@ async function sourcesFor(title) {
   if (!imdb) return { imdb: null, names, list: [] }
 
   const kind = title.type === 'tv' ? 'series' : 'movie'
-  const [builtIn, answers] = await Promise.all([
-    title.type === 'movie' ? movieMagnets(imdb) : tvMagnets(imdb, title.season, title.episode, names),
+  // YTS/EZTV (resolve.js), the extra built-in providers (providers.js, e.g. The Pirate Bay), and
+  // every installed extension (Torrentio and the like), all at once.
+  const ytsEztv = title.type === 'movie' ? movieMagnets(imdb) : tvMagnets(imdb, title.season, title.episode, names)
+  const [primary, extra, answers] = await Promise.all([
+    ytsEztv.then((list) => list.map((option) => ({ ...option, provider: title.type === 'movie' ? 'YTS' : 'EZTV' }))),
+    extraBuiltIns({ type: title.type, imdb, names, season: title.season, episode: title.episode }),
     addonStore.ask('stream', kind, mediaId(kind, imdb, title.season, title.episode)),
   ])
 
-  const list = builtIn.map((option) => ({
-    kind: 'torrent', provider: title.type === 'movie' ? 'YTS' : 'EZTV', name: title.type === 'movie' ? 'YTS' : 'EZTV',
-    label: option.label, quality: option.quality || null, type: option.type, seeds: option.seeds ?? null, size: null,
+  const list = [...primary, ...extra].map((option) => ({
+    kind: 'torrent', provider: option.provider, name: option.provider,
+    label: option.label, quality: option.quality || null, type: option.type, seeds: option.seeds ?? null, size: option.size ?? null,
     magnet: option.magnet, infoHash: hashOfMagnet(option.magnet), fileIdx: null,
   }))
   for (const { addon, items } of answers) {
@@ -381,7 +386,7 @@ async function sourcesFor(title) {
     }
   }
 
-  // One entry per torrent (the first add-on to list it, with the details it gave).
+  // One entry per torrent (the first provider to list it, with the details it gave).
   const seen = new Set()
   const unique = list.filter((s) => {
     const key = s.kind === 'torrent' ? `${s.infoHash || s.magnet}:${s.fileIdx ?? ''}` : s.url
@@ -389,9 +394,8 @@ async function sourcesFor(title) {
     seen.add(key)
     return true
   })
-  // A direct link needs no swarm: among equals, it goes first.
-  const ranked = rankOptions(unique.map((s) => ({ ...s, seeds: s.kind === 'url' ? (s.seeds ?? 0) + 1e6 : s.seeds })))
-    .map((s) => ({ ...s, seeds: s.kind === 'url' ? (s.seeds - 1e6 || null) : s.seeds }))
+  // Best to stream first (quality, size, seeds; the right film before packs): see providers.js.
+  const ranked = rankForTitle(unique, { type: title.type, names, year: info?.year ?? null })
   for (const source of ranked) {
     source.id = newId()
     Object.assign(source, audioLanguagesOf(`${source.label} ${source.name || ''}`))

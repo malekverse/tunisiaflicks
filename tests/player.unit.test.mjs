@@ -7,6 +7,7 @@ import { audioLanguagesOf, cleanManifest, decodeSubtitle, languageOf, manifestUr
 import { codeOfName, readYifyPage, releaseMatch, unzip } from '../player-service/subtitles.js'
 import { cleanPrefs, isTitleKey } from '../player-service/state.js'
 import { ffmpegArgs, withAudio } from '../player-service/codec.js'
+import { isPack, rankForTitle, streamScore } from '../player-service/providers.js'
 
 test('an extension address: https, an app link turned into https, /manifest.json added; nothing else', () => {
   assert.equal(manifestUrl('https://example.com/abc/manifest.json'), 'https://example.com/abc/manifest.json')
@@ -112,6 +113,34 @@ test('another audio track: even a direct file is remuxed, with that track mapped
   const args = ffmpegArgs(french)
   assert.equal(args[args.indexOf('-map', args.indexOf('-map') + 1) + 1], '0:a:1?')
   assert.equal(args[args.indexOf('-c:a') + 1], 'aac', 'AC3 becomes AAC')
+})
+
+test('multi-film packs are recognised, single copies are not', () => {
+  assert.ok(isPack('The Matrix Trilogy 1999-2003 1080p BluRay'))
+  assert.ok(isPack('Essential Films super pack x264'))
+  assert.ok(isPack('The Matrix 1-4 Collection 2160p'))
+  assert.ok(isPack('Marvel 23 Movies Bundle'))
+  assert.ok(!isPack('The Matrix 1999 1080p BluRay x264-GRP'))
+  assert.ok(!isPack('Breaking Bad S01E01 Pilot 1080p'))
+})
+
+test('the auto-pick: the right single film, well-seeded and streamable, before packs and giant REMUX', () => {
+  const ctx = { type: 'movie', names: ['The Matrix'], year: 1999 }
+  const sources = [
+    { kind: 'torrent', label: 'The Matrix Trilogy 1999-2003 1080p BluRay x264', quality: '1080p', seeds: 2000, size: 40e9 },
+    { kind: 'torrent', label: 'The.Matrix.1999.1080p.BluRay.REMUX.AVC.DTS-HD', quality: '1080p', seeds: 300, size: 30e9 },
+    { kind: 'torrent', label: 'The Matrix (1999) 1080p BrRip x264 - YIFY', quality: '1080p', seeds: 120, size: 1.9e9 },
+    { kind: 'torrent', label: 'The.Matrix.1999.2160p.UHD.BluRay.x265.HDR', quality: '2160p', seeds: 150, size: 50e9 },
+  ]
+  const ranked = rankForTitle(sources, ctx)
+  assert.match(ranked[0].label, /YIFY/, 'the right-sized, well-named single copy wins')
+  assert.ok(ranked.findIndex((s) => /Trilogy/.test(s.label)) === ranked.length - 1, 'the pack sinks last')
+  // A well-seeded modest copy beats a huge REMUX of the same quality.
+  assert.ok(streamScore(sources[2], ctx) > streamScore(sources[1], ctx))
+  // More seeds beats fewer, all else equal (downloads faster).
+  const a = { kind: 'torrent', label: 'The Matrix 1999 1080p x264', quality: '1080p', seeds: 500, size: 2e9 }
+  const b = { ...a, seeds: 5 }
+  assert.ok(streamScore(a, ctx) > streamScore(b, ctx))
 })
 
 test('a converted stream starts where asked: a remux just after its keyframe, a transcode exactly', () => {

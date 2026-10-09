@@ -37,7 +37,7 @@ Each file is probed with `ffprobe`, then one of three paths is chosen (see `code
 | Route | Purpose |
 | --- | --- |
 | `GET /health` | liveness + byte counters |
-| `GET /sources?type=movie&tmdb=550` | every copy of a title, best first: YTS/EZTV plus the installed extensions' streams (torrents and direct links), each with an id, quality, size, seeders and the audio languages its name says it has (`languages`, `multi`). TV: `?type=tv&tmdb=…&season=1&episode=1`. |
+| `GET /sources?type=movie&tmdb=550` | every copy of a title, best to stream first: the built-in providers (YTS, EZTV, The Pirate Bay) plus the installed extensions' streams (torrents and direct links), each with an id, quality, size, seeders and the audio languages its name says it has (`languages`, `multi`). The right single film ranks before multi-film packs, then by quality, size and seeds (providers.js). TV: `?type=tv&tmdb=…&season=1&episode=1`. |
 | `GET /resolve?type=movie&tmdb=550` | plays the best copy, trying up to 3 in turn if a swarm doesn't answer (`?audioLang=fre` puts copies dubbed in that language first), or `?source=<id>` from `/sources`. Answers `playUrl`, `decision`, `seekable`, `durationSec` and the file's `audioTracks`. Ranks 1080p > 720p, x264 over x265/HEVC/AV1 (which need transcoding), direct links before torrents, then seeds. TV releases must be named after the show (EZTV files some under the wrong show). Still takes `?imdb=` alone (YTS/EZTV only). |
 | `GET /seek/:infoHash/:index?t=&audio=` · `GET /seek/u/:id?t=&audio=` | where a converted stream asked to start at `t` really starts (`{ start }`: a remux starts on a keyframe) |
 | `GET /uplay/:id?t=&audio=` | an extension's direct link, converted like `/play` when a browser can't play it as it is |
@@ -59,6 +59,10 @@ Two ways to drive it: from a TMDB id (`/resolve`, used by the built-in browse pa
 app) or from a magnet you already resolved (`/add`). Either way, point the player at the returned
 `playUrl`. The built-in page at `/` is a search + trending grid that plays a movie locally on click.
 
+The built-in providers (YTS, EZTV, The Pirate Bay) and the default Torrentio extension mean a popular
+title usually returns dozens of copies; the service ranks them so the one that streams best on a
+normal connection plays first, and the player lets the viewer switch or pick on any slow copy.
+
 ## The player (views/embed.html)
 
 A custom player: auto-hiding controls, a seek bar with what's buffered and a time preview, volume,
@@ -75,7 +79,8 @@ stopped, and Play on TV. Its panels:
   The site's language (`?lang=` from the site) picks them before the viewer chooses: Arabic or
   French on those sites, none on the English one; with none in that language, the English ones are
   translated. Any subtitle can be translated (Google Translate's free web endpoint, unofficial).
-- **Extensions** — the installed ones, the ready list (`extensions.json`, one click), and any other
+- **Extensions** — the installed ones (Torrentio ships on by default: one aggregator covering ~15
+  indexers), the ready list (`extensions.json`, one click), and any other
   by its `manifest.json` address. They follow the common add-on protocol: `/stream/…` and
   `/subtitles/…` for an IMDB id.
 
@@ -95,6 +100,8 @@ own time; subtitles are drawn by the page on that clock.
 - **Host allow-list** rejects foreign `Host` headers (anti DNS-rebinding).
 - **Origin allow-list** (`ALLOWED_ORIGINS`) — only the app's web origins may drive it; a random site's
   `fetch` is refused, so no page can make your machine join a swarm.
+- **Built-in providers** (providers.js): The Pirate Bay (apibay) alongside YTS and EZTV, so a copy is
+  found even when one index is down; each is a direct, keyless API call.
 - **No address from a page** — `/add` takes magnets/infohashes only (no http(s) URLs, no file paths).
   Extensions are installed by their address (from the player page, which only the allowed origins
   can drive), and what they answer is kept server-side behind random ids: the page only ever sends
