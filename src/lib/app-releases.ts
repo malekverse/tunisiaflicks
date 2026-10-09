@@ -99,12 +99,17 @@ export function pickRelease(releases: unknown): AppReleases | null {
 /** The Windows installer, published as this file. */
 export const DESKTOP_ASSET = 'TunisiaFlicks-Setup.exe'
 
+/** What the installed app's updater reads besides the installer (served by /download/desktop-update/…). */
+export const DESKTOP_UPDATE_FILES = ['latest.yml', `${DESKTOP_ASSET}.blockmap`] as const
+
 export type DesktopRelease = {
   version: string
   publishedAt: string
   /** The release page on GitHub. */
   releaseUrl: string
   file: AppFile
+  /** The updater's files this release has (DESKTOP_UPDATE_FILES), by name: where they download from. */
+  updateFiles: Partial<Record<string, string>>
 }
 
 /** The newest published desktop-v… release with its installer among `releases`, or null. */
@@ -114,18 +119,24 @@ export function pickDesktopRelease(releases: unknown): DesktopRelease | null {
     if (!raw || raw.draft || raw.prerelease || typeof raw.tag_name !== 'string') continue
     const tag = DESKTOP_TAG.exec(raw.tag_name)
     if (!tag) continue
-    const asset = ((Array.isArray(raw.assets) ? raw.assets : []) as GithubAsset[])
-      .find((item) => item?.name === DESKTOP_ASSET && item.state !== 'starter')
-    if (!asset || typeof asset.browser_download_url !== 'string' || !HTTPS_GITHUB.test(asset.browser_download_url)) continue
+    const assets = ((Array.isArray(raw.assets) ? raw.assets : []) as GithubAsset[])
+      .filter((item) => item && item.state !== 'starter' && typeof item.browser_download_url === 'string' && HTTPS_GITHUB.test(item.browser_download_url))
+    const asset = assets.find((item) => item.name === DESKTOP_ASSET)
+    if (!asset) continue
+    const updateFiles: Partial<Record<string, string>> = {}
+    for (const item of assets) {
+      if ((DESKTOP_UPDATE_FILES as readonly unknown[]).includes(item.name)) updateFiles[item.name as string] = item.browser_download_url as string
+    }
     return {
       version: tag[1],
       publishedAt: typeof raw.published_at === 'string' ? raw.published_at : '',
       releaseUrl: typeof raw.html_url === 'string' && HTTPS_GITHUB.test(raw.html_url) ? raw.html_url : '',
       file: {
-        url: asset.browser_download_url,
+        url: asset.browser_download_url as string,
         size: typeof asset.size === 'number' ? asset.size : 0,
         sha256: readNotes(typeof raw.body === 'string' ? raw.body : '').files[DESKTOP_ASSET] ?? null,
       },
+      updateFiles,
     }
   }
   return null
