@@ -82,6 +82,7 @@ export const desktop = defineStrings({
 
     'desktop.offer.text': 'The desktop app, with its own player: films and series with no ads.',
     'desktop.offer.cta': 'Discover it',
+    'desktop.footer': 'Windows app',
   },
   fr: {
     'desktop.meta.title': 'TunisiaFlicks pour Windows',
@@ -158,6 +159,7 @@ export const desktop = defineStrings({
 
     'desktop.offer.text': 'L’app pour ordinateur, avec son propre lecteur' + NBSP + ': films et séries sans pub.',
     'desktop.offer.cta': 'La découvrir',
+    'desktop.footer': 'App Windows',
   },
   ar: {
     'desktop.meta.title': 'TunisiaFlicks على ويندوز',
@@ -234,5 +236,6 @@ export const desktop = defineStrings({
 
     'desktop.offer.text': 'تطبيق الحاسوب بمشغّله الخاص: أفلام ومسلسلات دون إعلانات.',
     'desktop.offer.cta': 'اكتشفه',
+    'desktop.footer': 'تطبيق ويندوز',
   },
 })

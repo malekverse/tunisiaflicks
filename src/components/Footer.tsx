@@ -37,6 +37,7 @@ const COLUMNS: { heading: TKey, links: FooterLink[] }[] = [
       { href: '/about', label: 'footer.about' },
       { href: '/contact', label: 'footer.contact' },
       { href: '/app', label: 'apps.menu' },
+      { href: '/desktop', label: 'desktop.footer' },
       { href: '/support', label: 'support.footer', support: true },
     ],
   },
