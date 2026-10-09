@@ -1,6 +1,7 @@
-// For src/middleware.ts: the real 404 and 308 of /u/[handle] (see ./gate.ts for why and how).
-//   if (pathname.startsWith('/u/')) return (await profilePageGate(req)) ?? NextResponse.next()
-//   matcher: [..., '/u/:handle']
+// For src/middleware.ts: the real 404, 308 and 302 of /u/[handle] and /me (see ./gate.ts for why
+// and how):
+//   if (pathname === '/me' || pathname.startsWith('/u/')) return (await profilePageGate(req)) ?? NextResponse.next()
+//   matcher: [..., '/me', '/u/:handle']
 import { NextResponse, type NextRequest } from 'next/server'
 import { decideProfileGate } from './gate'
 
@@ -11,5 +12,5 @@ export async function profilePageGate(req: NextRequest): Promise<NextResponse | 
   if (decision.kind === 'not_found') return NextResponse.rewrite(new URL('/404', req.nextUrl.origin))
   const url = req.nextUrl.clone()
   url.pathname = `/u/${decision.to}`
-  return NextResponse.redirect(url, 308)
+  return NextResponse.redirect(url, decision.status)
 }

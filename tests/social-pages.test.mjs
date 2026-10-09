@@ -47,8 +47,8 @@ test('guest: an unknown page is 404 and noindex', async () => {
   }
 })
 
-test('the page’s gate is internal: without the middleware’s token it is a plain 404', async () => {
-  for (const path of ['/u/does_not_exist/gate', '/u/sami_b/gate']) {
+test('the pages’ gates are internal: without the middleware’s token it is a plain 404', async () => {
+  for (const path of ['/u/does_not_exist/gate', '/u/sami_b/gate', '/me/gate']) {
     const res = await get(path, { headers: { 'x-tf-page-gate': '0'.repeat(64) } })
     assert.equal(res.status, 404, path)
     assert.equal((await res.text()).length, 0, `${path}: nothing in the body`)
@@ -105,7 +105,7 @@ test('member: a Kids profile gets KidsBlocked on the social pages, and its badge
 
 test('member: /me with a page goes to /u/[handle]', seeded, async () => {
   const res = await get('/me', { as: 'a', profile: 'a1' })
-  assert.ok([302, 303, 307, 308].includes(res.status), String(res.status))
+  assert.equal(res.status, 302, `${res.status} (is profilePageGate wired into src/middleware.ts?)`)
   assert.match(res.headers.get('location') ?? '', /\/u\/amine_t$/)
 })
 

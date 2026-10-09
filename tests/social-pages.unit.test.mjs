@@ -147,7 +147,7 @@ test('decideProfileGate: 404 and 308 from the address, then from the gate; anyth
 
   // From the address alone, without asking.
   assert.deepEqual(await run('/u/does-not-exist', answering({ kind: 'page' })), { kind: 'not_found' })
-  assert.deepEqual(await run('/u/Sami_B', answering({ kind: 'page' })), { kind: 'redirect', to: 'sami_b' })
+  assert.deepEqual(await run('/u/Sami_B', answering({ kind: 'page' })), { kind: 'redirect', to: 'sami_b', status: 308 })
   assert.equal(await run('/friends', answering({ kind: 'not_found' })), null)
   assert.equal(await run('/u/sami_b', answering({ kind: 'not_found' }), {}, 'secret', 'POST'), null, 'only page loads')
   assert.equal(calls.length, 0, 'no question asked for those')
@@ -159,7 +159,7 @@ test('decideProfileGate: 404 and 308 from the address, then from the gate; anyth
   assert.equal(asked.headers.get('cookie'), 'a=1', 'as the visitor')
   assert.equal(asked.headers.get(gate.GATE_IP_HEADER), '203.0.113.9', 'the visitor’s address, for the guest limit')
   assert.equal(asked.headers.get(gate.GATE_HEADER), await gate.gateToken('secret'))
-  assert.deepEqual(await run('/u/old_handle', answering({ kind: 'redirect', to: 'new_handle' })), { kind: 'redirect', to: 'new_handle' })
+  assert.deepEqual(await run('/u/old_handle', answering({ kind: 'redirect', to: 'new_handle' })), { kind: 'redirect', to: 'new_handle', status: 308 })
   assert.equal(await run('/u/sami_b', answering({ kind: 'page' })), null)
 
   // Fail open: the page renders its own not-found if it must.
@@ -180,4 +180,21 @@ test('decideProfileGate: a gate that doesn’t answer in time lets the page answ
   const decision = await gate.decideProfileGate({ method: 'GET', pathname: '/u/sami_b', origin: 'http://localhost:3300', headers: new Headers() }, { secret: 'secret', fetch: hanging })
   assert.equal(decision, null)
   assert.ok(Date.now() - started < 10_000, 'gave up after its timeout')
+})
+
+test('decideProfileGate: /me goes to your page with a 302, only when signed in and the gate says so', async () => {
+  const calls = []
+  const answering = (body) => async (url) => {
+    calls.push(String(url))
+    return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } })
+  }
+  const run = (cookie, fetchImpl) => gate.decideProfileGate({ method: 'GET', pathname: '/me', origin: 'http://localhost:3300', headers: new Headers(cookie ? { cookie } : {}) }, { secret: 'secret', fetch: fetchImpl })
+  assert.equal(await run(null, answering({ kind: 'redirect', to: 'amine_t' })), null, 'a guest: no question')
+  assert.equal(await run('theme=dark', answering({ kind: 'redirect', to: 'amine_t' })), null, 'no session cookie: no question')
+  assert.equal(calls.length, 0)
+  assert.deepEqual(await run('next-auth.session-token=abc; tf_profile=1', answering({ kind: 'redirect', to: 'amine_t' })), { kind: 'redirect', to: 'amine_t', status: 302 })
+  assert.equal(calls.at(-1), 'http://localhost:3300/me/gate')
+  assert.deepEqual(await run('__Secure-next-auth.session-token.0=abc', answering({ kind: 'redirect', to: 'amine_t' })), { kind: 'redirect', to: 'amine_t', status: 302 }, 'the secure, chunked cookie')
+  assert.equal(await run('next-auth.session-token=abc', answering({ kind: 'page' })), null, 'no page yet: /me itself')
+  assert.equal(await run('next-auth.session-token=abc', answering({ kind: 'not_found' })), null, '/me is never a 404')
 })
