@@ -17,6 +17,8 @@
 // pick real titles (the server reads every added title back from TMDB). Exit code 1 on failure.
 import { createRequire } from 'node:module'
 import { randomBytes } from 'node:crypto'
+import http from 'node:http'
+import https from 'node:https'
 import { MongoClient, ObjectId } from 'mongodb'
 
 const require = createRequire(import.meta.url)
@@ -56,17 +58,33 @@ async function account(name) {
   return { _id, profile, cookie: `next-auth.session-token=${token}; tf_profile=${profile}` }
 }
 
-async function call(who, method, path, body) {
-  const response = await fetch(BASE + path, {
-    method,
-    headers: { 'content-type': 'application/json', ...(who ? { cookie: who.cookie } : {}) },
-    body: body === undefined ? undefined : JSON.stringify(body),
-    signal: AbortSignal.timeout(600_000),
+/**
+ * One request to the server, through node:http (fetch gives up on response headers after 5
+ * minutes, and a busy dev server compiling a route can take longer than that).
+ */
+function call(who, method, path, body) {
+  const url = new URL(BASE + path)
+  const payload = body === undefined ? undefined : JSON.stringify(body)
+  return new Promise((resolve, reject) => {
+    const request = (url.protocol === 'https:' ? https : http).request(url, {
+      method,
+      headers: { 'content-type': 'application/json', ...(payload ? { 'content-length': Buffer.byteLength(payload) } : {}), ...(who ? { cookie: who.cookie } : {}) },
+      timeout: 900_000,
+    }, (response) => {
+      let text = ''
+      response.setEncoding('utf8')
+      response.on('data', (chunk) => { text += chunk })
+      response.on('end', () => {
+        let json = null
+        try { json = text ? JSON.parse(text) : null } catch { json = { raw: text.slice(0, 200) } }
+        resolve({ status: response.statusCode, body: json })
+      })
+    })
+    request.on('timeout', () => request.destroy(new Error(`timed out: ${method} ${path}`)))
+    request.on('error', reject)
+    if (payload) request.write(payload)
+    request.end()
   })
-  const text = await response.text()
-  let json = null
-  try { json = text ? JSON.parse(text) : null } catch { json = { raw: text.slice(0, 200) } }
-  return { status: response.status, body: json }
 }
 
 /** Real titles: TMDB's popular movies (the server checks every added title against TMDB). */
