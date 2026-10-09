@@ -1,13 +1,12 @@
-// Download sources for a title, resolved from real, public, always-on torrent indexes keyed by
-// IMDB id:
-//   - movies  -> YTS (several mirrors) + The Pirate Bay
-//   - TV      -> EZTV + The Pirate Bay (filtered to the chosen season/episode and to releases named
-//                after the show)
+// Download sources for a title, resolved from real, public torrent indexes keyed by IMDB id:
+//   - movies  -> YTS (several mirrors) + Torrentio
+//   - TV      -> EZTV (the chosen episode, named after the show) + Torrentio (the episode's id)
 //
-// Unlike the streaming embeds, these return actual downloadable content (magnet links) and have
-// stable APIs, so the download list keeps working even when individual stream providers go down.
-// Everything here runs on the server (called through a server action), which avoids CORS and lets
-// us query several indexes at once and merge them.
+// Torrentio aggregates many indexers (The Pirate Bay, 1337x, TorrentGalaxy, RARBG, MagnetDL…) and,
+// being a public add-on API, answers from the server — unlike apibay, which blocks datacenter IPs,
+// so it works in the desktop player (the viewer's own machine) but not from Vercel. The streaming
+// player keeps apibay too (see player-service/providers.js); this list, running on Vercel, uses
+// Torrentio. Everything here runs server-side (a server action), which avoids CORS and merges indexes.
 
 export type DownloadOption = {
   label: string
@@ -15,7 +14,8 @@ export type DownloadOption = {
   size?: string
   seeds?: number
   magnet: string
-  source: 'YTS' | 'EZTV' | 'The Pirate Bay'
+  /** The index the copy came from: 'YTS', 'EZTV', or an indexer Torrentio names ('The Pirate Bay', '1337x'…). */
+  source: string
 }
 
 // Public BitTorrent trackers added to YTS magnets (YTS returns only the info-hash).
@@ -60,28 +60,45 @@ async function fetchJson(url: string, revalidate = 3600): Promise<any | null> {
   }
 }
 
-// ---- The Pirate Bay (apibay) --------------------------------------------------------------------
+// ---- Torrentio (aggregates The Pirate Bay, 1337x, YTS, EZTV, TorrentGalaxy and more) -------------
+//
+// A public add-on API callable from anywhere (so it works from the server, unlike apibay, which
+// blocks datacenter IPs). One request returns dozens of copies for a title, each a line like:
+//   name:  "Torrentio\n1080p"
+//   title: "The Matrix 1999 1080p BluRay x264\n👤 120 💾 1.9 GB ⚙️ ThePirateBay"
+const TORRENTIO = 'https://torrentio.strem.fun'
 
-// Its search API, no key: films by IMDB id, episodes by "<show> S01E01"; returns the info-hash.
-const APIBAY = 'https://apibay.org/q.php'
-
-/** The video torrents apibay returns for a query (its "no results" sentinel and non-video dropped). */
-async function pirateBaySearch(query: string): Promise<any[]> {
-  // apibay wants form-style spaces (+), not %20, or it answers "No results returned".
-  const list = await fetchJson(`${APIBAY}?q=${encodeURIComponent(query).replace(/%20/g, '+')}`)
-  return Array.isArray(list)
-    ? list.filter((t) => t && t.id !== '0' && /^[0-9a-f]{40}$/i.test(t.info_hash || '') && Number(t.category) >= 200 && Number(t.category) < 300)
-    : []
+const sizeText = (text: string) => {
+  const m = /(\d+(?:\.\d+)?)\s?(TB|GB|MB|KB)\b/i.exec(text)
+  return m ? `${m[1]} ${m[2].toUpperCase()}` : ''
+}
+const seedsFrom = (text: string) => Number(/(?:\u{1F464}|seeds?:?|\bS:)\s*(\d+)/iu.exec(text)?.[1]) || 0
+// The indexer Torrentio got a copy from ("⚙️ ThePirateBay" → "The Pirate Bay"), for the source chip.
+const PROVIDER_NAMES: Record<string, string> = { thepiratebay: 'The Pirate Bay', yts: 'YTS', eztv: 'EZTV', torrentgalaxy: 'TorrentGalaxy', rarbg: 'RARBG', magnetdl: 'MagnetDL', horriblesubs: 'HorribleSubs', nyaasi: 'Nyaa' }
+const providerFrom = (text: string) => {
+  const raw = /⚙️?\s*([^\n]+)/.exec(text)?.[1]?.trim()
+  return raw ? (PROVIDER_NAMES[raw.toLowerCase().replace(/[^a-z0-9]/g, '')] ?? raw) : 'Torrentio'
 }
 
-const pirateBayOption = (t: any): DownloadOption => ({
-  label: String(t.name || '').trim(),
-  quality: /\b(2160p|1080p|720p|480p)\b/i.exec(t.name || '')?.[1]?.toLowerCase(),
-  size: formatBytes(Number(t.size)),
-  seeds: Number(t.seeders) || 0,
-  magnet: buildMagnet(String(t.info_hash).toLowerCase(), t.name),
-  source: 'The Pirate Bay',
-})
+/** Copies for a title from Torrentio ('movie'/tt… or 'series'/tt…:s:e). */
+async function torrentio(type: 'movie' | 'series', id: string): Promise<DownloadOption[]> {
+  const json = await fetchJson(`${TORRENTIO}/stream/${type}/${encodeURIComponent(id)}.json`)
+  const streams: any[] = Array.isArray(json?.streams) ? json.streams : []
+  return streams
+    .filter((s) => /^[0-9a-f]{40}$/i.test(s?.infoHash || ''))
+    .map((s): DownloadOption => {
+      const text = [s.name, s.title].filter((v) => typeof v === 'string').join('\n')
+      const release = (typeof s.title === 'string' ? s.title : '').split('\n')[0].trim()
+      return {
+        label: release || String(s.name || '').replace(/\n/g, ' '),
+        quality: /\b(2160p|4k|1080p|720p|480p)\b/i.exec(text)?.[1]?.toLowerCase().replace('4k', '2160p'),
+        size: sizeText(text) ?? '',
+        seeds: seedsFrom(text),
+        magnet: buildMagnet(String(s.infoHash).toLowerCase(), release || 'download'),
+        source: providerFrom(text),
+      }
+    })
+}
 
 const hashOf = (magnet: string) => /btih:([0-9a-f]{40})/i.exec(magnet)?.[1]?.toLowerCase() ?? magnet
 
@@ -113,15 +130,12 @@ async function ytsMovies(id: string): Promise<DownloadOption[]> {
   return []
 }
 
-/** Movie downloads from YTS and The Pirate Bay, by IMDB id. Empty when nothing is found. */
+/** Movie downloads from YTS and Torrentio (The Pirate Bay, 1337x…), by IMDB id. Empty when none. */
 export async function getMovieDownloads(imdbId: string): Promise<DownloadOption[]> {
   const id = normalizeImdb(imdbId)
   if (!id) return []
-  const [yts, tpb] = await Promise.all([
-    ytsMovies(id),
-    pirateBaySearch(`tt${id}`).then((list) => list.filter((t) => t.imdb === `tt${id}`).map(pirateBayOption)),
-  ])
-  return merge([...yts, ...tpb])
+  const [yts, more] = await Promise.all([ytsMovies(id), torrentio('movie', `tt${id}`)])
+  return merge([...yts, ...more])
 }
 
 // Comparable form of a show or release name: lower case, no accents or apostrophes, "&" as "and",
@@ -168,24 +182,16 @@ async function eztvEpisodes(id: string, season: number, episode: number, names: 
     })
 }
 
-/** The Pirate Bay episodes, by "<show> S01E01", kept to the show and that episode. */
-async function pirateBayEpisodes(names: string[], season: number, episode: number): Promise<DownloadOption[]> {
-  if (!names.length) return []
-  const code = `S${String(season).padStart(2, '0')}E${String(episode).padStart(2, '0')}`
-  const episodeRe = new RegExp(`(^|[^0-9])(s0*${season}[ ._-]*e0*${episode}|0*${season}x0*${episode})([^0-9]|$)`, 'i')
-  const list = await pirateBaySearch(`${names[0]} ${code}`)
-  return list.filter((t) => episodeRe.test(t.name) && releaseMatches(t.name, names)).map(pirateBayOption)
-}
-
-/** Episode downloads from EZTV and The Pirate Bay for one season/episode. Empty when nothing is found.
+/** Episode downloads from EZTV and Torrentio for one season/episode. Empty when nothing is found.
  *  EZTV files some releases under the wrong show (e.g. "Breaking Brad" under Breaking Bad's IMDB
- *  id), so when the show's names are known, only releases named after it are kept. */
+ *  id), so when the show's names are known, only releases named after it are kept. Torrentio is
+ *  queried by the episode's id, so its results are already the right show and episode. */
 export async function getTvDownloads(imdbId: string, season: number, episode: number, names: string[] = []): Promise<DownloadOption[]> {
   const id = normalizeImdb(imdbId)
   if (!id) return []
-  const [eztv, tpb] = await Promise.all([
+  const [eztv, more] = await Promise.all([
     eztvEpisodes(id, season, episode, names),
-    pirateBayEpisodes(names, season, episode),
+    torrentio('series', `tt${id}:${season}:${episode}`),
   ])
-  return merge([...eztv, ...tpb])
+  return merge([...eztv, ...more])
 }
