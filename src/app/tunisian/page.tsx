@@ -1,11 +1,10 @@
-import Link from 'next/link'
-import { ChevronRight } from 'lucide-react'
 import PosterCard from '@/src/components/PosterCard'
 import { EmptyState, GRID_CLASS } from '@/src/components/MediaGrid'
 import SegmentedLinks from '@/src/components/browse/SegmentedLinks'
 import TunisiaMark from '@/src/components/tunisian/TunisiaMark'
 import RoomTint from '@/src/components/shell/RoomTint'
 import KidsBlocked from '@/src/components/profiles/KidsBlocked'
+import TunisianDoors from '@/src/components/tunisian-tv/TunisianDoors'
 import { getKidsMode } from '@/src/lib/profiles'
 import { getTunisianTitles } from '@/src/lib/tunisian'
 import type { TKey } from '@/src/lib/i18n'
@@ -58,19 +57,9 @@ export default async function TunisianPage({ searchParams }: { searchParams: { t
           />
         </div>
 
-        <Link
-          href="/tunisian/cinema"
-          className="group pressable mt-8 flex items-center gap-4 overflow-hidden rounded-[22px] bg-gradient-to-r from-red-600/30 via-red-600/10 to-transparent p-4 ring-1 ring-red-500/25 transition-colors hover:ring-red-500/50 sm:p-5 rtl:bg-gradient-to-l"
-        >
-          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-red-600 text-white shadow-[0_0_30px_rgb(229_15_5/0.5)]">
-            <TunisiaMark className="h-10 w-10" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block font-display text-xl font-bold">{t('tnCinema.title')}</span>
-            <span className="block text-sm text-white/65">{t('tnCinema.teaser')}</span>
-          </span>
-          <ChevronRight aria-hidden className="h-5 w-5 shrink-0 text-white/60 transition-transform duration-200 group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" />
-        </Link>
+        <div className="mt-8">
+          <TunisianDoors />
+        </div>
       </header>
 
       <div className="page-x">

@@ -172,7 +172,8 @@ async function phaseFeeds(db: TtvCollections, defs: TvChannelDef[], docs: Map<st
   })
   // Least recently read first.
   due.sort((a, b) => (docs.get(a.slug)?.feedReadAt?.getTime() ?? 0) - (docs.get(b.slug)?.feedReadAt?.getTime() ?? 0))
-  const { results, skipped } = await inBatches(due, FEED_BATCH, o.deadline, 9000, (def) => readChannel(def, o.deadline))
+  // A channel gets 7 seconds (its retries and the fallback included); the phase leaves 9 for the rest.
+  const { results, skipped } = await inBatches(due, FEED_BATCH, o.deadline, 9000, (def) => readChannel(def, Math.min(o.deadline - 6000, Date.now() + 7000)))
   stats.feedsDue = due.length
   const failed = results.filter((read) => !read.ok).length
   stats.feedsRead = results.length - failed
@@ -591,14 +592,20 @@ export async function runTunisianTvIngest(o: { deadline: number, scope?: IngestS
   const docs = await ensureChannels(db, defs, now)
   const ctx = { deadline: o.deadline, now }
 
+  const timed = async (name: string, run: () => Promise<void>) => {
+    const started = Date.now()
+    await run()
+    stats['ms' + name] = Date.now() - started
+  }
   // ?scope=full also rereads the feeds read less than 25 minutes ago.
-  await phaseFeeds(db, defs, docs, { ...ctx, all: o.scope === 'full' }, stats)
-  if (scope === 'full' && timeLeft(o.deadline) > 7000) await phasePlaylists(db, defs, docs, ctx, stats)
-  else if (scope === 'full') stats.more = true
-  if (timeLeft(o.deadline) > 4000) await phaseVerify(db, docs, ctx, stats)
+  await timed('Feeds', () => phaseFeeds(db, defs, docs, { ...ctx, all: o.scope === 'full' }, stats))
+  // Checking new videos comes before playlists: a tile must never offer what can't play here.
+  if (timeLeft(o.deadline) > 4000) await timed('Verify', () => phaseVerify(db, docs, ctx, stats))
   else stats.more = true
-  await phaseDerive(db, defs, ctx, stats)
-  await phasePrune(db, ctx, stats)
+  if (scope === 'full' && timeLeft(o.deadline) > 7000) await timed('Playlists', () => phasePlaylists(db, defs, docs, ctx, stats))
+  else if (scope === 'full') stats.more = true
+  await timed('Derive', () => phaseDerive(db, defs, ctx, stats))
+  await timed('Prune', () => phasePrune(db, ctx, stats))
   if (youtubeApiKey()) stats.units = await unitsToday(db)
 
   await db.meta.updateOne({ _id: 'state' }, { $set: { lastRunAt: new Date() } })
