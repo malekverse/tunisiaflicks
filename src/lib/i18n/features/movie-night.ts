@@ -405,7 +405,7 @@ export const movieNight = defineStrings({
     'movieNight.remove.title': 'إزالة مدعو',
     'movieNight.remove.text': 'لن يصله إشعار، ولن يسمح له الرابط بالعودة.',
     'movieNight.remove.action': 'إزالة {name}',
-    'movieNight.remove.done': 'خرج {name} من السهرة',
+    'movieNight.remove.done': 'تمت إزالة {name} من السهرة',
     'movieNight.cancelled.title': 'أُلغيت هذه السهرة',
     'movieNight.cancelled.text': 'ألغى المضيف السهرة. خطّط لأخرى متى شئت.',
     'movieNight.over.title': 'انتهت هذه السهرة',
