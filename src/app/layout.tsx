@@ -21,6 +21,7 @@ import DailyPushTrigger from "@/src/components/DailyPushTrigger";
 import ErrorReporter from "@/src/components/ErrorReporter";
 import { I18nProvider } from "@/src/components/I18nProvider";
 import ShareSheetHost from "@/src/components/share/ShareSheetHost";
+import AddToListHost from "@/src/components/lists/AddToListHost";
 import LanguageHint from "@/src/components/shell/LanguageHint";
 import TvModeProvider from "@/src/components/tv/TvModeProvider";
 import TvShell from "@/src/components/tv/TvShell";
@@ -30,6 +31,7 @@ import { getLocale, getT } from "@/src/lib/i18n/server";
 import { getKidsMode } from "@/src/lib/profiles";
 import { SEASONS_TODAY_COOKIE, getSeasonalNav, getSeasonSkin, seasonClock } from "@/src/lib/seasons";
 import { isTvMode } from "@/src/lib/tv-mode";
+import { aiSearchEnabled } from "@/src/lib/ai-search/config";
 import { SITE_DESCRIPTION, SITE_URL, siteMetadata } from "@/src/lib/seo";
 import { cookies, headers } from "next/headers";
 
@@ -135,6 +137,8 @@ export default async function RootLayout({
   // agent), and the season (the nav slot, and the room's default light).
   const kids = await getKidsMode().catch(() => false);
   const tv = isTvMode();
+  // The search pill offers Ask (AI search) too: never for Kids or in TV mode.
+  const ask = aiSearchEnabled() && !kids && !tv;
   const inApp = (headers().get('user-agent') ?? '').includes('TunisiaFlicksTV/');
   // In development a cookie can preview another day's season (seasonClock ignores it in production).
   const { today: seasonDay } = seasonClock(cookies().get(SEASONS_TODAY_COOKIE)?.value);
@@ -152,7 +156,7 @@ export default async function RootLayout({
       <main id="main" role="main" className="flex-1 min-w-0">
         {children}
       </main>
-      {!tv && <Footer />}
+      {!tv && <Footer kids={kids} />}
     </div>
   );
 
@@ -189,13 +193,14 @@ export default async function RootLayout({
                 ) : (
                   <>
                     <Rail kids={kids} seasonal={seasonal} />
-                    <TopBar kids={kids} ask={false} />
+                    <TopBar kids={kids} ask={ask} />
                     <ShellEffects />
                     {page}
                     <TabBar kids={kids} seasonal={seasonal} />
                     <SearchPaletteHost />
                     <PeekLayer />
                     <ShareSheetHost />
+                    <AddToListHost />
                   </>
                 )}
               </MotionProvider>

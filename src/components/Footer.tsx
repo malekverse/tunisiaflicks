@@ -2,8 +2,12 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getT } from '@/src/lib/i18n/server'
 import type { TKey } from '@/src/lib/i18n'
+import { supportUrl } from '@/src/lib/support-url'
 
-const COLUMNS: { heading: TKey, links: { href: string, label: TKey }[] }[] = [
+/** `grownUp`: hidden on Kids profiles. `support`: only once support is open (and never for Kids: no money talk). */
+type FooterLink = { href: string, label: TKey, grownUp?: boolean, support?: boolean }
+
+const COLUMNS: { heading: TKey, links: FooterLink[] }[] = [
   {
     heading: 'footer.browse',
     links: [
@@ -19,8 +23,11 @@ const COLUMNS: { heading: TKey, links: { href: string, label: TKey }[] }[] = [
     links: [
       { href: '/clips', label: 'nav.clips' },
       { href: '/swipe', label: 'swipe.title' },
+      { href: '/movie-night', label: 'movieNight.nav', grownUp: true },
       { href: '/tunisian/cinema', label: 'tnCinema.title' },
-      { href: '/dramas', label: 'dramas.nav' },
+      { href: '/tunisian/tv', label: 'ttv.title', grownUp: true },
+      { href: '/arab-cinema', label: 'arabMap.nav' },
+      { href: '/dramas', label: 'dramas.nav', grownUp: true },
       { href: '/ramadan', label: 'ramadan.title' },
     ],
   },
@@ -29,6 +36,8 @@ const COLUMNS: { heading: TKey, links: { href: string, label: TKey }[] }[] = [
     links: [
       { href: '/about', label: 'footer.about' },
       { href: '/contact', label: 'footer.contact' },
+      { href: '/app', label: 'tvMode.app.title' },
+      { href: '/support', label: 'support.footer', support: true },
     ],
   },
   {
@@ -42,8 +51,10 @@ const COLUMNS: { heading: TKey, links: { href: string, label: TKey }[] }[] = [
 ]
 
 /** Site footer: quiet, low-contrast, out of the way of the pictures. */
-export default function Footer() {
+export default function Footer({ kids = false }: { kids?: boolean }) {
   const t = getT()
+  const supportOpen = !kids && supportUrl() !== null
+  const shown = (link: FooterLink) => !(kids && link.grownUp) && (!link.support || supportOpen)
   return (
     // Bottom padding on phones clears the floating tab bar.
     <footer aria-label={t('footer.aria')} className="page-x pb-tabbar mt-16 text-white/50">
@@ -60,7 +71,7 @@ export default function Footer() {
             <nav key={column.heading} aria-label={t(column.heading)}>
               <h2 className="mb-3 text-[13px] font-semibold text-white/85">{t(column.heading)}</h2>
               <ul className="space-y-2.5 text-sm">
-                {column.links.map((link) => (
+                {column.links.filter(shown).map((link) => (
                   <li key={link.href}>
                     <Link href={link.href} className="transition-colors duration-200 hover:text-white">{t(link.label)}</Link>
                   </li>

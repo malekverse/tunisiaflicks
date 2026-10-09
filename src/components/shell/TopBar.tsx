@@ -21,9 +21,7 @@ export type TopBarProps = {
  * The top bar floats over the page: a soft dark fade while the hero is showing, frosted glass once
  * the page scrolls. On phones it tucks away while scrolling down and returns on the way back up.
  */
-export default function TopBar(props: TopBarProps = {}) {
-  // ask is wired from the root layout; ai-search switches the pill label with it (integration).
-  void props
+export default function TopBar({ ask = false }: TopBarProps = {}) {
   const t = useT()
   const { scrolled, retracted } = useScrollChrome()
   const openSearch = useSearchPalette((state) => state.setOpen)
@@ -51,7 +49,7 @@ export default function TopBar(props: TopBarProps = {}) {
           className="pressable group hidden h-10 w-full max-w-[420px] items-center gap-3 rounded-full border border-white/10 bg-white/[0.06] pe-2 ps-4 text-start text-sm text-white/55 outline-none transition-colors duration-200 hover:border-white/20 hover:bg-white/[0.09] hover:text-white/80 focus-visible:ring-2 focus-visible:ring-red-500 lg:flex"
         >
           <Search aria-hidden className="h-[18px] w-[18px]" />
-          <span className="flex-1 truncate">{t('search.open')}</span>
+          <span className="flex-1 truncate">{t(ask ? 'ai.searchOrAsk' : 'search.open')}</span>
           <kbd className="rounded-md border border-white/15 px-1.5 py-0.5 font-sans text-[11px] text-white/50" aria-label={t('search.shortcutHint')}>/</kbd>
         </button>
 
