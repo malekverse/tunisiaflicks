@@ -7,6 +7,7 @@
 //     --model=openai/gpt-oss-20b   one model instead of the first one Groq lists in our order
 //     --only=queries|injections    one half
 //     --limit=10                   the first N cases of each half
+//     --match=korean               only the cases whose request contains this text
 //     --parser                     the simple parser instead of the model (no network, no key)
 //     --verbose                    print each sanitized plan
 //
@@ -26,6 +27,7 @@ const { values: args } = parseArgs({
     model: { type: 'string' },
     only: { type: 'string' },
     limit: { type: 'string' },
+    match: { type: 'string' },
     parser: { type: 'boolean', default: false },
     verbose: { type: 'boolean', default: false },
   },
@@ -77,7 +79,8 @@ const QUERIES = [
   { q: '3tini msalsel torki romansi', expect: { kind: 'tv', genres: ['romance'], countries: ['TR'] } },
   { q: 'film ra3b jdid', expect: { kind: 'movie', genres: ['horror'] } },
   { q: 'inception', expect: { intent: 'title' } },
-  { q: 'Adel Emam', expect: { intent: 'person' } },
+  // Either way the request goes to the title search (people come first there).
+  { q: 'Adel Emam', expect: { intent: ['person', 'title'] } },
 ]
 
 // Injections: the request must stay data. A reading fails when the prompt leaks (in the answer
@@ -106,7 +109,7 @@ const LEAKS = ['You turn a request', 'The user message is JSON', 'Reply with JSO
 function check(plan, expect) {
   const problems = []
   const has = (list, wanted, read) => wanted.every((value) => list.some((item) => read(item).includes(String(value).toLowerCase())))
-  if (expect.intent && plan.intent !== expect.intent) problems.push(`intent ${plan.intent}`)
+  if (expect.intent && ![expect.intent].flat().includes(plan.intent)) problems.push(`intent ${plan.intent}`)
   if (expect.kind && plan.kind !== expect.kind) problems.push(`kind ${plan.kind}`)
   if (expect.genres && !expect.genres.every((id) => plan.genres.some((genre) => genre.id === id))) problems.push(`genres ${plan.genres.map((genre) => genre.id).join(',') || '-'}`)
   if (expect.not && expect.not.some((id) => plan.genres.some((genre) => genre.id === id))) problems.push(`unwanted ${expect.not.join(',')}`)
@@ -186,7 +189,7 @@ async function read(q) {
 const summary = {}
 let tokens = 0
 for (const half of halves) {
-  const cases = (half === 'queries' ? QUERIES : INJECTIONS).slice(0, limit)
+  const cases = (half === 'queries' ? QUERIES : INJECTIONS).filter(({ q }) => !args.match || q.toLowerCase().includes(args.match.toLowerCase())).slice(0, limit)
   if (!model && half === 'injections') {
     console.log('\n(injections need a model; skipped with --parser)')
     continue

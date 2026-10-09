@@ -111,7 +111,7 @@ export default function CommandPalette() {
     const prompts = useMemo(() => (open ? hourlyPrompts(2) : []), [open])
 
     const row = 'group flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 outline-none data-[selected=true]:bg-white/[0.09]'
-    const heading = '[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-white/45'
+    const heading = '[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-white/50'
 
     // Same metrics as a title row: a 36x54 slot, the mark centred in it.
     const askItem = (
@@ -160,9 +160,9 @@ export default function CommandPalette() {
                                 go(`/search?q=${encodeURIComponent(trimmed)}`)
                             }
                         }}
-                        className="h-16 flex-1 bg-transparent text-lg outline-none placeholder:text-white/40"
+                        className="h-16 flex-1 bg-transparent text-lg outline-none placeholder:text-white/50"
                     />
-                    <kbd className="hidden rounded-md border border-white/15 px-1.5 py-0.5 font-sans text-[11px] text-white/45 sm:block">esc</kbd>
+                    <kbd className="hidden rounded-md border border-white/15 px-1.5 py-0.5 font-sans text-[11px] text-white/50 sm:block">esc</kbd>
                 </div>
 
                 <Command.List className={`no-scrollbar max-h-[min(60vh,520px)] overflow-y-auto overscroll-contain p-2 ${heading}`}>
@@ -214,7 +214,7 @@ export default function CommandPalette() {
                                     </span>
                                     <span className="min-w-0 flex-1">
                                         <bdi dir="auto" className="block truncate text-start text-[15px]">{item.title}</bdi>
-                                        <span className="flex gap-2 text-xs text-white/45"><span>{item.media_type === 'tv' ? t('common.tvShow') : t('common.movie')}</span>{item.year && <span>{item.year}</span>}</span>
+                                        <span className="flex gap-2 text-xs text-white/50"><span>{item.media_type === 'tv' ? t('common.tvShow') : t('common.movie')}</span>{item.year && <span>{item.year}</span>}</span>
                                     </span>
                                     <TrendingUp aria-hidden className="h-4 w-4 shrink-0 text-white/30" />
                                 </Command.Item>
@@ -231,7 +231,7 @@ export default function CommandPalette() {
                                     </span>
                                     <span className="min-w-0 flex-1">
                                         <bdi dir="auto" className="block truncate text-start text-[15px]">{item.title || item.name}</bdi>
-                                        <span className="flex gap-2 text-xs text-white/45">
+                                        <span className="flex gap-2 text-xs text-white/50">
                                             <span>{item.media_type === 'tv' ? t('common.tvShow') : t('common.movie')}</span>
                                             {(item.release_date || item.first_air_date) && <span>{(item.release_date || item.first_air_date).slice(0, 4)}</span>}
                                         </span>
@@ -253,7 +253,7 @@ export default function CommandPalette() {
                                         </span>
                                         <span className="min-w-0 flex-1">
                                             <bdi dir="auto" className="block truncate text-start text-[15px]">{item.name}</bdi>
-                                            <span className="flex min-w-0 gap-2 text-xs text-white/45">
+                                            <span className="flex min-w-0 gap-2 text-xs text-white/50">
                                                 <span className="shrink-0">{item.known_for_department === 'Directing' ? t('search.director') : t('search.actor')}</span>
                                                 {knownFor && <bdi className="truncate">{knownFor}</bdi>}
                                             </span>
@@ -274,7 +274,7 @@ export default function CommandPalette() {
                     )}
                 </Command.List>
 
-                <div className="hidden items-center gap-4 border-t border-white/[0.07] px-4 py-2.5 text-[11px] text-white/40 sm:flex">
+                <div className="hidden items-center gap-4 border-t border-white/[0.07] px-4 py-2.5 text-[11px] text-white/50 sm:flex">
                     <span><kbd className="me-1 font-sans">↑↓</kbd>{t('search.navigateHint')}</span>
                     <span><kbd className="me-1 font-sans">↵</kbd>{t('search.selectHint')}</span>
                     <span><kbd className="me-1 font-sans">esc</kbd>{t('search.closeHint')}</span>
