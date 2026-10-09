@@ -5,10 +5,11 @@
 // on the approved profile (/api/tv/pair/complete), and reloads.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { signIn } from 'next-auth/react'
-import { LoaderCircle, LogOut, Mail, RefreshCw, ShieldCheck } from 'lucide-react'
+import { LogOut, Mail, RefreshCw, ShieldCheck } from 'lucide-react'
 import { useT } from '@/src/components/I18nProvider'
 import { useInTvApp } from '@/src/hooks/use-tv-mode'
 import QrCode from './QrCode'
+import { BrandLoader } from '@/src/components/brand/BrandMark'
 
 type Phase =
   | { kind: 'loading' }
@@ -148,7 +149,7 @@ export default function TvSignIn({ onClose, onEmail }: { onClose: () => void; on
               </p>
             ) : phase.kind === 'loading' || phase.kind === 'approved' ? (
               <span className="flex h-[6rem] items-center gap-3 text-[17px] text-white/70">
-                <LoaderCircle aria-hidden className="h-7 w-7 animate-spin text-white/70" />
+                <BrandLoader tone="brand" className="h-7 w-7" />
                 {phase.kind === 'approved' ? t('tvMode.signin.approved') : null}
               </span>
             ) : (

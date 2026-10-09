@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Loader2 } from 'lucide-react'
 import { useT } from '@/src/components/I18nProvider'
 import GoogleSignInButton from '@/src/components/GoogleSignInButton'
 import { translateApiMessage } from '@/src/lib/i18n/translate'
@@ -13,6 +12,7 @@ import { EMAIL_RE, EmailInput, Field, FormNotice, PasswordInput, SubmitButton, f
 import { Input } from '@/src/components/ui/input'
 import { SIGNUP_EMAIL_KEY, withCallback } from './links'
 import PasswordRule from './PasswordRule'
+import { BrandLoader } from '@/src/components/brand/BrandMark'
 
 const MIN_PASSWORD = 8
 
@@ -39,7 +39,7 @@ export default function SignupForm({ callbackUrl, googleEnabled }: { callbackUrl
   if (status === 'authenticated') {
     return (
       <div className="grid min-h-[320px] place-items-center" role="status" aria-label={t('common.loading')}>
-        <Loader2 aria-hidden className="h-7 w-7 animate-spin text-white/60" />
+        <BrandLoader tone="brand" className="h-7 w-7" />
       </div>
     )
   }

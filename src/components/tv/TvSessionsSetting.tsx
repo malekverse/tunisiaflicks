@@ -4,12 +4,13 @@
 // [Sign out] (it notices within 5 minutes). A TV itself only gets a note: it can't manage TVs.
 import { useCallback, useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
-import { LoaderCircle, Tv } from 'lucide-react'
+import { Tv } from 'lucide-react'
 import { useI18n } from '@/src/components/I18nProvider'
 import { Button } from '@/src/components/ui/button'
 import { toast } from '@/src/hooks/use-toast'
 import { dateLocale } from '@/src/lib/i18n/locales'
 import type { TKey } from '@/src/lib/i18n'
+import { BrandLoader } from '@/src/components/brand/BrandMark'
 
 type Item = { id: string; deviceLabel: string; profileName: string | null; createdAt: string; lastSeenAt: string }
 type State = { kind: 'loading' } | { kind: 'error' } | { kind: 'limited' } | { kind: 'ready'; sessions: Item[]; canRevoke: boolean }
@@ -72,7 +73,7 @@ export default function TvSessionsSetting(): JSX.Element | null {
       <div className="mt-4">
         {state.kind === 'loading' && (
           <div aria-busy className="flex h-[68px] items-center gap-3 rounded-2xl bg-white/[0.03] px-4 text-[14px] text-white/55 ring-1 ring-inset ring-white/[0.05]">
-            <LoaderCircle aria-hidden className="h-4 w-4 animate-spin" />
+            <BrandLoader className="h-4 w-4" />
             {t('common.loading')}
           </div>
         )}
@@ -116,7 +117,7 @@ export default function TvSessionsSetting(): JSX.Element | null {
                   aria-label={t('tvMode.sessions.signOutAria', { device: device(item.deviceLabel) })}
                   onClick={() => signOut(item)}
                 >
-                  {pending === item.id && <LoaderCircle aria-hidden className="h-4 w-4 animate-spin" />}
+                  {pending === item.id && <BrandLoader className="h-4 w-4" />}
                   {t('tvMode.sessions.signOut')}
                 </Button>
               </li>

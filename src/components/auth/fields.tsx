@@ -4,12 +4,13 @@
 // animated notice, and the "done" check.
 import React, { useState } from 'react'
 import { AnimatePresence, m } from 'framer-motion'
-import { AlertCircle, Eye, EyeOff, Info, Loader2 } from 'lucide-react'
+import { AlertCircle, Eye, EyeOff, Info } from 'lucide-react'
 import { Button, type ButtonProps } from '@/src/components/ui/button'
 import { Input, type InputProps } from '@/src/components/ui/input'
 import { useT } from '@/src/components/I18nProvider'
 import { EASE_OUT, tween } from '@/src/lib/motion'
 import { cn } from '@/src/lib/utils'
+import { BrandLoader } from '@/src/components/brand/BrandMark'
 
 /** Same rule as the API (/api/contact). */
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
@@ -135,7 +136,7 @@ export function LoadingButton({ loading = false, loadingText, children, classNam
         {children}
       </span>
       <span aria-hidden={!loading} className={cn('col-start-1 row-start-1 inline-flex items-center justify-center gap-2 transition-[opacity,filter] duration-200 ease-out', !loading && 'opacity-0 blur-[2px]')}>
-        <Loader2 aria-hidden className="h-[18px] w-[18px] animate-spin" />
+        <BrandLoader className="h-[18px] w-[18px]" />
         {loadingText}
       </span>
     </Button>

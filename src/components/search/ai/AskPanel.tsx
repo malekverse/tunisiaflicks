@@ -2,7 +2,7 @@
 import { useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { AnimatePresence, m } from 'framer-motion'
-import { CircleSlash, Hourglass, Info, Loader2, RotateCcw, Search, SearchX, Timer, WifiOff } from 'lucide-react'
+import { CircleSlash, Hourglass, Info, RotateCcw, Search, SearchX, Timer, WifiOff } from 'lucide-react'
 import MediaGrid, { EmptyState, GRID_CLASS } from '@/src/components/MediaGrid'
 import { Chip, ChipGroup } from '@/src/components/ui/chip'
 import { Button } from '@/src/components/ui/button'
@@ -17,6 +17,7 @@ import { spring } from '@/src/lib/motion'
 import { cn } from '@/src/lib/utils'
 import type { AskChip } from '@/src/lib/ai-search/types'
 import type { AskState } from './use-ai-search'
+import { BrandLoader } from '@/src/components/brand/BrandMark'
 
 const STAGGER = 0.04
 const STAGGER_CAP = 8
@@ -197,7 +198,7 @@ export function AskPanel({ state, onTry, onRemove, onMore, onRetry, onSearchTitl
           {ai && <AiNote className="justify-center text-center" />}
           {state.hasMore && (
             <Button variant="secondary" size="lg" onClick={onMore} disabled={state.more} aria-busy={state.more}>
-              {state.more && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}
+              {state.more && <BrandLoader className="h-4 w-4" />}
               {t('ai.showMore')}
             </Button>
           )}

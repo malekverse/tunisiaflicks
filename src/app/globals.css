@@ -354,3 +354,64 @@ html[data-locale-pending] {
     scroll-behavior: auto !important;
   }
 }
+
+/*
+  The brand loader (BrandLoader): the three strokes of the "A" light up in turn. Opacity only, so
+  it keeps running, slower, when motion is reduced (the rule above would freeze it on its dimmest
+  frame).
+*/
+@keyframes tf-chase {
+  0%, 100% { opacity: 0.18; }
+  20%, 40% { opacity: 1; }
+  60% { opacity: 0.18; }
+}
+.tf-chase > path {
+  animation: tf-chase 1.2s ease-in-out infinite;
+}
+.tf-chase > path:nth-child(2) { animation-delay: 0.4s; }
+.tf-chase > path:nth-child(3) { animation-delay: 0.8s; }
+@media (prefers-reduced-motion: reduce) {
+  .tf-chase > path {
+    animation-duration: 2.4s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
+/*
+  The launch (AppLaunch): once per start of an app (the TV app, the Android app, the installed
+  site), the strokes fold into the "A", the wordmark wipes in, then it all fades to the page. The
+  root layout's inline script puts html.tf-launch on before the first paint, and tf-launch-done
+  when it's time to go. Reduced motion: no movement, just the fade.
+*/
+.tf-launch-screen { display: none; }
+html.tf-launch .tf-launch-screen {
+  display: grid;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  place-items: center;
+  background: #000;
+  transition: opacity 450ms cubic-bezier(0.23, 1, 0.32, 1), visibility 0s linear 450ms;
+}
+html.tf-launch.tf-launch-done .tf-launch-screen {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+@keyframes tf-fold-a { from { opacity: 0; transform: translate(16%, -12%) rotate(8deg); } to { opacity: 1; transform: none; } }
+@keyframes tf-fold-b { from { opacity: 0; transform: translate(-16%, -8%) rotate(-8deg); } to { opacity: 1; transform: none; } }
+@keyframes tf-fold-c { from { opacity: 0; transform: translateY(16%); } to { opacity: 1; transform: none; } }
+@keyframes tf-wipe { from { clip-path: inset(0 100% 0 0); opacity: 0.2; } to { clip-path: inset(0 0 0 0); opacity: 1; } }
+.tf-launch-mark > path { transform-box: fill-box; transform-origin: center; opacity: 0; }
+html.tf-launch .tf-launch-mark > path:nth-child(1) { animation: tf-fold-a 500ms cubic-bezier(0.23, 1, 0.32, 1) 50ms forwards; }
+html.tf-launch .tf-launch-mark > path:nth-child(2) { animation: tf-fold-b 500ms cubic-bezier(0.23, 1, 0.32, 1) 180ms forwards; }
+html.tf-launch .tf-launch-mark > path:nth-child(3) { animation: tf-fold-c 500ms cubic-bezier(0.23, 1, 0.32, 1) 310ms forwards; }
+html.tf-launch .tf-launch-wordmark { animation: tf-wipe 550ms cubic-bezier(0.23, 1, 0.32, 1) 700ms both; }
+.tf-launch-glow {
+  filter: drop-shadow(0 0 22px rgb(255 16 0 / 0.45));
+}
+@media (prefers-reduced-motion: reduce) {
+  .tf-launch-mark > path { opacity: 1; }
+  html.tf-launch .tf-launch-mark > path,
+  html.tf-launch .tf-launch-wordmark { animation: none !important; opacity: 1; clip-path: none; }
+}

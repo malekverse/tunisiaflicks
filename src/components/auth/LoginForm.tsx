@@ -3,13 +3,13 @@ import { useEffect, useRef, useState } from 'react'
 import { signIn, useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Loader2 } from 'lucide-react'
 import { useT } from '@/src/components/I18nProvider'
 import GoogleSignInButton from '@/src/components/GoogleSignInButton'
 import type { TKey } from '@/src/lib/i18n'
 import AuthHeader from './AuthHeader'
 import { EMAIL_RE, EmailInput, Field, FormNotice, PasswordInput, SubmitButton, focusFirst } from './fields'
 import { SIGNUP_EMAIL_KEY, afterSignIn, withCallback } from './links'
+import { BrandLoader } from '@/src/components/brand/BrandMark'
 
 // A problem is kept as a dictionary key when we have one, so it follows a language switch.
 type Problem = { key: TKey } | { text: string }
@@ -64,7 +64,7 @@ export default function LoginForm({ callbackUrl, errorCode, created = false, goo
   if (status === 'authenticated' && !signedInHere.current) {
     return (
       <div className="grid min-h-[280px] place-items-center" role="status" aria-label={t('common.loading')}>
-        <Loader2 aria-hidden className="h-7 w-7 animate-spin text-white/60" />
+        <BrandLoader tone="brand" className="h-7 w-7" />
       </div>
     )
   }

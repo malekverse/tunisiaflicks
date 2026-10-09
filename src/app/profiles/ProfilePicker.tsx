@@ -12,6 +12,7 @@ import { useT } from '@/src/components/I18nProvider'
 import { haptic } from '@/src/lib/motion'
 import { cn } from '@/src/lib/utils'
 import { MAX_PROFILES, type Profile, type ProfilesResponse } from '@/src/lib/models/Profile'
+import { BrandLoader } from '@/src/components/brand/BrandMark'
 
 // Each tile comes into focus a beat after the previous one (capped, so six profiles still feel quick).
 const delay = (index: number) => ({ animationDelay: `${180 + Math.min(index, 6) * 40}ms` })
@@ -58,7 +59,7 @@ export default function ProfilePicker({ initial, ownerImage, next }: { initial: 
   if (single) {
     return (
       <div role="status" className="fixed inset-0 z-[55] grid place-items-center bg-black">
-        <span className="h-9 w-9 animate-spin rounded-full border-2 border-white/15 border-t-white" />
+        <BrandLoader tone="brand" className="h-9 w-9" />
         <span className="sr-only">{t('common.loading')}</span>
       </div>
     )
@@ -115,7 +116,7 @@ export default function ProfilePicker({ initial, ownerImage, next }: { initial: 
                       )}
                       {loading && (
                         <span className={cn('absolute inset-0 grid place-items-center bg-black/45', TILE)}>
-                          <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/25 border-t-white" />
+                          <BrandLoader tone="brand" className="h-8 w-8" />
                         </span>
                       )}
                     </span>

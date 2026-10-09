@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { m } from 'framer-motion'
-import { ArrowRight, Clock, Info, Loader2, Search, SearchX, Sparkle, X } from 'lucide-react'
+import { ArrowRight, Clock, Info, Search, SearchX, Sparkle, X } from 'lucide-react'
 import { getTrendingSuggestions, searchMovies, type TrendingSuggestion } from './actions'
 import MediaGrid, { EmptyState } from '@/src/components/MediaGrid'
 import PaginationComponent from '@/src/components/PaginationComponent'
@@ -21,6 +21,7 @@ import { toast } from '@/src/hooks/use-toast'
 import { spring } from '@/src/lib/motion'
 import { cn } from '@/src/lib/utils'
 import type { AskChip } from '@/src/lib/ai-search/types'
+import { BrandLoader } from '@/src/components/brand/BrandMark'
 
 type Filter = 'all' | 'movie' | 'tv' | 'person'
 type Params = { q?: string, mode?: string, p?: string }
@@ -248,7 +249,7 @@ export default function Page({ searchParams }: { searchParams: Params }) {
             <label htmlFor="search" className="sr-only">{t(titles ? 'search.label' : 'ai.placeholder')}</label>
             <div className="group relative min-w-0 flex-1">
               <span aria-hidden className="pointer-events-none absolute inset-y-0 start-5 grid place-items-center text-white/45 transition-colors group-focus-within:text-white/80">
-                {fieldBusy ? <Loader2 className="h-6 w-6 animate-spin" />
+                {fieldBusy ? <BrandLoader className="h-6 w-6" />
                   : titles ? <Search className="h-6 w-6" />
                     : <Sparkle className="h-6 w-6 fill-current" strokeWidth={1.4} />}
               </span>

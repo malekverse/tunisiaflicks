@@ -8,7 +8,7 @@
 import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Loader2, Lock, ScanFace } from 'lucide-react'
+import { Lock, ScanFace } from 'lucide-react'
 import TmdbImage from '@/src/components/TmdbImage'
 import { Button } from '@/src/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/src/components/ui/popover'
@@ -19,6 +19,7 @@ import { useMediaQuery } from '@/src/hooks/use-media-query'
 import { countKey, type SeenTitle } from '@/src/hooks/use-seen-with'
 import { richT } from '@/src/lib/i18n/rich'
 import { cn } from '@/src/lib/utils'
+import { BrandLoader } from '@/src/components/brand/BrandMark'
 
 const ACTION = 'pressable inline-flex h-11 shrink-0 select-none items-center gap-2 rounded-full px-3 text-[13px] font-medium outline-none transition-[background-color,color,transform] duration-150 ease-out focus-visible:ring-2 focus-visible:ring-red-500'
 
@@ -33,7 +34,7 @@ export function SeenWithAction({ signedIn, status, shown, onToggle }: {
   const label = shown ? t('seen.hide') : t('seen.button')
   const content = (
     <>
-      {status === 'loading' ? <Loader2 aria-hidden className="h-[18px] w-[18px] animate-spin" /> : <ScanFace aria-hidden className="h-[18px] w-[18px]" />}
+      {status === 'loading' ? <BrandLoader className="h-[18px] w-[18px]" /> : <ScanFace aria-hidden className="h-[18px] w-[18px]" />}
       <span className="hidden sm:inline">{t('seen.button')}</span>
     </>
   )

@@ -1,12 +1,7 @@
+import { BrandLoader } from '@/src/components/brand/BrandMark';
 import { cn } from '@/src/lib/utils';
 
+/** The site's loader (the brand "A", see BrandLoader), at h-8 unless told otherwise. */
 export function Spinner({ className }: { className?: string }) {
-  return (
-    <div
-      className={cn(
-        'animate-spin rounded-full h-8 w-8 border-b-2 border-white',
-        className
-      )}
-    />
-  );
+  return <BrandLoader tone="brand" className={cn('h-8 w-8', className)} />;
 }

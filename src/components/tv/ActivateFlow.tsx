@@ -9,7 +9,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { signIn } from 'next-auth/react'
 import { FcGoogle } from 'react-icons/fc'
-import { Check, CircleCheck, LoaderCircle, ShieldAlert, ShieldCheck, Tv, X } from 'lucide-react'
+import { Check, CircleCheck, ShieldAlert, ShieldCheck, Tv, X } from 'lucide-react'
 import { useT } from '@/src/components/I18nProvider'
 import { Button } from '@/src/components/ui/button'
 import { Input } from '@/src/components/ui/input'
@@ -17,6 +17,7 @@ import ProfileAvatar, { KidsBadge } from '@/src/components/profiles/ProfileAvata
 import type { Profile } from '@/src/lib/models/Profile'
 import type { TKey } from '@/src/lib/i18n'
 import { cn } from '@/src/lib/utils'
+import { BrandLoader } from '@/src/components/brand/BrandMark'
 
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 const clean = (value: string) => value.toUpperCase().split('').filter((char) => ALPHABET.includes(char)).join('').slice(0, 6)
@@ -198,7 +199,7 @@ export default function ActivateFlow({ initialCode, profiles, activeProfileId, f
               <p id="tv-code-hint" className="mt-2 text-[13px] text-white/50">{t('tvMode.activate.codeHint')}</p>
               {errorLine}
               <Button type="submit" size="lg" className="mt-5 w-full" disabled={busy || clean(code).length !== 6}>
-                {busy && <LoaderCircle aria-hidden className="h-4 w-4 animate-spin" />}
+                {busy && <BrandLoader className="h-4 w-4" />}
                 {t('tvMode.activate.continue')}
               </Button>
             </form>
@@ -280,7 +281,7 @@ export default function ActivateFlow({ initialCode, profiles, activeProfileId, f
                       />
                       {passwordError && <p role="alert" className="mt-2 text-[13px] text-red-400">{t('tvMode.activate.wrongPassword')}</p>}
                       <Button type="submit" size="lg" className="mt-4 w-full" disabled={busy || !password}>
-                        {busy && <LoaderCircle aria-hidden className="h-4 w-4 animate-spin" />}
+                        {busy && <BrandLoader className="h-4 w-4" />}
                         {t('tvMode.activate.confirm')}
                       </Button>
                     </form>
@@ -302,7 +303,7 @@ export default function ActivateFlow({ initialCode, profiles, activeProfileId, f
                 <>
                   {errorLine}
                   <Button size="lg" className="mt-6 w-full" disabled={busy} onClick={() => answer(true, step.found)}>
-                    {busy ? <LoaderCircle aria-hidden className="h-4 w-4 animate-spin" /> : <Tv aria-hidden className="h-[18px] w-[18px]" />}
+                    {busy ? <BrandLoader className="h-4 w-4" /> : <Tv aria-hidden className="h-[18px] w-[18px]" />}
                     {t('tvMode.activate.approve')}
                   </Button>
                 </>

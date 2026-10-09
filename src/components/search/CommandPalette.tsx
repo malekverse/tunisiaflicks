@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Command } from 'cmdk'
-import { ArrowUpRight, Clock, CornerDownLeft, Loader2, Search, Sparkle, TrendingUp, X } from 'lucide-react'
+import { ArrowUpRight, Clock, CornerDownLeft, Search, Sparkle, TrendingUp, X } from 'lucide-react'
 import TmdbImage from '@/src/components/TmdbImage'
 import { AiMark } from '@/src/components/ai/AiMark'
 import { getTrendingSuggestions, searchMovies, type TrendingSuggestion } from '@/src/app/search/actions'
@@ -16,6 +16,7 @@ import { useI18n } from '@/src/components/I18nProvider'
 import { useProfiles } from '@/src/hooks/use-profiles'
 import { useTvMode } from '@/src/hooks/use-tv-mode'
 import { useSearchPalette } from '@/src/store/search-palette'
+import { BrandLoader } from '@/src/components/brand/BrandMark'
 
 const MAX_RESULTS = 8
 
@@ -140,7 +141,7 @@ export default function CommandPalette() {
             <div dir={dir} className="glass-strong overflow-hidden rounded-[22px] text-white shadow-[0_40px_120px_-20px_rgb(0_0_0/0.95)]">
                 <div className="flex items-center gap-3 border-b border-white/[0.07] px-4">
                     {loading
-                        ? <Loader2 aria-hidden className="h-5 w-5 shrink-0 animate-spin text-white/50" />
+                        ? <BrandLoader className="h-5 w-5 shrink-0 text-white/50" />
                         : <Search aria-hidden className="h-5 w-5 shrink-0 text-white/50" />}
                     <Command.Input
                         value={query}

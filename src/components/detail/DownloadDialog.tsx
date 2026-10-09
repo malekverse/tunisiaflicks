@@ -9,6 +9,7 @@ import { toast } from '@/src/hooks/use-toast'
 import { getDownloads, type DownloadQuery } from '@/src/app/actions/downloads'
 import type { DownloadOption } from '@/src/lib/downloads'
 import { useT } from '@/src/components/I18nProvider'
+import { BrandLoader } from '@/src/components/brand/BrandMark'
 
 type Props = {
   title: string
@@ -65,7 +66,7 @@ export default function DownloadDialog({ title, disabled, disabledHint, ...query
         <div className="max-h-[55vh] overflow-y-auto -mx-1 px-1">
           {loading ? (
             <div className="flex items-center justify-center py-10">
-              <span className="h-9 w-9 animate-spin rounded-full border-2 border-white/15 border-t-red-500" />
+              <BrandLoader tone="brand" className="h-9 w-9" />
             </div>
           ) : options && options.length > 0 ? (
             <ul className="space-y-2">

@@ -13,6 +13,7 @@ import { pushTvBackHandler } from '@/src/components/tv/use-focus-engine'
 import KeyGlyph from '@/src/components/tv/KeyGlyph'
 import TmdbImage from '@/src/components/TmdbImage'
 import { Button } from '@/src/components/ui/button'
+import { BrandLoader } from '@/src/components/brand/BrandMark'
 
 /** TV mode: after this many briefings on a device, the briefing shrinks to a short hint. */
 const FULL_BRIEFINGS = 3
@@ -317,7 +318,7 @@ export default function StreamSection({ services, downloadSlot, enabled = true, 
                         <>
                             {isLoading && (
                                 <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-black">
-                                    <span className="h-11 w-11 animate-spin rounded-full border-2 border-white/15 border-t-red-500" />
+                                    <BrandLoader tone="brand" className="h-11 w-11" />
                                 </div>
                             )}
                             {url && (

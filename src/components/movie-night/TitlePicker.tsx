@@ -5,7 +5,7 @@
 // what's shown here is only for choosing.
 import { useEffect, useMemo, useState } from 'react'
 import { Command } from 'cmdk'
-import { Bookmark, Check, Loader2, Search, TrendingUp } from 'lucide-react'
+import { Bookmark, Check, Search, TrendingUp } from 'lucide-react'
 import TmdbImage from '@/src/components/TmdbImage'
 import { useI18n } from '@/src/components/I18nProvider'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/src/components/ui/dialog'
@@ -13,6 +13,7 @@ import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/src/com
 import { getTrendingSuggestions, searchMovies } from '@/src/app/search/actions'
 import type { ShareMedia } from '@/src/lib/social/types'
 import { cn } from '@/src/lib/utils'
+import { BrandLoader } from '@/src/components/brand/BrandMark'
 
 export type PickedFilm = { key: string; media: ShareMedia; year: string }
 
@@ -150,7 +151,7 @@ export default function TitlePicker({ open, onOpenChange, onPick, picked, full =
     <Command label={title} shouldFilter={false} loop className="flex min-h-0 flex-1 flex-col" dir={dir}>
       <div className="flex items-center gap-3 border-b border-white/[0.07] px-4">
         {loading
-          ? <Loader2 aria-hidden className="h-5 w-5 shrink-0 animate-spin text-white/50" />
+          ? <BrandLoader className="h-5 w-5 shrink-0 text-white/50" />
           : <Search aria-hidden className="h-5 w-5 shrink-0 text-white/50" />}
         <Command.Input
           value={query}

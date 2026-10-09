@@ -4,7 +4,7 @@
 // "New list…" to start one with this title in it. A tap adds, says so, and closes what holds it.
 import { useId, useRef, useState } from 'react'
 import { AnimatePresence, m } from 'framer-motion'
-import { Check, ListVideo, Loader2, Plus } from 'lucide-react'
+import { Check, ListVideo, Plus } from 'lucide-react'
 import { useT } from '@/src/components/I18nProvider'
 import TmdbImage from '@/src/components/TmdbImage'
 import { AvatarStack } from '@/src/components/social/Avatar'
@@ -18,6 +18,7 @@ import type { ShareMedia } from '@/src/lib/social/types'
 import type { MyListSummary, SharedListView } from '@/src/lib/shared-lists/types'
 import { cn } from '@/src/lib/utils'
 import { listErrorText, listFetch } from './list-client'
+import { BrandLoader } from '@/src/components/brand/BrandMark'
 
 const ROW = 'flex min-h-[64px] w-full items-center gap-3.5 rounded-2xl px-3 py-2 text-start outline-none transition-colors duration-150'
 
@@ -126,7 +127,7 @@ export default function AddToListPicker({ media, onDone, className }: { media: S
                     </span>
                   </span>
                   <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', there ? 'bg-white text-black' : 'bg-white/[0.08] text-white/80')}>
-                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : there ? <Check className="h-4 w-4" strokeWidth={2.6} /> : <Plus className="h-4 w-4" strokeWidth={2.4} />}
+                    {loading ? <BrandLoader className="h-4 w-4" /> : there ? <Check className="h-4 w-4" strokeWidth={2.6} /> : <Plus className="h-4 w-4" strokeWidth={2.4} />}
                   </span>
                 </button>
               </li>
@@ -160,7 +161,7 @@ export default function AddToListPicker({ media, onDone, className }: { media: S
                 className="h-11 min-w-0 flex-1 rounded-full border border-white/10 bg-white/[0.05] px-4 text-[16px] text-white outline-none transition-[border-color,background-color] duration-200 placeholder:text-white/45 hover:border-white/20 focus-visible:border-red-500/70 focus-visible:bg-white/[0.07] sm:text-[15px]"
               />
               <Button type="submit" className="h-11 shrink-0 px-5" disabled={!name.trim() || busy}>
-                {creating ? <Loader2 aria-hidden className="h-4 w-4 animate-spin" /> : <Plus aria-hidden className="h-4 w-4" strokeWidth={2.4} />}
+                {creating ? <BrandLoader className="h-4 w-4" /> : <Plus aria-hidden className="h-4 w-4" strokeWidth={2.4} />}
                 {t('sharedLists.add.create')}
               </Button>
             </m.form>
