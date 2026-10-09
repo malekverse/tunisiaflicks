@@ -3,6 +3,7 @@
 // the ad-free local player next to it. Its preload script puts a small bridge on window; this reads
 // it. In a browser there is no bridge, and everything here is null / false.
 import { useEffect, useMemo, useState } from 'react'
+import { useI18n } from '@/src/components/I18nProvider'
 import type { StreamProvider } from '@/src/lib/stream-providers'
 
 type DesktopBridge = { present?: boolean, player?: unknown }
@@ -28,9 +29,11 @@ export type LocalMedia = { type: 'movie', id: string } | { type: 'tv', id: strin
 /**
  * The stream sources, with the desktop app's local player first when there is one (it's ad-free
  * and runs on the viewer's machine). Known only after mount, like the remembered source, so the
- * server render and the first client render agree.
+ * server render and the first client render agree. The player gets the site's language (?lang=),
+ * for its default subtitles.
  */
 export function useWithLocalPlayer(services: StreamProvider[], media: LocalMedia | undefined): StreamProvider[] {
+  const { locale } = useI18n()
   const [origin, setOrigin] = useState<string | null>(null)
   useEffect(() => setOrigin(localPlayerOrigin()), [])
 
@@ -41,6 +44,6 @@ export function useWithLocalPlayer(services: StreamProvider[], media: LocalMedia
   return useMemo(() => {
     if (!origin || !type || !id || !/^\d+$/.test(id)) return services
     const path = type === 'movie' ? `/embed/movie/${id}` : `/embed/tv/${id}/${season}/${episode}`
-    return [{ name: LOCAL_PLAYER_SOURCE, url: `${origin}${path}` }, ...services]
-  }, [services, origin, type, id, season, episode])
+    return [{ name: LOCAL_PLAYER_SOURCE, url: `${origin}${path}?lang=${encodeURIComponent(locale)}` }, ...services]
+  }, [services, origin, type, id, season, episode, locale])
 }

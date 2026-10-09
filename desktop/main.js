@@ -84,6 +84,8 @@ function spawnService() {
       ELECTRON_RUN_AS_NODE: '1',
       PORT: String(servicePort),
       HOST: '127.0.0.1',
+      // Where the player keeps the viewer's add-ons, next to the app's own settings.
+      DATA_DIR: path.join(app.getPath('userData'), 'player'),
       // The site the window shows may frame the player and drive it.
       ALLOWED_ORIGINS: [process.env.ALLOWED_ORIGINS, 'https://tunisiaflicks.vercel.app', 'http://localhost:3000', SITE_ORIGIN].filter(Boolean).join(','),
     },

@@ -8,7 +8,7 @@ import { cn } from '@/src/lib/utils'
 import { spring } from '@/src/lib/motion'
 import { useT } from '@/src/components/I18nProvider'
 import { useStreamSource } from '@/src/hooks/use-stream-source'
-import { useWithLocalPlayer, type LocalMedia } from '@/src/hooks/use-desktop-app'
+import { LOCAL_PLAYER_SOURCE, useWithLocalPlayer, type LocalMedia } from '@/src/hooks/use-desktop-app'
 import { useTvMode } from '@/src/hooks/use-tv-mode'
 import { pushTvBackHandler } from '@/src/components/tv/use-focus-engine'
 import KeyGlyph from '@/src/components/tv/KeyGlyph'
@@ -336,7 +336,8 @@ export default function StreamSection({ services: providerServices, media, downl
                                     className="absolute inset-0 h-full w-full"
                                     referrerPolicy="origin"
                                     allowFullScreen
-                                    allow={tv ? 'autoplay; fullscreen; encrypted-media; picture-in-picture' : undefined}
+                                    // The desktop app's own player too: its full screen, picture in picture and autoplay.
+                                    allow={tv || sourceName === LOCAL_PLAYER_SOURCE ? 'autoplay; fullscreen; encrypted-media; picture-in-picture' : undefined}
                                     onLoad={() => setIsLoading(false)}
                                 />
                             )}
