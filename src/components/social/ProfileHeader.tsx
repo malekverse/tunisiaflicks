@@ -36,7 +36,7 @@ export default function ProfileHeader({ person, bio, isOwner, viewer, relationsh
   friendsSince: string | null
   /** They take no friend requests (an invite link still works). */
   requestsOff: boolean
-  /** What Share gives out: the owner's private link on their own page, the plain address otherwise. */
+  /** What Share gives out: the page link (to its owner, or a visitor who came with it), the plain address otherwise. */
   shareUrl: string
   loginHref: string
   badges?: React.ReactNode

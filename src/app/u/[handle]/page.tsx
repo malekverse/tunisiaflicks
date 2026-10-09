@@ -110,7 +110,9 @@ export default async function ProfilePage({ params, searchParams }: Props) {
         requestId={view.requestId}
         friendsSince={since}
         requestsOff={privacy.requests === 'nobody'}
-        shareUrl={isOwner ? `${path}?k=${encodeURIComponent(page.shareKey)}` : path}
+        // Share profile gives the page link: the owner's own, or the one a visitor came with (only
+        // when it matched; it is never put into a link on the page).
+        shareUrl={isOwner || view.linkAccess ? `${path}?k=${encodeURIComponent(page.shareKey)}` : path}
         loginHref={withCallback('/login', path)}
         badges={showBadges ? <ProfileBadges owner={owner} view={isOwner ? 'owner' : 'public'} /> : undefined}
         belowBanner={!!token && !isOwner}
