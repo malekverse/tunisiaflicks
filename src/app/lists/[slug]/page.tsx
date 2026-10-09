@@ -1,103 +1,93 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getServerSession } from 'next-auth/next'
-import { ListPlus, ListVideo } from 'lucide-react'
-import PosterCard from '@/src/components/PosterCard'
-import ShareButtons from '@/src/components/ShareButtons'
-import ListEditor from '@/src/components/lists/ListEditor'
-import ListCover from '@/src/components/library/ListCover'
-import TmdbImage from '@/src/components/TmdbImage'
-import { EmptyState, GRID_CLASS } from '@/src/components/MediaGrid'
-import { Button } from '@/src/components/ui/button'
-import { authOptions } from '@/src/lib/auth'
-import { getListBySlug, toPublicList } from '@/src/lib/lists-db'
-import { dateLocale } from '@/src/lib/i18n'
-import { getLocale, getT } from '@/src/lib/i18n/server'
+import InviteBanner from '@/src/components/share/InviteBanner'
+import KidsBlocked from '@/src/components/profiles/KidsBlocked'
+import ListScreen from '@/src/components/lists/ListScreen'
+import { isInviteToken, readInvite } from '@/src/lib/invites'
+import { getListBySlug } from '@/src/lib/lists-db'
+import { getT } from '@/src/lib/i18n/server'
 import { pageMetadata } from '@/src/lib/seo'
+import { livePending, visibilityOf } from '@/src/lib/shared-lists/rules'
+import { loadListViewer, nameOf, peopleFor, resolveAccess, toListView } from '@/src/lib/shared-lists/server'
 
 export const dynamic = 'force-dynamic'
 
-type Props = { params: { slug: string } }
+type Props = { params: { slug: string }; searchParams: { invite?: string | string[] } }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const t = getT()
-  const list = await getListBySlug(params.slug)
-  if (!list) return { title: `${t('lists.notFound')} | TunisiaFlicks` }
-  const names = list.items.slice(0, 5).map((item) => item.title).join(', ')
-  const description = list.description
-    || (names ? t('lists.metaTitles', { count: list.items.length, names: `${names}${list.items.length > 5 ? '…' : ''}` }) : t('lists.byOwner', { name: list.ownerName }))
-  return pageMetadata({ title: t('lists.metaTitle', { title: list.title, name: list.ownerName }), description, path: `/lists/${params.slug}`, card: false })
+const tokenOf = (searchParams: Props['searchParams']) => {
+  const raw = Array.isArray(searchParams.invite) ? searchParams.invite[0] : searchParams.invite
+  return isInviteToken(raw) ? raw : null
 }
 
-export default async function ListPage({ params }: Props) {
+/** A working invitation link to this very list (invalid ones are simply ignored). */
+async function inviteFor(slug: string, token: string | null) {
+  if (!token) return null
+  const invite = await readInvite('list', token).catch(() => null)
+  return invite && invite.targetId === slug && invite.uses < invite.maxUses ? invite : null
+}
+
+// Never indexed (lists are found through their link, not search engines), and the title only shows
+// to people who may see the list.
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
+  const t = getT()
+  const missing = { title: `${t('lists.notFound')} | TunisiaFlicks`, robots: { index: false, follow: false } }
   const list = await getListBySlug(params.slug)
+  if (!list) return missing
+  const viewer = await loadListViewer()
+  const invite = await inviteFor(list.slug, tokenOf(searchParams))
+  const { access } = await resolveAccess(list, viewer, { invited: !!invite })
+  if (access === 'none') return missing
+  const open = visibilityOf(list) === 'link'
+  const names = list.items.slice(0, 5).map((item) => item.title).join(', ')
+  const description = !open
+    ? undefined
+    : list.description || (names ? t('lists.metaTitles', { count: list.items.length, names: `${names}${list.items.length > 5 ? '…' : ''}` }) : t('lists.byOwner', { name: list.ownerName }))
+  return pageMetadata({ title: t('lists.metaTitle', { title: list.title, name: list.ownerName }), description, path: `/lists/${params.slug}`, card: false, noIndex: true })
+}
+
+export default async function ListPage({ params, searchParams }: Props) {
+  const t = getT()
+  const token = tokenOf(searchParams)
+  const viewer = await loadListViewer()
+  const list = await getListBySlug(params.slug)
+
+  // Kids see their own lists, nothing else (whether or not the address points anywhere).
+  if (viewer?.kids) {
+    const own = list ? (await resolveAccess(list, viewer)).access === 'owner' : false
+    if (!list || !own) {
+      const next = `/lists/${encodeURIComponent(params.slug)}${token ? `?invite=${encodeURIComponent(token)}` : ''}`
+      return <KidsBlocked what="social" next={next} />
+    }
+  }
   if (!list) notFound()
 
-  const t = getT()
-  const session = await getServerSession(authOptions)
-  const isOwner = session?.user?.id === list.userId
-  const publicList = toPublicList(list)
-  const updated = list.updatedAt.toLocaleDateString(dateLocale(getLocale()) ?? 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-  const count = list.items.length
-  const glow = publicList.items.find((item) => item.poster_path)?.poster_path
+  const invite = await inviteFor(list.slug, token)
+  const { access, ownerProfileId } = await resolveAccess(list, viewer, { invited: !!invite })
+  if (access === 'none') notFound()
 
-  return (
-    <div className="page-top relative isolate pb-10">
-      {/* The first poster, blurred into a soft light behind the header. */}
-      {glow && (
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[520px] overflow-hidden opacity-45 [mask-image:linear-gradient(to_bottom,black,transparent)]">
-          <TmdbImage kind="poster" path={glow} alt="" fill sizes="120px" shimmer={false} priority className="scale-125 object-cover blur-[80px] saturate-150" />
-        </div>
-      )}
+  const member = access === 'owner' || access === 'editor'
+  const view = await toListView(list, access, viewer, ownerProfileId)
+  // Invited by name, waiting to answer.
+  const pending = !member && viewer?.profileId ? livePending(list.pending, Date.now()).find((entry) => entry.profileId === viewer.profileId) : undefined
 
-      <header className="page-x">
-        <div className="flex flex-col gap-7 md:flex-row md:items-end md:gap-10">
-          <ListCover posters={publicList.items.map((item) => item.poster_path)} emptyLabel={t('library.emptyList')} priority className="w-full max-w-[300px] shadow-[0_30px_80px_-30px_rgb(0_0_0/0.95)] max-md:max-w-[220px]" />
-          <div className="min-w-0 flex-1">
-            <h1 className="font-display text-[clamp(34px,5vw,64px)] font-extrabold leading-[0.95] text-white"><bdi>{list.title}</bdi></h1>
-            <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-white/55">
-              <span>{t('lists.byOwner', { name: list.ownerName })}</span>
-              <span>{count === 1 ? t('library.countOne') : t('library.count', { count })}</span>
-              <span>{t('lists.updatedOn', { date: updated })}</span>
-            </p>
-            {list.description && <p dir="auto" className="mt-4 max-w-[65ch] text-pretty text-[15px] leading-relaxed text-white/75">{list.description}</p>}
-            <div className="mt-6">
-              <ShareButtons url={`/lists/${list.slug}`} title={list.title} text={t('lists.shareText', { title: list.title, name: list.ownerName })} />
-            </div>
-          </div>
-        </div>
-      </header>
+  let banner: React.ReactNode = null
+  if (!member && (invite || pending)) {
+    const inviterRef = pending ? { userId: list.userId, profileId: pending.invitedBy } : invite!.owner
+    const inviter = (await peopleFor([inviterRef])).get(inviterRef.profileId) ?? null
+    const full = (list.members?.length ?? 1) >= 8
+    banner = (
+        <InviteBanner
+          token={token ?? ''}
+          inviter={inviter}
+          sentence={t('sharedLists.banner.sentence', { name: inviter?.name ?? (await nameOf(inviterRef)), list: list.title })}
+          acceptLabel={t('sharedLists.banner.accept')}
+          accept={{ endpoint: `/api/lists/${list.slug}/collaborators`, body: pending ? { accept: true } : {} }}
+          signedIn={!!viewer}
+          unavailable={full ? t('sharedLists.banner.full') : null}
+          consent={t('sharedLists.banner.consent')}
+        />
+    )
+  }
 
-      <div className="page-x mt-10 sm:mt-12">
-        {isOwner ? (
-          <ListEditor initial={publicList} />
-        ) : count === 0 ? (
-          <EmptyState icon={<ListVideo aria-hidden className="h-6 w-6" />} title={t('lists.emptyPublic')} />
-        ) : (
-          <ol className={GRID_CLASS}>
-            {publicList.items.map((item, index) => (
-              <li key={`${item.media_type}-${item.id}`}>
-                <PosterCard
-                  posterImg={item.poster_path}
-                  title={item.title}
-                  mediaType={item.media_type}
-                  link={`/${item.media_type}/${item.id}`}
-                  overlay={<span className="glass absolute start-2 top-2 min-w-[28px] rounded-full px-2 py-0.5 text-center text-[12px] font-semibold tabular-nums text-white">{index + 1}</span>}
-                />
-              </li>
-            ))}
-          </ol>
-        )}
-
-        {!isOwner && (
-          <div className="mt-12">
-            <Button asChild variant="secondary" size="lg">
-              <Link href="/lists"><ListPlus aria-hidden className="h-5 w-5" />{t('lists.makeYourOwn')}</Link>
-            </Button>
-          </div>
-        )}
-      </div>
-    </div>
-  )
+  return <ListScreen key={`${list.slug}:${access}`} initial={view} kids={!!viewer?.kids} banner={banner} />
 }
