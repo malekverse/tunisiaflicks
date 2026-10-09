@@ -5,6 +5,7 @@
 import 'server-only'
 import { cache } from 'react'
 import { headers } from 'next/headers'
+import clientPromise from '@/src/lib/mongodb'
 import { clientIp, rateLimit } from '@/src/lib/rate-limit'
 import { socialDb, type SocialProfileDoc } from '@/src/lib/social/db'
 import { relationship } from '@/src/lib/social/friends'
@@ -39,7 +40,35 @@ export type ProfileView =
     can: { activity: boolean; ratings: boolean; badges: boolean }
   }
 
-export const loadProfileView = cache(async (rawHandle: string, key: string | null): Promise<ProfileView> => {
+const guestKey = (ip: string) => `social:u-view:${ipKey(ip)}`
+
+/**
+ * Whether a guest at this address is already over the limit, without counting a view: the gate
+ * asks before the page, and only the page counts. The same fixed window as rateLimit().
+ */
+async function guestOverLimit(ip: string): Promise<boolean> {
+  const now = Math.floor(Date.now() / 1000)
+  const windowStart = now - (now % GUEST_WINDOW_SECONDS)
+  try {
+    const db = (await clientPromise).db()
+    const row = await db.collection<{ _id: string; count: number }>('rateLimits').findOne({ _id: `${guestKey(ip)}:${windowStart}` })
+    return (row?.count ?? 0) >= GUEST_VIEWS
+  } catch {
+    return false
+  }
+}
+
+type Access =
+  | { kind: 'not_found' }
+  | { kind: 'redirect'; to: string }
+  | { kind: 'kids_viewer'; viewer: PageViewer }
+  | { kind: 'open'; viewer: PageViewer; viewerRef: ProfileRef | null; owner: ProfileRef; identity: PublicIdentity; how: Relationship; page: SocialProfileDoc }
+
+/**
+ * Whether the page shows at all, and to whom. `peekIp`: the middleware's gate asking for the
+ * visitor at that address (a guest's view is checked against the limit there, not counted).
+ */
+async function access(rawHandle: string, opts: { peekIp?: string }): Promise<Access> {
   let decoded = rawHandle
   try { decoded = decodeURIComponent(rawHandle) } catch { /* keep it as written */ }
   const handle = normalizeHandle(decoded)
@@ -47,8 +76,12 @@ export const loadProfileView = cache(async (rawHandle: string, key: string | nul
 
   const viewer = await pageViewer()
   if (viewer.kind === 'guest') {
-    const limit = await rateLimit(`social:u-view:${ipKey(clientIp(headers()))}`, GUEST_VIEWS, GUEST_WINDOW_SECONDS)
-    if (!limit.ok) return { kind: 'not_found' }
+    if (opts.peekIp !== undefined) {
+      if (await guestOverLimit(opts.peekIp)) return { kind: 'not_found' }
+    } else {
+      const limit = await rateLimit(guestKey(clientIp(headers())), GUEST_VIEWS, GUEST_WINDOW_SECONDS)
+      if (!limit.ok) return { kind: 'not_found' }
+    }
   }
 
   const target = await resolveHandle(handle)
@@ -66,6 +99,21 @@ export const loadProfileView = cache(async (rawHandle: string, key: string | nul
   if (how === 'blocked' || !page || page.userId !== owner.userId) return { kind: 'not_found' }
   // A TV signed in with a code is still that account: never show it a page blocked from it.
   if (viewer.kind === 'tv' && (await relationship(viewer.ref, owner)) === 'blocked') return { kind: 'not_found' }
+  return { kind: 'open', viewer, viewerRef, owner, identity: target.identity, how, page }
+}
+
+/** For the middleware's gate (/u/[handle]/gate): what the page would answer, nothing more. */
+export async function gateView(rawHandle: string, ip: string): Promise<{ kind: 'not_found' } | { kind: 'redirect'; to: string } | { kind: 'page' }> {
+  const found = await access(rawHandle, { peekIp: ip })
+  if (found.kind === 'not_found' || found.kind === 'redirect') return found
+  return { kind: 'page' }
+}
+
+/** Once per request: generateMetadata and the page share it, so a guest's view is counted once. */
+export const loadProfileView = cache(async (rawHandle: string, key: string | null): Promise<ProfileView> => {
+  const found = await access(rawHandle, {})
+  if (found.kind !== 'open') return found
+  const { viewer, viewerRef, owner, identity, how, page } = found
 
   const isOwner = how === 'self'
   const row = how === 'friends' || how === 'incoming' || how === 'outgoing' ? await friendshipBetween(owner.profileId, viewerRef!.profileId) : null
@@ -78,7 +126,7 @@ export const loadProfileView = cache(async (rawHandle: string, key: string | nul
   return {
     kind: 'page',
     owner,
-    identity: target.identity,
+    identity,
     page,
     privacy: normalizePrivacy(page.privacy),
     viewer,
