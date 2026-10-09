@@ -1,6 +1,8 @@
 # Builds the Windows desktop app (desktop/, with player-service/ inside it) and publishes its
 # installer as a GitHub Release, which the site offers on /desktop and /app and through
-# /download/desktop (it finds the newest release by itself; see src/lib/app-releases.ts).
+# /download/desktop (it finds the newest release by itself; see src/lib/app-releases.ts). The
+# release also carries latest.yml and the installer's blockmap: the installed apps' updater reads
+# them through the site's /download/desktop-update/ (desktop/updater.js).
 #
 # Runs only when a tag like desktop-v1.2.3 is pushed (never on pull requests, so a signing
 # certificate is never exposed to code from a fork). The release notes list the installer's SHA-256
@@ -79,6 +81,9 @@ jobs:
           fi
           npx electron-builder --win --x64 --publish never
           test -f dist/TunisiaFlicks-Setup.exe
+          test -f dist/TunisiaFlicks-Setup.exe.blockmap
+          # The updater downloads the file latest.yml names, from the same folder: it must be ours.
+          grep -q '^path: TunisiaFlicks-Setup.exe$' dist/latest.yml
 
       - name: Publish the release
         working-directory: desktop/dist
@@ -97,5 +102,5 @@ jobs:
 
           - TunisiaFlicks-Setup.exe SHA-256: \`$sha\`
           EOF
-          gh release create "$TAG" TunisiaFlicks-Setup.exe SHA256SUMS \
+          gh release create "$TAG" TunisiaFlicks-Setup.exe TunisiaFlicks-Setup.exe.blockmap latest.yml SHA256SUMS \
             --title "Desktop app $NAME" --notes-file notes.md

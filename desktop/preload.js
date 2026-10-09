@@ -22,6 +22,20 @@ contextBridge.exposeInMainWorld('tunisiaflicksDesktop', {
   player: player && /^http:\/\/127\.0\.0\.1:\d{2,5}$/.test(player) ? player : null,
   /** The offline screen's "Try again". */
   retry: () => ipcRenderer.send('tf:retry'),
+  /** The app's updates (see updater.js); the site's settings show and change them. Since 1.1.0. */
+  updates: {
+    get: () => ipcRenderer.invoke('tf:update:get'),
+    setAuto: (on) => ipcRenderer.invoke('tf:update:set-auto', on === true),
+    check: () => ipcRenderer.invoke('tf:update:check'),
+    /** Restart on the version already downloaded. */
+    install: () => ipcRenderer.invoke('tf:update:install'),
+    /** Calls back with each new state; returns a function that stops listening. */
+    onChange: (callback) => {
+      const listener = (_event, state) => callback(state)
+      ipcRenderer.on('tf:update', listener)
+      return () => ipcRenderer.removeListener('tf:update', listener)
+    },
+  },
 })
 
 // A click or a key on the site itself: the viewer may open a link outside (see main.js).

@@ -92,8 +92,18 @@ git push origin desktop-v1.0.0
 ```
 
 `.github/workflows/desktop-app.yml` builds the installer on Windows and creates a GitHub Release with
-`TunisiaFlicks-Setup.exe`, `SHA256SUMS` and the checksum in the notes (keep its format). Until a release
-exists, `/desktop` says the app is coming and `/download/desktop` leads there.
+`TunisiaFlicks-Setup.exe`, `SHA256SUMS` and the checksum in the notes (keep its format), plus `latest.yml`
+and `TunisiaFlicks-Setup.exe.blockmap` for the updater. Until a release exists, `/desktop` says the app is
+coming and `/download/desktop` leads there.
+
+**Updates.** The installed app updates itself (`desktop/updater.js`, electron-updater): a check 15 seconds
+after it starts and every 4 hours, the new version downloads in the background and installs when the app
+is closed. Its feed is the site's `/download/desktop-update/` (`latest.yml`, the installer and its
+blockmap, redirected to the newest `desktop-v…` release); not electron-updater's GitHub provider, which
+reads the repository's "latest" release, and the Android releases take that too. The viewer can turn
+automatic updates off and on in Settings > Desktop app (only shown inside the app, also on `/desktop`);
+off, nothing downloads or installs unless they press "Check for updates" and then "Restart to update".
+Version 1.0.0 has no updater: people on it get updates once they install 1.1.0 or later from `/desktop`.
 
 The installer is unsigned unless the repository has the `WINDOWS_CERT_BASE64` (a .pfx in base64) and
 `WINDOWS_CERT_PASSWORD` secrets; unsigned, Windows SmartScreen warns on first run, and `/desktop` tells

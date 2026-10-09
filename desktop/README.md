@@ -32,6 +32,8 @@ TF_SITE_URL=http://localhost:3000 npm start
   when the viewer clicked something on the site itself. Popups and redirects fired from inside a
   source's frame (the ads) go nowhere. (The preload only runs in the top frame, so a source's frame
   can never fake that click.)
+- **Automatic updates.** New versions of the app (its shell and the local player) download in the
+  background and install when it closes; Settings > Desktop app turns that off and on (`updater.js`).
 - **Desktop manners.** Dark title bar; the window remembers its size and position; F11 full screen,
   Alt+←/→ and the mouse's back/forward buttons, Ctrl+R / F5, Ctrl +/−/0 zoom; Google sign-in works
   (the app presents a plain Chrome user agent); a branded offline screen that comes back by itself.
@@ -67,5 +69,10 @@ is named), or accept the SmartScreen warning, before shipping publicly. macOS ne
 
 - **Done:** the window shows the real site; the local player is a source in the site's player
   (needs the site changes deployed — until then, use `TF_SITE_URL`).
-- **Auto-update:** design it in before public release (electron-updater) — if a bad build ever ships
-  you need a signed channel to push a fix; it shares the signing identity above.
+- **Done: auto-update** (`updater.js`, electron-updater). New versions download in the background and
+  install on quit; the viewer can turn that off in the site's Settings > Desktop app (through the
+  preload's `updates` bridge), and still check and restart to update by hand. The feed is the site's
+  `/download/desktop-update/`, which redirects to the newest `desktop-v…` release's `latest.yml`,
+  installer and blockmap (`docs/apps.md`). Unsigned builds update fine (no `publisherName`); once the
+  installer is signed, electron-updater checks that each update is signed by the same publisher.
+  1.0.0 shipped without it: those installs must download the installer once more.

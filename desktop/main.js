@@ -12,6 +12,8 @@
 //   ads — go nowhere.
 // - Desktop manners: dark title bar, the window remembers its size, F11 / Alt+arrows / mouse back
 //   and forward buttons / Ctrl+R / zoom keys, an offline screen that retries by itself.
+// - Updates (updater.js): new versions of the app download in the background and install on quit,
+//   unless the viewer turned that off in the site's settings.
 
 const { app, BrowserWindow, shell, Menu, ipcMain, nativeTheme } = require('electron')
 const path = require('node:path')
@@ -19,6 +21,7 @@ const fs = require('node:fs')
 const net = require('node:net')
 const http = require('node:http')
 const { spawn } = require('node:child_process')
+const { setupUpdates } = require('./updater')
 
 const SITE_URL = process.env.TF_SITE_URL || 'https://tunisiaflicks.vercel.app'
 const SITE_ORIGIN = new URL(SITE_URL).origin
@@ -234,7 +237,9 @@ if (!app.requestSingleInstanceLock()) {
     spawnService()
     // The site loads while the service warms up; the player is only needed once a title is opened.
     waitForService(servicePort).catch((err) => console.error('[service]', err.message))
+    const updates = setupUpdates({ getWindow: () => mainWindow })
     createWindow()
+    updates.start()
 
     app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow() })
   })
