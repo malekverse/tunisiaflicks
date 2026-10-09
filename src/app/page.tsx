@@ -23,6 +23,7 @@ import { getBillboard } from '@/src/lib/billboard'
 import { getTop10 } from '@/src/lib/top10'
 import { catalogueLanguage } from '@/src/lib/tmdb-locale'
 import { JsonLd, websiteJsonLd } from '@/src/lib/structured-data'
+import ClientMessages from '@/src/components/ClientMessages'
 
 // TMDB responses are cached for an hour by the data cache (see lib/tmdb.ts); the page itself is
 // rendered per request so a TMDB hiccup can never get frozen into a static page.
@@ -52,48 +53,50 @@ export default async function MainPage() {
   const t = getT()
 
   return (
-    <div className="pb-6">
-      <JsonLd data={websiteJsonLd()} />
-      {/* 1 */}
-      <Billboard items={billboard} />
-      {/* On desktop the first rows rise into the billboard's fade. */}
-      {/* Without a billboard (a Kids profile with nothing kid-safe to feature), clear the top bar. */}
-      <div className={billboard.length > 0 ? 'relative z-10 mt-6 space-y-10 sm:space-y-12 md:-mt-16' : 'page-top relative z-10 space-y-10 sm:space-y-12'}>
-        {/* 2 */}
-        <ChipRail />
-        {/* 3. Seasonal: at most one banner, only in season (Ramadan, the Eids...). */}
-        <Suspense fallback={null}><SeasonalBanner kids={kids} /></Suspense>
-        {/* 4. Signed-in users only; renders nothing for guests. */}
-        <ContinueWatching />
-        {/* 5. A grown-up's movie night in the next 7 days. */}
-        {!kids && !tv && <Suspense fallback={null}><UpcomingNightCard /></Suspense>}
-        {/* 6 */}
-        <Top10Row top10={top10} />
-        {/* 7. What friends are watching (grown-ups whose friends share it). */}
-        {!kids && !tv && <Suspense fallback={null}><FriendsRow /></Suspense>}
-        {/* 8. Whatever the calendar says is on (Halloween, Eid, summer...): streamed in. */}
-        <Suspense fallback={null}><SeasonRows kids={kids} /></Suspense>
-        {/* 9. Installed app only: invite to get the pick as a notification. */}
-        {!tv && <PushPrompt />}
-        {/* 10 */}
-        <PosterSlider title={t('home.trendingMovies')} href="/discover" items={data.TrendingMovies?.results} />
-        {/* 11 */}
-        <PickOfTheDay pick={pick} />
-        {/* 12. Beyond Hollywood: one door per hub. */}
-        {!kids && <Suspense fallback={null}><HubShelf kids={kids} /></Suspense>}
-        {/* 13 */}
-        <Suspense fallback={null}><SequelRow kids={kids} /></Suspense>
-        {/* 14 */}
-        <BecauseYouWatched />
-        {/* 15. What people on the site watched this week, unless it already made the Top 10. */}
-        {top10.source !== 'site' && <PosterSlider title={t('home.communityTrending')} items={community} kind="mixed" />}
-        {/* 16 to 20 */}
-        <HeroSlider title={t('home.nowPlaying')} items={data.nowPlayingMovies?.results} />
-        <PosterSlider title={t('home.popularMovies')} items={data.popularMovies?.results} />
-        <PosterSlider title={t('home.topRatedMovies')} href="/top-rated" items={data.topRatedMovies?.results} />
-        <Suspense fallback={null}><AnniversaryRow kids={kids} /></Suspense>
-        <PosterSlider title={t('home.comingSoon')} href="/upcoming" items={data.upcomingMovies?.results} />
+    <ClientMessages scope="page">
+      <div className="pb-6">
+        <JsonLd data={websiteJsonLd()} />
+        {/* 1 */}
+        <Billboard items={billboard} />
+        {/* On desktop the first rows rise into the billboard's fade. */}
+        {/* Without a billboard (a Kids profile with nothing kid-safe to feature), clear the top bar. */}
+        <div className={billboard.length > 0 ? 'relative z-10 mt-6 space-y-10 sm:space-y-12 md:-mt-16' : 'page-top relative z-10 space-y-10 sm:space-y-12'}>
+          {/* 2 */}
+          <ChipRail />
+          {/* 3. Seasonal: at most one banner, only in season (Ramadan, the Eids...). */}
+          <Suspense fallback={null}><SeasonalBanner kids={kids} /></Suspense>
+          {/* 4. Signed-in users only; renders nothing for guests. */}
+          <ContinueWatching />
+          {/* 5. A grown-up's movie night in the next 7 days. */}
+          {!kids && !tv && <Suspense fallback={null}><UpcomingNightCard /></Suspense>}
+          {/* 6 */}
+          <Top10Row top10={top10} />
+          {/* 7. What friends are watching (grown-ups whose friends share it). */}
+          {!kids && !tv && <Suspense fallback={null}><FriendsRow /></Suspense>}
+          {/* 8. Whatever the calendar says is on (Halloween, Eid, summer...): streamed in. */}
+          <Suspense fallback={null}><SeasonRows kids={kids} /></Suspense>
+          {/* 9. Installed app only: invite to get the pick as a notification. */}
+          {!tv && <PushPrompt />}
+          {/* 10 */}
+          <PosterSlider title={t('home.trendingMovies')} href="/discover" items={data.TrendingMovies?.results} />
+          {/* 11 */}
+          <PickOfTheDay pick={pick} />
+          {/* 12. Beyond Hollywood: one door per hub. */}
+          {!kids && <Suspense fallback={null}><HubShelf kids={kids} /></Suspense>}
+          {/* 13 */}
+          <Suspense fallback={null}><SequelRow kids={kids} /></Suspense>
+          {/* 14 */}
+          <BecauseYouWatched />
+          {/* 15. What people on the site watched this week, unless it already made the Top 10. */}
+          {top10.source !== 'site' && <PosterSlider title={t('home.communityTrending')} items={community} kind="mixed" />}
+          {/* 16 to 20 */}
+          <HeroSlider title={t('home.nowPlaying')} items={data.nowPlayingMovies?.results} />
+          <PosterSlider title={t('home.popularMovies')} items={data.popularMovies?.results} />
+          <PosterSlider title={t('home.topRatedMovies')} href="/top-rated" items={data.topRatedMovies?.results} />
+          <Suspense fallback={null}><AnniversaryRow kids={kids} /></Suspense>
+          <PosterSlider title={t('home.comingSoon')} href="/upcoming" items={data.upcomingMovies?.results} />
+        </div>
       </div>
-    </div>
+    </ClientMessages>
   )
 }

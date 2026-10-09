@@ -4,11 +4,17 @@
 import PageHeader from '@/src/components/browse/PageHeader'
 import { getT } from '@/src/lib/i18n/server'
 import FriendsTabs from './_lib/FriendsTabs'
+import ClientMessages from '@/src/components/ClientMessages'
 import { pageViewer, requestCounts } from './_lib/viewer'
 
 export const dynamic = 'force-dynamic'
 
-export default async function FriendsLayout({ children }: { children: React.ReactNode }) {
+// Both pages' client components get their strings from here (see ClientMessages).
+export default function FriendsLayout({ children }: { children: React.ReactNode }) {
+  return <ClientMessages scope="friends/layout"><FriendsHeader>{children}</FriendsHeader></ClientMessages>
+}
+
+async function FriendsHeader({ children }: { children: React.ReactNode }) {
   const viewer = await pageViewer()
   if (viewer.kind !== 'member' || !viewer.social) return <>{children}</>
   const t = getT()

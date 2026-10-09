@@ -5,6 +5,7 @@ import { MapSkeleton } from '@/src/components/arab-map/Skeletons'
 import { getArabMapIndex } from '@/src/lib/arab-cinema'
 import { getLocale, getT } from '@/src/lib/i18n/server'
 import { getKidsMode } from '@/src/lib/profiles'
+import ClientMessages from '@/src/components/ClientMessages'
 
 // The index takes ~66 TMDB requests on a cold cache (once a day per language and profile kind).
 export const maxDuration = 30
@@ -19,18 +20,21 @@ async function MapData() {
 /**
  * /arab-cinema and /arab-cinema/[country]: the map stays mounted while the panel changes (this
  * layout isn't re-rendered between countries). The map streams in, so the panel's title never
- * waits for TMDB.
+ * waits for TMDB. Also the strings of the map's and the panels' client components (see
+ * ClientMessages).
  */
 export default function ArabCinemaLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ArabCinemaShell
-      map={(
-        <Suspense fallback={<MapSkeleton label={getT()('common.loadingAria')} />}>
-          <MapData />
-        </Suspense>
-      )}
-    >
-      {children}
-    </ArabCinemaShell>
+    <ClientMessages scope="arab-cinema/layout">
+      <ArabCinemaShell
+        map={(
+          <Suspense fallback={<MapSkeleton label={getT()('common.loadingAria')} />}>
+            <MapData />
+          </Suspense>
+        )}
+      >
+        {children}
+      </ArabCinemaShell>
+    </ClientMessages>
   )
 }
