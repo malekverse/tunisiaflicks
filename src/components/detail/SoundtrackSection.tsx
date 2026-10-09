@@ -88,16 +88,16 @@ function Cover({ album, spinning }: { album: SoundtrackAlbum, spinning: boolean 
       <div
         aria-hidden
         className={cn(
-          'absolute inset-y-[5%] start-[5%] -z-10 aspect-square rounded-full shadow-[0_10px_30px_-10px_rgb(0_0_0/0.9)] transition-transform duration-500 ease-out',
+          'absolute inset-y-[4%] start-[4%] -z-10 aspect-square rounded-full shadow-[0_12px_30px_-8px_rgb(0_0_0/0.95)] ring-1 ring-white/[0.12] transition-transform duration-500 ease-out',
           rtl
-            ? '-translate-x-[24%] motion-safe:[@media(pointer:fine)]:group-hover/sound:-translate-x-[42%]'
-            : 'translate-x-[24%] motion-safe:[@media(pointer:fine)]:group-hover/sound:translate-x-[42%]',
+            ? '-translate-x-[32%] motion-safe:[@media(pointer:fine)]:group-hover/sound:-translate-x-[50%]'
+            : 'translate-x-[32%] motion-safe:[@media(pointer:fine)]:group-hover/sound:translate-x-[50%]',
         )}
       >
         <div
           className={cn('h-full w-full rounded-full', spinning && 'motion-safe:animate-[spin_5s_linear_infinite]')}
           style={{
-            background: 'radial-gradient(circle at 50% 50%, transparent 0 33%, rgb(0 0 0 / 0.0) 33%), repeating-radial-gradient(circle at 50% 50%, #0b0b0b 0 1.2px, #1c1c1c 1.2px 2.6px)',
+            background: 'radial-gradient(circle at 50% 50%, transparent 0 33%, rgb(0 0 0 / 0.0) 33%), repeating-radial-gradient(circle at 50% 50%, #101010 0 1.2px, #262626 1.2px 2.8px)',
           }}
         >
           {/* The label: the cover itself, and the spindle hole. */}
@@ -107,7 +107,7 @@ function Cover({ album, spinning }: { album: SoundtrackAlbum, spinning: boolean 
           />
           <span className="absolute inset-[48%] rounded-full bg-black" />
           {/* A sheen across the grooves. */}
-          <span className="absolute inset-0 rounded-full bg-[conic-gradient(from_200deg,transparent_0deg,rgb(255_255_255/0.08)_40deg,transparent_80deg,transparent_180deg,rgb(255_255_255/0.06)_220deg,transparent_260deg)]" />
+          <span className="absolute inset-0 rounded-full bg-[conic-gradient(from_200deg,transparent_0deg,rgb(255_255_255/0.16)_40deg,transparent_80deg,transparent_180deg,rgb(255_255_255/0.12)_220deg,transparent_260deg)]" />
         </div>
       </div>
       <div className="relative aspect-square overflow-hidden rounded-[10px] bg-white/[0.06] shadow-[0_18px_40px_-16px_rgb(0_0_0/0.95)] ring-1 ring-white/10">
@@ -174,7 +174,7 @@ export default function SoundtrackSection({ type, id, kids, album, tracks, faile
         <div className="flex flex-col gap-5">
           <div className="flex items-center gap-4 lg:flex-col lg:items-start lg:gap-5">
             {/* Room on the end side for the record peeking out. */}
-            <div className="pe-10 sm:pe-14">
+            <div className="pe-12 sm:pe-16">
               <Cover album={album} spinning={player.playing} />
             </div>
           <div className="min-w-0 flex-1">
