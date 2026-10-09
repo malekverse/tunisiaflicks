@@ -27,16 +27,16 @@ async function inviteFor(slug: string, token: string | null) {
 }
 
 // Never indexed (lists are found through their link, not search engines), and the title only shows
-// to people who may see the list.
+// to people who may see the list. A list nobody may see is a 404 from here: metadata settles
+// before the page starts streaming, so the status is a real 404 (Kids get their own page instead).
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const t = getT()
-  const missing = { title: `${t('lists.notFound')} | TunisiaFlicks`, robots: { index: false, follow: false } }
-  const list = await getListBySlug(params.slug)
-  if (!list) return missing
   const viewer = await loadListViewer()
-  const invite = await inviteFor(list.slug, tokenOf(searchParams))
-  const { access } = await resolveAccess(list, viewer, { invited: !!invite })
-  if (access === 'none') return missing
+  const list = await getListBySlug(params.slug)
+  const invite = list ? await inviteFor(list.slug, tokenOf(searchParams)) : null
+  const access = list ? (await resolveAccess(list, viewer, { invited: !!invite })).access : 'none'
+  if (viewer?.kids && access !== 'owner') return { title: `${t('lists.notFound')} | TunisiaFlicks`, robots: { index: false, follow: false } }
+  if (!list || access === 'none') notFound()
   const open = visibilityOf(list) === 'link'
   const names = list.items.slice(0, 5).map((item) => item.title).join(', ')
   const description = !open
@@ -76,16 +76,16 @@ export default async function ListPage({ params, searchParams }: Props) {
     const inviter = (await peopleFor([inviterRef])).get(inviterRef.profileId) ?? null
     const full = (list.members?.length ?? 1) >= 8
     banner = (
-        <InviteBanner
-          token={token ?? ''}
-          inviter={inviter}
-          sentence={t('sharedLists.banner.sentence', { name: inviter?.name ?? (await nameOf(inviterRef)), list: list.title })}
-          acceptLabel={t('sharedLists.banner.accept')}
-          accept={{ endpoint: `/api/lists/${list.slug}/collaborators`, body: pending ? { accept: true } : {} }}
-          signedIn={!!viewer}
-          unavailable={full ? t('sharedLists.banner.full') : null}
-          consent={t('sharedLists.banner.consent')}
-        />
+      <InviteBanner
+        token={token ?? ''}
+        inviter={inviter}
+        sentence={t('sharedLists.banner.sentence', { name: inviter?.name ?? (await nameOf(inviterRef)), list: list.title })}
+        acceptLabel={t('sharedLists.banner.accept')}
+        accept={{ endpoint: `/api/lists/${list.slug}/collaborators`, body: pending ? { accept: true } : {} }}
+        signedIn={!!viewer}
+        unavailable={full ? t('sharedLists.banner.full') : null}
+        consent={t('sharedLists.banner.consent')}
+      />
     )
   }
 

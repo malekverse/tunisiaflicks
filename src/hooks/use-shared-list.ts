@@ -193,9 +193,12 @@ export function useSharedList(initial: SharedListView) {
     return new Set(list.items.filter((item) => item.by && item.by !== list.you && item.addedAt && new Date(item.addedAt).getTime() > since).map(itemKey))
   }, [list.items, list.memberCount, list.you])
 
+  // Deleted, or no longer ours to see: say so, and go back to the lists.
   useEffect(() => {
-    if (gone) toast({ variant: 'destructive', title: t('sharedLists.gone') })
-  }, [gone, t])
+    if (!gone) return
+    toast({ variant: 'destructive', title: t('sharedLists.gone') })
+    router.replace('/lists')
+  }, [gone, t, router])
 
   return {
     list, held, busy: busy > 0, gone, news, newKeys,

@@ -72,7 +72,7 @@ export default function ListPeopleSheet({ open, onOpenChange, list, onChanged, o
       await run()
       toast({ title: success, duration: 2500 })
       setConfirm(null)
-      after?.()
+      if (after) return after() // leaving: the page goes, nothing to reload
       await load()
       onChanged()
     } catch (error) {
