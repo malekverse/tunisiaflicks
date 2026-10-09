@@ -29,9 +29,13 @@ type Props = { params: { handle: string }; searchParams: Record<string, string |
 
 const keyOf = (searchParams: Props['searchParams']) => (typeof searchParams.k === 'string' && searchParams.k.length <= 64 ? searchParams.k : null)
 
+// The not-found and the redirects happen here: metadata settles before the page (and the root
+// loading screen) start streaming with a 200, so the status is a real 404 or 308.
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const t = getT()
   const view = await loadProfileView(params.handle, keyOf(searchParams))
+  if (view.kind === 'not_found') notFound()
+  if (view.kind === 'redirect') permanentRedirect(pathWithQuery(`/u/${view.to}`, searchParams))
   if (view.kind !== 'page') return { title: `${t('notFound.message')} | TunisiaFlicks`, robots: { index: false, follow: false } }
   const { identity } = view
   return pageMetadata({
@@ -110,6 +114,7 @@ export default async function ProfilePage({ params, searchParams }: Props) {
         loginHref={withCallback('/login', path)}
         badges={showBadges ? <ProfileBadges owner={owner} view={isOwner ? 'owner' : 'public'} /> : undefined}
         belowBanner={!!token && !isOwner}
+        invitePending={!!token && !isOwner && !unavailable}
       />
       <div className="mt-10 space-y-10 sm:mt-12 sm:space-y-12">
         <ProfileSections

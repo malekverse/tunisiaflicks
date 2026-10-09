@@ -23,7 +23,7 @@ import { socialErrorText } from './use-social-self'
 
 const UNDO_MS = 5000
 
-export default function ProfileHeader({ person, bio, isOwner, viewer, relationship: initial, requestId, friendsSince, requestsOff, shareUrl, loginHref, badges, belowBanner }: {
+export default function ProfileHeader({ person, bio, isOwner, viewer, relationship: initial, requestId, friendsSince, requestsOff, shareUrl, loginHref, badges, belowBanner, invitePending }: {
   person: PublicIdentity
   bio: string
   isOwner: boolean
@@ -42,6 +42,8 @@ export default function ProfileHeader({ person, bio, isOwner, viewer, relationsh
   badges?: React.ReactNode
   /** An invitation banner sits above: it already clears the top bar. */
   belowBanner?: boolean
+  /** That banner offers to become friends: no second 'Add friend' beside it. */
+  invitePending?: boolean
 }) {
   const { t } = useI18n()
   const router = useRouter()
@@ -195,7 +197,7 @@ export default function ProfileHeader({ person, bio, isOwner, viewer, relationsh
   } else if (viewer === 'guest') {
     actions = (
       <>
-        {!requestsOff && <Button asChild className={big}><Link href={loginHref}><UserPlus aria-hidden className="h-[18px] w-[18px]" />{t('social.add.addFriend')}</Link></Button>}
+        {!requestsOff && !invitePending && <Button asChild className={big}><Link href={loginHref}><UserPlus aria-hidden className="h-[18px] w-[18px]" />{t('social.add.addFriend')}</Link></Button>}
         {shareButton}
       </>
     )
@@ -248,7 +250,7 @@ export default function ProfileHeader({ person, bio, isOwner, viewer, relationsh
   } else {
     actions = (
       <>
-        {!requestsOff && <Button className={big} onClick={() => void addFriend()} disabled={busy}><UserPlus aria-hidden className="h-[18px] w-[18px]" />{t('social.add.addFriend')}</Button>}
+        {!requestsOff && !invitePending && <Button className={big} onClick={() => void addFriend()} disabled={busy}><UserPlus aria-hidden className="h-[18px] w-[18px]" />{t('social.add.addFriend')}</Button>}
         {shareButton}
         {viewer === 'member' && blockMenu}
       </>
