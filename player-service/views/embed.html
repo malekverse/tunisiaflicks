@@ -5,257 +5,1388 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>TunisiaFlicks Player</title>
 <!--
-  The local player as an embed: the TunisiaFlicks site (inside the desktop app) puts this page in its
-  player frame as one more source, next to the third-party ones. Served from /embed/movie/:tmdb and
-  /embed/tv/:tmdb/:season/:episode; it resolves the title to a torrent (/resolve) and plays it here.
-  "Play on TV" (top corner) sends it to a TV on the same Wi-Fi instead (/cast/…, see dlna.js).
+  The TunisiaFlicks player, as an embed: the site (inside the desktop app) puts this page in its player
+  frame as one more source. Served from /embed/movie/:tmdb and /embed/tv/:tmdb/:season/:episode.
+
+  - Sources: every copy of the title, from YTS/EZTV and the viewer's extensions (/sources), the best one
+    played first (/resolve), any other one a click away, carrying on at the same moment.
+  - Converted streams (MKV, HEVC…) seek by starting again at the new time (/seek, then ?t=): the clock
+    is `offset + video.currentTime`.
+  - Subtitles: from the built-in providers and the extensions (/subtitles), the best match first, or
+    a file of the viewer's, drawn by this page (so they
+    follow that clock), with a size, a style and a delay.
+  - Keyboard shortcuts (? lists them), resume where the viewer stopped, preferences (/state), and
+    "Play on TV" (/cast/…, see dlna.js).
 -->
 <style>
-  :root { --red: #ff0f00; --text: #fff; --muted: rgba(255,255,255,.62); --faint: rgba(255,255,255,.4); }
+  :root {
+    --red: #ff2414; --red-strong: #e50f05; --text: #fff; --muted: rgba(255,255,255,.7); --faint: rgba(255,255,255,.5);
+    --glass: rgba(18,18,20,.72); --line: rgba(255,255,255,.1); --chip: rgba(255,255,255,.08);
+    --ease: cubic-bezier(.23, 1, .32, 1);
+  }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: #000; color: var(--text); overflow: hidden;
-    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    font: 14px/1.4 "Readex Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+  button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; padding: 0; }
+  button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+  svg.i { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  [hidden] { display: none !important; }
+
+  .player { position: absolute; inset: 0; overflow: hidden; background: #000; user-select: none; }
   video { position: absolute; inset: 0; width: 100%; height: 100%; background: #000; outline: none; }
-  .screen { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center;
-    background: radial-gradient(ellipse at center, rgba(229,9,20,.10), transparent 60%), #000; transition: opacity .4s ease; }
-  .screen[hidden] { display: none; }
-  .stack { display: flex; flex-direction: column; align-items: center; max-width: 30rem; }
-  /* The site's loader (BrandLoader, "chase"): the A's three strokes light up in turn. */
+  .player.idle { cursor: none; }
+
+  /* Scrims and chrome: visible while the viewer is around, gone while they watch. */
+  .chrome { transition: opacity .35s var(--ease), transform .35s var(--ease); }
+  .player.idle .chrome, .player.loading .chrome-video { opacity: 0; pointer-events: none; }
+  .player.idle .controls { transform: translateY(8px); }
+  .scrim-top { position: absolute; inset: 0 0 auto; height: 140px; background: linear-gradient(rgba(0,0,0,.75), transparent); pointer-events: none; }
+  .scrim-bottom { position: absolute; inset: auto 0 0; height: 200px; background: linear-gradient(transparent, rgba(0,0,0,.85)); pointer-events: none; }
+
+  .top { position: absolute; inset: 0 0 auto; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 16px 18px; }
+  .title { min-width: 0; }
+  .title b { display: block; font-size: 17px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .title span { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 2px; color: var(--faint); font-size: 12.5px; }
+  .tag { display: inline-flex; align-items: center; gap: 5px; }
+  .tag.ok { color: #6ee7a0; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border-radius: 999px;
+    background: rgba(0,0,0,.55); backdrop-filter: blur(10px); font-weight: 600; font-size: 12.5px; transition: background .2s; }
+  .pill:hover { background: rgba(0,0,0,.85); }
+  .pill svg.i { width: 18px; height: 18px; }
+
+  /* The bottom controls. */
+  .controls { position: absolute; inset: auto 0 0; padding: 0 18px 12px; }
+  .timeline { position: relative; height: 22px; display: flex; align-items: center; cursor: pointer; touch-action: none; }
+  .rail { position: relative; width: 100%; height: 4px; border-radius: 4px; background: rgba(255,255,255,.2); transition: height .15s var(--ease); }
+  .timeline:hover .rail, .timeline.drag .rail { height: 6px; }
+  .rail > i { position: absolute; inset: 0 auto 0 0; border-radius: inherit; }
+  .rail .buffered { background: rgba(255,255,255,.35); }
+  .rail .hover { background: rgba(255,255,255,.22); opacity: 0; transition: opacity .15s; }
+  .timeline:hover .rail .hover { opacity: 1; }
+  .rail .played { background: var(--red); }
+  .knob { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--red);
+    box-shadow: 0 0 0 4px rgba(255,36,20,.25); transform: scale(0); transition: transform .15s var(--ease); pointer-events: none; }
+  .timeline:hover .knob, .timeline.drag .knob, .timeline:focus-visible .knob { transform: scale(1); }
+  .tip { position: absolute; bottom: 26px; padding: 4px 8px; border-radius: 8px; background: rgba(0,0,0,.85); font-size: 12px; font-weight: 600;
+    font-variant-numeric: tabular-nums; transform: translateX(-50%); opacity: 0; transition: opacity .15s; pointer-events: none; white-space: nowrap; }
+  .timeline:hover .tip, .timeline.drag .tip { opacity: 1; }
+  .bar { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+  .bar .grow { flex: 1; }
+  .ctl { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; transition: background .15s, transform .1s; }
+  .ctl:hover { background: rgba(255,255,255,.1); }
+  .ctl:active { transform: scale(.94); }
+  .ctl.on { color: var(--red); }
+  .ctl.big svg.i { width: 26px; height: 26px; }
+  .ctl .sub { position: absolute; bottom: 9px; font-size: 8.5px; font-weight: 800; letter-spacing: -.02em; }
+  .ctl .dot { position: absolute; top: 9px; right: 9px; width: 7px; height: 7px; border-radius: 50%; background: var(--red); }
+  .label-btn { height: 44px; min-width: 52px; padding: 0 10px; border-radius: 12px; font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums; transition: background .15s; }
+  .label-btn:hover { background: rgba(255,255,255,.1); }
+  .time { padding: 0 8px; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+  .time b { color: #fff; font-weight: 600; }
+  .volume { display: flex; align-items: center; }
+  .volume input { width: 0; opacity: 0; transition: width .25s var(--ease), opacity .2s; }
+  .volume:hover input, .volume input:focus-visible, .volume.show input { width: 90px; opacity: 1; margin-inline-end: 8px; }
+  input[type=range] { -webkit-appearance: none; appearance: none; height: 4px; border-radius: 4px; background: linear-gradient(to right, #fff var(--v, 100%), rgba(255,255,255,.25) var(--v, 100%)); cursor: pointer; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+
+  /* Subtitles, drawn here. */
+  .subs { position: absolute; inset: auto 6% 7%; display: flex; flex-direction: column; align-items: center; gap: .15em; text-align: center;
+    pointer-events: none; transition: bottom .35s var(--ease); font-size: var(--sub-size, 3.6vh); line-height: 1.25; font-weight: 500; }
+  .player:not(.idle) .subs { bottom: 128px; }
+  .subs .line { max-width: 100%; padding: .08em .35em; white-space: pre-wrap; text-shadow: 0 0 4px #000, 0 2px 3px #000, 0 0 1px #000; border-radius: .2em; }
+  .subs.box .line { background: rgba(0,0,0,.72); text-shadow: none; }
+  .subs.s { --sub-size: 2.8vh; } .subs.m { --sub-size: 3.6vh; } .subs.l { --sub-size: 4.6vh; } .subs.xl { --sub-size: 5.8vh; }
+
+  /* What a key press did, in the middle; small news in a corner. */
+  .osd { position: absolute; top: 50%; left: 50%; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px 22px; min-width: 110px;
+    border-radius: 22px; background: rgba(0,0,0,.6); backdrop-filter: blur(10px); transform: translate(-50%, -50%) scale(.9); opacity: 0;
+    transition: opacity .2s, transform .25s var(--ease); pointer-events: none; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .osd.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  .osd svg.i { width: 34px; height: 34px; }
+  .toast { position: absolute; left: 18px; bottom: 96px; display: flex; align-items: center; gap: 12px; max-width: min(30rem, calc(100% - 36px));
+    padding: 10px 10px 10px 16px; border-radius: 16px; background: var(--glass); backdrop-filter: blur(14px); box-shadow: 0 18px 40px -14px #000;
+    font-size: 13.5px; transform: translateY(8px); opacity: 0; transition: opacity .25s, transform .3s var(--ease); pointer-events: none; }
+  .toast.show { opacity: 1; transform: none; pointer-events: auto; }
+  .toast button { height: 32px; padding: 0 12px; border-radius: 999px; background: #fff; color: #000; font-weight: 700; font-size: 12.5px; }
+  .net { position: absolute; left: 18px; top: 72px; padding: 6px 10px; border-radius: 999px; background: rgba(0,0,0,.6); font-size: 12px; color: var(--muted); }
+
+  /* The panel: sources, subtitles, speed, extensions, shortcuts. */
+  .panel { position: absolute; top: 12px; bottom: 12px; right: 12px; z-index: 6; width: min(380px, calc(100% - 24px)); display: flex; flex-direction: column;
+    border-radius: 22px; background: var(--glass); backdrop-filter: blur(22px) saturate(1.3); box-shadow: 0 30px 80px -20px #000; border: 1px solid var(--line);
+    transform: translateX(calc(100% + 24px)); transition: transform .35s var(--ease); }
+  .panel.open { transform: none; }
+  .panel header { display: flex; align-items: center; gap: 6px; padding: 12px 12px 8px 18px; }
+  .panel header h2 { flex: 1; margin: 0; font-size: 17px; font-weight: 700; }
+  .panel header .ctl { width: 38px; height: 38px; }
+  .panel .body { flex: 1; overflow-y: auto; padding: 4px 12px 14px; scrollbar-width: thin; }
+  .panel .note { margin: 4px 6px 12px; color: var(--faint); font-size: 12.5px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 6px 12px; }
+  .chip { height: 30px; padding: 0 12px; border-radius: 999px; background: var(--chip); font-size: 12.5px; font-weight: 600; color: var(--muted); }
+  .chip[aria-pressed=true] { background: #fff; color: #000; }
+  .item { display: flex; align-items: flex-start; gap: 12px; width: 100%; padding: 11px 12px; border-radius: 14px; text-align: left; transition: background .15s; }
+  .item:hover { background: rgba(255,255,255,.07); }
+  .item[aria-current=true] { background: rgba(255,36,20,.13); box-shadow: inset 0 0 0 1px rgba(255,36,20,.45); }
+  .item .q { flex: none; min-width: 52px; padding: 4px 0; border-radius: 8px; background: var(--chip); font-size: 11.5px; font-weight: 800; text-align: center; }
+  .item[aria-current=true] .q { background: var(--red); }
+  .item .main { min-width: 0; flex: 1; }
+  .item .name { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px; font-weight: 600; word-break: break-word; }
+  .item .meta { display: flex; flex-wrap: wrap; gap: 3px 10px; margin-top: 3px; color: var(--faint); font-size: 11.5px; }
+  .item .meta .tag svg.i { width: 12px; height: 12px; }
+  .item .check { color: var(--red); }
+  .item .check svg.i { width: 18px; height: 18px; }
+  .group { margin: 14px 6px 6px; color: var(--faint); font-size: 12px; font-weight: 600; }
+  .row { display: flex; align-items: center; gap: 8px; margin: 6px 6px; }
+  .row .grow { flex: 1; }
+  .seg { display: flex; gap: 4px; padding: 3px; border-radius: 999px; background: var(--chip); }
+  .seg button { height: 30px; min-width: 38px; padding: 0 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+  .seg button[aria-pressed=true] { background: #fff; color: #000; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 38px; padding: 0 16px; border-radius: 999px; background: #fff; color: #000; font-weight: 700; font-size: 13px; }
+  .btn.ghost { background: var(--chip); color: #fff; }
+  .btn.red { background: var(--red-strong); color: #fff; }
+  .btn svg.i { width: 17px; height: 17px; }
+  .field { width: 100%; height: 40px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.35); color: #fff; font: inherit; font-size: 13px; }
+  .error-text { margin: 8px 6px 0; color: #ff8a80; font-size: 12.5px; }
+  .addon { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border-radius: 14px; background: rgba(255,255,255,.05); margin-bottom: 8px; }
+  .addon img, .addon .logo { flex: none; width: 40px; height: 40px; border-radius: 10px; background: var(--chip); object-fit: cover; display: grid; place-items: center; }
+  .addon .main { flex: 1; min-width: 0; }
+  .addon b { display: block; font-size: 13.5px; }
+  .addon p { margin: 2px 0 0; color: var(--faint); font-size: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .addon .ctl { width: 36px; height: 36px; color: var(--faint); }
+  .keys { display: grid; grid-template-columns: auto 1fr; gap: 9px 14px; margin: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+  kbd { display: inline-block; min-width: 26px; padding: 3px 7px; border-radius: 7px; background: var(--chip); border: 1px solid var(--line); border-bottom-width: 2px;
+    color: #fff; font: 600 12px system-ui, sans-serif; text-align: center; }
+  .empty { margin: 30px 10px; text-align: center; color: var(--faint); font-size: 13px; }
+
+  /* Loading, errors, buffering, casting. */
+  .screen { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; padding: 24px; text-align: center;
+    background: radial-gradient(ellipse at center, rgba(255,36,20,.10), transparent 60%), #000; }
+  .stack { display: flex; flex-direction: column; align-items: center; max-width: 32rem; }
   .mark { width: 44px; height: 44px; fill: var(--red); }
   .mark > path { animation: chase 1.2s ease-in-out infinite; }
   .mark > path:nth-child(2) { animation-delay: .4s; }
   .mark > path:nth-child(3) { animation-delay: .8s; }
   @keyframes chase { 0%, 100% { opacity: .18; } 20%, 40% { opacity: 1; } 60% { opacity: .18; } }
-  @media (prefers-reduced-motion: reduce) { .mark > path { animation-duration: 2.4s; } }
-  .brand { margin-top: 18px; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--faint); }
+  @media (prefers-reduced-motion: reduce) { .mark > path { animation-duration: 2.4s; } .chrome, .panel, .osd, .toast { transition: none; } }
+  .brand { margin-top: 18px; font-size: 12px; color: var(--faint); }
   .brand b { color: var(--red); font-weight: 800; }
-  .stage { margin-top: 6px; font-size: 17px; font-weight: 600; }
+  .stage { margin-top: 6px; font-size: 18px; font-weight: 700; }
   .detail { margin-top: 4px; min-height: 1.4em; color: var(--muted); font-size: 13px; }
   .steps { display: flex; gap: 6px; margin-top: 16px; }
   .steps i { width: 26px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.14); transition: background .3s; }
   .steps i.on { background: var(--red); }
-  .err .icon { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
-    background: rgba(255,255,255,.08); font-size: 22px; }
-  button { margin-top: 16px; height: 36px; padding: 0 18px; border: 0; border-radius: 999px; cursor: pointer;
-    background: #fff; color: #000; font: 600 13px system-ui, sans-serif; }
-  .badge { position: absolute; top: 12px; inset-inline-start: 12px; padding: 5px 10px; border-radius: 999px;
-    background: rgba(0,0,0,.55); backdrop-filter: blur(8px); font-size: 11px; color: var(--muted);
-    opacity: 0; transition: opacity .3s; pointer-events: none; }
-  body:hover .badge.show { opacity: 1; }
-  .buffer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-  .buffer[hidden] { display: none; }
-
-  /* Play on TV */
-  .cast-btn { position: absolute; top: 10px; inset-inline-end: 10px; z-index: 5; margin: 0; height: 36px; padding: 0 14px;
-    display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; background: rgba(0,0,0,.6); color: #fff;
-    backdrop-filter: blur(8px); font: 600 12.5px system-ui, sans-serif; opacity: 0; transition: opacity .3s, background .2s; }
-  .cast-btn[hidden] { display: none; }
-  body:hover .cast-btn, .cast-btn:focus-visible, body.paused .cast-btn { opacity: 1; }
-  .cast-btn:hover { background: rgba(0,0,0,.85); }
-  .cast-btn:focus-visible, .pick:focus-visible, .ctl:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
-  .sheet { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; padding: 20px;
-    background: rgba(0,0,0,.78); backdrop-filter: blur(10px); }
-  .sheet[hidden] { display: none; }
-  .panel { width: min(26rem, 100%); text-align: start; }
-  .panel h2 { margin: 0; font-size: 19px; font-weight: 700; }
-  .panel p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
-  .list { display: grid; gap: 8px; margin-top: 16px; }
-  .pick { margin: 0; height: auto; padding: 12px 14px; display: flex; align-items: center; gap: 12px; text-align: start;
-    border-radius: 14px; background: rgba(255,255,255,.08); color: #fff; font: 600 14px system-ui, sans-serif; }
-  .pick:hover { background: rgba(255,255,255,.14); }
-  .pick small { display: block; margin-top: 2px; color: var(--faint); font-weight: 500; font-size: 12px; }
-  .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
-  .row button { margin: 0; }
-  .ghost { background: rgba(255,255,255,.1); color: #fff; }
-  .hint { margin-top: 14px !important; font-size: 12px !important; color: var(--faint) !important; }
+  .err .icon { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.08); font-size: 22px; font-weight: 800; }
+  .err .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 18px; }
+  .buffer { position: absolute; top: 50%; left: 50%; z-index: 2; transform: translate(-50%, -50%); pointer-events: none; }
+  .sheet { position: absolute; inset: 0; z-index: 7; display: grid; place-items: center; padding: 20px; background: rgba(0,0,0,.78); backdrop-filter: blur(10px); }
+  .sheet .box { width: min(26rem, 100%); text-align: left; }
+  .sheet h2 { margin: 0; font-size: 19px; font-weight: 700; }
+  .sheet p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+  .sheet .list { display: grid; gap: 8px; margin-top: 16px; }
+  .sheet .hint { margin-top: 14px; font-size: 12px; color: var(--faint); }
   .casting { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; padding: 24px; text-align: center;
-    background: radial-gradient(ellipse at center, rgba(255,15,0,.12), transparent 60%), #000; }
-  .casting[hidden] { display: none; }
-  .casting .tv-icon { color: var(--red); }
+    background: radial-gradient(ellipse at center, rgba(255,36,20,.12), transparent 60%), #000; }
   .casting h2 { margin: 14px 0 0; font-size: 20px; font-weight: 700; }
-  .casting .time { margin-top: 6px; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px; }
-  .ctl { margin: 0; height: 40px; min-width: 40px; padding: 0 16px; background: rgba(255,255,255,.1); color: #fff; }
-  .ctl.primary { background: #fff; color: #000; }
+  .casting .clock { margin-top: 6px; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px; }
+  .casting .row { justify-content: center; }
+  .drop { position: absolute; inset: 12px; z-index: 8; display: grid; place-items: center; border-radius: 22px; border: 2px dashed rgba(255,255,255,.5);
+    background: rgba(0,0,0,.7); font-size: 18px; font-weight: 700; pointer-events: none; }
+  @media (max-width: 560px) {
+    .hide-sm { display: none !important; }
+    .controls { padding: 0 8px 6px; }
+    .ctl { width: 40px; height: 40px; }
+  }
 </style>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700;800&display=swap" />
 </head>
 <body>
-<video id="video" controls playsinline hidden></video>
-<span id="badge" class="badge"></span>
-<button id="castBtn" class="cast-btn" type="button" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/><path d="M2 12a9 9 0 0 1 8 8"/><path d="M2 16a5 5 0 0 1 4 4"/><line x1="2" x2="2.01" y1="20" y2="20"/></svg>Play on TV</button>
+<div id="player" class="player loading">
+  <video id="video" playsinline preload="auto"></video>
+  <div id="subs" class="subs m shadow" aria-live="off"></div>
 
-<div id="sheet" class="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
-  <div class="panel">
-    <h2 id="sheetTitle">Play on TV</h2>
-    <p id="sheetText">Looking for TVs on your Wi-Fi…</p>
-    <div id="tvList" class="list"></div>
-    <div class="row">
-      <button id="searchAgain" class="ghost" type="button" hidden>Search again</button>
-      <button id="sheetClose" class="ghost" type="button">Cancel</button>
+  <div class="chrome chrome-video scrim-top"></div>
+  <div class="chrome chrome-video scrim-bottom"></div>
+
+  <header class="top chrome">
+    <div class="title">
+      <b id="titleName">TunisiaFlicks</b>
+      <span id="titleMeta"></span>
     </div>
-    <p class="hint">Samsung, LG and most smart TVs, on the same Wi-Fi as this computer. If Windows asks, allow TunisiaFlicks on private networks.</p>
-  </div>
-</div>
+    <button id="castBtn" class="pill" type="button" hidden><svg class="i" data-icon="cast"></svg>Play on TV</button>
+  </header>
 
-<div id="casting" class="casting" hidden>
-  <div class="stack">
-    <span class="tv-icon"><svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/><path d="M2 12a9 9 0 0 1 8 8"/><path d="M2 16a5 5 0 0 1 4 4"/><line x1="2" x2="2.01" y1="20" y2="20"/></svg></span>
-    <h2 id="castTitle">Playing on your TV</h2>
-    <div id="castTime" class="time">Starting…</div>
-    <div class="row" style="justify-content:center">
-      <button id="castBack" class="ctl" type="button" aria-label="Back 10 seconds">−10s</button>
-      <button id="castToggle" class="ctl primary" type="button">Pause</button>
-      <button id="castFwd" class="ctl" type="button" aria-label="Forward 30 seconds">+30s</button>
+  <div id="net" class="net chrome" hidden></div>
+
+  <div class="controls chrome chrome-video">
+    <div id="timeline" class="timeline" role="slider" tabindex="0" aria-label="Seek" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0:00">
+      <div class="rail"><i id="buffered" class="buffered"></i><i id="hoverBar" class="hover"></i><i id="played" class="played"></i></div>
+      <div id="knob" class="knob"></div>
+      <div id="tip" class="tip">0:00</div>
     </div>
-    <div class="row" style="justify-content:center">
-      <button id="castStop" class="ctl" type="button">Watch here instead</button>
+    <div class="bar">
+      <button id="playBtn" class="ctl big" type="button" aria-label="Play (k)"><svg class="i" data-icon="play"></svg></button>
+      <button id="backBtn" class="ctl hide-sm" type="button" aria-label="Back 10 seconds (j)"><svg class="i" data-icon="back"></svg><span class="sub">10</span></button>
+      <button id="fwdBtn" class="ctl hide-sm" type="button" aria-label="Forward 10 seconds (l)"><svg class="i" data-icon="fwd"></svg><span class="sub">10</span></button>
+      <div id="volumeBox" class="volume">
+        <button id="muteBtn" class="ctl" type="button" aria-label="Mute (m)"><svg class="i" data-icon="vol2"></svg></button>
+        <input id="volume" type="range" min="0" max="1" step="0.01" value="1" aria-label="Volume" />
+      </div>
+      <div class="time" aria-live="off"><b id="now">0:00</b> / <span id="total">0:00</span></div>
+      <div class="grow"></div>
+      <button id="audioBtn" class="ctl" type="button" aria-label="Audio and dubbed versions (a)"><svg class="i" data-icon="audio"></svg></button>
+      <button id="subsBtn" class="ctl" type="button" aria-label="Subtitles (c)"><svg class="i" data-icon="captions"></svg></button>
+      <button id="sourcesBtn" class="ctl" type="button" aria-label="Sources (s)"><svg class="i" data-icon="layers"></svg></button>
+      <button id="speedBtn" class="label-btn hide-sm" type="button" aria-label="Playback speed">1×</button>
+      <button id="addonsBtn" class="ctl hide-sm" type="button" aria-label="Extensions"><svg class="i" data-icon="puzzle"></svg></button>
+      <button id="keysBtn" class="ctl hide-sm" type="button" aria-label="Keyboard shortcuts (?)"><svg class="i" data-icon="keyboard"></svg></button>
+      <button id="pipBtn" class="ctl hide-sm" type="button" aria-label="Picture in picture (p)"><svg class="i" data-icon="pip"></svg></button>
+      <button id="fsBtn" class="ctl" type="button" aria-label="Full screen (f)"><svg class="i" data-icon="max"></svg></button>
     </div>
   </div>
-</div>
-<div id="buffer" class="buffer" hidden><svg class="mark" viewBox="0 6 100 88" aria-hidden="true"><path d="M50 11.03 48.38 13.84 44.66 20.31 44.13 21.25 44.66 22.19 70.41 66.78 45.66 66.78 45.13 67.72 41.41 74.22 39.78 77 43 77 84.88 77.03 88.09 77 86.47 74.19 51.63 13.84Z"/><path d="M43.09 23 41.47 25.81 6.63 86.19 5 88.97 16.81 88.97 17.34 88.03 43.09 43.44 54.94 63.91 55.44 64.84 67.25 64.84 65.63 62.06 44.72 25.81Z"/><path d="M42.97 47.13 41.38 49.94 20.44 86.16 18.81 88.97 95 88.97 93.38 86.16 89.66 79.69 89.09 78.75 36.53 78.75 48.34 58.28 48.88 57.34 48.34 56.41 44.59 49.94Z"/></svg></div>
 
-<div id="loading" class="screen">
-  <div class="stack">
-    <svg class="mark" viewBox="0 6 100 88" aria-hidden="true"><path d="M50 11.03 48.38 13.84 44.66 20.31 44.13 21.25 44.66 22.19 70.41 66.78 45.66 66.78 45.13 67.72 41.41 74.22 39.78 77 43 77 84.88 77.03 88.09 77 86.47 74.19 51.63 13.84Z"/><path d="M43.09 23 41.47 25.81 6.63 86.19 5 88.97 16.81 88.97 17.34 88.03 43.09 43.44 54.94 63.91 55.44 64.84 67.25 64.84 65.63 62.06 44.72 25.81Z"/><path d="M42.97 47.13 41.38 49.94 20.44 86.16 18.81 88.97 95 88.97 93.38 86.16 89.66 79.69 89.09 78.75 36.53 78.75 48.34 58.28 48.88 57.34 48.34 56.41 44.59 49.94Z"/></svg>
-    <div class="brand"><b>TunisiaFlicks</b> player · ad-free</div>
-    <div id="stage" class="stage">Finding the best copy…</div>
-    <div id="detail" class="detail"></div>
-    <div class="steps"><i class="on"></i><i></i><i></i></div>
-  </div>
-</div>
+  <div id="osd" class="osd" aria-hidden="true"></div>
+  <div id="toast" class="toast" role="status"><span id="toastText"></span><button id="toastAction" type="button" hidden></button></div>
 
-<div id="error" class="screen err" hidden>
-  <div class="stack">
-    <div class="icon">!</div>
-    <div id="errTitle" class="stage">Not available here</div>
-    <div id="errText" class="detail"></div>
-    <button id="retry" type="button">Try again</button>
+  <aside id="panel" class="panel" aria-labelledby="panelTitle" aria-hidden="true" inert>
+    <header>
+      <button id="panelBack" class="ctl" type="button" aria-label="Back" hidden><svg class="i" data-icon="left"></svg></button>
+      <h2 id="panelTitle"></h2>
+      <button id="panelClose" class="ctl" type="button" aria-label="Close (Esc)"><svg class="i" data-icon="x"></svg></button>
+    </header>
+    <div id="panelBody" class="body"></div>
+  </aside>
+
+  <div id="buffer" class="buffer" hidden><svg class="mark" viewBox="0 6 100 88" aria-hidden="true"><path d="M50 11.03 48.38 13.84 44.66 20.31 44.13 21.25 44.66 22.19 70.41 66.78 45.66 66.78 45.13 67.72 41.41 74.22 39.78 77 43 77 84.88 77.03 88.09 77 86.47 74.19 51.63 13.84Z"/><path d="M43.09 23 41.47 25.81 6.63 86.19 5 88.97 16.81 88.97 17.34 88.03 43.09 43.44 54.94 63.91 55.44 64.84 67.25 64.84 65.63 62.06 44.72 25.81Z"/><path d="M42.97 47.13 41.38 49.94 20.44 86.16 18.81 88.97 95 88.97 93.38 86.16 89.66 79.69 89.09 78.75 36.53 78.75 48.34 58.28 48.88 57.34 48.34 56.41 44.59 49.94Z"/></svg></div>
+
+  <div id="loading" class="screen">
+    <div class="stack">
+      <svg class="mark" viewBox="0 6 100 88" aria-hidden="true"><path d="M50 11.03 48.38 13.84 44.66 20.31 44.13 21.25 44.66 22.19 70.41 66.78 45.66 66.78 45.13 67.72 41.41 74.22 39.78 77 43 77 84.88 77.03 88.09 77 86.47 74.19 51.63 13.84Z"/><path d="M43.09 23 41.47 25.81 6.63 86.19 5 88.97 16.81 88.97 17.34 88.03 43.09 43.44 54.94 63.91 55.44 64.84 67.25 64.84 65.63 62.06 44.72 25.81Z"/><path d="M42.97 47.13 41.38 49.94 20.44 86.16 18.81 88.97 95 88.97 93.38 86.16 89.66 79.69 89.09 78.75 36.53 78.75 48.34 58.28 48.88 57.34 48.34 56.41 44.59 49.94Z"/></svg>
+      <div class="brand"><b>TunisiaFlicks</b> player, no ads</div>
+      <div id="stage" class="stage" role="status">Finding the best copy…</div>
+      <div id="detail" class="detail"></div>
+      <div class="steps"><i class="on"></i><i></i><i></i></div>
+    </div>
   </div>
+
+  <div id="error" class="screen err" hidden>
+    <div class="stack">
+      <div class="icon">!</div>
+      <div id="errTitle" class="stage" role="alert">Not available here</div>
+      <div id="errText" class="detail"></div>
+      <div class="actions">
+        <button id="retry" class="btn" type="button">Try again</button>
+        <button id="errSources" class="btn ghost" type="button" hidden><svg class="i" data-icon="layers"></svg>Choose another source</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="sheet" class="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="box">
+      <h2 id="sheetTitle">Play on TV</h2>
+      <p id="sheetText">Looking for TVs on your Wi-Fi…</p>
+      <div id="tvList" class="list"></div>
+      <div class="row" style="margin: 18px 0 0">
+        <button id="searchAgain" class="btn ghost" type="button" hidden>Search again</button>
+        <button id="sheetClose" class="btn ghost" type="button">Cancel</button>
+      </div>
+      <p class="hint">Samsung, LG and most smart TVs, on the same Wi-Fi as this computer. If Windows asks, allow TunisiaFlicks on private networks.</p>
+    </div>
+  </div>
+
+  <div id="casting" class="casting" hidden>
+    <div class="stack">
+      <svg class="i" data-icon="cast" style="width:44px;height:44px;color:var(--red)"></svg>
+      <h2 id="castTitle">Playing on your TV</h2>
+      <div id="castTime" class="clock">Starting…</div>
+      <div class="row">
+        <button id="castBack" class="btn ghost" type="button" aria-label="Back 10 seconds">−10s</button>
+        <button id="castToggle" class="btn" type="button">Pause</button>
+        <button id="castFwd" class="btn ghost" type="button" aria-label="Forward 30 seconds">+30s</button>
+      </div>
+      <div class="row"><button id="castStop" class="btn ghost" type="button">Watch here instead</button></div>
+    </div>
+  </div>
+
+  <div id="drop" class="drop" hidden>Drop a subtitle file (.srt or .vtt)</div>
+  <input id="subFile" type="file" accept=".srt,.vtt,.txt,text/vtt" hidden />
 </div>
 
 <script>
   const $ = (id) => document.getElementById(id)
+  const player = $('player')
   const video = $('video')
 
+  // ---- icons (lucide) ----------------------------------------------------------------------------
+  const VOL = '<path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/>'
+  const ICONS = {
+    play: '<polygon points="6 3 20 12 6 21 6 3" fill="currentColor"/>',
+    pause: '<rect x="14" y="3" width="5" height="18" rx="1" fill="currentColor"/><rect x="5" y="3" width="5" height="18" rx="1" fill="currentColor"/>',
+    back: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+    fwd: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
+    vol2: VOL + '<path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/>',
+    vol1: VOL + '<path d="M16 9a5 5 0 0 1 0 6"/>',
+    mute: VOL + '<line x1="22" x2="16" y1="9" y2="15"/><line x1="16" x2="22" y1="9" y2="15"/>',
+    audio: '<path d="M2 10v3"/><path d="M6 6v11"/><path d="M10 3v18"/><path d="M14 8v7"/><path d="M18 5v13"/><path d="M22 10v3"/>',
+    captions: '<rect width="18" height="14" x="3" y="5" rx="2" ry="2"/><path d="M7 15h4M15 15h2M7 11h2M13 11h4"/>',
+    layers: '<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>',
+    puzzle: '<path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z"/>',
+    keyboard: '<path d="M10 8h.01"/><path d="M12 12h.01"/><path d="M14 8h.01"/><path d="M16 12h.01"/><path d="M18 8h.01"/><path d="M6 8h.01"/><path d="M7 16h10"/><path d="M8 12h.01"/><rect width="20" height="16" x="2" y="4" rx="2"/>',
+    pip: '<path d="M21 9V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10c0 1.1.9 2 2 2h4"/><rect width="10" height="7" x="12" y="13" rx="2"/>',
+    max: '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
+    min: '<path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/>',
+    x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    left: '<path d="m15 18-6-6 6-6"/>',
+    right: '<path d="m9 18 6-6-6-6"/>',
+    check: '<path d="M20 6 9 17l-5-5"/>',
+    user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>',
+    trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+    zap: '<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
+    disk: '<path d="M21 12H3"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+    refresh: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
+    gauge: '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
+    cast: '<path d="M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/><path d="M2 12a9 9 0 0 1 8 8"/><path d="M2 16a5 5 0 0 1 4 4"/><line x1="2" x2="2.01" y1="20" y2="20"/>',
+  }
+  const svg = (name, extra = '') => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true" ${extra}>${ICONS[name] || ''}</svg>`
+  const setIcon = (el, name) => { el.setAttribute('viewBox', '0 0 24 24'); el.setAttribute('aria-hidden', 'true'); el.innerHTML = ICONS[name] || '' }
+  document.querySelectorAll('svg[data-icon]').forEach((el) => setIcon(el, el.dataset.icon))
+  const esc = (text) => String(text ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
+
+  // ---- the title ---------------------------------------------------------------------------------
   // /embed/movie/:tmdb  or  /embed/tv/:tmdb/:season/:episode
-  const parts = location.pathname.split('/').filter(Boolean)   // ['embed', type, id, s, e]
+  const parts = location.pathname.split('/').filter(Boolean)
   const type = parts[1] === 'tv' ? 'tv' : 'movie'
   const tmdb = /^\d+$/.test(parts[2] || '') ? parts[2] : null
   const season = Number(parts[3]) || 1
   const episode = Number(parts[4]) || 1
+  const titleQuery = () => { const q = new URLSearchParams({ type, tmdb }); if (type === 'tv') { q.set('season', season); q.set('episode', episode) } return q }
+  const titleKey = type === 'tv' ? `tv:${tmdb}:${season}:${episode}` : `movie:${tmdb}`
+  const episodeLabel = type === 'tv' ? `Season ${season}, episode ${episode}` : ''
 
-  const steps = [...document.querySelectorAll('.steps i')]
-  const setStage = (n, text, detail = '') => {
-    steps.forEach((s, i) => s.classList.toggle('on', i <= n))
-    $('stage').textContent = text
-    $('detail').textContent = detail
-  }
-
-  const fail = (title, text) => {
-    stopStats()
-    $('loading').hidden = true
-    video.hidden = true
-    $('buffer').hidden = true
-    $('errTitle').textContent = title
-    $('errText').textContent = text
-    $('error').hidden = false
-  }
-
-  // Peers + speed while the swarm warms up / the video buffers.
-  let statsTimer = null
-  let infoHash = null
-  const stopStats = () => { clearInterval(statsTimer); statsTimer = null }
-  const fmtSpeed = (b) => b > 1e6 ? `${(b / 1e6).toFixed(1)} MB/s` : `${Math.round(b / 1e3)} KB/s`
-  function startStats(onStats) {
-    stopStats()
-    const tick = async () => {
-      if (!infoHash) return
-      try {
-        const s = await fetch(`/stats/${infoHash}`).then((r) => r.json())
-        onStats(s)
-      } catch {}
-    }
-    tick()
-    statsTimer = setInterval(tick, 1500)
-  }
-
-  async function play() {
-    $('error').hidden = true
-    $('loading').hidden = false
-    video.hidden = true
-    if (!tmdb) return fail('Nothing to play', 'This title has no id.')
-
-    setStage(0, 'Finding the best copy…', type === 'tv' ? `Season ${season}, episode ${episode}` : '')
-    // The swarm join happens inside /resolve; move the stage on so the wait reads as progress.
-    const joining = setTimeout(() => setStage(1, 'Connecting to peers…', 'This takes a few seconds the first time'), 2500)
-
-    let data
-    try {
-      const q = new URLSearchParams({ type, tmdb })
-      if (type === 'tv') { q.set('season', season); q.set('episode', episode) }
-      const res = await fetch(`/resolve?${q}`)
-      data = await res.json()
-      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
-    } catch (err) {
-      clearTimeout(joining)
-      const none = /no torrent/i.test(err.message)
-      return fail(
-        none ? 'No copy found for this one' : 'Couldn’t start the stream',
-        none ? 'Pick another source below the player.' : 'The swarm didn’t answer. Try again, or pick another source below.',
-      )
-    }
-    clearTimeout(joining)
-
-    infoHash = data.infoHash
-    current = data
-    $('castBtn').hidden = false
-    const label = [data.quality, data.decision === 'direct' ? null : 'converted live'].filter(Boolean).join(' · ')
-    $('badge').textContent = `TunisiaFlicks · ${label || 'ad-free'}`
-    setStage(2, 'Buffering…', label)
-    // A copy with almost no one sharing it would buffer forever: after a while, say so.
-    const bufferingSince = Date.now()
-    startStats((s) => {
-      if ($('loading').hidden) return
-      const crawling = Date.now() - bufferingSince > 25000 && s.downloadSpeed < 50e3
-      $('detail').textContent = crawling
-        ? `This copy is slow (${s.peers} peers). Pick another source below the player.`
-        : `${s.peers} peers · ${fmtSpeed(s.downloadSpeed)}`
-    })
-
-    video.src = data.playUrl
-    video.play().catch(() => {})   // autoplay may need a click; the controls are there
-  }
-
-  video.addEventListener('playing', () => {
-    stopStats()
-    $('loading').hidden = true
-    $('buffer').hidden = true
-    video.hidden = false
-    $('badge').classList.add('show')
-  })
-  video.addEventListener('loadeddata', () => {
-    // Paused but ready (autoplay refused): show the player so the viewer can press play.
-    $('loading').hidden = true
-    video.hidden = false
-  })
-  video.addEventListener('waiting', () => { if (!video.hidden) $('buffer').hidden = false })
-  video.addEventListener('canplay', () => { $('buffer').hidden = true })
-  video.addEventListener('error', () => {
-    if (video.hidden && !$('error').hidden) return
-    fail('Playback stopped', 'The stream was interrupted. Try again, or pick another source below.')
-  })
-
-  // ---- Play on TV ----------------------------------------------------------------------------
-  let current = null      // the /resolve answer: what's playing here
-  let cast = null         // { id, device } while a TV plays it
-  let castTimer = null
-  let castState = { state: '', position: 0, duration: 0 }
-  const post = (url, body) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) })
+  // ---- small helpers -------------------------------------------------------------------------------
   const clock = (s) => {
     if (s == null || !isFinite(s)) return '–:––'
     s = Math.max(0, Math.floor(s))
     const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, sec = String(s % 60).padStart(2, '0')
     return h ? `${h}:${String(m).padStart(2, '0')}:${sec}` : `${m}:${sec}`
   }
+  const bytes = (n) => !n ? '' : n >= 1e9 ? `${(n / 1e9).toFixed(1)} GB` : `${Math.round(n / 1e6)} MB`
+  const fmtSpeed = (b) => b > 1e6 ? `${(b / 1e6).toFixed(1)} MB/s` : `${Math.round(b / 1e3)} KB/s`
+  const json = async (url, init) => { const res = await fetch(url, init); const body = await res.json().catch(() => ({})); if (!res.ok) throw Object.assign(new Error(body.error || `HTTP ${res.status}`), { status: res.status }); return body }
+  const send = (url, method, body) => json(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body ?? {}) })
+
+  // ---- what's playing, and its clock ---------------------------------------------------------------
+  let sources = []          // from /sources
+  let current = null        // the /resolve answer
+  let offset = 0            // where the current converted stream starts in the film (seconds)
+  let knownDuration = 0     // the film's length, as probed
+  let prefs = { volume: 1, muted: false, speed: 1, subSize: 'm', subStyle: 'shadow', subTranslate: null }   // + subLang once chosen ('off' too)
+  let resumeAt = null       // { t, d } where the viewer stopped last time
+  let subtitlesAsked = false
+
+  let audioTrack = 0        // the audio track playing (0 = the file's first)
+  // Another audio track than the first is extracted by the service: the stream is then converted.
+  const restartMode = () => !!current && (!current.seekable || audioTrack > 0)
+  const now = () => offset + (video.currentTime || 0)
+  const duration = () => knownDuration || (isFinite(video.duration) && video.duration > 0 ? offset + video.duration : 0)
+
+  // ---- loading and errors ------------------------------------------------------------------------------
+  const steps = [...document.querySelectorAll('.steps i')]
+  const setStage = (n, text, detail = '') => {
+    steps.forEach((s, i) => s.classList.toggle('on', i <= n))
+    $('stage').textContent = text
+    $('detail').textContent = detail
+  }
+  function showLoading() {
+    $('error').hidden = true
+    $('loading').hidden = false
+    player.classList.add('loading')
+  }
+  function fail(title, text, { offerSources = false } = {}) {
+    stopStats()
+    $('loading').hidden = true
+    $('buffer').hidden = true
+    player.classList.add('loading')
+    $('errTitle').textContent = title
+    $('errText').textContent = text
+    $('errSources').hidden = !(offerSources && sources.length > 1)
+    $('error').hidden = false
+  }
+
+  // Peers and speed while a swarm warms up or the video buffers.
+  let statsTimer = null
+  const stopStats = () => { clearInterval(statsTimer); statsTimer = null; $('net').hidden = true }
+  function startStats(onStats) {
+    stopStats()
+    if (!current?.infoHash) return
+    const hash = current.infoHash
+    const tick = async () => { try { onStats(await json(`/stats/${hash}`)) } catch {} }
+    tick()
+    statsTimer = setInterval(tick, 1500)
+  }
+
+  // ---- starting -----------------------------------------------------------------------------------------
+  async function start() {
+    showLoading()
+    if (!tmdb) return fail('Nothing to play', 'This title has no id.')
+    setStage(0, 'Finding the best copy…', episodeLabel)
+    try {
+      const state = await json(`/state?key=${encodeURIComponent(titleKey)}`)
+      prefs = { ...prefs, ...state.prefs }
+      resumeAt = state.progress
+    } catch {}
+    applyPrefs()
+
+    try {
+      const list = await json(`/sources?${titleQuery()}`)
+      sources = list.sources || []
+      if (list.name) setTitle(list.name)
+    } catch {}
+    await play(null, resumeAt && resumeAt.t > 30 ? resumeAt.t : 0, { resumed: !!(resumeAt && resumeAt.t > 30) })
+  }
+
+  /** Play a source (an id from /sources, or null for the best), from `at` seconds into the film. */
+  async function play(sourceId, at = 0, { resumed = false, wasPaused = false } = {}) {
+    showLoading()
+    video.pause()
+    setStage(0, sourceId ? 'Opening this copy…' : 'Finding the best copy…', episodeLabel)
+    // The swarm join happens inside /resolve; move the stage on so the wait reads as progress.
+    const joining = setTimeout(() => setStage(1, 'Connecting to peers…', 'This takes a few seconds the first time'), 2500)
+    let answer
+    try {
+      const q = sourceId ? new URLSearchParams({ source: sourceId }) : titleQuery()
+      if (!sourceId && prefs.audioLang) q.set('audioLang', prefs.audioLang)
+      answer = await json(`/resolve?${q}`)
+    } catch (err) {
+      clearTimeout(joining)
+      const none = /no torrent/i.test(err.message)
+      return fail(
+        none ? 'No copy found for this one' : 'Couldn’t start this copy',
+        none ? 'Add a source extension (Extensions, bottom right), or pick another source below the player.' : 'It didn’t answer. Try again, or choose another source.',
+        { offerSources: true },
+      )
+    }
+    clearTimeout(joining)
+    current = answer
+    knownDuration = answer.durationSec || 0
+    // The viewer's audio language, when this copy has it as another track.
+    audioTrack = Math.max(0, (answer.audioTracks || []).findIndex((track) => prefs.audioLang && sameLanguage(track.lang, prefs.audioLang)))
+    renderMeta()
+    $('castBtn').hidden = answer.kind !== 'torrent'
+    setStage(2, 'Buffering…', [answer.quality, answer.decision === 'direct' ? null : 'converted live'].filter(Boolean).join(', '))
+
+    // A copy with almost no one sharing it would buffer forever: after a while, say so.
+    const bufferingSince = Date.now()
+    startStats((s) => {
+      if ($('loading').hidden) return
+      const crawling = Date.now() - bufferingSince > 25000 && s.downloadSpeed < 50e3
+      $('detail').textContent = crawling
+        ? `This copy is slow (${s.peers} peers). Choose another source (s).`
+        : `${s.peers} peers, ${fmtSpeed(s.downloadSpeed)}`
+    })
+
+    await load(at, { autoplay: !wasPaused })
+    if (!subtitlesAsked) { subtitlesAsked = true; loadSubtitleList() }
+    if (resumed && at > 0) toast(`Resumed at ${clock(at)}`, 'Start over', () => seekTo(0))
+  }
+
+  /** The converted stream of what's playing (a remux or transcode, or another audio track). */
+  const convertedPath = () => (current.kind === 'url' ? `/uplay/${current.sourceId}` : `/play/${current.infoHash}/${current.index}`)
+
+  /** Point the video at the current stream, starting `at` seconds into the film. */
+  async function load(at = 0, { autoplay = true } = {}) {
+    let start = 0
+    if (at > 1 && restartMode()) start = await seekPointFor(at)
+    offset = restartMode() ? start : 0
+    if (restartMode()) {
+      const q = new URLSearchParams()
+      if (offset > 0) q.set('t', String(offset))
+      if (audioTrack > 0) q.set('audio', String(audioTrack))
+      video.src = `${convertedPath()}${q.size ? `?${q}` : ''}`
+    } else {
+      video.src = current.playUrl
+    }
+    video.playbackRate = prefs.speed
+    if (!restartMode() && at > 1) {
+      video.addEventListener('loadedmetadata', () => { try { video.currentTime = at } catch {} }, { once: true })
+    }
+    if (autoplay) video.play().catch(() => {})   // autoplay may need a click
+  }
+
+  /** Where a converted stream asked to start at `t` really starts (a remux starts on a keyframe). */
+  async function seekPointFor(t) {
+    const path = current.kind === 'url' ? `/seek/u/${current.sourceId}` : `/seek/${current.infoHash}/${current.index}`
+    try { return (await json(`${path}?t=${t.toFixed(2)}&audio=${audioTrack}`)).start } catch { return t }
+  }
+
+  function setTitle(name) {
+    $('titleName').textContent = name
+    document.title = `${name} | TunisiaFlicks Player`
+  }
+
+  function renderMeta() {
+    const bits = []
+    if (episodeLabel) bits.push(`<span>${esc(episodeLabel)}</span>`)
+    if (current?.quality) bits.push(`<span>${esc(current.quality)}</span>`)
+    if (current?.provider) bits.push(`<span>${esc(current.provider)}</span>`)
+    if ((current?.audioTracks || []).length > 1) bits.push(`<span class="tag">${svg('audio', 'style="width:13px;height:13px"')}${esc(languageName(current.audioTracks[audioTrack]?.lang))}</span>`)
+    bits.push(`<span class="tag ok">${svg('check', 'style="width:13px;height:13px"')}No ads</span>`)
+    if (current && current.decision !== 'direct') bits.push('<span>Converted live</span>')
+    $('titleMeta').innerHTML = bits.join('')
+  }
+
+  // ---- the video's own events ---------------------------------------------------------------------
+  video.addEventListener('playing', () => {
+    stopStats()
+    $('loading').hidden = true
+    $('buffer').hidden = true
+    player.classList.remove('loading')
+    poke()
+  })
+  video.addEventListener('loadeddata', () => {
+    // Paused but ready (autoplay refused): show the player so the viewer can press play.
+    $('loading').hidden = true
+    player.classList.remove('loading')
+    poke()
+  })
+  video.addEventListener('waiting', () => {
+    if (player.classList.contains('loading')) return
+    $('buffer').hidden = false
+    if (current?.infoHash) {
+      startStats((s) => { $('net').hidden = false; $('net').textContent = `${s.peers} peers, ${fmtSpeed(s.downloadSpeed)}` })
+    }
+  })
+  video.addEventListener('canplay', () => { $('buffer').hidden = true; stopStats() })
+  video.addEventListener('error', () => {
+    if (!video.getAttribute('src')) return
+    if (!$('error').hidden) return
+    fail('Playback stopped', 'The stream was interrupted. Try again, or choose another source.', { offerSources: true })
+  })
+  video.addEventListener('play', () => { setIcon($('playBtn').querySelector('svg'), 'pause'); $('playBtn').setAttribute('aria-label', 'Pause (k)'); poke() })
+  video.addEventListener('pause', () => { setIcon($('playBtn').querySelector('svg'), 'play'); $('playBtn').setAttribute('aria-label', 'Play (k)'); poke(); saveProgress() })
+  video.addEventListener('timeupdate', renderTime)
+  video.addEventListener('progress', renderTime)
+  video.addEventListener('durationchange', renderTime)
+  video.addEventListener('volumechange', renderVolume)
+  video.addEventListener('ratechange', () => { $('speedBtn').textContent = `${video.playbackRate}×` })
+  video.addEventListener('ended', () => { saveProgress(true); poke() })
+
+  // ---- time, the timeline ---------------------------------------------------------------------------
+  function bufferedEnd() {
+    const b = video.buffered
+    const t = video.currentTime
+    for (let i = 0; i < b.length; i++) if (b.start(i) <= t + 0.5 && b.end(i) >= t) return offset + b.end(i)
+    return now()
+  }
+  let dragging = null
+  function renderTime() {
+    const d = duration()
+    const t = dragging != null ? dragging : now()
+    $('now').textContent = clock(t)
+    $('total').textContent = d ? clock(d) : '–:––'
+    const pct = (x) => (d ? Math.max(0, Math.min(100, (x / d) * 100)) : 0)
+    $('played').style.width = `${pct(t)}%`
+    $('knob').style.left = `${pct(t)}%`
+    $('buffered').style.width = `${pct(bufferedEnd())}%`
+    const tl = $('timeline')
+    tl.setAttribute('aria-valuemax', String(Math.round(d)))
+    tl.setAttribute('aria-valuenow', String(Math.round(t)))
+    tl.setAttribute('aria-valuetext', `${clock(t)} of ${clock(d)}`)
+  }
+
+  /** Go to `t` seconds into the film: in the stream when it's there, else start the stream there. */
+  let seekTimer = null
+  function seekTo(t) {
+    if (!current) return
+    const d = duration()
+    t = Math.max(0, d ? Math.min(t, d - 1) : t)
+    if (!restartMode()) {
+      video.currentTime = t
+      renderTime()
+      return
+    }
+    // Inside what this stream already has: just move.
+    if (t >= offset && t <= bufferedEnd()) {
+      video.currentTime = t - offset
+      renderTime()
+      return
+    }
+    // Further: start the conversion again from there (debounced, for quick key presses).
+    dragging = t
+    renderTime()
+    clearTimeout(seekTimer)
+    seekTimer = setTimeout(async () => {
+      const wasPaused = video.paused
+      $('buffer').hidden = false
+      await load(t, { autoplay: !wasPaused })
+      dragging = null
+    }, 350)
+  }
+  const nudge = (delta) => { seekTo((dragging ?? now()) + delta); osd(delta > 0 ? 'fwd' : 'back', `${delta > 0 ? '+' : '−'}${Math.abs(delta)}s`) }
+
+  const timeline = $('timeline')
+  const timeAt = (x) => { const r = timeline.getBoundingClientRect(); return Math.max(0, Math.min(1, (x - r.left) / r.width)) * duration() }
+  timeline.addEventListener('pointermove', (e) => {
+    const r = timeline.getBoundingClientRect()
+    const x = Math.max(0, Math.min(r.width, e.clientX - r.left))
+    $('tip').textContent = clock(timeAt(e.clientX))
+    $('tip').style.left = `${Math.max(24, Math.min(r.width - 24, x))}px`
+    $('hoverBar').style.width = `${(x / r.width) * 100}%`
+    if (dragging != null && timeline.hasPointerCapture(e.pointerId)) { dragging = timeAt(e.clientX); renderTime() }
+  })
+  timeline.addEventListener('pointerdown', (e) => {
+    if (!duration()) return
+    timeline.setPointerCapture(e.pointerId)
+    timeline.classList.add('drag')
+    dragging = timeAt(e.clientX)
+    renderTime()
+  })
+  const endDrag = (e) => {
+    if (!timeline.classList.contains('drag')) return
+    timeline.classList.remove('drag')
+    const t = dragging
+    dragging = null
+    if (t != null) seekTo(t)
+  }
+  timeline.addEventListener('pointerup', endDrag)
+  timeline.addEventListener('pointercancel', endDrag)
+
+  // ---- buttons ---------------------------------------------------------------------------------------
+  const togglePlay = () => {
+    if (!current) return
+    if (video.paused) { video.play().catch(() => {}); osd('play') } else { video.pause(); osd('pause') }
+  }
+  $('playBtn').addEventListener('click', togglePlay)
+  $('backBtn').addEventListener('click', () => nudge(-10))
+  $('fwdBtn').addEventListener('click', () => nudge(10))
+  video.addEventListener('click', () => { if (panelOpen()) return closePanel(); togglePlay() })
+  video.addEventListener('dblclick', toggleFullscreen)
+
+  // Volume
+  function renderVolume() {
+    const v = video.muted ? 0 : video.volume
+    $('volume').value = String(v)
+    $('volume').style.setProperty('--v', `${v * 100}%`)
+    setIcon($('muteBtn').querySelector('svg'), v === 0 ? 'mute' : v < 0.5 ? 'vol1' : 'vol2')
+  }
+  const setVolume = (v, show = true) => {
+    v = Math.max(0, Math.min(1, Math.round(v * 100) / 100))
+    video.volume = v
+    video.muted = v === 0
+    savePrefs({ volume: v, muted: video.muted })
+    if (show) osd(v === 0 ? 'mute' : v < 0.5 ? 'vol1' : 'vol2', `${Math.round(v * 100)}%`)
+  }
+  $('volume').addEventListener('input', (e) => setVolume(Number(e.target.value), false))
+  $('muteBtn').addEventListener('click', () => toggleMute())
+  const toggleMute = () => {
+    video.muted = !video.muted
+    if (!video.muted && video.volume === 0) video.volume = 0.5
+    savePrefs({ muted: video.muted, volume: video.volume })
+    osd(video.muted ? 'mute' : 'vol2', video.muted ? 'Muted' : `${Math.round(video.volume * 100)}%`)
+  }
+
+  // Full screen and picture in picture
+  function toggleFullscreen() {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
+    else player.requestFullscreen?.().catch(() => {})
+  }
+  document.addEventListener('fullscreenchange', () => {
+    const on = !!document.fullscreenElement
+    setIcon($('fsBtn').querySelector('svg'), on ? 'min' : 'max')
+    $('fsBtn').setAttribute('aria-label', on ? 'Exit full screen (f)' : 'Full screen (f)')
+  })
+  $('fsBtn').addEventListener('click', toggleFullscreen)
+  $('pipBtn').hidden = !document.pictureInPictureEnabled
+  async function togglePip() {
+    try {
+      if (document.pictureInPictureElement) await document.exitPictureInPicture()
+      else await video.requestPictureInPicture()
+    } catch {}
+  }
+  $('pipBtn').addEventListener('click', togglePip)
+
+  // Speed
+  const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
+  const setSpeed = (s) => {
+    video.playbackRate = s
+    savePrefs({ speed: s })
+    osd('gauge', `${s}×`)
+    if (panelView === 'speed') renderPanel()
+  }
+  const stepSpeed = (dir) => setSpeed(SPEEDS[Math.max(0, Math.min(SPEEDS.length - 1, SPEEDS.indexOf(video.playbackRate) + dir))] ?? 1)
+  $('speedBtn').addEventListener('click', () => openPanel('speed'))
+
+  // ---- chrome that hides while the viewer watches ------------------------------------------------------
+  let idleTimer = null
+  function poke() {
+    player.classList.remove('idle')
+    clearTimeout(idleTimer)
+    if (!video.paused && !panelOpen() && !player.classList.contains('loading')) {
+      idleTimer = setTimeout(() => { if (!video.paused && !panelOpen()) player.classList.add('idle') }, 2800)
+    }
+  }
+  player.addEventListener('pointermove', poke)
+  player.addEventListener('pointerdown', poke)
+  player.addEventListener('mouseleave', () => { if (!video.paused && !panelOpen()) player.classList.add('idle') })
+
+  // ---- what a key press did, and small news ------------------------------------------------------------
+  let osdTimer = null
+  function osd(icon, text = '') {
+    const el = $('osd')
+    el.innerHTML = `${svg(icon)}${text ? `<span>${esc(text)}</span>` : ''}`
+    el.classList.add('show')
+    clearTimeout(osdTimer)
+    osdTimer = setTimeout(() => el.classList.remove('show'), 650)
+  }
+  let toastTimer = null
+  function toast(text, action, onAction) {
+    $('toastText').textContent = text
+    const button = $('toastAction')
+    button.hidden = !action
+    button.textContent = action || ''
+    button.onclick = () => { onAction?.(); $('toast').classList.remove('show') }
+    $('toast').classList.add('show')
+    clearTimeout(toastTimer)
+    toastTimer = setTimeout(() => $('toast').classList.remove('show'), action ? 8000 : 3500)
+  }
+
+  // ---- preferences and resume --------------------------------------------------------------------------
+  let prefsTimer = null
+  // Only what changed goes to the service: another player page open elsewhere keeps its own changes.
+  let pendingPrefs = {}
+  function savePrefs(change) {
+    prefs = { ...prefs, ...change }
+    pendingPrefs = { ...pendingPrefs, ...change }
+    clearTimeout(prefsTimer)
+    prefsTimer = setTimeout(() => {
+      const body = pendingPrefs
+      pendingPrefs = {}
+      send('/prefs', 'PUT', body).catch(() => {})
+    }, 600)
+  }
+  function applyPrefs() {
+    video.volume = prefs.volume
+    video.muted = prefs.muted
+    video.playbackRate = prefs.speed
+    $('speedBtn').textContent = `${prefs.speed}×`
+    $('subs').className = `subs ${prefs.subSize} ${prefs.subStyle === 'box' ? 'box' : ''}`
+    renderVolume()
+  }
+  let lastSaved = 0
+  function saveProgress(ended = false) {
+    const d = duration()
+    if (!current || !d) return
+    const t = ended ? d : now()
+    if (!ended && Math.abs(t - lastSaved) < 4) return
+    lastSaved = t
+    const body = JSON.stringify({ t, d })
+    if (navigator.sendBeacon && document.visibilityState === 'hidden') {
+      // A PUT can't be a beacon; a page going away gets a best-effort keepalive fetch instead.
+      fetch(`/progress/${encodeURIComponent(titleKey)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {})
+    } else {
+      send(`/progress/${encodeURIComponent(titleKey)}`, 'PUT', { t, d }).catch(() => {})
+    }
+  }
+  setInterval(() => { if (!video.paused) saveProgress() }, 5000)
+  addEventListener('pagehide', () => saveProgress())
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveProgress() })
+
+  // ---- subtitles ---------------------------------------------------------------------------------------
+  let subtitleList = []     // from /subtitles: { id, lang, language, provider }
+  let cues = []             // the subtitle being shown: [{ start, end, text, html }]
+  let originalCues = []     // the same before any translation
+  let subChoice = null      // { id | 'file', lang, label }
+  let subDelay = 0          // seconds; positive shows them later
+  let translatedTo = null   // 'ar', 'fr'… while a translation is shown
+  let translateRun = 0      // bumped to stop a translation in progress
+  const TRANSLATE_TO = [['ar', 'Arabic'], ['fr', 'French'], ['en', 'English'], ['es', 'Spanish'], ['de', 'German'], ['it', 'Italian'], ['tr', 'Turkish'], ['pt', 'Portuguese'], ['nl', 'Dutch'], ['ru', 'Russian']]
+  // A subtitle's language (as the providers write it) as the translator's code: no need to translate
+  // Arabic subtitles into Arabic.
+  const TWO_LETTER = { ara: 'ar', fre: 'fr', fra: 'fr', eng: 'en', spa: 'es', ger: 'de', deu: 'de', ita: 'it', tur: 'tr', por: 'pt', pob: 'pt', dut: 'nl', nld: 'nl', rus: 'ru', hin: 'hi', jpn: 'ja', kor: 'ko', chi: 'zh', zho: 'zh', per: 'fa', fas: 'fa', heb: 'he', pol: 'pl', gre: 'el', ell: 'el' }
+  const normLang = (code) => { const c = String(code || '').toLowerCase(); return TWO_LETTER[c] || c }
+  /** A language's name from a 2- or 3-letter code ('fre', 'fr' → French). */
+  const languageName = (code) => {
+    const c = normLang(code)
+    if (!c || c === 'und') return 'Unknown language'
+    try { const name = new Intl.DisplayNames(['en'], { type: 'language' }).of(c); if (name && name.toLowerCase() !== c) return name } catch {}
+    return c.toUpperCase()
+  }
+
+  // The site's language (?lang=), for the subtitles a viewer gets before choosing any: Arabic or
+  // French ones on the Arabic or French site, none on the English one.
+  const SITE_SUBTITLES = { ar: 'ara', tn: 'ara', fr: 'fre' }
+  const siteLang = new URLSearchParams(location.search).get('lang') || ''
+  const wantedLanguage = () => (prefs.subLang !== undefined ? prefs.subLang : SITE_SUBTITLES[siteLang] || 'off')
+  const sameLanguage = (a, b) => !!a && !!b && normLang(a) === normLang(b)
+
+  // Which subtitle first: the one made for this very release (it stays in sync), then the best rated.
+  const words = (text) => new Set(String(text || '').toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 1))
+  function releaseMatch(sub) {
+    const video = words(current?.label || current?.title)
+    let best = 0
+    for (const release of sub.release || []) {
+      const mine = words(release)
+      if (!mine.size || !video.size) continue
+      let shared = 0
+      for (const w of mine) if (video.has(w)) shared++
+      best = Math.max(best, shared / Math.max(mine.size, video.size))
+    }
+    return best
+  }
+  const subtitleScore = (sub) => releaseMatch(sub) * 100 + Math.min(Math.max(sub.rating || 0, 0), 50) + (/opensubtitles/i.test(sub.provider) ? 3 : 0)
+  /** One language's subtitles, best first. */
+  const subtitlesIn = (lang) => subtitleList.filter((s) => sameLanguage(s.lang, lang)).sort((a, b) => subtitleScore(b) - subtitleScore(a))
+
+  async function loadSubtitleList() {
+    try { subtitleList = (await json(`/subtitles?${titleQuery()}`)).subtitles || [] } catch { subtitleList = [] }
+    if (panelView === 'subtitles') renderPanel()
+    renderSubsButton()
+    // The viewer's language, picked automatically: its best subtitle, or else the best English one,
+    // translated into it.
+    const wanted = wantedLanguage()
+    if (subChoice || !wanted || wanted === 'off') return
+    const best = subtitlesIn(wanted)[0]
+    if (best) return chooseSubtitle(best, { quiet: true, remember: false })
+    const english = subtitlesIn('eng')[0]
+    const to = TWO_LETTER[wanted]
+    if (english && to && TRANSLATE_TO.some(([code]) => code === to)) {
+      await chooseSubtitle(english, { quiet: true, remember: false, translate: false })
+      if (subChoice) {
+        translateTo(to, { auto: true })
+        const name = TRANSLATE_TO.find(([code]) => code === to)[1]
+        toast(`No ${name} subtitles for this one: translating the English ones`)
+      }
+    }
+  }
+
+  const toSeconds = (text) => {
+    const m = /(?:(\d+):)?(\d{1,2}):(\d{1,2})[.,](\d{1,3})/.exec(text)
+    if (!m) return NaN
+    return (Number(m[1] || 0) * 3600) + Number(m[2]) * 60 + Number(m[3]) + Number(m[4].padEnd(3, '0')) / 1000
+  }
+  /** SRT or WebVTT text → cues, with only <i>, <b> and <u> kept (everything else is text). */
+  function parseSubtitles(text) {
+    const blocks = text.replace(/\r\n?/g, '\n').replace(/^﻿/, '').split(/\n{2,}/)
+    const out = []
+    for (const block of blocks) {
+      const lines = block.split('\n')
+      const at = lines.findIndex((l) => l.includes('-->'))
+      if (at < 0) continue
+      const [a, b] = lines[at].split('-->')
+      const start = toSeconds(a), end = toSeconds(b)
+      if (!isFinite(start) || !isFinite(end)) continue
+      const text = lines.slice(at + 1).join('\n').replace(/\{\\[^}]*\}/g, '').trim()
+      if (!text) continue
+      out.push({ start, end, text, html: cueHtml(text) })
+    }
+    return out.sort((x, y) => x.start - y.start)
+  }
+  /** A cue's text as HTML: escaped, with only <i>, <b> and <u> kept. */
+  const cueHtml = (text) => esc(text)
+    .replace(/&lt;(\/?)(i|b|u)&gt;/gi, '<$1$2>')
+    .replace(/&lt;\/?[a-z][^&]*?&gt;/gi, '')
+
+  /** Show these cues (a new subtitle): the translation in progress, if any, is dropped. */
+  function setCues(list) {
+    translateRun++
+    originalCues = list
+    cues = list
+    translatedTo = null
+    if (prefs.subTranslate && list.length) translateTo(prefs.subTranslate, { auto: true })
+  }
+
+  /**
+   * Translate the subtitle being shown into `to`, a batch at a time, starting with the part being
+   * watched, each batch showing as soon as it's back (/translate). 'orig' shows the original again.
+   */
+  async function translateTo(to, { auto = false } = {}) {
+    const run = ++translateRun
+    if (to === 'orig') {
+      cues = originalCues
+      translatedTo = null
+      savePrefs({ subTranslate: null })
+      if (panelView === 'subtitles') renderPanel()
+      return
+    }
+    // Already in that language: nothing to do.
+    if (subChoice?.lang && TWO_LETTER[subChoice.lang] === to) {
+      cues = originalCues
+      translatedTo = null
+      if (!auto) savePrefs({ subTranslate: to })
+      if (panelView === 'subtitles') renderPanel()
+      return
+    }
+    if (!auto) savePrefs({ subTranslate: to })
+    translatedTo = to
+    cues = originalCues.map((cue) => ({ ...cue }))
+    const working = cues
+    if (panelView === 'subtitles') renderPanel()
+
+    // Batches of cues that follow each other, nearest to the moment being watched first.
+    const batches = []
+    let batch = { from: 0, to: 0, chars: 0 }
+    working.forEach((cue, i) => {
+      if (batch.to > batch.from && (batch.to - batch.from >= 100 || batch.chars + cue.text.length > 4000)) { batches.push(batch); batch = { from: i, to: i, chars: 0 } }
+      batch.to = i + 1
+      batch.chars += cue.text.length
+    })
+    if (batch.to > batch.from) batches.push(batch)
+    const t = now()
+    batches.sort((a, b) => Math.abs(working[a.from].start - t) - Math.abs(working[b.from].start - t))
+
+    const name = TRANSLATE_TO.find(([code]) => code === to)?.[1] || to
+    let done = 0
+    let failed = null
+    const next = async () => {
+      while (batches.length && run === translateRun) {
+        const b = batches.shift()
+        try {
+          const { lines } = await send('/translate', 'POST', { to, lines: working.slice(b.from, b.to).map((cue) => cue.text) })
+          if (run !== translateRun) return
+          lines.forEach((line, k) => { working[b.from + k].html = cueHtml(line) })
+        } catch (err) {
+          failed = err.message
+          batches.length = 0
+        }
+        done++
+        if (run === translateRun && !failed) toast(`Translating into ${name}… ${Math.round((done / (done + batches.length)) * 100)}%`)
+      }
+    }
+    toast(`Translating into ${name}…`)
+    await Promise.all([next(), next()])
+    if (run !== translateRun) return
+    toast(failed ? `Translation stopped: ${failed}` : `Subtitles in ${name}`)
+  }
+
+  let shown = ''
+  function renderSubtitles() {
+    const t = now() - subDelay
+    let html = ''
+    if (cues.length) {
+      // The first cue that may still be on screen, then every one that is.
+      let lo = 0, hi = cues.length
+      while (lo < hi) { const mid = (lo + hi) >> 1; if (cues[mid].start <= t - 30) lo = mid + 1; else hi = mid }
+      const lines = []
+      for (let i = lo; i < cues.length && cues[i].start <= t; i++) if (cues[i].end > t) lines.push(cues[i].html)
+      html = lines.map((l) => `<div class="line" dir="auto">${l.replace(/\n/g, '<br>')}</div>`).join('')
+    }
+    if (html !== shown) { $('subs').innerHTML = html; shown = html }
+  }
+  ;(function loop() { renderSubtitles(); requestAnimationFrame(loop) })()
+
+  /**
+   * Show a subtitle. `remember` keeps its language for the next films (a choice the viewer made);
+   * one that doesn't load makes way for the next best in its language, quietly.
+   */
+  async function chooseSubtitle(item, { quiet = false, remember = true, translate = true, tried = new Set() } = {}) {
+    if (!item) return
+    tried.add(item.id)
+    try {
+      const text = await fetch(`/subtitle/${item.id}`).then((r) => { if (!r.ok) throw new Error(); return r.text() })
+      const list = parseSubtitles(text)
+      if (!list.length) throw new Error('empty')
+      subChoice = { id: item.id, lang: item.lang, label: item.language }
+      if (translate) setCues(list)
+      else { translateRun++; originalCues = cues = list; translatedTo = null }
+      if (remember) savePrefs({ subLang: item.lang })
+      if (!quiet) osd('captions', item.language)
+    } catch {
+      const next = subtitlesIn(item.lang).find((s) => !tried.has(s.id))
+      if (next && tried.size < 4) return chooseSubtitle(next, { quiet, remember, translate, tried })
+      if (!quiet) toast('That subtitle didn’t load. Try another one.')
+    }
+    renderSubsButton()
+    if (panelView === 'subtitles' || panelView === 'subLanguage') renderPanel()
+  }
+  function subtitlesOff() {
+    subChoice = null
+    translateRun++
+    cues = originalCues = []
+    translatedTo = null
+    savePrefs({ subLang: 'off' })
+    renderSubsButton()
+    if (panelView) renderPanel()
+  }
+  function toggleSubtitles() {
+    if (subChoice) { subtitlesOff(); osd('captions', 'Subtitles off'); return }
+    const wanted = wantedLanguage()
+    const pick = subtitlesIn(wanted !== 'off' ? wanted : 'eng')[0] || subtitlesIn('eng')[0] || subtitleList[0]
+    if (pick) chooseSubtitle(pick)
+    else openPanel('subtitles')
+  }
+  function renderSubsButton() { $('subsBtn').classList.toggle('on', !!subChoice) }
+  const setDelay = (d) => { subDelay = Math.round(d * 10) / 10; osd('captions', `Subtitle delay ${subDelay > 0 ? '+' : ''}${subDelay.toFixed(1)}s`); if (panelView === 'subtitles') renderPanel() }
+
+  // A file of the viewer's: from the panel, or dropped on the player.
+  async function readSubtitleFile(file) {
+    if (!file || file.size > 5e6) return
+    const buf = new Uint8Array(await file.arrayBuffer())
+    let text = new TextDecoder('utf-8').decode(buf)
+    if ((text.match(/�/g) || []).length > 3) {
+      // Not UTF-8: Arabic files are usually Windows-1256, others Windows-1252.
+      const arabic = new TextDecoder('windows-1256').decode(buf)
+      text = /[؀-ۿ]{3}/.test(arabic) ? arabic : new TextDecoder('windows-1252').decode(buf)
+    }
+    const list = parseSubtitles(text)
+    if (!list.length) return toast('No subtitles found in that file.')
+    subChoice = { id: 'file', lang: null, label: file.name }
+    setCues(list)
+    osd('captions', 'Subtitles from your file')
+    renderSubsButton()
+    if (panelView) renderPanel()
+  }
+  $('subFile').addEventListener('change', (e) => { readSubtitleFile(e.target.files[0]); e.target.value = '' })
+  let dragDepth = 0
+  player.addEventListener('dragenter', (e) => { if ([...e.dataTransfer.types].includes('Files')) { dragDepth++; $('drop').hidden = false; e.preventDefault() } })
+  player.addEventListener('dragover', (e) => e.preventDefault())
+  player.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; $('drop').hidden = true } })
+  player.addEventListener('drop', (e) => { e.preventDefault(); dragDepth = 0; $('drop').hidden = true; readSubtitleFile(e.dataTransfer.files[0]) })
+
+  // ---- the panel -----------------------------------------------------------------------------------------
+  let panelView = null
+  let panelTrigger = null
+  let sourceFilter = 'all'
+  let audioFilter = 'all'
+  /** The dubbed languages the copies offer: [[code, name, count]], 'multi' last. */
+  function dubbedLanguages() {
+    const counts = new Map()
+    for (const s of sources) for (const code of s.languages || []) counts.set(code, (counts.get(code) || 0) + 1)
+    const list = [...counts].map(([code, count]) => [code, languageName(code), count]).sort((a, b) => b[2] - a[2])
+    const multi = sources.filter((s) => s.multi).length
+    return multi ? [...list, ['multi', 'Several languages', multi]] : list
+  }
+  /** Play another audio track of this copy, from the same moment. */
+  async function switchAudio(i) {
+    if (!current || i === audioTrack) return
+    const at = now()
+    const wasPaused = video.paused
+    audioTrack = i
+    const lang = current.audioTracks?.[i]?.lang
+    if (lang && lang !== 'und') savePrefs({ audioLang: lang })
+    renderPanel()
+    renderMeta()
+    $('buffer').hidden = false
+    await load(at, { autoplay: !wasPaused })
+    osd('audio', languageName(lang))
+  }
+  let subLanguage = null
+  const panelOpen = () => !!panelView
+  function openPanel(view, from) {
+    if (panelView === view && !from) return closePanel()
+    if (!panelView) panelTrigger = document.activeElement
+    panelView = view
+    renderPanel()
+    const panel = $('panel')
+    panel.classList.add('open')
+    panel.removeAttribute('inert')
+    panel.setAttribute('aria-hidden', 'false')
+    poke()
+    requestAnimationFrame(() => (panel.querySelector('[data-focus]') || $('panelClose')).focus({ preventScroll: true }))
+  }
+  function closePanel() {
+    if (!panelView) return
+    panelView = null
+    const panel = $('panel')
+    panel.classList.remove('open')
+    panel.setAttribute('inert', '')
+    panel.setAttribute('aria-hidden', 'true')
+    panelTrigger?.focus?.({ preventScroll: true })
+    poke()
+  }
+  $('panelClose').addEventListener('click', closePanel)
+  $('panelBack').addEventListener('click', () => openPanel('subtitles', true))
+  $('sourcesBtn').addEventListener('click', () => openPanel('sources'))
+  $('subsBtn').addEventListener('click', () => openPanel('subtitles'))
+  $('audioBtn').addEventListener('click', () => openPanel('audio'))
+  $('addonsBtn').addEventListener('click', () => openPanel('addons'))
+  $('keysBtn').addEventListener('click', () => openPanel('keys'))
+  $('errSources').addEventListener('click', () => openPanel('sources'))
+
+  const QUALITY_GROUPS = [['all', 'All'], ['2160p', '4K'], ['1080p', '1080p'], ['720p', '720p'], ['sd', 'SD']]
+  const qualityGroup = (q) => (q === '2160p' || q === '1080p' || q === '720p' ? q : 'sd')
+
+  function renderPanel() {
+    const body = $('panelBody')
+    $('panelBack').hidden = panelView !== 'subLanguage'
+    if (panelView === 'sources') {
+      $('panelTitle').textContent = `Sources${sources.length ? ` (${sources.length})` : ''}`
+      const groups = QUALITY_GROUPS.filter(([key]) => key === 'all' || sources.some((s) => qualityGroup(s.quality) === key))
+      const dubs = dubbedLanguages()
+      const list = sources
+        .filter((s) => sourceFilter === 'all' || qualityGroup(s.quality) === sourceFilter)
+        .filter((s) => audioFilter === 'all' || (audioFilter === 'multi' ? s.multi : (s.languages || []).includes(audioFilter)))
+      body.innerHTML = `
+        <p class="note">Every copy we found, best first. Switching keeps your place.</p>
+        ${groups.length > 2 ? `<div class="chips" role="group" aria-label="Quality">${groups.map(([key, label]) => `<button class="chip" type="button" data-filter="${key}" aria-pressed="${sourceFilter === key}">${label}</button>`).join('')}</div>` : ''}
+        ${dubs.length ? `<div class="chips" role="group" aria-label="Audio language"><button class="chip" type="button" data-audio-filter="all" aria-pressed="${audioFilter === 'all'}">Any audio</button>${dubs.map(([key, label]) => `<button class="chip" type="button" data-audio-filter="${key}" aria-pressed="${audioFilter === key}">${esc(label)}</button>`).join('')}</div>` : ''}
+        ${list.length ? list.map((s) => {
+          const playing = current && current.sourceId === s.id
+          const meta = [
+            `<span class="tag">${esc(s.provider)}</span>`,
+            s.kind === 'url' ? `<span class="tag">${svg('zap')}Direct</span>` : '',
+            s.size ? `<span class="tag">${svg('disk')}${bytes(s.size)}</span>` : '',
+            s.seeds != null ? `<span class="tag">${svg('user')}${s.seeds}</span>` : '',
+            ...(s.languages || []).map((code) => `<span class="tag">${svg('audio')}${esc(languageName(code))}</span>`),
+            s.multi ? `<span class="tag">${svg('audio')}Several languages</span>` : '',
+          ].join('')
+          return `<button class="item" type="button" data-source="${esc(s.id)}" aria-current="${playing}" ${playing ? 'data-focus' : ''}>
+            <span class="q">${esc(s.quality === '2160p' ? '4K' : s.quality || 'SD')}</span>
+            <span class="main"><span class="name">${esc(s.label)}</span><span class="meta">${meta}</span></span>
+            ${playing ? `<span class="check">${svg('check')}</span>` : ''}
+          </button>`
+        }).join('') : '<p class="empty">No copies found. Add a source extension to find more.</p>'}
+        <div class="row" style="margin-top:14px"><button class="btn ghost" type="button" data-open="addons">${svg('puzzle')}Extensions</button></div>`
+    } else if (panelView === 'audio') {
+      $('panelTitle').textContent = 'Audio'
+      const tracks = current?.audioTracks || []
+      const dubs = dubbedLanguages()
+      body.innerHTML = `
+        <div class="group" style="margin-top:4px">In this copy</div>
+        ${tracks.length > 1 ? tracks.map((track, i) => {
+          const on = i === audioTrack
+          const name = languageName(track.lang)
+          const channels = { 1: 'Mono', 2: 'Stereo', 6: '5.1', 8: '7.1' }[track.channels] || (track.channels ? `${track.channels} channels` : '')
+          const meta = [track.title && track.title.toLowerCase() !== name.toLowerCase() && `<span>${esc(track.title)}</span>`, channels && `<span>${channels}</span>`].filter(Boolean).join('')
+          return `<button class="item" type="button" data-track="${i}" aria-current="${on}" ${on ? 'data-focus' : ''}>
+            <span class="main"><span class="name">${esc(name)}</span><span class="meta">${meta}</span></span>
+            ${on ? `<span class="check">${svg('check')}</span>` : ''}
+          </button>`
+        }).join('') : `<p class="note">This copy has one audio track${tracks[0]?.lang ? ` (${esc(languageName(tracks[0].lang))})` : ''}.${dubs.length ? ' For another language, pick a dubbed copy below.' : ''}</p>`}
+        ${dubs.length ? `<div class="group">Dubbed copies</div>${dubs.map(([key, label, count]) => `
+          <button class="item" type="button" data-dub="${esc(key)}">
+            <span class="main"><span class="name">${esc(label)}</span><span class="meta">${count} cop${count === 1 ? 'y' : 'ies'}</span></span>${svg('right', 'style="opacity:.5"')}
+          </button>`).join('')}` : ''}
+        ${prefs.audioLang ? `<div class="group">Remembered</div>
+          <div class="row"><span class="grow" style="color:var(--muted);font-size:13px">${esc(languageName(prefs.audioLang))} audio first, when a copy has it</span><button class="btn ghost" type="button" data-forget-audio>Forget</button></div>` : ''}`
+    } else if (panelView === 'subtitles') {
+      $('panelTitle').textContent = 'Subtitles'
+      const languages = [...new Map(subtitleList.map((s) => [s.lang, s.language])).entries()]
+      const preferred = ['ara', 'fre', 'fra', 'eng']
+      languages.sort((a, b) => ((preferred.indexOf(a[0]) + 1 || 99) - (preferred.indexOf(b[0]) + 1 || 99)) || a[1].localeCompare(b[1]))
+      const count = (lang) => subtitleList.filter((s) => s.lang === lang).length
+      body.innerHTML = `
+        <button class="item" type="button" data-sub-off aria-current="${!subChoice}" ${!subChoice ? 'data-focus' : ''}><span class="main"><span class="name">Off</span></span>${!subChoice ? `<span class="check">${svg('check')}</span>` : ''}</button>
+        ${subChoice?.id === 'file' ? `<button class="item" type="button" aria-current="true" data-focus><span class="main"><span class="name">${esc(subChoice.label)}</span><span class="meta">Your file</span></span><span class="check">${svg('check')}</span></button>` : ''}
+        ${languages.map(([lang, name]) => {
+          const on = subChoice && subChoice.lang === lang
+          return `<button class="item" type="button" data-sub-lang="${esc(lang)}" aria-current="${!!on}" ${on ? 'data-focus' : ''}>
+            <span class="main"><span class="name">${esc(name)}</span><span class="meta">${count(lang)} version${count(lang) === 1 ? '' : 's'}</span></span>
+            ${on ? `<span class="check">${svg('check')}</span>` : svg('right', 'style="opacity:.5"')}
+          </button>`
+        }).join('')}
+        ${!subtitleList.length ? '<p class="note">No subtitles found for this one. Load your own file, or drop it on the player.</p>' : ''}
+        <div class="row" style="margin-top:10px"><button class="btn ghost" type="button" data-sub-file>${svg('upload')}Load a file</button></div>
+        ${subChoice ? `<div class="group">Translate into</div>
+        <div class="chips" role="group" aria-label="Translate the subtitles">
+          <button class="chip" type="button" data-translate="orig" aria-pressed="${!translatedTo}">Original</button>
+          ${TRANSLATE_TO.map(([code, name]) => `<button class="chip" type="button" data-translate="${code}" aria-pressed="${translatedTo === code}" lang="en">${name}</button>`).join('')}
+        </div>
+        <p class="note">Machine translation, done as you watch. Your choice is kept for the next subtitles.</p>` : ''}
+        <div class="group">Size</div>
+        <div class="row"><div class="seg" role="group" aria-label="Subtitle size">${[['s', 'S'], ['m', 'M'], ['l', 'L'], ['xl', 'XL']].map(([k, l]) => `<button type="button" data-sub-size="${k}" aria-pressed="${prefs.subSize === k}">${l}</button>`).join('')}</div></div>
+        <div class="group">Style</div>
+        <div class="row"><div class="seg" role="group" aria-label="Subtitle style">${[['shadow', 'Shadow'], ['box', 'Background']].map(([k, l]) => `<button type="button" data-sub-style="${k}" aria-pressed="${prefs.subStyle === k}">${l}</button>`).join('')}</div></div>
+        <div class="group">Sync</div>
+        <div class="row">
+          <button class="btn ghost" type="button" data-delay="-0.5" aria-label="Show subtitles earlier">−0.5s</button>
+          <span class="grow" style="text-align:center;font-variant-numeric:tabular-nums">${subDelay > 0 ? '+' : ''}${subDelay.toFixed(1)}s</span>
+          <button class="btn ghost" type="button" data-delay="0.5" aria-label="Show subtitles later">+0.5s</button>
+        </div>
+        <p class="note">[ and ] adjust it by 0.1s while you watch.</p>`
+    } else if (panelView === 'subLanguage') {
+      const items = subtitlesIn(subLanguage)
+      $('panelTitle').textContent = items[0]?.language || 'Subtitles'
+      body.innerHTML = `<p class="note">Best match first. Not in sync? Try another version.</p>` + items.map((s, i) => {
+        const on = subChoice && subChoice.id === s.id
+        const match = releaseMatch(s) >= 0.5
+        const meta = [
+          `<span class="tag">${esc(s.provider)}</span>`,
+          match ? `<span class="tag ok">${svg('check')}Made for this copy</span>` : '',
+          s.rating > 0 ? `<span class="tag">${svg('user')}${s.rating}</span>` : '',
+        ].join('')
+        return `<button class="item" type="button" data-sub-id="${esc(s.id)}" aria-current="${!!on}" ${on || (!subChoice && i === 0) ? 'data-focus' : ''}>
+          <span class="q">${i + 1}</span><span class="main"><span class="name">${esc(s.release?.[0] || `Version ${i + 1}`)}</span><span class="meta">${meta}</span></span>
+          ${on ? `<span class="check">${svg('check')}</span>` : ''}
+        </button>`
+      }).join('')
+    } else if (panelView === 'speed') {
+      $('panelTitle').textContent = 'Playback speed'
+      body.innerHTML = SPEEDS.map((s) => {
+        const on = video.playbackRate === s
+        return `<button class="item" type="button" data-speed="${s}" aria-current="${on}" ${on ? 'data-focus' : ''}><span class="main"><span class="name">${s === 1 ? 'Normal' : `${s}×`}</span></span>${on ? `<span class="check">${svg('check')}</span>` : ''}</button>`
+      }).join('') + '<p class="note">&lt; and &gt; change it while you watch.</p>'
+    } else if (panelView === 'addons') {
+      $('panelTitle').textContent = 'Extensions'
+      body.innerHTML = `<p class="note">Extensions add more sources and subtitles to every film and episode. Built in already: YTS, EZTV, YIFY Subtitles and translation.</p>
+        <div class="group">Installed</div>
+        <div id="addonList"><p class="note">Loading…</p></div>
+        <div id="catalogBox" hidden><div class="group">Ready to add</div><div id="catalogList"></div></div>
+        <div class="group">Add one by its address</div>
+        <form id="addonForm" class="row" style="margin-bottom:6px">
+          <input id="addonUrl" class="field grow" type="url" inputmode="url" placeholder="https://…/manifest.json" aria-label="Extension address" required />
+          <button class="btn red" type="submit">Add</button>
+        </form>
+        <p id="addonError" class="error-text" hidden></p>
+        <p class="note">Extensions are made by others: TunisiaFlicks doesn’t control what they offer.</p>`
+      $('addonForm').addEventListener('submit', installAddon)
+      renderAddons()
+    } else if (panelView === 'keys') {
+      $('panelTitle').textContent = 'Keyboard shortcuts'
+      const keys = [
+        [['Space', 'K'], 'Play or pause'], [['←', '→'], 'Back or forward 5s'], [['J', 'L'], 'Back or forward 10s'],
+        [['↑', '↓'], 'Volume'], [['M'], 'Mute'], [['F'], 'Full screen'], [['P'], 'Picture in picture'],
+        [['C'], 'Subtitles on or off'], [['A'], 'Audio and dubbed versions'], [['[', ']'], 'Subtitle delay'], [['<', '>'], 'Speed'],
+        [['0', '…', '9'], 'Jump to 0% … 90%'], [['Home', 'End'], 'Start or end'], [['S'], 'Sources'], [['?'], 'These shortcuts'], [['Esc'], 'Close'],
+      ]
+      body.innerHTML = `<div class="keys">${keys.map(([k, what]) => `<span>${k.map((x) => x === '…' ? '…' : `<kbd>${esc(x)}</kbd>`).join(' ')}</span><span>${esc(what)}</span>`).join('')}</div>`
+    }
+  }
+
+  $('panelBody').addEventListener('click', (e) => {
+    const el = e.target.closest('button')
+    if (!el) return
+    if (el.dataset.filter) { sourceFilter = el.dataset.filter; renderPanel() }
+    else if (el.dataset.audioFilter) { audioFilter = el.dataset.audioFilter; renderPanel() }
+    else if (el.dataset.track) switchAudio(Number(el.dataset.track))
+    else if (el.dataset.dub) { audioFilter = el.dataset.dub; if (el.dataset.dub !== 'multi') savePrefs({ audioLang: el.dataset.dub }); openPanel('sources', true) }
+    else if ('forgetAudio' in el.dataset) { savePrefs({ audioLang: null }); renderPanel() }
+    else if (el.dataset.open) openPanel(el.dataset.open, true)
+    else if (el.dataset.source) {
+      const id = el.dataset.source
+      if (current && current.sourceId === id) return closePanel()
+      closePanel()
+      play(id, now() > 5 ? now() : 0, { wasPaused: video.paused && now() > 5 })
+    }
+    else if ('subOff' in el.dataset) subtitlesOff()
+    else if (el.dataset.subLang) {
+      subLanguage = el.dataset.subLang
+      const first = subtitlesIn(subLanguage)[0]
+      if (!subChoice || subChoice.lang !== subLanguage) chooseSubtitle(first)
+      openPanel('subLanguage', true)
+    }
+    else if (el.dataset.subId) chooseSubtitle(subtitleList.find((s) => s.id === el.dataset.subId))
+    else if ('subFile' in el.dataset) $('subFile').click()
+    else if (el.dataset.subSize) { savePrefs({ subSize: el.dataset.subSize }); applyPrefs(); renderPanel() }
+    else if (el.dataset.subStyle) { savePrefs({ subStyle: el.dataset.subStyle }); applyPrefs(); renderPanel() }
+    else if (el.dataset.delay) setDelay(subDelay + Number(el.dataset.delay))
+    else if (el.dataset.translate) translateTo(el.dataset.translate)
+    else if (el.dataset.speed) setSpeed(Number(el.dataset.speed))
+    else if (el.dataset.remove) removeAddon(el.dataset.remove)
+    else if (el.dataset.install) addExtension(el.dataset.install, el)
+  })
+
+  // ---- extensions -------------------------------------------------------------------------------------------
+  const gives = (a) => {
+    const names = (a.resources || []).map((r) => (typeof r === 'string' ? r : r?.name))
+    return [names.includes('stream') && 'Sources', names.includes('subtitles') && 'Subtitles'].filter(Boolean).join(', ')
+  }
+  const extensionCard = (a, action) => `
+    <div class="addon">
+      ${a.logo ? `<img src="${esc(a.logo)}" alt="" referrerpolicy="no-referrer" />` : `<span class="logo">${svg('puzzle')}</span>`}
+      <div class="main"><b>${esc(a.name)}</b><p>${esc(gives(a))}</p>${a.description ? `<p>${esc(a.description)}</p>` : ''}</div>
+      ${action}
+    </div>`
+  async function renderAddons() {
+    const [installed, catalog] = await Promise.all([
+      json('/addons').then((r) => r.addons || []).catch(() => []),
+      json('/addons/catalog').then((r) => r.extensions || []).catch(() => []),
+    ])
+    const list = $('addonList')
+    if (!list) return
+    list.innerHTML = installed.length
+      ? installed.map((a) => extensionCard(a, `<button class="ctl" type="button" data-remove="${esc(a.id)}" aria-label="Remove ${esc(a.name)}">${svg('trash')}</button>`)).join('')
+      : '<p class="note">None yet.</p>'
+    const ready = catalog.filter((a) => !a.installed)
+    $('catalogBox').hidden = !ready.length
+    $('catalogList').innerHTML = ready.map((a) => extensionCard(a, `<button class="btn" type="button" data-install="${esc(a.url)}">Add</button>`)).join('')
+  }
+  async function addExtension(url, button) {
+    $('addonError').hidden = true
+    const label = button.textContent
+    button.disabled = true
+    button.textContent = 'Adding…'
+    try {
+      const { addon } = await send('/addons', 'POST', { url })
+      toast(`${addon.name} added`)
+      await renderAddons()
+      refreshLists()
+      return true
+    } catch (err) {
+      $('addonError').textContent = err.message
+      $('addonError').hidden = false
+      return false
+    } finally {
+      button.disabled = false
+      button.textContent = label
+    }
+  }
+  async function installAddon(e) {
+    e.preventDefault()
+    if (await addExtension($('addonUrl').value, e.submitter)) $('addonUrl').value = ''
+  }
+  async function removeAddon(id) {
+    try { await json(`/addons/${encodeURIComponent(id)}`, { method: 'DELETE' }) } catch {}
+    await renderAddons()
+    refreshLists()
+  }
+  /** After an extension change: the sources and subtitles again (what's playing keeps playing). */
+  async function refreshLists() {
+    try { sources = (await json(`/sources?${titleQuery()}`)).sources || [] } catch {}
+    // The new list has new ids: find what's playing in it by its name.
+    if (current) {
+      const same = sources.find((s) => s.label === current.label && s.provider === current.provider)
+      if (same) current.sourceId = same.id
+    }
+    loadSubtitleList()
+  }
+
+  // ---- keyboard ------------------------------------------------------------------------------------------
+  addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return
+    const typing = e.target.closest?.('input, textarea')
+    if (e.key === 'Escape') {
+      if (!$('sheet').hidden) { $('sheet').hidden = true; $('castBtn').focus(); return }
+      if (panelView) { closePanel(); return }
+      return
+    }
+    if (typing) return
+    // Space and Enter on a focused button press it.
+    if ((e.key === ' ' || e.key === 'Enter') && e.target.closest?.('button')) return
+    if (!$('sheet').hidden || !$('casting').hidden) return
+    const key = e.key.length === 1 ? e.key.toLowerCase() : e.key
+    if (e.repeat && /^[kmfpcs?0-9 ]$/.test(key)) { e.preventDefault(); return }
+    const handled = () => { e.preventDefault(); poke() }
+    switch (key) {
+      case ' ': case 'k': handled(); togglePlay(); break
+      case 'ArrowLeft': if (e.target === timeline || !panelView) { handled(); nudge(-5) } break
+      case 'ArrowRight': if (e.target === timeline || !panelView) { handled(); nudge(5) } break
+      case 'j': handled(); nudge(-10); break
+      case 'l': handled(); nudge(10); break
+      case 'ArrowUp': if (!panelView) { handled(); setVolume((video.muted ? 0 : video.volume) + 0.05) } break
+      case 'ArrowDown': if (!panelView) { handled(); setVolume((video.muted ? 0 : video.volume) - 0.05) } break
+      case 'm': handled(); toggleMute(); break
+      case 'f': handled(); toggleFullscreen(); break
+      case 'p': handled(); togglePip(); break
+      case 'c': handled(); toggleSubtitles(); break
+      case 's': handled(); openPanel('sources'); break
+      case 'a': handled(); openPanel('audio'); break
+      case '[': handled(); setDelay(subDelay - 0.1); break
+      case ']': handled(); setDelay(subDelay + 0.1); break
+      case '<': case ',': if (e.shiftKey || key === '<') { handled(); stepSpeed(-1) } break
+      case '>': case '.': if (e.shiftKey || key === '>') { handled(); stepSpeed(1) } break
+      case '?': handled(); openPanel('keys'); break
+      case 'Home': handled(); seekTo(0); break
+      case 'End': handled(); seekTo(duration()); break
+      default:
+        if (/^[0-9]$/.test(key) && duration()) { handled(); seekTo(duration() * Number(key) / 10); osd('right', `${Number(key) * 10}%`) }
+    }
+  })
+
+  // ---- Play on TV --------------------------------------------------------------------------------------
+  let cast = null         // { id, device } while a TV plays it
+  let castTimer = null
+  let castState = { state: '', position: 0, duration: 0 }
+  const post = (url, body) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) })
 
   async function findTvs() {
     $('sheet').hidden = false
@@ -263,7 +1394,7 @@
     $('tvList').replaceChildren()
     $('searchAgain').hidden = true
     let devices = []
-    try { devices = (await fetch('/cast/devices').then((r) => r.json())).devices || [] } catch {}
+    try { devices = (await json('/cast/devices')).devices || [] } catch {}
     $('searchAgain').hidden = false
     if (!devices.length) {
       $('sheetText').textContent = 'No TV found. Check the TV is on, and on the same Wi-Fi as this computer.'
@@ -273,11 +1404,11 @@
     for (const device of devices) {
       const pick = document.createElement('button')
       pick.type = 'button'
-      pick.className = 'pick'
-      pick.innerHTML = '<span></span>'
-      const label = pick.firstChild
-      label.textContent = device.name
-      if (device.model) { const small = document.createElement('small'); small.textContent = device.model; label.append(small) }
+      pick.className = 'item'
+      pick.style.background = 'rgba(255,255,255,.08)'
+      pick.innerHTML = `<span class="main"><span class="name"></span><span class="meta"></span></span>`
+      pick.querySelector('.name').textContent = device.name
+      pick.querySelector('.meta').textContent = device.model || ''
       pick.addEventListener('click', () => startCast(device))
       $('tvList').append(pick)
     }
@@ -287,7 +1418,7 @@
   async function startCast(device) {
     $('sheetText').textContent = `Sending it to ${device.name}…`
     $('tvList').replaceChildren()
-    const position = video.currentTime || 0
+    const position = now()
     try {
       const res = await post('/cast/start', { deviceId: device.id, infoHash: current.infoHash, index: current.index, title: current.name || current.title, position })
       const body = await res.json()
@@ -328,8 +1459,8 @@
     $('casting').hidden = true
     $('castBtn').hidden = false
     // Carry on here from where the TV was.
-    if (castState.position) { try { video.currentTime = castState.position } catch {} }
-    video.focus()
+    if (castState.position) seekTo(castState.position)
+    $('playBtn').focus()
   }
 
   $('castBtn').addEventListener('click', findTvs)
@@ -340,21 +1471,18 @@
     await post(`/cast/${cast.id}/${castState.state === 'PLAYING' ? 'pause' : 'play'}`).catch(() => {})
     pollCast()
   })
-  const nudge = (delta) => async () => {
+  const castNudge = (delta) => async () => {
     if (!cast) return
     await post(`/cast/${cast.id}/seek`, { position: Math.max(0, (castState.position || 0) + delta) }).catch(() => {})
     pollCast()
   }
-  $('castBack').addEventListener('click', nudge(-10))
-  $('castFwd').addEventListener('click', nudge(30))
+  $('castBack').addEventListener('click', castNudge(-10))
+  $('castFwd').addEventListener('click', castNudge(30))
   $('castStop').addEventListener('click', () => endCast(true))
-  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('sheet').hidden) { $('sheet').hidden = true; $('castBtn').focus() } })
-  video.addEventListener('pause', () => document.body.classList.add('paused'))
-  video.addEventListener('play', () => document.body.classList.remove('paused'))
 
-  $('retry').addEventListener('click', play)
+  $('retry').addEventListener('click', () => (current?.sourceId ? play(current.sourceId, now()) : start()))
   addEventListener('pagehide', stopStats)
-  play()
+  start()
 </script>
 </body>
 </html>
