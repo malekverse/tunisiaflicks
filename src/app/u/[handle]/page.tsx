@@ -29,13 +29,12 @@ type Props = { params: { handle: string }; searchParams: Record<string, string |
 
 const keyOf = (searchParams: Props['searchParams']) => (typeof searchParams.k === 'string' && searchParams.k.length <= 64 ? searchParams.k : null)
 
-// The not-found and the redirects happen here: metadata settles before the page (and the root
-// loading screen) start streaming with a 200, so the status is a real 404 or 308.
+// The real 404 and 308 come from the middleware (../_lib/gate.ts): under the root loading screen
+// the page streams with a 200 whatever it finds, metadata included. Here a page nobody may see
+// only gets a quiet, unindexed title.
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const t = getT()
   const view = await loadProfileView(params.handle, keyOf(searchParams))
-  if (view.kind === 'not_found') notFound()
-  if (view.kind === 'redirect') permanentRedirect(pathWithQuery(`/u/${view.to}`, searchParams))
   if (view.kind !== 'page') return { title: `${t('notFound.message')} | TunisiaFlicks`, robots: { index: false, follow: false } }
   const { identity } = view
   return pageMetadata({
