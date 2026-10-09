@@ -4,6 +4,8 @@ import type { MetadataRoute } from 'next'
 // splash colours and a standalone, app-like window.
 export default function manifest(): MetadataRoute.Manifest {
   return {
+    // A stable identity for the installed app (and the Google Play app built from it).
+    id: '/',
     name: 'TunisiaFlicks',
     short_name: 'TunisiaFlicks',
     description: 'Movies, TV shows and Tunisian series in one place.',
