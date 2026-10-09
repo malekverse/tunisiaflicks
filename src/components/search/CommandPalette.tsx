@@ -2,16 +2,26 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Command } from 'cmdk'
-import { ArrowUpRight, Clock, CornerDownLeft, Loader2, Search, TrendingUp, X } from 'lucide-react'
+import { ArrowUpRight, Clock, CornerDownLeft, Loader2, Search, Sparkle, TrendingUp, X } from 'lucide-react'
 import TmdbImage from '@/src/components/TmdbImage'
+import { AiMark } from '@/src/components/ai/AiMark'
 import { getTrendingSuggestions, searchMovies, type TrendingSuggestion } from '@/src/app/search/actions'
+import { aiSearchStatus } from '@/src/app/search/ai-actions'
 import { addRecentSearch, clearRecentSearches, getRecentSearches, removeRecentSearch } from '@/src/lib/recent-searches'
+import { looksLikeAsk, wordCount } from '@/src/lib/ai-search/normalize'
+import { hourlyPrompts } from '@/src/lib/ai-search/prompts'
+import { richT } from '@/src/lib/i18n/rich'
+import type { TKey } from '@/src/lib/i18n'
 import { useI18n } from '@/src/components/I18nProvider'
+import { useProfiles } from '@/src/hooks/use-profiles'
+import { useTvMode } from '@/src/hooks/use-tv-mode'
 import { useSearchPalette } from '@/src/store/search-palette'
 
 const MAX_RESULTS = 8
 
 let trendingCache: Promise<TrendingSuggestion[]> | null = null
+/** Whether Ask exists on this site: asked once per page load. */
+let askStatus: Promise<{ enabled: boolean }> | null = null
 
 const hrefFor = (item: { media_type: string, id: number | string }) =>
     item.media_type === 'person' ? `/person/${item.id}` : `/${item.media_type === 'tv' ? 'tv' : 'movie'}/${item.id}`
@@ -20,6 +30,11 @@ const hrefFor = (item: { media_type: string, id: number | string }) =>
  * The ⌘K / "/" search palette: trending titles and recent searches before typing, then live
  * results (titles and people) as you type. Fully keyboard-driven (cmdk). It opens instantly, with
  * no animation: it's a tool people reach for many times a session.
+ *
+ * Ask (AI search), when the site has it, for grown-ups, outside TV mode: "Ask: “…”" is the first
+ * item when what's typed reads like a description (looksLikeAsk), else the last one from three
+ * words (after titles and people, so "the lord of the rings" + Enter still opens the film).
+ * Ctrl/⌘ + Enter asks from anywhere; before typing, "Try asking" offers two examples.
  */
 export default function CommandPalette() {
     const router = useRouter()
@@ -31,13 +46,23 @@ export default function CommandPalette() {
     const [loading, setLoading] = useState(false)
     const [recent, setRecent] = useState<string[]>([])
     const [trending, setTrending] = useState<TrendingSuggestion[]>([])
+    const [aiOn, setAiOn] = useState(false)
+    const [mac, setMac] = useState(false)
     const trimmed = query.trim()
+    const { data: profiles, active } = useProfiles()
+    const tv = useTvMode()
+    // Kids: the active profile's flag; before one is picked, any Kids profile counts (as on the server).
+    const kids = active ? active.kids : !!profiles?.profiles.some((profile) => profile.kids)
+    const askOn = aiOn && !kids && !tv
 
     useEffect(() => {
         if (!open) return
         setRecent(getRecentSearches())
         trendingCache ??= getTrendingSuggestions().catch(() => [])
         trendingCache.then(setTrending)
+        askStatus ??= aiSearchStatus().catch(() => ({ enabled: false }))
+        askStatus.then((status) => setAiOn(status.enabled))
+        setMac(/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent))
     }, [open])
 
     // Debounced search; responses to outdated queries are dropped.
@@ -77,9 +102,30 @@ export default function CommandPalette() {
         setQuery('')
         router.push(href)
     }
+    const ask = (question: string) => go(`/search?mode=ask&q=${encodeURIComponent(question)}`, question)
+
+    // Where Ask goes: first when it reads like a description; otherwise last from three words, once
+    // the title results are in (so Enter never asks while they load).
+    const askFirst = askOn && !!trimmed && looksLikeAsk(trimmed)
+    const askLast = askOn && !askFirst && !loading && wordCount(trimmed) >= 3
+    const prompts = useMemo(() => (open ? hourlyPrompts(2) : []), [open])
 
     const row = 'group flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 outline-none data-[selected=true]:bg-white/[0.09]'
     const heading = '[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-white/45'
+
+    // Same metrics as a title row: a 36x54 slot, the mark centred in it.
+    const askItem = (
+        <Command.Item value="ask" onSelect={() => ask(trimmed)} className={row}>
+            <span className="grid h-[54px] w-9 shrink-0 place-items-center">
+                <AiMark size={36} />
+            </span>
+            <span className="min-w-0 flex-1">
+                <span className="block truncate text-start text-[15px]">{richT(t, 'ai.askQuery', { query: trimmed })}</span>
+                <span className="block truncate text-xs text-white/50">{t('ai.askQueryHint')}</span>
+            </span>
+            <CornerDownLeft aria-hidden className="h-4 w-4 shrink-0 text-white/0 transition-colors group-data-[selected=true]:text-white/50 rtl:-scale-x-100" />
+        </Command.Item>
+    )
 
     return (
         <Command.Dialog
@@ -101,6 +147,14 @@ export default function CommandPalette() {
                         onValueChange={setQuery}
                         placeholder={t('search.open')}
                         onKeyDown={(event) => {
+                            // Ctrl/⌘ + Enter: ask, whatever is highlighted (cmdk skips a handled key).
+                            if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+                                if (askOn && trimmed && !event.nativeEvent.isComposing) {
+                                    event.preventDefault()
+                                    ask(trimmed)
+                                }
+                                return
+                            }
                             // Enter with nothing highlighted: open the full results page.
                             if (event.key === 'Enter' && trimmed && !document.querySelector('[cmdk-item][data-selected="true"]')) {
                                 go(`/search?q=${encodeURIComponent(trimmed)}`)
@@ -112,9 +166,11 @@ export default function CommandPalette() {
                 </div>
 
                 <Command.List className={`no-scrollbar max-h-[min(60vh,520px)] overflow-y-auto overscroll-contain p-2 ${heading}`}>
-                    {trimmed && !loading && results.length === 0 && (
+                    {trimmed && !loading && results.length === 0 && !askFirst && !askLast && (
                         <Command.Empty className="px-3 py-10 text-center text-sm text-white/55">{t('search.noResultsFor', { query: trimmed })}</Command.Empty>
                     )}
+
+                    {askFirst && askItem}
 
                     {!trimmed && recent.length > 0 && (
                         <Command.Group heading={t('search.recent')}>
@@ -135,6 +191,17 @@ export default function CommandPalette() {
                             <Command.Item value="clear-recent" onSelect={() => setRecent(clearRecentSearches())} className={`${row} text-sm text-white/50`}>
                                 <span className="ps-7">{t('search.clearRecent')}</span>
                             </Command.Item>
+                        </Command.Group>
+                    )}
+
+                    {!trimmed && askOn && prompts.length > 0 && (
+                        <Command.Group heading={t('ai.try.title')}>
+                            {prompts.map((key) => (
+                                <Command.Item key={key} value={key} onSelect={() => ask(t(key as TKey))} className={row}>
+                                    <Sparkle aria-hidden className="h-4 w-4 shrink-0 fill-white/50 text-white/50" strokeWidth={1.4} />
+                                    <bdi className="flex-1 truncate text-[15px]">{t(key as TKey)}</bdi>
+                                </Command.Item>
+                            ))}
                         </Command.Group>
                     )}
 
@@ -197,6 +264,8 @@ export default function CommandPalette() {
                         </Command.Group>
                     )}
 
+                    {askLast && askItem}
+
                     {trimmed && results.length > 0 && (
                         <Command.Item value="see-all" onSelect={() => go(`/search?q=${encodeURIComponent(trimmed)}`)} className={`${row} mt-1 justify-center text-sm text-white/70`}>
                             {t('search.seeAll', { query: trimmed })}
@@ -209,6 +278,7 @@ export default function CommandPalette() {
                     <span><kbd className="me-1 font-sans">↑↓</kbd>{t('search.navigateHint')}</span>
                     <span><kbd className="me-1 font-sans">↵</kbd>{t('search.selectHint')}</span>
                     <span><kbd className="me-1 font-sans">esc</kbd>{t('search.closeHint')}</span>
+                    {askOn && <span className="ms-auto"><kbd className="me-1 font-sans">{mac ? '⌘↵' : 'Ctrl ↵'}</kbd>{t('ai.hint')}</span>}
                 </div>
             </div>
         </Command.Dialog>

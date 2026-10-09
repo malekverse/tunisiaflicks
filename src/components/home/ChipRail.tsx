@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import {
-  Baby, Camera, Dices, Drama, Eye, Flag, Ghost, Gift, GraduationCap, Heart, HeartHandshake, Landmark, Laugh, Mic2, MoonStar, Mountain,
-  Music, Newspaper, Palette, PartyPopper, Popcorn, Rocket, Shield, Siren, Skull, Snowflake, Sparkles, Sun, Swords, Timer, Trophy, Tv,
+  Baby, CalendarPlus, Camera, Dices, Drama, Eye, Flag, Ghost, Gift, GraduationCap, Heart, HeartHandshake, Landmark, Laugh, Mic2, MoonStar,
+  Mountain, Music, Newspaper, Palette, PartyPopper, Popcorn, Rocket, Shield, Siren, Skull, Snowflake, Sun, Swords, Timer, Trophy, Tv,
   Users, Video, Wand2, Zap,
   type LucideIcon,
 } from 'lucide-react'
@@ -11,6 +11,9 @@ import { isGrownUpGenre } from '@/src/lib/kids'
 import { getKidsMode } from '@/src/lib/profiles'
 import { activeMoments, type MomentId } from '@/src/lib/moments'
 import { getSeasonalBanner } from '@/src/lib/seasons'
+import { isTvMode } from '@/src/lib/tv-mode'
+import { aiSearchEnabled } from '@/src/lib/ai-search/config'
+import { AiMark } from '@/src/components/ai/AiMark'
 import { cn } from '@/src/lib/utils'
 import type { TKey } from '@/src/lib/i18n'
 
@@ -46,7 +49,8 @@ const MOODS: Mood[] = [
   { href: '/discover?runtime=90&sort=top', icon: Timer, label: 'mood.short', movieOnly: true, fit: ({ slot, weekend }) => (slot === 'late' ? 6 : slot === 'evening' && !weekend ? 5 : 2) },
   { href: '/discover?family=1&sort=top', icon: Users, label: 'mood.family', fit: ({ slot, weekend }) => (weekend && slot !== 'late' ? 6 : slot === 'afternoon' ? 4 : slot === 'late' ? 0 : 2) },
   { href: '/discover?runtime=epic&sort=top', icon: Popcorn, label: 'mood.epic', movieOnly: true, fit: ({ slot, weekend }) => (weekend && slot !== 'late' ? 5 : slot === 'late' ? 0 : 1) },
-  { href: '/discover?sort=newest', icon: Sparkles, label: 'mood.new', fit: ({ slot }) => (slot === 'morning' || slot === 'afternoon' ? 5 : 3) },
+  // Sparkles would read as AI (AiMark's star): "New" gets a calendar.
+  { href: '/discover?sort=newest', icon: CalendarPlus, label: 'mood.new', fit: ({ slot }) => (slot === 'morning' || slot === 'afternoon' ? 5 : 3) },
   { href: '/discover?type=tv&runtime=90&sort=top', icon: Tv, label: 'mood.bingeable', fit: ({ slot, weekend }) => (slot === 'late' ? 5 : !weekend ? 4 : 2) },
   { href: '/genres/35', icon: Laugh, label: 'mood.laugh', fit: ({ slot, weekend }) => (slot === 'late' || (slot === 'evening' && !weekend) ? 4 : 2) },
   { href: '/swipe', icon: HeartHandshake, label: 'mood.swipe', fit: ({ slot, weekend }) => (slot === 'evening' && weekend ? 5 : slot === 'evening' ? 3 : 1) },
@@ -73,9 +77,11 @@ const GENRE_ICONS: Record<number, LucideIcon> = {
 const chip = 'pressable inline-flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-[13.5px] font-medium outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-red-500'
 
 /**
- * Under the billboard: what's on (Halloween, Eid...) first, lit in its colour; then moods ordered
- * for the time of day (short films late at night, a long one or the family on weekend evenings);
- * then every genre. One scrolling rail, so there's a way in for any mood without a wall of buttons.
+ * Under the billboard: Ask first (describe what you feel like; grown-ups only, never in TV mode,
+ * and only when AI search is on), then what's on (Halloween, Eid...) lit in its colour; then moods
+ * ordered for the time of day (short films late at night, a long one or the family on weekend
+ * evenings); then every genre. One scrolling rail, so there's a way in for any mood without a wall
+ * of buttons.
  */
 export default async function ChipRail({ type = 'movie', className }: { type?: 'movie' | 'tv', className?: string }) {
   const t = getT()
@@ -95,9 +101,16 @@ export default async function ChipRail({ type = 'movie', className }: { type?: '
   const moments = activeMoments(kids).filter((moment) => moment.id !== banner?.id).slice(0, 2)
   const day = context.slot === 'morning' || context.slot === 'afternoon'
   const moodHref = (mood: Mood) => (type === 'tv' && mood.href.startsWith('/genres/') ? `${mood.href}?type=tv` : mood.href)
+  const ask = aiSearchEnabled() && !kids && !isTvMode()
 
   return (
     <nav aria-label={t(day ? 'mood.titleDay' : 'mood.title')} className={cn('rail-x no-scrollbar flex items-center gap-2 overflow-x-auto overflow-y-hidden px-[var(--gutter)] py-1', className)}>
+      {ask && (
+        <Link href="/search?mode=ask" className={cn(chip, 'glass gap-2.5 ps-1.5 text-white hover:bg-white/[0.14]')}>
+          <AiMark size={28} />
+          {t('ai.ask')}
+        </Link>
+      )}
       {moments.map((moment) => {
         const Icon = MOMENT_ICONS[moment.id]
         return (
