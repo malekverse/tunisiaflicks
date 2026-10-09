@@ -415,3 +415,36 @@ html.tf-launch .tf-launch-wordmark { animation: tf-wipe 550ms cubic-bezier(0.23,
   html.tf-launch .tf-launch-mark > path,
   html.tf-launch .tf-launch-wordmark { animation: none !important; opacity: 1; clip-path: none; }
 }
+
+/*
+  Older TV browsers (Samsung before 2022, LG before 2021: Chromium under 88) don't know
+  aspect-ratio, so every box sized by it (the player, posters, stills) would collapse to nothing.
+  There, a floated pseudo-element of the right height props each box open instead.
+*/
+@supports not (aspect-ratio: 1 / 1) {
+  .aspect-video::before, .aspect-square::before, .aspect-\[2\/3\]::before, .aspect-\[16\/9\]::before,
+  .aspect-\[21\/9\]::before, .aspect-\[16\/10\]::before, .aspect-\[4\/3\]::before, .aspect-\[5\/4\]::before,
+  .aspect-\[10\/9\]::before, .aspect-\[10\/8\]::before, .aspect-\[9\/16\]::before {
+    content: '';
+    float: left;
+    width: 1px;
+    margin-left: -1px;
+  }
+  .aspect-video::after, .aspect-square::after, .aspect-\[2\/3\]::after, .aspect-\[16\/9\]::after,
+  .aspect-\[21\/9\]::after, .aspect-\[16\/10\]::after, .aspect-\[4\/3\]::after, .aspect-\[5\/4\]::after,
+  .aspect-\[10\/9\]::after, .aspect-\[10\/8\]::after, .aspect-\[9\/16\]::after {
+    content: '';
+    display: block;
+    clear: both;
+  }
+  .aspect-video::before, .aspect-\[16\/9\]::before { padding-top: 56.25%; }
+  .aspect-square::before { padding-top: 100%; }
+  .aspect-\[2\/3\]::before { padding-top: 150%; }
+  .aspect-\[21\/9\]::before { padding-top: 42.857%; }
+  .aspect-\[16\/10\]::before { padding-top: 62.5%; }
+  .aspect-\[4\/3\]::before { padding-top: 75%; }
+  .aspect-\[5\/4\]::before { padding-top: 80%; }
+  .aspect-\[10\/9\]::before { padding-top: 90%; }
+  .aspect-\[10\/8\]::before { padding-top: 80%; }
+  .aspect-\[9\/16\]::before { padding-top: 177.78%; }
+}
