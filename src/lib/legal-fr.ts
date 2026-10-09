@@ -123,6 +123,12 @@ export const fr: Record<LegalPageId, LegalDoc> = {
         ],
       },
       {
+        heading: 'Les apps',
+        paragraphs: [
+          'Les apps Android se téléchargent depuis GitHub, qui héberge les fichiers\u00a0; ce site ne fait qu’y renvoyer. L’app pour téléphone affiche le site dans Chrome, et l’app TV dans la WebView d’Android\u00a0: elles n’ajoutent aucun suivi et ne collectent rien d’elles-mêmes, et le site s’y comporte exactement comme dans un navigateur. Sur un iPhone, un iPad ou un ordinateur, le site installé reste sur votre appareil comme n’importe quel site.',
+        ],
+      },
+      {
         heading: 'Télés connectées depuis un téléphone',
         paragraphs: [
           'Pour connecter une télé, vous approuvez depuis votre téléphone le code qu’elle affiche. Une session TV est liée à un seul profil et ne peut changer ni votre adresse e-mail, ni votre mot de passe, ni vos profils, ni votre page. Chaque télé connectée apparaît dans les Réglages, avec son type d’appareil et sa dernière utilisation, et vous pouvez la déconnecter\u00a0; elle l’est dans les 5 minutes. Les codes d’appairage expirent après 10 minutes.',

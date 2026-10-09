@@ -146,8 +146,16 @@ after an error; three reports of a wrong album block it) and "Where have I seen 
 Any TV browser: `/?tv=1` (or the offer, or the setting) switches to a remote-friendly shell with a focus engine
 on the same URLs; `/?tv=0` switches back. A TV signs in by showing a code that you approve from your phone at
 `/activate`; TV sessions are tied to one profile, can't change account settings, and are listed and revocable
-in Settings `#security`. `/app` explains installing the site and TV mode. (The Android TV APK and the Google
-Play app are parked on the `feat/android-apps` branch.)
+in Settings `#security`. `/app` offers the apps.
+
+### The apps
+
+`/app` and a well-timed offer (`src/components/apps/AppOffer.tsx`) give each device its app, from the site
+itself: Android phones and Android TV get APKs (`android/phone`, a Trusted Web Activity, and `android/tv`, a
+locked-down WebView), served through `/download/android` and `/download/tv`; iPhone and iPad add the site to
+the Home Screen; Windows, Mac and Linux install it from the browser. The site finds the newest `android-v…`
+GitHub release by itself (`src/lib/app-releases.ts`); a tag builds and signs both APKs
+(`.github/workflows/android-apps.yml`). Setup and releasing: `docs/apps.md`.
 
 ## Project layout
 

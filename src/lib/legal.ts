@@ -133,6 +133,12 @@ const en: Record<LegalPageId, LegalDoc> = {
         ],
       },
       {
+        heading: 'The apps',
+        paragraphs: [
+          'The Android apps are downloaded from GitHub, which hosts the files; this site only links to them. The phone app shows the site in Chrome and the TV app in Android\'s WebView: they add no tracking and collect nothing of their own, and the site behaves in them exactly as in a browser. On an iPhone, an iPad or a computer, installing the site keeps it on your device like any website.',
+        ],
+      },
+      {
         heading: 'TVs signed in from a phone',
         paragraphs: [
           'To sign a TV in, you approve the code it shows from your phone. A TV session is tied to one profile and cannot change your e-mail address, password, profiles or page. You see every signed-in TV in Settings, with its device type and when it was last used, and can sign it out there; it is signed out within 5 minutes. Pairing codes expire after 10 minutes.',
@@ -350,6 +356,12 @@ const ar: Record<LegalPageId, LegalDoc> = {
         heading: 'الفيديوهات والتلفزة التونسية والموسيقى التصويرية',
         paragraphs: [
           'تأتي الإعلانات والمقاطع الإضافية وفيديوهات القنوات التونسية من يوتيوب. تصلك صورها عبر خادمنا، فلا يُتّصل بيوتيوب إلا عند الضغط على تشغيل، ثم يُشغَّل الفيديو من يوتيوب (youtube-nocookie.com) وفق سياسة خصوصيته. تأتي الموسيقى التصويرية من Deezer: نحتفظ بالألبوم المطابق لكل عنوان، ولا شيء عنك، ولا يُشغَّل مقطع من Deezer إلا عند الضغط عليه. يُحتسب البلاغ عن ألبوم خاطئ مرة واحدة لكل عنوان شبكة، دون تخزين هذا العنوان.',
+        ],
+      },
+      {
+        heading: 'التطبيقات',
+        paragraphs: [
+          'تُنزَّل تطبيقات أندرويد من GitHub الذي يستضيف الملفات، ويكتفي هذا الموقع بالإشارة إليها. يعرض تطبيق الهاتف الموقع داخل كروم، ويعرضه تطبيق التلفاز داخل WebView الخاص بأندرويد: لا يضيفان أي تتبّع ولا يجمعان شيئًا من تلقاء نفسيهما، والموقع فيهما كما هو في المتصفح. على آيفون أو آيباد أو الحاسوب، يبقى الموقع المثبَّت على جهازك كأي موقع.',
         ],
       },
       {
