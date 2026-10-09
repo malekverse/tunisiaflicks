@@ -224,7 +224,16 @@ export default function PeopleList({ handle, name }: { handle: string; name: str
                     ))}
                     {lists.outgoing.map((request) => (
                       <m.div key={`out-${request.id}`} {...rowMotion}>
-                        <PersonRow person={request.person}>
+                        <PersonRow
+                          person={request.person}
+                          // Phones: 'Requested' joins the @handle line (no room beside Cancel).
+                          line={(
+                            <span className="flex min-w-0 gap-x-3 text-[13px] text-white/55">
+                              <bdi dir="ltr" className="truncate">@{request.person.handle}</bdi>
+                              <span className="shrink-0 sm:hidden">{t('social.list.requested')}</span>
+                            </span>
+                          )}
+                        >
                           <span className="hidden text-[13px] text-white/55 sm:inline">{t('social.list.requested')}</span>
                           <Button size="sm" variant="ghost" className={cn(ROW_BUTTON, 'ring-1 ring-inset ring-white/[0.12]')} onClick={() => void cancel(request)} disabled={busy === request.id} aria-label={t('social.list.cancelName', { name: request.person.name })}>
                             {t('common.cancel')}

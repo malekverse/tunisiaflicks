@@ -39,9 +39,19 @@ for (const [path, back] of [['/friends', '%2Ffriends'], ['/friends/list', '%2Ffr
 test('guest: an unknown page is 404 and noindex', async () => {
   for (const path of ['/u/does-not-exist', '/u/x', '/u/not%20a%20handle', '/u/' + 'a'.repeat(30)]) {
     const res = await get(path)
-    assert.equal(res.status, 404, path)
+    // The status comes from the middleware (src/app/u/_lib/middleware-gate.ts): the page itself
+    // streams behind the root loading screen with a 200 and only shows the not-found.
+    assert.equal(res.status, 404, `${path} (is profilePageGate wired into src/middleware.ts?)`)
     const page = await html(res)
     assert.ok(/<meta name="robots" content="[^"]*noindex/.test(page), `${path} noindex`)
+  }
+})
+
+test('the page’s gate is internal: without the middleware’s token it is a plain 404', async () => {
+  for (const path of ['/u/does_not_exist/gate', '/u/sami_b/gate']) {
+    const res = await get(path, { headers: { 'x-tf-page-gate': '0'.repeat(64) } })
+    assert.equal(res.status, 404, path)
+    assert.equal((await res.text()).length, 0, `${path}: nothing in the body`)
   }
 })
 
