@@ -7,8 +7,9 @@
 //
 // SECURITY: it exposes a torrent engine over HTTP, so it is locked down — it binds to loopback only,
 // accepts requests only for localhost (anti DNS-rebinding), only lets allow-listed web origins drive
-// it (CORS + Origin), and only accepts magnets/infohashes (never arbitrary URLs/paths → no SSRF /
-// local-file reads). It is LEECH-ONLY (upload throttled to 0): it downloads but does not seed.
+// it (CORS + Origin), and never takes a URL or a path from a page: it plays magnets/infohashes, and
+// the links of the extensions the viewer installed, which it keeps behind random ids (the page only
+// ever sends an id back); ffmpeg/ffprobe may only open them over http(s). See README "Security".
 //
 // Test only with content you are allowed to stream (public-domain / Creative-Commons / Linux ISOs);
 // the default demos are Blender open movies (Sintel, Big Buck Bunny), CC-BY.
@@ -25,9 +26,13 @@ import path from 'node:path'
 import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import * as ffbin from 'ffmpeg-ffprobe-static'
-import { analyze, ffmpegArgs } from './codec.js'
+import { analyze, ffmpegArgs, withAudio } from './codec.js'
 import { tmdbTitle, movieMagnets, tvMagnets, rankOptions } from './resolve.js'
 import * as dlna from './dlna.js'
+import { audioLanguagesOf, createAddonStore, decodeSubtitle, languageOf, sourceFromStream, mediaId } from './addons.js'
+import { createStateStore, isTitleKey } from './state.js'
+import { MAX_CHARS, MAX_LINES, TARGETS, translateLines } from './translate.js'
+import { builtInSubtitles, downloadSubtitle } from './subtitles.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -37,6 +42,8 @@ const DOWNLOAD_DIR = process.env.DOWNLOAD_DIR || path.join(os.tmpdir(), 'tunisia
 const MAX_TORRENTS = Number(process.env.MAX_TORRENTS) || 12       // keep few swarms alive at once
 const IDLE_MS = Number(process.env.IDLE_MS) || 10 * 60 * 1000     // drop a torrent after 10m unused
 const TRANSCODE_MAXHEIGHT = Number(process.env.TRANSCODE_MAXHEIGHT) || 1080
+// What the player keeps between runs (the installed add-ons). The desktop app passes its own folder.
+const DATA_DIR = process.env.DATA_DIR || path.join(os.homedir(), '.tunisiaflicks-player')
 
 // Web origins allowed to drive the service (CORS + Origin check). The app's own origins + dev.
 const ALLOWED_ORIGINS = new Set(
@@ -93,6 +100,17 @@ function pickBestFile(torrent) {
   const videos = torrent.files.filter((f) => isVideo(f.name))
   const pool = videos.length ? videos : torrent.files
   return pool.reduce((best, f) => (!best || f.length > best.length ? f : best), null)
+}
+
+/** The file to play: the one the source names, else the episode's in a season pack, else the largest. */
+function pickFile(torrent, { fileIdx = null, season = null, episode = null } = {}) {
+  if (Number.isInteger(fileIdx) && torrent.files[fileIdx] && isVideo(torrent.files[fileIdx].name)) return torrent.files[fileIdx]
+  if (season && episode) {
+    const code = new RegExp(`(^|[^0-9])(s0*${season}[ ._-]*e0*${episode}|0*${season}x0*${episode})([^0-9]|$)`, 'i')
+    const matches = torrent.files.filter((f) => isVideo(f.name) && code.test(f.name))
+    if (matches.length) return matches.reduce((best, f) => (f.length > best.length ? f : best))
+  }
+  return pickBestFile(torrent)
 }
 
 async function infoHashOf(input) {
@@ -201,6 +219,26 @@ function probeFile(file) {
   })
 }
 
+/** ffprobe a direct http(s) link (an add-on's stream): only network protocols, a time limit. */
+function probeUrl(url) {
+  return new Promise((resolve) => {
+    let out = ''
+    let settled = false
+    const finish = (val) => { if (!settled) { settled = true; clearTimeout(timer); try { ff.kill('SIGKILL') } catch {} ; resolve(val) } }
+    const ff = spawn(FFPROBE, ['-v', 'error', '-protocol_whitelist', 'http,https,tcp,tls,crypto', '-probesize', '5M', '-analyzeduration', '5M',
+      '-show_streams', '-show_format', '-of', 'json', '-i', url])
+    const timer = setTimeout(() => finish(null), 25000)
+    ff.stdout.on('data', (d) => { out += d })
+    ff.on('error', () => finish(null))
+    ff.on('close', () => {
+      try {
+        const json = JSON.parse(out)
+        finish(json && Array.isArray(json.streams) && json.streams.length ? json : null)
+      } catch { finish(null) }
+    })
+  })
+}
+
 /** Analysis for a file index. A real ffprobe result is cached; a failed probe returns a provisional
  *  extension-based guess WITHOUT caching, so a later request re-probes once the header has arrived. */
 async function analysisFor(entry, index) {
@@ -285,65 +323,317 @@ async function handleAdd(req, res) {
 app.get('/add', requireAllowedOrigin, handleAdd)
 app.post('/add', requireAllowedOrigin, handleAdd)
 
-/** Given a title (TMDB or IMDB id), find the best magnet, join the swarm and return a play URL.
- *  Copies are tried best-first (see rankOptions); one whose swarm doesn't answer makes way for the
- *  next, so a single dead torrent doesn't mean "not available". */
+// ---- sources: every copy of a title, from YTS/EZTV and the installed add-ons -----------------
+//
+// The player lists them (the source picker) and plays the one picked, or the best one. Each source
+// gets a random id; the page only ever sends that id back, never a magnet or a link, so the
+// service still never fetches an address a page gave it.
+
+const addonStore = createAddonStore(DATA_DIR)
+const sources = new Map()       // id -> source { kind, magnet | url, fileIdx, … , at }
+const titleSources = new Map()  // 'tv:1399:1:1' -> { at, payload }
+const subtitleFiles = new Map() // id -> { url, lang, at, text? }
+const SOURCES_TTL = 10 * 60 * 1000
+const newId = () => crypto.randomBytes(9).toString('hex')
+
+setInterval(() => {
+  const old = Date.now() - 6 * 60 * 60 * 1000
+  for (const map of [sources, subtitleFiles]) for (const [id, item] of map) if (item.at < old) map.delete(id)
+}, 30 * 60 * 1000).unref()
+
+/** The title of a request: { type, tmdb, season, episode, key } or null. */
+function titleOf(query) {
+  const type = query.type === 'tv' ? 'tv' : 'movie'
+  const tmdb = /^\d{1,9}$/.test(String(query.tmdb || '')) ? String(query.tmdb) : null
+  if (!tmdb) return null
+  const season = type === 'tv' ? Math.max(0, Math.min(999, Number(query.season) || 1)) : null
+  const episode = type === 'tv' ? Math.max(0, Math.min(9999, Number(query.episode) || 1)) : null
+  return { type, tmdb, season, episode, key: [type, tmdb, season, episode].filter((v) => v !== null).join(':') }
+}
+
+const hashOfMagnet = (magnet) => /xt=urn:btih:([0-9a-f]{40})/i.exec(magnet)?.[1]?.toLowerCase() || null
+
+/** Every source for a title, best first (see rankOptions), cached for a few minutes. */
+async function sourcesFor(title) {
+  const cached = titleSources.get(title.key)
+  if (cached && Date.now() - cached.at < SOURCES_TTL) return cached.payload
+
+  const info = await tmdbTitle(title.type, title.tmdb, TMDB_KEY)
+  const imdb = info?.imdb || null
+  const names = info?.names ?? []
+  if (!imdb) return { imdb: null, names, list: [] }
+
+  const kind = title.type === 'tv' ? 'series' : 'movie'
+  const [builtIn, answers] = await Promise.all([
+    title.type === 'movie' ? movieMagnets(imdb) : tvMagnets(imdb, title.season, title.episode, names),
+    addonStore.ask('stream', kind, mediaId(kind, imdb, title.season, title.episode)),
+  ])
+
+  const list = builtIn.map((option) => ({
+    kind: 'torrent', provider: title.type === 'movie' ? 'YTS' : 'EZTV', name: title.type === 'movie' ? 'YTS' : 'EZTV',
+    label: option.label, quality: option.quality || null, type: option.type, seeds: option.seeds ?? null, size: null,
+    magnet: option.magnet, infoHash: hashOfMagnet(option.magnet), fileIdx: null,
+  }))
+  for (const { addon, items } of answers) {
+    for (const stream of items) {
+      const source = sourceFromStream(stream, addon)
+      if (source) list.push(source)
+    }
+  }
+
+  // One entry per torrent (the first add-on to list it, with the details it gave).
+  const seen = new Set()
+  const unique = list.filter((s) => {
+    const key = s.kind === 'torrent' ? `${s.infoHash || s.magnet}:${s.fileIdx ?? ''}` : s.url
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+  // A direct link needs no swarm: among equals, it goes first.
+  const ranked = rankOptions(unique.map((s) => ({ ...s, seeds: s.kind === 'url' ? (s.seeds ?? 0) + 1e6 : s.seeds })))
+    .map((s) => ({ ...s, seeds: s.kind === 'url' ? (s.seeds - 1e6 || null) : s.seeds }))
+  for (const source of ranked) {
+    source.id = newId()
+    Object.assign(source, audioLanguagesOf(`${source.label} ${source.name || ''}`))
+    sources.set(source.id, { ...source, title, at: Date.now() })
+  }
+
+  const payload = { imdb, names, list: ranked }
+  titleSources.set(title.key, { at: Date.now(), payload })
+  return payload
+}
+
+/** A source as the page sees it: what to show, and its id. */
+const publicSource = (s) => ({ id: s.id, kind: s.kind, provider: s.provider, name: s.name, label: s.label, quality: s.quality, size: s.size, seeds: s.seeds, languages: s.languages || [], multi: !!s.multi })
+
+/** Every copy of a title, for the source picker. */
+app.get('/sources', requireAllowedOrigin, async (req, res) => {
+  const title = titleOf(req.query)
+  if (!title) return res.status(400).json({ error: 'Provide type and tmdb' })
+  try {
+    const { names, list } = await sourcesFor(title)
+    res.json({ name: names[0] || null, sources: list.map(publicSource), addons: (await addonStore.list()).length })
+  } catch (err) {
+    console.error('[sources]', err.message)
+    res.status(502).json({ error: err.message })
+  }
+})
+
+/** Play one source: join its swarm (or probe its link) and answer how to play it. */
+async function playSource(req, source, timeoutMs) {
+  const { title } = source
+  if (source.kind === 'url') {
+    const probe = await probeUrl(source.url)
+    const info = analyze(probe, new URL(source.url).pathname)
+    if (probe) source.analysis = info   // /uplay converts with it
+    return {
+      kind: 'url',
+      decision: info.decision,
+      seekable: info.decision === 'direct',
+      durationSec: info.durationSec,
+      audioTracks: info.audioTracks || [],
+      playUrl: info.decision === 'direct' ? source.url : `${base(req)}/uplay/${source.id}`,
+    }
+  }
+  const torrent = await getTorrent(source.magnet, timeoutMs)
+  const entry = active.get(torrent.infoHash)
+  const file = pickFile(torrent, { fileIdx: source.fileIdx, season: title?.season, episode: title?.episode })
+  const index = file ? torrent.files.indexOf(file) : -1
+  if (index < 0) throw Object.assign(new Error('Torrent has no playable file'), { status: 404 })
+  const info = await analysisFor(entry, index)
+  const playPath = info.decision === 'direct' ? `/stream/${torrent.infoHash}/${index}` : `/play/${torrent.infoHash}/${index}`
+  return {
+    kind: 'torrent',
+    title: torrent.name,
+    infoHash: torrent.infoHash,
+    index,
+    decision: info.decision,
+    seekable: info.decision === 'direct',
+    durationSec: info.durationSec,
+    audioTracks: info.audioTracks || [],
+    playUrl: `${base(req)}${playPath}`,
+  }
+}
+
+/**
+ * Given a title (TMDB id), play a source: the one picked (?source=<id> from /sources), or the best
+ * ones in turn (see rankOptions): one whose swarm doesn't answer makes way for the next, so a single
+ * dead torrent doesn't mean "not available". Also takes ?imdb= alone (YTS/EZTV only), as before.
+ */
 const RESOLVE_ATTEMPTS = [30000, 20000, 20000]   // metadata timeout per copy tried
 app.get('/resolve', requireAllowedOrigin, async (req, res) => {
-  const type = req.query.type === 'tv' ? 'tv' : 'movie'
   try {
-    let imdb = typeof req.query.imdb === 'string' ? req.query.imdb : null
+    let candidates
     let names = []
-    if (req.query.tmdb) {
-      const title = await tmdbTitle(type, req.query.tmdb, TMDB_KEY)
-      imdb = imdb || title?.imdb || null
-      names = title?.names ?? []
+    if (typeof req.query.source === 'string') {
+      const source = sources.get(req.query.source)
+      if (!source) return res.status(404).json({ error: 'That source is gone. Reopen the source list.' })
+      candidates = [source]
+      names = (source.title && titleSources.get(source.title.key)?.payload.names) || []
+    } else if (req.query.tmdb) {
+      const title = titleOf(req.query)
+      if (!title) return res.status(400).json({ error: 'Provide type and tmdb' })
+      const found = await sourcesFor(title)
+      names = found.names
+      candidates = found.list.map((s) => sources.get(s.id)).filter(Boolean)
+      // The viewer's audio language (?audioLang=fre): copies dubbed in it, or with several tracks, first.
+      const lang = typeof req.query.audioLang === 'string' ? req.query.audioLang : null
+      if (lang) {
+        const has = (s) => (s.languages || []).includes(lang) ? 0 : s.multi ? 1 : 2
+        candidates = candidates.map((s, i) => ({ s, i })).sort((a, b) => has(a.s) - has(b.s) || a.i - b.i).map(({ s }) => s)
+      }
+    } else if (typeof req.query.imdb === 'string') {
+      const type = req.query.type === 'tv' ? 'tv' : 'movie'
+      const options = type === 'movie' ? await movieMagnets(req.query.imdb) : await tvMagnets(req.query.imdb, Number(req.query.season) || 1, Number(req.query.episode) || 1)
+      candidates = rankOptions(options).map((o) => ({ kind: 'torrent', magnet: o.magnet, label: o.label, quality: o.quality, provider: type === 'movie' ? 'YTS' : 'EZTV', fileIdx: null, title: null }))
+    } else {
+      return res.status(400).json({ error: 'Provide tmdb (or imdb)' })
     }
-    if (!imdb) return res.status(400).json({ error: 'Provide imdb, or tmdb with a TMDB key' })
+    if (!candidates.length) return res.status(404).json({ error: 'No torrent found for this title' })
 
-    const options = type === 'movie'
-      ? await movieMagnets(imdb)
-      : await tvMagnets(imdb, Number(req.query.season) || 1, Number(req.query.episode) || 1, names)
-    const ranked = rankOptions(options).slice(0, RESOLVE_ATTEMPTS.length)
-    if (!ranked.length) return res.status(404).json({ error: 'No torrent found for this title' })
-
-    let torrent = null
+    let played = null
     let choice = null
     let lastError = null
-    for (const [i, option] of ranked.entries()) {
+    for (const [i, source] of candidates.slice(0, RESOLVE_ATTEMPTS.length).entries()) {
       try {
-        torrent = await getTorrent(option.magnet, RESOLVE_ATTEMPTS[i])
-        choice = option
+        played = await playSource(req, source, RESOLVE_ATTEMPTS[i])
+        choice = source
         break
       } catch (err) {
         lastError = err
-        console.error('[resolve] copy failed, trying the next:', option.label, '-', err.message)
+        if (err.status === 404 && candidates.length === 1) break
+        console.error('[resolve] copy failed, trying the next:', source.label, '-', err.message)
       }
     }
-    if (!torrent) throw lastError || new Error('No copy answered')
+    if (!played) throw lastError || new Error('No copy answered')
 
-    const entry = active.get(torrent.infoHash)
-    const file = pickBestFile(torrent)
-    const index = file ? torrent.files.indexOf(file) : -1
-    if (index < 0) return res.status(404).json({ error: 'Torrent has no playable file' })
-
-    const info = await analysisFor(entry, index)
-    const playPath = info.decision === 'direct' ? `/stream/${torrent.infoHash}/${index}` : `/play/${torrent.infoHash}/${index}`
     res.json({
-      title: torrent.name,
+      ...played,
       name: names[0] || null,   // the title as TMDB has it (what a TV shows while casting)
+      sourceId: choice.id || null,
+      provider: choice.provider || null,
+      label: choice.label || null,
       quality: choice.quality || null,
-      decision: info.decision,
-      seekable: info.decision === 'direct',
-      infoHash: torrent.infoHash,
-      index,
-      playUrl: `${base(req)}${playPath}`,
-      options: options.map((o) => ({ label: o.label, quality: o.quality || null, seeds: o.seeds ?? null })),
     })
   } catch (err) {
     console.error('[resolve]', err.message)
+    res.status(err.status || 502).json({ error: err.message })
+  }
+})
+
+// ---- subtitles, from the add-ons --------------------------------------------------------------
+
+/**
+ * Every subtitle for a title, from the built-in providers (subtitles.js) and the extensions:
+ * [{ id, lang, language, provider, release, rating }]. The player ranks them (the ones whose
+ * release matches the video first).
+ */
+app.get('/subtitles', requireAllowedOrigin, async (req, res) => {
+  const title = titleOf(req.query)
+  if (!title) return res.status(400).json({ error: 'Provide type and tmdb' })
+  try {
+    const info = await tmdbTitle(title.type, title.tmdb, TMDB_KEY)
+    if (!info?.imdb) return res.json({ subtitles: [] })
+    const kind = title.type === 'tv' ? 'series' : 'movie'
+    const [answers, builtIn] = await Promise.all([
+      addonStore.ask('subtitles', kind, mediaId(kind, info.imdb, title.season, title.episode)),
+      builtInSubtitles({ type: title.type, imdb: info.imdb, season: title.season, episode: title.episode }),
+    ])
+    const subtitles = []
+    const add = (entry) => {
+      const id = newId()
+      subtitleFiles.set(id, { url: entry.url, referer: entry.referer, lang: entry.lang, at: Date.now() })
+      subtitles.push({ id, lang: entry.lang, language: entry.language, provider: entry.provider, release: (entry.release || []).slice(0, 6), rating: entry.rating || 0 })
+    }
+    for (const { addon, items } of answers) {
+      for (const item of items) {
+        if (!item || typeof item.url !== 'string' || !/^https?:\/\//i.test(item.url)) continue
+        const { code, name } = languageOf(item.lang)
+        add({ url: item.url, lang: code, language: name, provider: addon.name })
+      }
+    }
+    for (const entry of builtIn) add({ ...entry, language: languageOf(entry.lang).name })
+    res.json({ subtitles })
+  } catch (err) {
+    console.error('[subtitles]', err.message)
     res.status(502).json({ error: err.message })
   }
+})
+
+/** One subtitle file as UTF-8 text (SRT or WebVTT; the player reads both), unzipped if need be. */
+app.get('/subtitle/:id', requireAllowedOrigin, async (req, res) => {
+  const file = subtitleFiles.get(String(req.params.id))
+  if (!file) return res.status(404).json({ error: 'Unknown subtitle' })
+  try {
+    if (file.text == null) file.text = decodeSubtitle(await downloadSubtitle(file.url, { referer: file.referer }), file.lang)
+    res.set('Cache-Control', 'no-store')
+    res.type('text/plain; charset=utf-8').send(file.text)
+  } catch (err) {
+    res.status(502).json({ error: err.message })
+  }
+})
+
+/** Translate a batch of subtitle lines: { to, lines } → { lines } (see translate.js). */
+app.post('/translate', requireAllowedOrigin, async (req, res) => {
+  const { to, lines } = req.body ?? {}
+  if (!Object.hasOwn(TARGETS, to)) return res.status(400).json({ error: 'Unknown language' })
+  if (!Array.isArray(lines) || !lines.length || lines.length > MAX_LINES || !lines.every((l) => typeof l === 'string')) {
+    return res.status(400).json({ error: `Send 1 to ${MAX_LINES} lines` })
+  }
+  if (lines.reduce((n, l) => n + l.length, 0) > MAX_CHARS) return res.status(413).json({ error: 'Too much text at once' })
+  try {
+    res.json({ lines: await translateLines(lines, to) })
+  } catch (err) {
+    res.status(502).json({ error: err.message })
+  }
+})
+
+// ---- what the player remembers (see state.js) -------------------------------------------------
+
+const stateStore = createStateStore(DATA_DIR)
+
+/** The preferences, and where the viewer stopped in ?key= ('movie:550', 'tv:1399:1:2'). */
+app.get('/state', requireAllowedOrigin, (req, res) => {
+  const key = String(req.query.key || '')
+  res.json({ prefs: stateStore.prefs(), progress: isTitleKey(key) ? stateStore.progress(key) : null })
+})
+
+app.put('/prefs', requireAllowedOrigin, (req, res) => {
+  res.json({ prefs: stateStore.setPrefs(req.body) })
+})
+
+app.put('/progress/:key', requireAllowedOrigin, (req, res) => {
+  const key = String(req.params.key)
+  if (!isTitleKey(key)) return res.status(400).json({ error: 'Bad key' })
+  stateStore.setProgress(key, Number(req.body?.t), Number(req.body?.d))
+  res.json({ ok: true })
+})
+
+// ---- add-ons ----------------------------------------------------------------------------------
+
+app.get('/addons', requireAllowedOrigin, async (_req, res) => {
+  res.json({ addons: await addonStore.list() })
+})
+
+/** The ready list (extensions.json), each marked installed or not. */
+app.get('/addons/catalog', requireAllowedOrigin, async (_req, res) => {
+  res.json({ extensions: await addonStore.catalog() })
+})
+
+app.post('/addons', requireAllowedOrigin, async (req, res) => {
+  try {
+    const addon = await addonStore.install(req.body?.url)
+    titleSources.clear()   // the next source list asks the new add-on too
+    res.json({ addon })
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
+
+app.delete('/addons/:id', requireAllowedOrigin, async (req, res) => {
+  const removed = await addonStore.remove(String(req.params.id))
+  titleSources.clear()
+  res.status(removed ? 200 : 404).json({ ok: removed })
 })
 
 /** Swarm stats for the embed's loading screen (peers, speed). Read-only, no input but a hash. */
@@ -433,34 +723,110 @@ app.get('/stream/:infoHash/:index', async (req, res) => {
   sendRange(req, res, file, 'video/mp4')
 })
 
+/** The start time a converted stream was asked for (?t=seconds), or 0. */
+const startOf = (req) => Math.max(0, Math.min(24 * 3600, Math.round((Number(req.query.t) || 0) * 1000) / 1000))
+/** The audio track asked for (?audio=, 0 = the first). */
+const audioOf = (req, info) => {
+  const n = Math.floor(Number(req.query.audio) || 0)
+  return n > 0 && n < (info.audioTracks?.length || 0) ? n : 0
+}
+
+/** The keyframe at or before `t` in a file (a remux can only start on one), or `t` if unknown. */
+function keyframeAt(input, t) {
+  return new Promise((resolve) => {
+    let out = ''
+    const ff = spawn(FFPROBE, ['-v', 'error', '-protocol_whitelist', 'http,https,tcp,tls,crypto', '-read_intervals', `${t}%+#1`,
+      '-select_streams', 'v:0', '-show_entries', 'packet=pts_time,flags', '-of', 'csv=p=0', '-i', input])
+    const timer = setTimeout(() => { try { ff.kill('SIGKILL') } catch {} ; resolve(t) }, 15000)
+    ff.stdout.on('data', (d) => { out += d })
+    ff.on('error', () => { clearTimeout(timer); resolve(t) })
+    ff.on('close', () => {
+      clearTimeout(timer)
+      const line = out.split('\n').find((l) => /,K/.test(l)) || out.split('\n')[0]
+      const pts = Number(String(line || '').split(',')[0])
+      resolve(Number.isFinite(pts) && pts >= 0 && pts <= t + 0.001 ? pts : t)
+    })
+  })
+}
+
+/** Where a converted stream asked to start at ?t= really starts: { start } (see ffmpegArgs). */
+async function seekPoint(info, input, t) {
+  if (!(t > 0) || info.decision !== 'remux') return { start: t }
+  return { start: await keyframeAt(input, t) }
+}
+
+app.get('/seek/u/:id', async (req, res) => {
+  const source = sources.get(String(req.params.id))
+  if (!source || source.kind !== 'url' || !source.analysis) return res.status(404).json({ error: 'Unknown source' })
+  res.json(await seekPoint(withAudio(source.analysis, audioOf(req, source.analysis)), source.url, startOf(req)))
+})
+
+app.get('/seek/:infoHash/:index', async (req, res) => {
+  const found = await resolveFile(req, res)
+  if (!found) return
+  const { entry, index } = found
+  const probed = await analysisFor(entry, index)
+  const info = withAudio(probed, audioOf(req, probed))
+  res.json(await seekPoint(info, `http://127.0.0.1:${server.address().port}/stream/${entry.torrent.infoHash}/${index}`, startOf(req)))
+})
+
+/** Run ffmpeg into the response (a progressive fragmented MP4), stopping it when the viewer leaves. */
+function sendConverted(res, args, input = null) {
+  res.writeHead(200, { 'Content-Type': 'video/mp4', 'Cache-Control': 'no-store', 'Accept-Ranges': 'none' })
+  const ff = spawn(FFMPEG, args)
+  const cleanup = () => { try { input?.destroy() } catch {} ; try { ff.kill('SIGKILL') } catch {} }
+  input?.on('error', cleanup)
+  ff.stdin.on('error', () => {})       // EPIPE when ffmpeg exits before input ends
+  ff.stderr.on('data', (d) => console.error('[ffmpeg]', d.toString().trim()))
+  ff.on('error', (err) => { console.error('[ffmpeg spawn]', err.message); try { res.destroy() } catch {} })
+  ff.on('close', () => { try { res.end() } catch {} })
+  res.on('close', cleanup)            // viewer paused/closed/seeked away → stop burning CPU
+  if (input) input.pipe(ff.stdin)
+  else ff.stdin.end()
+  ff.stdout.pipe(res)
+}
+
 // REMUX / TRANSCODE path: ffmpeg → progressive fragmented MP4. Plays MKV/AC3/HEVC that <video>
-// can't. Progressive (no byte-range), so seeking is limited until the HLS path lands (Phase 2).
+// can't. Progressive (no byte-range): to seek, the player asks again with ?t=<seconds>, and ffmpeg
+// starts there, reading the file through our own byte-range /stream so it can jump straight to it.
+// ?audio=<n> plays another audio track (a dubbed version).
 app.get('/play/:infoHash/:index', async (req, res) => {
   const found = await resolveFile(req, res)
   if (!found) return
   const { entry, file, index } = found
   file.select()
 
-  const info = await analysisFor(entry, index)
+  // Another audio track than the first (a dubbed version) makes even a direct file a remux.
+  const probed = await analysisFor(entry, index)
+  const info = withAudio(probed, audioOf(req, probed))
   if (info.decision === 'direct') {
     // Nothing to convert — hand off to the seekable path.
     return res.redirect(302, `/stream/${req.params.infoHash}/${index}`)
   }
 
-  res.writeHead(200, { 'Content-Type': 'video/mp4', 'Cache-Control': 'no-store', 'Accept-Ranges': 'none' })
+  const start = startOf(req)
+  if (start > 0) {
+    const self = `http://127.0.0.1:${server.address().port}/stream/${entry.torrent.infoHash}/${index}`
+    return sendConverted(res, ffmpegArgs(info, TRANSCODE_MAXHEIGHT, { input: self, start }))
+  }
+  sendConverted(res, ffmpegArgs(info, TRANSCODE_MAXHEIGHT), file.createReadStream())
+})
 
-  const input = file.createReadStream()
-  const ff = spawn(FFMPEG, ffmpegArgs(info, TRANSCODE_MAXHEIGHT))
-  const cleanup = () => { try { input.destroy() } catch {} ; try { ff.kill('SIGKILL') } catch {} }
-  input.on('error', cleanup)
-  ff.stdin.on('error', () => {})       // EPIPE when ffmpeg exits before input ends
-  ff.stderr.on('data', (d) => console.error('[ffmpeg]', d.toString().trim()))
-  ff.on('error', (err) => { console.error('[ffmpeg spawn]', err.message); try { res.destroy() } catch {} })
-  ff.on('close', () => { try { res.end() } catch {} })
-  res.on('close', cleanup)            // viewer paused/closed/seeked away → stop burning CPU
-
-  input.pipe(ff.stdin)
-  ff.stdout.pipe(res)
+// An add-on's direct link that a browser can't play as it is (MKV, HEVC…): converted the same way,
+// ffmpeg reading the link itself (seekable with ?t=). Only links an add-on gave, by their id.
+app.get('/uplay/:id', async (req, res) => {
+  const source = sources.get(String(req.params.id))
+  if (!source || source.kind !== 'url') return res.status(404).end()
+  source.at = Date.now()
+  if (!source.analysis) {
+    const probe = await probeUrl(source.url)
+    const info = analyze(probe, new URL(source.url).pathname)
+    if (!probe) return res.status(502).end()
+    source.analysis = info
+  }
+  const info = withAudio(source.analysis, audioOf(req, source.analysis))
+  if (info.decision === 'direct') return res.redirect(302, source.url)
+  sendConverted(res, ffmpegArgs(info, TRANSCODE_MAXHEIGHT, { input: source.url, start: startOf(req) }))
 })
 
 // ---- Play on TV (DLNA) --------------------------------------------------------------------------

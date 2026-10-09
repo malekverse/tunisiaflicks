@@ -1,0 +1,6 @@
+{
+  "about": "The extensions the player offers ready to use (Extensions > Ready to add). Each entry is the address of an extension's manifest.json; \"default\": true installs it for everyone on first run. Viewers can remove any of them, and add others by address.",
+  "extensions": [
+    { "url": "https://opensubtitles-v3.strem.io/manifest.json", "default": true }
+  ]
+}

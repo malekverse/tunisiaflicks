@@ -32,14 +32,41 @@ export function analyze(probe, name) {
   else if (videoNative) decision = 'remux'                        // e.g. H.264-in-MKV with AC3
   else decision = 'transcode'                                     // HEVC / VP9 / AV1 …
 
-  return { decision, container, vcodec, acodec, durationSec, hasSubs: subs.length > 0 }
+  // Every audio track (dubbed versions, commentary…), in the file's order: the player offers them.
+  const audioTracks = streams.filter((s) => s.codec_type === 'audio').map((s) => ({
+    lang: (s.tags && (s.tags.language || s.tags.LANGUAGE)) || null,
+    title: (s.tags && (s.tags.title || s.tags.TITLE)) || null,
+    codec: s.codec_name || null,
+    channels: s.channels || null,
+  }))
+
+  return { decision, container, vcodec, acodec, durationSec, hasSubs: subs.length > 0, audioTracks }
+}
+
+/**
+ * How to play a file with its audio track number `audio` (0 = the first): a direct file with
+ * another track picked becomes a remux (the video copied, that track converted if need be).
+ */
+export function withAudio(info, audio = 0) {
+  if (!(audio > 0)) return info
+  const track = info.audioTracks?.[audio]
+  return {
+    ...info,
+    decision: info.decision === 'direct' ? 'remux' : info.decision,
+    acodec: track ? track.codec : info.acodec,
+    audio,
+  }
 }
 
 /**
  * ffmpeg args for remux (copy video) or transcode (re-encode video) → progressive fragmented MP4.
  * Audio is copied only when already AAC/MP3, else re-encoded to AAC (browsers can't play AC3/DTS).
+ *
+ * `input` is where ffmpeg reads the file: 'pipe:0', or an http(s) address it can seek in (our own
+ * byte-range /stream, or an add-on's direct link). With a `start` (seconds) it seeks there first,
+ * so a converted stream can start anywhere: that's how the player seeks in MKV/HEVC files.
  */
-export function ffmpegArgs(info, maxHeight = 1080) {
+export function ffmpegArgs(info, maxHeight = 1080, { input = 'pipe:0', start = 0 } = {}) {
   const video = info.decision === 'remux'
     ? ['-c:v', 'copy']
     : ['-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23', '-pix_fmt', 'yuv420p',
@@ -47,10 +74,20 @@ export function ffmpegArgs(info, maxHeight = 1080) {
   const audio = info.acodec === 'aac' || info.acodec === 'mp3'
     ? ['-c:a', 'copy']
     : ['-c:a', 'aac', '-b:a', '192k']
+  // An address: only the network protocols (never file:, concat: or the like).
+  const source = input === 'pipe:0'
+    ? ['-i', 'pipe:0']
+    : ['-protocol_whitelist', 'http,https,tcp,tls,crypto', '-reconnect', '1', '-reconnect_streamed', '1', '-reconnect_delay_max', '5', '-i', input]
+  // A remux copies the video, so it can only start on a keyframe: `start` is then the keyframe the
+  // player looked up (/seek), and asking a hair after it makes ffmpeg land on it rather than on the
+  // one before. A transcode starts exactly at `start`.
+  const at = info.decision === 'remux' ? start + 0.05 : start
+  const seek = start > 0 ? ['-ss', at.toFixed(3)] : []
   return [
     '-hide_banner', '-loglevel', 'error',
-    '-i', 'pipe:0',
-    '-map', '0:v:0', '-map', '0:a:0?',
+    ...seek, ...source,
+    '-avoid_negative_ts', 'make_zero',
+    '-map', '0:v:0', '-map', `0:a:${Number.isInteger(info.audio) && info.audio > 0 ? info.audio : 0}?`,
     ...video, ...audio,
     '-movflags', 'frag_keyframe+empty_moov+default_base_moof',
     '-f', 'mp4', 'pipe:1',

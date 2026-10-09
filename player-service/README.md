@@ -37,7 +37,14 @@ Each file is probed with `ffprobe`, then one of three paths is chosen (see `code
 | Route | Purpose |
 | --- | --- |
 | `GET /health` | liveness + byte counters |
-| `GET /resolve?type=movie&tmdb=550` | title → magnet → swarm → `playUrl`. Takes `imdb`, or `tmdb` (+ a TMDB key). TV: `?type=tv&tmdb=…&season=1&episode=1`. Ranks copies 1080p > 720p, x264 over x265/HEVC/AV1 (which need transcoding), then seeds, and tries up to 3 in turn if a swarm doesn't answer. TV releases must be named after the show (EZTV files some under the wrong show). |
+| `GET /sources?type=movie&tmdb=550` | every copy of a title, best first: YTS/EZTV plus the installed extensions' streams (torrents and direct links), each with an id, quality, size, seeders and the audio languages its name says it has (`languages`, `multi`). TV: `?type=tv&tmdb=…&season=1&episode=1`. |
+| `GET /resolve?type=movie&tmdb=550` | plays the best copy, trying up to 3 in turn if a swarm doesn't answer (`?audioLang=fre` puts copies dubbed in that language first), or `?source=<id>` from `/sources`. Answers `playUrl`, `decision`, `seekable`, `durationSec` and the file's `audioTracks`. Ranks 1080p > 720p, x264 over x265/HEVC/AV1 (which need transcoding), direct links before torrents, then seeds. TV releases must be named after the show (EZTV files some under the wrong show). Still takes `?imdb=` alone (YTS/EZTV only). |
+| `GET /seek/:infoHash/:index?t=&audio=` · `GET /seek/u/:id?t=&audio=` | where a converted stream asked to start at `t` really starts (`{ start }`: a remux starts on a keyframe) |
+| `GET /uplay/:id?t=&audio=` | an extension's direct link, converted like `/play` when a browser can't play it as it is |
+| `GET /subtitles?type=…&tmdb=…` · `GET /subtitle/:id` | every subtitle for a title (YIFY Subtitles, SubDL with `SUBDL_API_KEY`, and the extensions'), then one as UTF-8 text, unzipped and decoded (Arabic Windows-1256 too) |
+| `POST /translate` | `{ to, lines }`: a batch of subtitle lines in another language (`translate.js`) |
+| `GET /addons` · `GET /addons/catalog` · `POST /addons` · `DELETE /addons/:id` | the installed extensions, the ready list (`extensions.json`), install one by its `manifest.json` address, remove one |
+| `GET /state?key=movie:550` · `PUT /prefs` · `PUT /progress/:key` | what the player remembers (`state.js`): preferences, and where the viewer stopped |
 | `GET /embed/movie/:tmdb` · `GET /embed/tv/:tmdb/:season/:episode` | the player as an embed, for the TunisiaFlicks site's player frame (desktop app). Only the site's origins and loopback may frame it (`frame-ancestors`). |
 | `GET /cast/devices` | Play on TV: the DLNA TVs on the home network (most Samsung / LG TVs), from an SSDP search |
 | `POST /cast/start` | `{ deviceId, infoHash, index, title, position }`: send an active swarm's file to a TV |
@@ -45,12 +52,36 @@ Each file is probed with `ffprobe`, then one of three paths is chosen (see `code
 | `GET /stats/:infoHash` | peers / speed / progress of an active swarm (the embed's loading screen) |
 | `GET\|POST /add?magnet=…` | join the swarm; returns the file list + `best` with `decision`, codecs and a ready-to-play `playUrl` |
 | `GET /stream/:infoHash/:index` | native byte-range stream (direct path), `206` |
-| `GET /play/:infoHash/:index` | ffmpeg remux/transcode → progressive MP4 (redirects to `/stream` for direct files) |
+| `GET /play/:infoHash/:index?t=&audio=` | ffmpeg remux/transcode → progressive MP4, from `t` seconds, with audio track `audio` (redirects to `/stream` for a direct file's first track) |
 | `GET /api/tmdb/trending` · `GET /api/tmdb/search?q=` | thin TMDB movie proxy for the built-in browse page (keeps the key server-side) |
 
 Two ways to drive it: from a TMDB id (`/resolve`, used by the built-in browse page and the desktop
 app) or from a magnet you already resolved (`/add`). Either way, point the player at the returned
 `playUrl`. The built-in page at `/` is a search + trending grid that plays a movie locally on click.
+
+## The player (views/embed.html)
+
+A custom player: auto-hiding controls, a seek bar with what's buffered and a time preview, volume,
+speed, picture in picture, full screen, keyboard shortcuts (`?` lists them), resume where the viewer
+stopped, and Play on TV. Its panels:
+
+- **Sources** — every copy, best first, filtered by quality and by audio language; switching keeps
+  the place.
+- **Audio** — the file's audio tracks (dubbed versions): picking one restarts the conversion with that
+  track at the same moment (browsers can't switch tracks themselves). The language picked is
+  remembered: the next films start on a copy and a track in it when there's one.
+- **Subtitles** — every language, the version made for the playing release first (matched by name),
+  then the best rated; a file of the viewer's (or dropped on the player); size, style and sync.
+  The site's language (`?lang=` from the site) picks them before the viewer chooses: Arabic or
+  French on those sites, none on the English one; with none in that language, the English ones are
+  translated. Any subtitle can be translated (Google Translate's free web endpoint, unofficial).
+- **Extensions** — the installed ones, the ready list (`extensions.json`, one click), and any other
+  by its `manifest.json` address. They follow the common add-on protocol: `/stream/…` and
+  `/subtitles/…` for an IMDB id.
+
+Converted streams (MKV, HEVC, another audio track) seek by starting again where asked: the page asks
+`/seek` for the keyframe, then plays `…?t=<keyframe>`, and its clock is that offset plus the video's
+own time; subtitles are drawn by the page on that clock.
 
 ## Security (it exposes a torrent engine, so it's locked down)
 
@@ -64,7 +95,11 @@ app) or from a magnet you already resolved (`/add`). Either way, point the playe
 - **Host allow-list** rejects foreign `Host` headers (anti DNS-rebinding).
 - **Origin allow-list** (`ALLOWED_ORIGINS`) — only the app's web origins may drive it; a random site's
   `fetch` is refused, so no page can make your machine join a swarm.
-- **Magnet/infohash only** — `/add` rejects http(s) URLs and file paths (no SSRF / local-file reads).
+- **No address from a page** — `/add` takes magnets/infohashes only (no http(s) URLs, no file paths).
+  Extensions are installed by their address (from the player page, which only the allowed origins
+  can drive), and what they answer is kept server-side behind random ids: the page only ever sends
+  an id back. ffmpeg/ffprobe open links with a protocol whitelist (http, https, tcp, tls, crypto: never
+  `file:` or `concat:`); answers are size-capped and time-limited.
 - **Bounds-checked** file indexes; ffmpeg is spawned with an argv array (no shell), fed over a pipe.
 
 ## Config (env vars)
@@ -80,11 +115,15 @@ app) or from a magnet you already resolved (`/add`). Either way, point the playe
 | `IDLE_MS` | `600000` | drop a swarm after 10 min unused |
 | `TRANSCODE_MAXHEIGHT` | `1080` | downscale ceiling for the transcode path |
 | `FFMPEG_PATH` / `FFPROBE_PATH` | bundled | override to use system binaries (may have GPU encoders) |
+| `DATA_DIR` | `~/.tunisiaflicks-player` | the installed extensions and what the player remembers (the desktop app passes its own folder) |
+| `SUBDL_API_KEY` | none | turns on SubDL subtitles (a free key from subdl.com; strong for Arabic) |
 
 ## Tests
 
 - `node test-codec.mjs` — deterministic: synthesizes the hard cases (H.264-in-MKV-with-AC3,
   HEVC-with-AC3) and verifies the policy + ffmpeg turn them into browser-native H.264/AAC MP4.
+- `tests/player.unit.test.mjs` (in the site's unit tests) — extensions, sources and dubbed copies,
+  subtitles (zip, encodings, matching), what the player remembers, seeking and audio tracks.
 
 ## Notes & gotchas
 
