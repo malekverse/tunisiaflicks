@@ -11,7 +11,7 @@ export type LegalSection = { heading: string, paragraphs?: string[], bullets?: s
 export type LegalDoc = { title: string, description: string, intro: string, sections: LegalSection[] }
 export type LegalPageId = 'about' | 'privacy' | 'terms' | 'dmca'
 
-export const LEGAL_UPDATED = '2026-10-08'
+export const LEGAL_UPDATED = '2026-10-09'
 
 const en: Record<LegalPageId, LegalDoc> = {
   about: {
@@ -73,6 +73,25 @@ const en: Record<LegalPageId, LegalDoc> = {
         heading: 'Who we share it with',
         paragraphs: [
           'We do not sell or rent your data. It is processed only by the providers that run the service: hosting (Vercel), database (MongoDB Atlas) and email delivery. When you press play, the video player you chose is a third-party service with its own privacy policy, as are YouTube trailers.',
+        ],
+      },
+      {
+        heading: 'Friends and ratings',
+        paragraphs: [
+          'Friends, ratings and your page are off until you turn them on. A profile can create a page with a handle and choose who sees its activity and ratings: only you, or your friends (ratings can also be shown to anyone with your link).',
+          'Friends see what you watched with a delay, and only from the moment you turned sharing on. A note sent with a recommendation is limited to 140 characters; there is no chat. A block covers the whole account. Deleting a page or an account removes its friendships, invites, ratings and notifications. Kids profiles never have a page.',
+        ],
+      },
+      {
+        heading: 'E-mails',
+        paragraphs: [
+          'The weekly digest is opt-in, per profile, and goes to your account’s confirmed address. It has no tracking pixels and no tracked links, and every e-mail can be unsubscribed from in one click. We keep a record of each delivery for 120 days. Release-alert e-mails have their own switch for the whole account in Settings.',
+        ],
+      },
+      {
+        heading: 'Interface language',
+        paragraphs: [
+          'We remember your interface language (English, French, Arabic or Tunisian) in a cookie, and in your account when you are signed in, so the site opens in your language.',
         ],
       },
       {
@@ -230,6 +249,25 @@ const ar: Record<LegalPageId, LegalDoc> = {
         heading: 'مع من نشاركها',
         paragraphs: [
           'لا نبيع بياناتك ولا نؤجرها. تتم معالجتها فقط من قبل مزودي الخدمات الذين يشغّلون الموقع: الاستضافة (Vercel) وقاعدة البيانات (MongoDB Atlas) وخدمة البريد الإلكتروني. عند الضغط على تشغيل، يكون المشغّل الذي اخترته خدمة خارجية لها سياسة خصوصيتها، وكذلك مقاطع يوتيوب الدعائية.',
+        ],
+      },
+      {
+        heading: 'الأصدقاء والتقييمات',
+        paragraphs: [
+          'الأصدقاء والتقييمات وصفحتك متوقفة إلى أن تفعّلها بنفسك. يمكن لكل ملف أن ينشئ صفحة باسم مستخدم ويختار من يرى نشاطه وتقييماته: أنت وحدك، أو أصدقاؤك (ويمكن أيضًا إظهار التقييمات لكل من يملك رابطك).',
+          'يرى أصدقاؤك ما شاهدته بعد مهلة، وفقط منذ أن فعّلت المشاركة. الملاحظة المرفقة بالتوصية لا تتجاوز 140 حرفًا، ولا توجد محادثة. الحظر يشمل الحساب كله. حذف الصفحة أو الحساب يحذف معه الصداقات والدعوات والتقييمات والإشعارات. ملفات الأطفال لا تملك صفحة أبدًا.',
+        ],
+      },
+      {
+        heading: 'الرسائل الإلكترونية',
+        paragraphs: [
+          'النشرة الأسبوعية اختيارية، لكل ملف على حدة، وتصل إلى البريد المؤكَّد لحسابك. لا تحتوي على أي متتبّع ولا روابط مُتتبَّعة، ويمكن إلغاء الاشتراك في كل رسالة بنقرة واحدة. نحتفظ بسجل كل إرسال لمدة 120 يومًا. ولرسائل تنبيهات الإصدارات مفتاح خاص بها للحساب كله في الإعدادات.',
+        ],
+      },
+      {
+        heading: 'لغة الواجهة',
+        paragraphs: [
+          'نتذكر لغة الواجهة التي اخترتها (الإنجليزية أو الفرنسية أو العربية أو التونسية) في ملف تعريف ارتباط، وفي حسابك عندما تكون مسجّل الدخول، حتى يُفتح الموقع بلغتك.',
         ],
       },
       {

@@ -9,12 +9,15 @@ import { fillPlaceholders, translateApiMessage, translatorFrom } from '@/src/lib
 import { withTimeout } from '@/src/lib/with-timeout'
 import { scrubBreadcrumb, scrubEvent, scrubQuery, scrubText, scrubUrl } from '@/src/lib/scrub-url'
 
-test('locales: the three languages and what follows from each', () => {
-  assert.deepEqual([...LOCALES], ['en', 'ar', 'tn'])
+test('locales: the four languages and what follows from each', () => {
+  assert.deepEqual([...LOCALES], ['en', 'fr', 'ar', 'tn'])
   assert.equal(DEFAULT_LOCALE, 'en')
   assert.equal(LOCALE_COOKIE, 'tf-locale')
   for (const locale of LOCALES) assert.ok(isLocale(locale))
   for (const value of ['', 'EN', 'fr-FR', null, undefined, 1, {}]) assert.equal(isLocale(value), false)
+  assert.equal(isArabicScript('fr'), false)
+  assert.equal(dirOf('fr'), 'ltr')
+  assert.equal(htmlLang('fr'), 'fr')
   assert.equal(isArabicScript('en'), false)
   assert.equal(isArabicScript('ar'), true)
   assert.equal(isArabicScript('tn'), true)
@@ -24,7 +27,7 @@ test('locales: the three languages and what follows from each', () => {
   assert.equal(htmlLang('en'), 'en')
   assert.equal(htmlLang('ar'), 'ar')
   assert.equal(htmlLang('tn'), 'ar-TN')
-  assert.equal(dateLocale('en'), undefined)
+  assert.equal(dateLocale('en'), 'en-GB')
   assert.equal(dateLocale('ar'), 'ar-TN-u-nu-latn')
   assert.equal(dateLocale('tn'), 'ar-TN-u-nu-latn')
 })

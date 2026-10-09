@@ -66,6 +66,25 @@ export const fr: Record<LegalPageId, LegalDoc> = {
         ],
       },
       {
+        heading: 'Amis et notes',
+        paragraphs: [
+          'Les amis, les notes et votre page restent désactivés tant que vous ne les activez pas. Chaque profil peut créer une page avec un identifiant et choisir qui voit son activité et ses notes : vous seul, ou vos amis (les notes peuvent aussi être visibles par toute personne ayant votre lien).',
+          'Vos amis voient ce que vous avez regardé avec un délai, et seulement depuis le moment où vous avez activé le partage. Un mot joint à une recommandation est limité à 140 caractères ; il n’y a pas de messagerie. Un blocage s’applique à tout le compte. Supprimer une page ou un compte supprime ses amitiés, invitations, notes et notifications. Les profils Enfants n’ont jamais de page.',
+        ],
+      },
+      {
+        heading: 'E-mails',
+        paragraphs: [
+          'La lettre hebdomadaire est facultative, propre à chaque profil, et envoyée à l’adresse confirmée de votre compte. Elle ne contient ni pixel de suivi ni lien traqué, et chaque e-mail se désabonne en un clic. Nous gardons une trace de chaque envoi pendant 120 jours. Les e-mails d’alertes de sortie ont leur propre interrupteur pour tout le compte, dans les Réglages.',
+        ],
+      },
+      {
+        heading: 'Langue de l’interface',
+        paragraphs: [
+          'Nous retenons la langue de l’interface (anglais, français, arabe ou tunisien) dans un cookie, et dans votre compte quand vous êtes connecté, pour que le site s’ouvre dans votre langue.',
+        ],
+      },
+      {
         heading: 'Vos choix et vos droits',
         bullets: [
           'Exporter\u00a0: téléchargez une copie de vos données depuis les paramètres.',

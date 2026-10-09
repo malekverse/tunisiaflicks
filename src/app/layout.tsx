@@ -25,13 +25,13 @@ import LanguageHint from "@/src/components/shell/LanguageHint";
 import TvModeProvider from "@/src/components/tv/TvModeProvider";
 import TvShell from "@/src/components/tv/TvShell";
 import TvModeOffer from "@/src/components/tv/TvModeOffer";
-import { dirOf, htmlLang } from "@/src/lib/i18n";
+import { dictionaryFor, dirOf, htmlLang } from "@/src/lib/i18n";
 import { getLocale, getT } from "@/src/lib/i18n/server";
 import { getKidsMode } from "@/src/lib/profiles";
-import { getSeasonalNav, getSeasonSkin } from "@/src/lib/seasons";
+import { SEASONS_TODAY_COOKIE, getSeasonalNav, getSeasonSkin, seasonClock } from "@/src/lib/seasons";
 import { isTvMode } from "@/src/lib/tv-mode";
-import { SITE_DESCRIPTION, SITE_URL } from "@/src/lib/seo";
-import { headers } from "next/headers";
+import { SITE_DESCRIPTION, SITE_URL, siteMetadata } from "@/src/lib/seo";
+import { cookies, headers } from "next/headers";
 
 import type { Viewport } from 'next'
 
@@ -42,7 +42,7 @@ const text = Readex_Pro({ subsets: ['latin'], variable: '--font-text', display: 
 const display = Bricolage_Grotesque({ subsets: ['latin'], axes: ['opsz', 'wdth'], variable: '--font-display', display: 'swap' });
 const displayArabic = Alexandria({ subsets: ['arabic'], variable: '--font-display-ar', display: 'swap', preload: false });
 
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   title: 'TunisiaFlicks: movies, TV shows and Tunisian series',
   description: SITE_DESCRIPTION,
   keywords: ['Movies', 'TV shows', 'Tunisian series', 'Ramadan series', 'Trailers', 'Top 10', 'مسلسلات تونسية', 'مسلسلات رمضان', 'TunisiaFlicks'],
@@ -103,6 +103,12 @@ export const metadata: Metadata = {
   },
 };
 
+/** The site's title, description and og:locale in the page's language (the cookie). */
+export function generateMetadata(): Metadata {
+  const site = siteMetadata(getLocale(), getT());
+  return { ...baseMetadata, ...site, openGraph: { ...baseMetadata.openGraph, ...site.openGraph } };
+}
+
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -130,8 +136,10 @@ export default async function RootLayout({
   const kids = await getKidsMode().catch(() => false);
   const tv = isTvMode();
   const inApp = (headers().get('user-agent') ?? '').includes('TunisiaFlicksTV/');
-  const seasonal = getSeasonalNav(kids);
-  const skin = getSeasonSkin(kids);
+  // In development a cookie can preview another day's season (seasonClock ignores it in production).
+  const { today: seasonDay } = seasonClock(cookies().get(SEASONS_TODAY_COOKIE)?.value);
+  const seasonal = getSeasonalNav(kids, seasonDay);
+  const skin = getSeasonSkin(kids, seasonDay);
   const seasonStyle = skin
     ? ({ '--season-light': skin.light, ...(skin.glow ? { '--season-glow': skin.glow } : {}) } as React.CSSProperties)
     : undefined;
@@ -168,7 +176,7 @@ export default async function RootLayout({
         <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:start-3 focus:top-3 focus:z-[100] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-black">
           {t('nav.skipToContent')}
         </a>
-        <I18nProvider locale={locale}>
+        <I18nProvider locale={locale} messages={dictionaryFor(locale)}>
           <TvModeProvider tv={tv} inApp={inApp}>
             <SessionProvider>
               <MotionProvider>

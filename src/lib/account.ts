@@ -1,6 +1,8 @@
 // Account self-service: export everything we store about a user, or delete it all.
 import { ObjectId } from 'mongodb'
 import clientPromise from '@/src/lib/mongodb'
+import { deleteSocialData, exportSocialData } from '@/src/lib/social/account'
+import { deleteDigestData, exportDigestData } from '@/src/lib/digest/db'
 
 // Never exported, never shown: secrets and one-time tokens.
 const SECRET_FIELDS = { password: 0, resetToken: 0, resetTokenExpiry: 0, verifyTokenHash: 0, verifyTokenExpiry: 0 }
@@ -31,6 +33,8 @@ export async function exportUserData(userId: string) {
     publicLists: lists,
     wrappedShares,
     contactMessages: messages,
+    social: await exportSocialData(userId),
+    weeklyDigest: await exportDigestData(userId),
   }
 }
 
@@ -48,5 +52,8 @@ export async function deleteUserData(userId: string) {
     db.collection('sessions').deleteMany({ userId: _id }),
     db.collection('contactMessages').updateMany({ userId }, { $set: { userId: null } }),
   ])
+  // The friends side (friendships, invites, ratings, pages) and the digest's preferences and deliveries.
+  await deleteSocialData(userId)
+  await deleteDigestData(userId)
   await db.collection('users').deleteOne({ _id })
 }

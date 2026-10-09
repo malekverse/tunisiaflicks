@@ -20,6 +20,7 @@ const COLUMNS: { heading: TKey, links: { href: string, label: TKey }[] }[] = [
       { href: '/clips', label: 'nav.clips' },
       { href: '/swipe', label: 'swipe.title' },
       { href: '/tunisian/cinema', label: 'tnCinema.title' },
+      { href: '/dramas', label: 'dramas.nav' },
       { href: '/ramadan', label: 'ramadan.title' },
     ],
   },

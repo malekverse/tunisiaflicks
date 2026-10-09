@@ -233,7 +233,7 @@ export default function ShareSheet({ request, open, onClose }: { request: ShareR
 
       <section aria-label={t('social.share.elsewhere')}>
         <SectionLabel>{t('social.share.elsewhere')}</SectionLabel>
-        <ShareButtons url={url} title={title} text={isTitle ? title : request.text} />
+        <ShareButtons url={url} title={title} text={isTitle ? title : request.text} quiet />
         {!isTitle && (
           <div className="mt-4">
             <button

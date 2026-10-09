@@ -44,6 +44,8 @@ jobs:
         run: npm run typecheck
       - name: Unit tests
         run: npm run test:unit
+      - name: Translations
+        run: npm run check:i18n
       - run: npm run build
       - name: Start the app
         run: |

@@ -6,6 +6,8 @@ import clientPromise from '@/src/lib/mongodb'
 import { requireGrownUpProfile } from '@/src/lib/profiles'
 import { PROFILE_COLORS, PROFILE_COOKIE, cleanProfileName, isProfileId } from '@/src/lib/models/Profile'
 import { denyLimitedSession } from '@/src/lib/session-scope'
+import { deleteSocialProfile, resetSocialVisibility } from '@/src/lib/social/account'
+import { deleteDigestPrefs } from '@/src/lib/digest/db'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,6 +48,11 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (body.kids && !active.profiles.some((profile) => profile.id !== target.id && !profile.kids)) {
       return NextResponse.json({ error: 'Keep at least one grown-up profile' }, { status: 400 })
     }
+    // A Kids profile has no page: its page must be deleted first.
+    if (body.kids && !target.kids) {
+      const page = await (await clientPromise).db().collection('socialProfiles').findOne({ _id: target.id as any }, { projection: { _id: 1 } })
+      if (page) return NextResponse.json({ error: "A profile with a page can't become a Kids profile. Delete the page first.", code: 'kidsHasHandle' }, { status: 400 })
+    }
     set['profiles.$.kids'] = body.kids
   }
   if (Object.keys(set).length === 0) {
@@ -54,6 +61,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
   const client = await clientPromise
   await client.db().collection('users').updateOne({ _id: new ObjectId(userId), 'profiles.id': target.id }, { $set: set })
+  // Whoever the profile now is, nothing it shared before keeps showing.
+  if (body?.kids !== undefined && body.kids !== !!target.kids) await resetSocialVisibility(target.id)
   return NextResponse.json({ success: true })
 }
 
@@ -81,6 +90,9 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
   )
   // The profile's favorites, bookmarks and history go with it.
   await db.collection('userContent').deleteMany({ userId, profileId: target.id })
+  // Its page, friendships, ratings and invites, and its weekly digest.
+  await deleteSocialProfile({ userId, profileId: target.id })
+  await deleteDigestPrefs(target.id)
 
   const response = NextResponse.json({ success: true })
   if (active.profile?.id === target.id) response.cookies.delete(PROFILE_COOKIE)

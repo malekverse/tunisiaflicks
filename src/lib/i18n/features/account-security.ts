@@ -27,4 +27,12 @@ export const accountSecurity = defineStrings({
     'accountSecurity.reauthButton': 'أدخل من جديد',
     'accountSecurity.tvSession': 'ما تنجمش تبدّل هذا من التلفزة. استعمل التليفون ولا الكمبيوتر.',
   },
+  fr: {
+    'accountSecurity.emailPasswordHint': 'Pour changer votre adresse e-mail, confirmez votre identité avec votre mot de passe actuel.',
+    'accountSecurity.reauthTitle': 'Reconnectez-vous pour continuer',
+    'accountSecurity.reauthEmail': 'Pour votre sécurité, changer d’adresse e-mail demande une connexion récente. Reconnectez-vous, puis modifiez-la.',
+    'accountSecurity.reauthPassword': 'Pour votre sécurité, définir un mot de passe demande une connexion récente. Reconnectez-vous, puis définissez-le.',
+    'accountSecurity.reauthButton': 'Se reconnecter',
+    'accountSecurity.tvSession': 'Ce réglage ne peut pas être modifié depuis une télévision. Utilisez votre téléphone ou votre ordinateur.',
+  },
 })

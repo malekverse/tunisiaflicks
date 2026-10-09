@@ -69,7 +69,7 @@
   }
 
   body {
-    @apply bg-black text-white font-sans antialiased;
+    @apply text-white font-sans antialiased;
     line-height: 1.55;
     min-height: 100dvh;
     overflow-x: clip;

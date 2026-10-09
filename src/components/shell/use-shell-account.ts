@@ -56,7 +56,7 @@ export function useProfileGate() {
   const { data: profiles } = useProfiles()
   const needsPick = profiles?.needsPick ?? false
   useEffect(() => {
-    if (needsPick && !/^\/(profiles|login|signup|auth)(\/|$)/.test(pathname)) {
+    if (needsPick && !/^\/(profiles|login|signup|auth|unsubscribe)(\/|$)/.test(pathname)) {
       router.replace(`/profiles?next=${encodeURIComponent(pathname + window.location.search)}`)
     }
   }, [needsPick, pathname, router])

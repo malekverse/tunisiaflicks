@@ -1082,7 +1082,7 @@ export const en = {
 
   // Page descriptions (search engines and link previews)
   'tvPage.description': "The shows everyone is watching this week, what's on the air tonight and the best of all time.",
-  'search.description': 'Search every movie, show and actor, in English or Arabic.',
+  'search.description': 'Search every movie, show and actor, in English, French or Arabic.',
 
   // Moments (calendar, anniversaries, sequels)
   'moment.ramadan.title': 'Ramadan series',

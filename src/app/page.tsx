@@ -21,6 +21,7 @@ import { getPickOfTheDay } from '@/src/lib/pick-of-the-day'
 import { getCommunityTrending } from '@/src/lib/community'
 import { getBillboard } from '@/src/lib/billboard'
 import { getTop10 } from '@/src/lib/top10'
+import { catalogueLanguage } from '@/src/lib/tmdb-locale'
 import { JsonLd, websiteJsonLd } from '@/src/lib/structured-data'
 
 // TMDB responses are cached for an hour by the data cache (see lib/tmdb.ts); the page itself is
@@ -42,12 +43,12 @@ export default async function MainPage() {
   const tv = isTvMode()
   const locale = getLocale()
   const [data, pick, community, billboard] = await Promise.all([
-    getMovies(kids),
+    getMovies(kids, catalogueLanguage(locale)),
     getPickOfTheDay(kids, locale),
     getCommunityTrending(kids, locale),
     getBillboard(kids, locale),
   ])
-  const top10 = await getTop10(kids, community)
+  const top10 = await getTop10(kids, community, catalogueLanguage(locale))
   const t = getT()
 
   return (

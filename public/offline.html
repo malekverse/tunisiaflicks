@@ -51,7 +51,7 @@
       var lang = 'en';
       try {
         var match = document.cookie.match(/(?:^|;\s*)tf-locale=([a-z]+)/);
-        if (match && strings[match[1]]) lang = match[1];
+        if (match && Object.prototype.hasOwnProperty.call(strings, match[1])) lang = match[1];
         else {
           var wanted = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || 'en'];
           for (var i = 0; i < wanted.length; i++) {

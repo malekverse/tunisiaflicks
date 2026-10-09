@@ -16,9 +16,7 @@ const SRC = path.join(ROOT, 'src')
  * Allowed for now, with the reason. The I18nProvider keeps the dictionaries as a fallback until the
  * root layout passes it `messages` (dictionaryFor); remove the entry with that import.
  */
-const ALLOWED = new Map([
-  ['src/components/I18nProvider.tsx', 'fallback translator until the root layout passes `messages`'],
-])
+const ALLOWED = new Map([])
 
 function* files(dir) {
   for (const name of readdirSync(dir)) {

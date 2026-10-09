@@ -2,6 +2,7 @@
 // menu sheet all read from here, so they can never disagree. Tracks add their own item to the
 // group the IA gives them; Kids filtering and "which item is lit" are decided here too.
 import {
+  Drama,
   Bookmark, CalendarClock, CalendarHeart, Clapperboard, Compass, Dices, Flag, Heart, HeartHandshake, History, House,
   Library, ListVideo, MoonStar, Search, Sparkles, Trophy, Tv, type LucideIcon,
 } from 'lucide-react'
@@ -43,6 +44,7 @@ export const BROWSE: NavItem[] = [
 /** The world's cinema and TV: Tunisian, then each hub, then the seasonal slot (see Rail). */
 export const WORLD: NavItem[] = [
   { href: '/tunisian', label: 'nav.tunisian', icon: TunisiaIcon, kidsHref: '/tunisian/cinema' },
+  { href: '/dramas', label: 'dramas.nav', icon: Drama, grownUp: true },
 ]
 
 /** Saved first: the Library landing page is the first tab (LibraryTabs and the menu sheet follow this order). */

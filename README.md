@@ -26,6 +26,12 @@ Create a `.env.local` (never commit it):
 | `CRON_SECRET` | Protects `/api/cron/notify`. Vercel Cron sends it as `Authorization: Bearer <secret>`; without it the route refuses every request. |
 | `STREAM_PROVIDERS` | Optional. Replaces the player's sources without a code change: a JSON list, best first, of `{"name", "movie", "tv"}` URL templates using `{id}`, `{season}` and `{episode}` (see `src/lib/stream-providers.ts`). |
 | `STREAM_PROVIDERS_OFF` | Optional. Source names to switch off, comma-separated. |
+| `CRON_SECRETS_EXTRA` | Optional. Secrets for the free external schedulers (cron-job.org, GitHub Actions), comma-separated, at least 32 characters each, one per scheduler. See `docs/SCHEDULER.md`. |
+| `EMAIL_TOKEN_SECRET` | Signs the weekly digest's one-click unsubscribe links (at least 32 characters, independent of `NEXTAUTH_SECRET`). Without it the digest is unavailable. `EMAIL_TOKEN_SECRET_PREVIOUS` keeps old links working during a rotation. |
+| `DIGEST_ENABLED` | Optional. `false` turns the weekly digest off. |
+| `MAIL_DAILY_LIMIT` | Optional. E-mails sent per day across the site (default 450, of which 70 are kept for account mail such as password resets). `DIGEST_DAILY_LIMIT` (default 250) caps the digest's share. |
+| `SOCIAL_ACTIVITY_DELAY_MINUTES` | Optional. How long before a friend's watch appears in the friends feed (default 120; 0 in development). |
+| `SEASONS_TODAY` | Development only (ignored in production): a `YYYY-MM-DD` day whose season the app shows (nav slot, home banner, moment pages, room light), e.g. `2027-02-20` for day 13 of Ramadan. In a browser the `tf-seasons-today` cookie does the same. |
 
 ### Release alerts
 
@@ -36,6 +42,36 @@ Signed-in users can tap **Notify me** on an upcoming movie (detail page or `/upc
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" https://<your-domain>/api/cron/notify
 ```
+
+### Languages
+
+English, French, Arabic (MSA) and Tunisian Derja. The interface language lives in the `tf-locale`
+cookie (and in the account when signed in); a first visit negotiates from `Accept-Language` (en, fr or
+ar; Derja is only ever chosen). Core strings are in `src/lib/i18n/{en,fr,ar,tn}.ts`; each feature
+keeps its own in `src/lib/i18n/features/<feature>.ts`. `npm run check:i18n` checks that every key is
+translated (and French typography), and that no client file bundles the dictionaries.
+
+### Friends
+
+Each grown-up profile can create a page with a handle (`/u/<handle>`). Friends are mutual and found by
+exact handle or invite link (no directory). Activity and ratings are private until the person shares
+them; friends see watches with a delay, and only from when sharing was turned on. A block covers the
+whole account. Recommendations ("send to a friend") and invitations land in the notification bell.
+Kids profiles have no social features.
+
+### Turkish and Korean dramas
+
+`/dramas`, `/dramas/turkish` and `/dramas/korean` (with `?shelf=romance|historical|thrillers|short|films`),
+from TMDB discover and trending, rotated daily (Tunis time). The featured series is remembered per day in
+`dramaPicks` (30-day expiry) so it never repeats; YouTube thumbnails go through `/api/yt-thumb/...` so
+visitors only reach Google when they press play.
+
+### Weekly digest and scheduled jobs
+
+An opt-in weekly e-mail per profile ("what's new this week + picks for you"), with one-click unsubscribe
+and no tracking. Scheduled jobs run through secured `/api/cron/*` routes: Vercel's daily cron for release
+alerts, and a free external scheduler for the rest (cron-job.org first, GitHub Actions as fallback).
+Setup: `docs/SCHEDULER.md`.
 
 ## Project layout
 
@@ -48,3 +84,5 @@ curl -H "Authorization: Bearer $CRON_SECRET" https://<your-domain>/api/cron/noti
 - `npm run dev` – development server
 - `npm run build` / `npm start` – production build and server
 - `npm run lint` – ESLint
+- `npm run check:i18n` – translations complete, French typography, no dictionaries in the browser bundle
+- `npm run test:unit` – unit tests (Node 22)

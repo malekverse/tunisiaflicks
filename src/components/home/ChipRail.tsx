@@ -10,6 +10,7 @@ import { getLocale, getT } from '@/src/lib/i18n/server'
 import { isGrownUpGenre } from '@/src/lib/kids'
 import { getKidsMode } from '@/src/lib/profiles'
 import { activeMoments, type MomentId } from '@/src/lib/moments'
+import { getSeasonalBanner } from '@/src/lib/seasons'
 import { cn } from '@/src/lib/utils'
 import type { TKey } from '@/src/lib/i18n'
 
@@ -89,7 +90,9 @@ export default async function ChipRail({ type = 'movie', className }: { type?: '
     .filter((entry) => entry.fit > 0)
     .sort((a, b) => b.fit - a.fit)
     .map((entry) => entry.mood)
-  const moments = activeMoments(kids).slice(0, 2)
+  // The moment the home banner already shows isn't repeated here.
+  const banner = getSeasonalBanner({ kids, signedIn: false })
+  const moments = activeMoments(kids).filter((moment) => moment.id !== banner?.id).slice(0, 2)
   const day = context.slot === 'morning' || context.slot === 'afternoon'
   const moodHref = (mood: Mood) => (type === 'tv' && mood.href.startsWith('/genres/') ? `${mood.href}?type=tv` : mood.href)
 

@@ -6,9 +6,6 @@ import {
 } from '@/src/lib/i18n/locales'
 import { translatorFrom, type TVars, type Translate } from '@/src/lib/i18n/translate'
 import type { TKey } from '@/src/lib/i18n'
-// Fallback until the root layout passes `messages` (then this import can go, and with it every
-// other language's strings from the client bundle; see scripts/check-client-i18n.mjs).
-import { createTranslator } from '@/src/lib/i18n'
 import { syncLocale } from '@/src/lib/i18n/sync-locale'
 import { toast } from '@/src/hooks/use-toast'
 
@@ -65,7 +62,7 @@ export function I18nProvider({ locale, messages, children }: {
   const waitingOnline = useRef<(() => void) | null>(null)
   const committed = useRef(locale)
 
-  const t = useMemo<Translate>(() => (messages ? translatorFrom(messages) : createTranslator(locale)), [messages, locale])
+  const t = useMemo<Translate>(() => translatorFrom(messages ?? {}), [messages])
   const tRef = useRef(t)
   tRef.current = t
 

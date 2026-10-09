@@ -5,6 +5,7 @@ import { renderSectionCard, type SectionCard } from '@/src/lib/og'
 import { tmdbFetchSafe } from '@/src/lib/tmdb'
 import { getTunisianTitles } from '@/src/lib/tunisian'
 import { arabRamadanSeries, ramadanSeasons, tunisianRamadanSeries } from '@/src/lib/ramadan'
+import { dramaShareSection } from '@/src/lib/dramas'
 
 const posters = (items: any[] | null | undefined, count = 12) =>
   (items ?? []).filter((item) => item.poster_path).slice(0, count).map((item) => `https://image.tmdb.org/t/p/w342${item.poster_path}`)
@@ -91,9 +92,11 @@ export const SHARE_SECTIONS = {
     glow: '245 190 80',
     posters: () => list('trending/all/week'),
   },
+  'dramas-turkish': dramaShareSection('turkish'),
+  'dramas-korean': dramaShareSection('korean'),
   search: {
     title: 'Find anything',
-    subtitle: 'Every movie, show and actor, in English and Arabic.',
+    subtitle: 'Every movie, show and actor, in English, French and Arabic.',
     cta: 'Search',
     posters: () => list('trending/all/week'),
   },
