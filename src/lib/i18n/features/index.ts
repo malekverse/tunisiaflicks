@@ -14,8 +14,9 @@ import { detailExtras } from './detail-extras'
 import { digest } from './digest'
 import { languages } from './languages'
 import { accountSecurity } from './account-security'
+import { apps } from './apps'
 
-const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity]
+const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps]
 
 export type FeatureKey =
   | keyof typeof aiSearch.en
@@ -32,6 +33,7 @@ export type FeatureKey =
   | keyof typeof digest.en
   | keyof typeof languages.en
   | keyof typeof accountSecurity.en
+  | keyof typeof apps.en
 
 type Language = 'en' | 'ar' | 'tn' | 'fr'
 

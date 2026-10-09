@@ -1,7 +1,7 @@
 "use client"
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Bookmark, Heart, LogOut, Settings, TvMinimal, UserRound, Users } from 'lucide-react'
+import { Bookmark, Heart, LogOut, MonitorSmartphone, Settings, TvMinimal, UserRound, Users } from 'lucide-react'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/src/components/ui/dropdown-menu'
@@ -77,6 +77,7 @@ export default function AccountMenu() {
             // A full page load: the TV shell is chosen on the server (cookie set by ?tv=1).
             <DropdownMenuItem onSelect={() => { window.location.href = '/?tv=1' }} className="gap-3"><TvMinimal className="h-4 w-4 text-white/60" />{t('social.menu.tvMode')}</DropdownMenuItem>
           )}
+          <DropdownMenuItem onSelect={() => router.push('/app')} className="gap-3"><MonitorSmartphone className="h-4 w-4 text-white/60" />{t('apps.menu')}</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => router.push('/profile')} className="gap-3"><Settings className="h-4 w-4 text-white/60" />{t('nav.settings')}</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={account.logOut} className="gap-3"><LogOut className="h-4 w-4 text-white/60" />{t('nav.logout')}</DropdownMenuItem>

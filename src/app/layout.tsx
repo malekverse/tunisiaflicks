@@ -26,6 +26,10 @@ import LanguageHint from "@/src/components/shell/LanguageHint";
 import TvModeProvider from "@/src/components/tv/TvModeProvider";
 import TvShell from "@/src/components/tv/TvShell";
 import TvModeOffer from "@/src/components/tv/TvModeOffer";
+import AppOffer from "@/src/components/apps/AppOffer";
+import { getAppReleases } from "@/src/lib/app-releases";
+import { INSTALL_PROMPT_SCRIPT } from "@/src/lib/install-prompt-script";
+import { withTimeout } from "@/src/lib/with-timeout";
 import { clientMessages, dirOf, htmlLang } from "@/src/lib/i18n";
 import { getLocale, getT } from "@/src/lib/i18n/server";
 import { getKidsMode } from "@/src/lib/profiles";
@@ -140,6 +144,10 @@ export default async function RootLayout({
   // The search pill offers Ask (AI search) too: never for Kids or in TV mode.
   const ask = aiSearchEnabled() && !kids && !tv;
   const inApp = (headers().get('user-agent') ?? '').includes('TunisiaFlicksTV/');
+  // The Android apps with a release (cached for an hour; see src/lib/app-releases.ts), for the offer.
+  const releases = await withTimeout(getAppReleases(), 1500, null);
+  const megabytes = (bytes?: number) => (bytes ? Math.max(0.1, Math.round(bytes / 104857.6) / 10) : null);
+  const offeredApps = { android: megabytes(releases?.apps.android?.size), tv: megabytes(releases?.apps.tv?.size) };
   // In development a cookie can preview another day's season (seasonClock ignores it in production).
   const { today: seasonDay } = seasonClock(cookies().get(SEASONS_TODAY_COOKIE)?.value);
   const seasonal = getSeasonalNav(kids, seasonDay);
@@ -153,6 +161,7 @@ export default async function RootLayout({
     <div className="relative flex min-h-dvh flex-col">
       <VerifyEmailBanner />
       {!tv && <TvModeOffer />}
+      <AppOffer apps={offeredApps} />
       <main id="main" role="main" className="flex-1 min-w-0">
         {children}
       </main>
@@ -176,6 +185,8 @@ export default async function RootLayout({
         <link rel="dns-prefetch" href="https://image.tmdb.org" />
       </head>
       <body>
+        {/* Before anything else: keep the browser's one-time "install this site" offer for later. */}
+        <script dangerouslySetInnerHTML={{ __html: INSTALL_PROMPT_SCRIPT }} />
         <NextTopLoader color="#FF2414" height={2} showSpinner={false} shadow={false} easing="cubic-bezier(0.23, 1, 0.32, 1)" speed={260} />
         <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:start-3 focus:top-3 focus:z-[100] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-black">
           {t('nav.skipToContent')}

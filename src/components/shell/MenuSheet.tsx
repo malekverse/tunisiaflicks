@@ -1,6 +1,6 @@
 "use client"
 import Link from 'next/link'
-import { ChevronRight, LogOut, Settings, TvMinimal } from 'lucide-react'
+import { ChevronRight, LogOut, MonitorSmartphone, Settings, TvMinimal } from 'lucide-react'
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/src/components/ui/drawer'
 import { Button } from '@/src/components/ui/button'
 import ProfileAvatar, { KidsBadge } from '@/src/components/profiles/ProfileAvatar'
@@ -168,6 +168,12 @@ export default function MenuSheet({ open, onOpenChange, account, kids: kidsProp,
                                 <ChevronRight aria-hidden className="h-4 w-4 text-white/35 rtl:rotate-180" />
                             </a>
                         )}
+
+                        <Link href="/app" onClick={close} className="pressable mt-6 flex h-[52px] items-center gap-3 rounded-2xl bg-white/[0.05] px-4 text-[15px] outline-none focus-visible:ring-2 focus-visible:ring-red-500">
+                            <MonitorSmartphone aria-hidden className="h-5 w-5 text-white/70" strokeWidth={1.8} />
+                            <span className="flex-1">{t('apps.menu')}</span>
+                            <ChevronRight aria-hidden className="h-4 w-4 text-white/35 rtl:rotate-180" />
+                        </Link>
 
                         {account.signedIn && (
                             <button type="button" onClick={account.logOut} className="pressable mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-white/[0.05] text-[15px] text-white/80">

@@ -36,7 +36,7 @@ const COLUMNS: { heading: TKey, links: FooterLink[] }[] = [
     links: [
       { href: '/about', label: 'footer.about' },
       { href: '/contact', label: 'footer.contact' },
-      { href: '/app', label: 'tvMode.app.title' },
+      { href: '/app', label: 'apps.menu' },
       { href: '/support', label: 'support.footer', support: true },
     ],
   },
