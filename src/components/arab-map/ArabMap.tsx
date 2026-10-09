@@ -269,7 +269,7 @@ export default function ArabMap({ countries, kids }: { countries: MapCountry[], 
             key={country.code}
             ref={tileRef(country.code)}
             country={country}
-            state={{ selected: country.code === selected, current: country.code === current, dim: dimmed(country), ripple }}
+            state={{ selected: country.code === selected, current: country.code === current, dim: dimmed(country), ripple, previewed: country.code === preview && country.code !== selected }}
             onPointerEnter={onTileEnter(country.code)}
             onPointerLeave={onTileLeave(country.code)}
             onPointerDown={() => prefetch(arabCountryHref(country.code))}

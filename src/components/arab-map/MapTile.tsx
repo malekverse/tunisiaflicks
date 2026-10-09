@@ -16,6 +16,8 @@ export type TileState = {
   dim: boolean
   /** The entrance ripple (first mount only). */
   ripple: boolean
+  /** Shown in the readout (a finger slid onto it, or the keyboard reached it), not open. */
+  previewed: boolean
 }
 
 type Handlers = {
@@ -104,6 +106,12 @@ const MapTile = forwardRef<HTMLAnchorElement, { country: MapCountry, state: Tile
         {name}
       </span>
       <span className="sr-only sm:hidden">{name}</span>
+
+      {/* The country in the readout: a plain white ring, no motion (a slide crosses tiles fast). The
+          keyboard's own outline already marks a focused tile, so the ring stands aside for it. */}
+      {state.previewed && (
+        <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[10px] ring-2 ring-inset ring-white/70 group-focus-visible/tile:hidden" />
+      )}
 
       {code === 'tn' && <TunisiaMark className="absolute end-1 top-1 h-3.5 w-3.5 text-red-500 drop-shadow-[0_0_8px_rgb(255_36_20/0.5)] sm:end-1.5 sm:top-1.5 sm:h-4 sm:w-4" />}
 
