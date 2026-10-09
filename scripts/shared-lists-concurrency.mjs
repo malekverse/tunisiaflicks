@@ -62,12 +62,16 @@ async function account(name) {
  * One request to the server, through node:http (fetch gives up on response headers after 5
  * minutes, and a busy dev server compiling a route can take longer than that).
  */
+// A fresh connection per request: a reused idle socket the dev server has just closed is an ECONNRESET.
+const agents = { 'http:': new http.Agent({ keepAlive: false }), 'https:': new https.Agent({ keepAlive: false }) }
+
 function call(who, method, path, body) {
   const url = new URL(BASE + path)
   const payload = body === undefined ? undefined : JSON.stringify(body)
   return new Promise((resolve, reject) => {
     const request = (url.protocol === 'https:' ? https : http).request(url, {
       method,
+      agent: agents[url.protocol],
       headers: { 'content-type': 'application/json', ...(payload ? { 'content-length': Buffer.byteLength(payload) } : {}), ...(who ? { cookie: who.cookie } : {}) },
       timeout: 900_000,
     }, (response) => {
