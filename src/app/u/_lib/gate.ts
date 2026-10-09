@@ -76,6 +76,9 @@ export async function decideProfileGate(
 
   const secret = opts.secret ?? process.env.NEXTAUTH_SECRET
   if (!secret) return null
+  // A plain controller and timer (AbortSignal.timeout isn't in every edge runtime).
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), GATE_TIMEOUT_MS)
   try {
     const headers = new Headers({ [GATE_HEADER]: await gateToken(secret), [GATE_IP_HEADER]: visitorIp(request.headers) })
     const cookie = request.headers.get('cookie')
@@ -84,7 +87,7 @@ export async function decideProfileGate(
       headers,
       cache: 'no-store',
       redirect: 'manual',
-      signal: AbortSignal.timeout(GATE_TIMEOUT_MS),
+      signal: controller.signal,
     })
     if (!response.ok) return null
     const answer = (await response.json()) as Partial<GateAnswer>
@@ -93,5 +96,7 @@ export async function decideProfileGate(
     return null
   } catch {
     return null
+  } finally {
+    clearTimeout(timer)
   }
 }

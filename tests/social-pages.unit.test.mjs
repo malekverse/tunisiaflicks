@@ -171,3 +171,13 @@ test('decideProfileGate: 404 and 308 from the address, then from the gate; anyth
   assert.equal(await run('/u/sami_b', answering({ kind: 'not_found' }), { 'next-router-prefetch': '1' }), null, 'prefetches go through')
   assert.equal(calls.length, before)
 })
+
+test('decideProfileGate: a gate that doesn’t answer in time lets the page answer', async () => {
+  const hanging = (url, init) => new Promise((resolve, reject) => {
+    init.signal.addEventListener('abort', () => reject(new Error('aborted')))
+  })
+  const started = Date.now()
+  const decision = await gate.decideProfileGate({ method: 'GET', pathname: '/u/sami_b', origin: 'http://localhost:3300', headers: new Headers() }, { secret: 'secret', fetch: hanging })
+  assert.equal(decision, null)
+  assert.ok(Date.now() - started < 10_000, 'gave up after its timeout')
+})
