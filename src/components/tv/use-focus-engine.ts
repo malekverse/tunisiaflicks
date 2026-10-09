@@ -389,7 +389,8 @@ export function useFocusEngine(enabled = true) {
         target.focus({ preventScroll: true })
         return
       }
-      if (tries++ < 20) timer = window.setTimeout(settle, 150)
+      // The page may still be streaming in: keep looking for a few seconds.
+      if (tries++ < 40) timer = window.setTimeout(settle, 200)
     }
     timer = window.setTimeout(settle, 60)
     return () => window.clearTimeout(timer)

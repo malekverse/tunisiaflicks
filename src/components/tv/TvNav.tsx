@@ -72,7 +72,7 @@ export default function TvNav({ onSignIn }: { onSignIn: () => void }) {
           <Image src="/TunisiaFlicks.svg" alt="TunisiaFlicks" width={120} height={16} className="h-[0.85em] w-auto" />
         </span>
 
-        <ul className="no-scrollbar flex min-w-0 flex-1 items-center gap-1 overflow-x-auto py-1 xl:justify-center">
+        <ul className="no-scrollbar flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto py-1 [mask-image:linear-gradient(to_right,transparent,black_20px,black_calc(100%-20px),transparent)] xl:justify-center xl:gap-1 xl:[mask-image:none]">
           {items.map((item) => {
             const Icon = item.icon
             const here = item.href === current
@@ -82,11 +82,11 @@ export default function TvNav({ onSignIn }: { onSignIn: () => void }) {
                   href={linkOf(item)}
                   aria-current={here ? 'page' : undefined}
                   className={cn(
-                    'relative flex h-[calc(var(--tv-nav-h)-16px)] items-center gap-2 whitespace-nowrap rounded-full px-[0.95em] text-[15px] font-medium outline-none transition-colors duration-150',
+                    'relative flex h-[calc(var(--tv-nav-h)-16px)] items-center gap-2 whitespace-nowrap rounded-full px-[0.75em] text-[15px] font-medium outline-none transition-colors duration-150 xl:px-[0.95em]',
                     here ? 'text-white' : 'text-white/70',
                   )}
                 >
-                  <Icon className="h-[1.15em] w-[1.15em] shrink-0" strokeWidth={2} />
+                  <Icon className={cn('shrink-0', Icon === TunisiaIcon ? '-mx-[0.1em] h-[1.4em] w-[1.4em]' : 'h-[1.15em] w-[1.15em]')} strokeWidth={2} />
                   <span>{t(item.label)}</span>
                   {here && <span aria-hidden className="absolute inset-x-[1.1em] -bottom-[3px] h-[3px] rounded-full bg-red-500" />}
                 </Link>

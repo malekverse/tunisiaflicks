@@ -57,11 +57,17 @@ html[data-tv] .glass,
 html[data-tv] .glass-strong {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  background: rgb(18 18 18 / 0.94);
+  background: rgb(18 18 18 / 0.97);
 }
 
 /* Phone-only things hide in TV mode. */
 html[data-tv] [data-tv-hide] { display: none !important; }
+
+/* Rows and chip rails clip what sticks out: room for the focus ring and the lift. */
+html[data-tv] main .no-scrollbar.overflow-x-auto {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
 
 /* Card actions (remove from a list…) have no hover to reveal them: always shown. */
 html[data-tv] .group\/action { opacity: 1 !important; }
