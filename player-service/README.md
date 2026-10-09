@@ -37,12 +37,15 @@ Each file is probed with `ffprobe`, then one of three paths is chosen (see `code
 | Route | Purpose |
 | --- | --- |
 | `GET /health` | liveness + byte counters |
+| `GET /resolve?type=movie&tmdb=550` | title → magnet → swarm → `playUrl`. Takes `imdb`, or `tmdb` (+ a TMDB key). TV: `?type=tv&tmdb=…&season=1&episode=1`. Auto-picks 1080p/720p x264 over 2160p (which needs transcoding). |
 | `GET\|POST /add?magnet=…` | join the swarm; returns the file list + `best` with `decision`, codecs and a ready-to-play `playUrl` |
 | `GET /stream/:infoHash/:index` | native byte-range stream (direct path), `206` |
 | `GET /play/:infoHash/:index` | ffmpeg remux/transcode → progressive MP4 (redirects to `/stream` for direct files) |
+| `GET /api/tmdb/trending` · `GET /api/tmdb/search?q=` | thin TMDB movie proxy for the built-in browse page (keeps the key server-side) |
 
-Wiring it into the app: call `/add` with the magnet you already resolve, then point the player at
-`best.playUrl`.
+Two ways to drive it: from a TMDB id (`/resolve`, used by the built-in browse page and the desktop
+app) or from a magnet you already resolved (`/add`). Either way, point the player at the returned
+`playUrl`. The built-in page at `/` is a search + trending grid that plays a movie locally on click.
 
 ## Security (it exposes a torrent engine, so it's locked down)
 
@@ -59,7 +62,8 @@ Wiring it into the app: call `/add` with the magnet you already resolve, then po
 | --- | --- | --- |
 | `HOST` | `127.0.0.1` | loopback only; don't change unless you know why |
 | `PORT` | `8080` | |
-| `ALLOWED_ORIGINS` | `http://localhost:3000,https://tunisiaflicks.vercel.app` | web origins allowed to drive it |
+| `ALLOWED_ORIGINS` | `http://localhost:3000,https://tunisiaflicks.vercel.app` | web origins allowed to drive it (loopback origins are always allowed) |
+| `TMDB_API_KEY` | project key (dev fallback) | powers `/resolve` (tmdb→imdb) and the browse proxy; server-side only |
 | `DOWNLOAD_DIR` | OS temp `/tunisiaflicks-stream` | scratch space for pieces |
 | `MAX_TORRENTS` | `12` | concurrent swarms kept alive |
 | `IDLE_MS` | `600000` | drop a swarm after 10 min unused |

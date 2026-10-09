@@ -13,7 +13,13 @@ npm start
 ```
 
 `npm start` finds a free loopback port, launches `player-service` on it (via Electron's bundled
-Node), waits for `/health`, then opens the player window. Paste a magnet / click a demo to stream.
+Node), waits for `/health`, then opens the player window. The window is the service's browse UI:
+**search or pick a trending movie → it finds the best torrent, joins the swarm and plays locally,
+ad-free** (auto-picking 1080p/720p x264 so most titles stream with zero CPU). An "Advanced: paste a
+magnet" box handles any other torrent.
+
+> Set `TMDB_API_KEY` in your environment to use your own TMDB key; otherwise the service falls back
+> to the project key for browsing. Everything stays on the viewer's machine.
 
 > The bootstrap (free-port → spawn service → health-wait) is verified. The window itself needs a real
 > display, so run it on your desktop — it won't render in a headless/CI environment.

@@ -24,6 +24,7 @@ import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import * as ffbin from 'ffmpeg-ffprobe-static'
 import { analyze, ffmpegArgs } from './codec.js'
+import { tmdbToImdb, movieMagnets, tvMagnets, pickBest } from './resolve.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -43,6 +44,11 @@ const ALLOWED_ORIGINS = new Set(
 // ffmpeg/ffprobe: bundled binaries, overridable, with a PATH fallback.
 const FFMPEG = process.env.FFMPEG_PATH || ffbin.ffmpegPath || 'ffmpeg'
 const FFPROBE = process.env.FFPROBE_PATH || ffbin.ffprobePath || 'ffprobe'
+
+// TMDB key — lets /resolve turn a TMDB id into a magnet, and powers the browse proxy. Server-side
+// only (the viewer never sees it). Falls back to the project's public key for local dev.
+const TMDB_KEY = process.env.TMDB_API_KEY || 'b5d2609c326586f7f753f77b085a0b31'
+const TMDB_API = 'https://api.themoviedb.org/3'
 
 const VIDEO_EXT = ['.mp4', '.m4v', '.mkv', '.webm', '.mov', '.avi', '.ts', '.ogv', '.flv', '.wmv']
 const isVideo = (name) => VIDEO_EXT.includes(path.extname(name).toLowerCase())
@@ -202,15 +208,19 @@ app.use((req, res, next) => {
   res.status(403).end()
 })
 
-app.use(cors({ origin: (origin, cb) => cb(null, !origin || ALLOWED_ORIGINS.has(origin)) }))
+// The app's own page is served from http://127.0.0.1:<dynamic port>, so loopback origins are always
+// allowed (the Host guard above already blocks anything that isn't localhost).
+const LOOPBACK_ORIGIN = /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/
+const isAllowedOrigin = (origin) => !origin || ALLOWED_ORIGINS.has(origin) || LOOPBACK_ORIGIN.test(origin)
+
+app.use(cors({ origin: (origin, cb) => cb(null, isAllowedOrigin(origin)) }))
 app.use(express.json())
 
 // Only allow-listed web origins may DRIVE the engine (add swarms). Same-origin page fetches and
 // the native app send no Origin and are allowed; a random website's fetch carries its Origin and is
 // refused, so it can't make someone's machine join a swarm.
 function requireAllowedOrigin(req, res, next) {
-  const origin = req.headers.origin
-  if (origin && !ALLOWED_ORIGINS.has(origin)) return res.status(403).json({ error: 'Origin not allowed' })
+  if (!isAllowedOrigin(req.headers.origin)) return res.status(403).json({ error: 'Origin not allowed' })
   next()
 }
 
@@ -258,6 +268,60 @@ async function handleAdd(req, res) {
 }
 app.get('/add', requireAllowedOrigin, handleAdd)
 app.post('/add', requireAllowedOrigin, handleAdd)
+
+/** Given a title (TMDB or IMDB id), find the best magnet, join the swarm and return a play URL. */
+app.get('/resolve', requireAllowedOrigin, async (req, res) => {
+  const type = req.query.type === 'tv' ? 'tv' : 'movie'
+  try {
+    let imdb = typeof req.query.imdb === 'string' ? req.query.imdb : null
+    if (!imdb && req.query.tmdb) imdb = await tmdbToImdb(type, req.query.tmdb, TMDB_KEY)
+    if (!imdb) return res.status(400).json({ error: 'Provide imdb, or tmdb with a TMDB key' })
+
+    const options = type === 'movie'
+      ? await movieMagnets(imdb)
+      : await tvMagnets(imdb, Number(req.query.season) || 1, Number(req.query.episode) || 1)
+    const choice = pickBest(options)
+    if (!choice) return res.status(404).json({ error: 'No torrent found for this title' })
+
+    const torrent = await getTorrent(choice.magnet)
+    const entry = active.get(torrent.infoHash)
+    const file = pickBestFile(torrent)
+    const index = file ? torrent.files.indexOf(file) : -1
+    if (index < 0) return res.status(404).json({ error: 'Torrent has no playable file' })
+
+    const info = await analysisFor(entry, index)
+    const playPath = info.decision === 'direct' ? `/stream/${torrent.infoHash}/${index}` : `/play/${torrent.infoHash}/${index}`
+    res.json({
+      title: torrent.name,
+      quality: choice.quality || null,
+      decision: info.decision,
+      seekable: info.decision === 'direct',
+      infoHash: torrent.infoHash,
+      index,
+      playUrl: `${base(req)}${playPath}`,
+      options: options.map((o) => ({ label: o.label, quality: o.quality || null, seeds: o.seeds ?? null })),
+    })
+  } catch (err) {
+    console.error('[resolve]', err.message)
+    res.status(502).json({ error: err.message })
+  }
+})
+
+// Minimal TMDB browse proxy for the desktop app's own page (keeps the key server-side).
+app.get('/api/tmdb/:kind', requireAllowedOrigin, async (req, res) => {
+  const { kind } = req.params   // 'trending' | 'search'
+  const q = typeof req.query.q === 'string' ? req.query.q.trim() : ''
+  const url = kind === 'search' && q
+    ? `${TMDB_API}/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}&include_adult=false`
+    : `${TMDB_API}/trending/movie/week?api_key=${TMDB_KEY}`
+  try {
+    const r = await fetch(url, { signal: AbortSignal.timeout(12000) })
+    const json = await r.json()
+    res.json({ results: (json.results || []).map((m) => ({ id: m.id, title: m.title, year: (m.release_date || '').slice(0, 4), poster: m.poster_path, vote: m.vote_average })) })
+  } catch (err) {
+    res.status(502).json({ error: err.message })
+  }
+})
 
 /** Resolve :infoHash/:index to a torrent file, with bounds checks. */
 async function resolveFile(req, res) {

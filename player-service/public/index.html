@@ -3,129 +3,154 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>TunisiaFlicks Player — prototype</title>
+<title>TunisiaFlicks Player</title>
 <style>
-  :root { color-scheme: dark; }
+  :root { color-scheme: dark; --red: #e50f05; }
   * { box-sizing: border-box; }
   body {
-    margin: 0; background: #0d0c0f; color: #fff;
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-    display: flex; flex-direction: column; min-height: 100vh;
+    margin: 0; background: #0d0c0f; color: #fff; min-height: 100vh;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
-  header { padding: 20px 16px 8px; }
-  h1 { margin: 0; font-size: 1.4rem; }
-  h1 span { color: #ef4444; }
-  p.sub { margin: 4px 0 0; color: #9ca3af; font-size: .85rem; }
-  main { flex: 1; width: 100%; max-width: 980px; margin: 0 auto; padding: 16px; }
-  .bar { display: flex; gap: 8px; flex-wrap: wrap; }
-  input {
-    flex: 1; min-width: 240px; padding: 10px 12px; border-radius: 10px;
-    border: 1px solid #27272a; background: #1a161f; color: #fff; font-size: .9rem;
-  }
-  button {
-    padding: 10px 18px; border: 0; border-radius: 10px; font-weight: 600; cursor: pointer;
-    background: #ef4444; color: #fff;
-  }
-  button:disabled { opacity: .6; cursor: default; }
-  .presets { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
-  .presets button { background: #27272a; color: #d4d4d8; font-weight: 500; padding: 6px 12px; font-size: .8rem; }
-  video { width: 100%; margin-top: 16px; background: #000; border-radius: 12px; aspect-ratio: 16/9; }
-  #status { margin-top: 12px; color: #9ca3af; font-size: .85rem; min-height: 1.2em; }
-  #files { margin-top: 12px; display: grid; gap: 6px; }
-  .file {
-    display: flex; justify-content: space-between; gap: 12px; padding: 8px 12px;
-    background: #1a161f; border-radius: 8px; font-size: .82rem; cursor: pointer;
-  }
-  .file:hover { background: #241f2b; }
-  .file.active { outline: 1px solid #ef4444; }
-  .file .size { color: #9ca3af; white-space: nowrap; }
-  footer { padding: 12px 16px; color: #52525b; font-size: .75rem; }
+  header { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(12px);
+    background: rgba(13,12,15,.82); border-bottom: 1px solid rgba(255,255,255,.07);
+    display: flex; align-items: center; gap: 16px; padding: 12px 20px; }
+  .brand { font-weight: 800; font-size: 1.15rem; letter-spacing: -.02em; }
+  .brand b { color: var(--red); }
+  #q { flex: 1; max-width: 520px; padding: 10px 14px; border-radius: 12px;
+    border: 1px solid #27272a; background: #1a161f; color: #fff; font-size: .92rem; }
+  main { max-width: 1200px; margin: 0 auto; padding: 20px; }
+  h2 { font-size: 1rem; color: #cfcfd4; margin: 4px 0 14px; font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
+  .card { cursor: pointer; border: 0; padding: 0; background: none; text-align: start; color: inherit; }
+  .poster { position: relative; aspect-ratio: 2/3; border-radius: 12px; overflow: hidden;
+    background: #1a161f; box-shadow: 0 8px 24px -12px #000; transition: transform .2s ease; }
+  .card:hover .poster { transform: translateY(-4px); }
+  .poster img { width: 100%; height: 100%; object-fit: cover; }
+  .poster .vote { position: absolute; left: 6px; top: 6px; background: #000a; border-radius: 8px;
+    padding: 1px 7px; font-size: .72rem; }
+  .meta { margin-top: 6px; }
+  .meta .t { font-size: .84rem; font-weight: 600; line-height: 1.2;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .meta .y { font-size: .74rem; color: #8a8a93; }
+  /* Player overlay */
+  #overlay { position: fixed; inset: 0; z-index: 50; background: #000e; backdrop-filter: blur(6px);
+    display: none; flex-direction: column; }
+  #overlay.on { display: flex; }
+  .obar { display: flex; align-items: center; gap: 12px; padding: 12px 18px; color: #fff; }
+  .obar .ot { flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .obar button { background: #ffffff18; border: 0; color: #fff; border-radius: 10px; padding: 8px 14px; cursor: pointer; }
+  #video { flex: 1; width: 100%; background: #000; min-height: 0; }
+  #ostatus { padding: 0 18px 14px; color: #9ca3af; font-size: .85rem; }
+  .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid #ffffff40;
+    border-top-color: #fff; border-radius: 50%; animation: s .8s linear infinite; vertical-align: -2px; margin-right: 6px; }
+  @keyframes s { to { transform: rotate(360deg); } }
+  details { margin-top: 28px; color: #8a8a93; font-size: .85rem; }
+  details input { width: 100%; max-width: 560px; padding: 9px 12px; border-radius: 10px;
+    border: 1px solid #27272a; background: #1a161f; color: #fff; margin-top: 8px; }
+  .note { color: #6b7280; font-size: .78rem; margin-top: 10px; }
 </style>
 </head>
 <body>
 <header>
-  <h1>TunisiaFlicks <span>Player</span> — prototype</h1>
-  <p class="sub">Pastes a magnet / infohash, streams it as HTTP video. Test only with content you're allowed to stream.</p>
+  <span class="brand">Tunisia<b>Flicks</b> Player</span>
+  <input id="q" type="search" placeholder="Search movies to watch locally…" autocomplete="off" />
 </header>
 
 <main>
-  <div class="bar">
-    <input id="magnet" placeholder="magnet:?xt=urn:btih:…  or  infohash" />
-    <button id="load">Load</button>
-  </div>
-  <div class="presets">
-    <span style="color:#71717a;font-size:.8rem;align-self:center">Public-domain demos:</span>
-    <button data-magnet="magnet:?xt=urn:btih:08ada5a7a6183aae1e09d831df6748d566095a10&dn=Sintel&tr=udp%3A%2F%2Fexplodie.org%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337&tr=wss%3A%2F%2Ftracker.btorrent.xyz&tr=wss%3A%2F%2Ftracker.openwebtorrent.com&ws=https%3A%2F%2Fwebtorrent.io%2Ftorrents%2F">Sintel (CC-BY)</button>
-    <button data-magnet="magnet:?xt=urn:btih:dd8255ecdc7ca55fb0bbf81323d87062db1f6d1c&dn=Big+Buck+Bunny&tr=udp%3A%2F%2Fexplodie.org%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337&tr=wss%3A%2F%2Ftracker.btorrent.xyz&tr=wss%3A%2F%2Ftracker.openwebtorrent.com&ws=https%3A%2F%2Fwebtorrent.io%2Ftorrents%2F">Big Buck Bunny (CC-BY)</button>
-  </div>
+  <h2 id="heading">Trending this week</h2>
+  <div class="grid" id="grid"></div>
 
-  <video id="player" controls playsinline></video>
-  <div id="status"></div>
-  <div id="files"></div>
+  <details>
+    <summary>Advanced: paste a magnet / infohash</summary>
+    <input id="magnet" placeholder="magnet:?xt=urn:btih:…" />
+    <p class="note">Streams any torrent you paste. Use only for content you're allowed to stream.</p>
+  </details>
 </main>
 
-<footer>Prototype · the server joins the swarm and re-serves the video over HTTP with Range support.</footer>
+<div id="overlay">
+  <div class="obar">
+    <div class="ot" id="otitle"></div>
+    <button id="oclose">✕ Close</button>
+  </div>
+  <video id="video" controls autoplay playsinline></video>
+  <div id="ostatus"></div>
+</div>
 
 <script>
   const $ = (id) => document.getElementById(id)
-  const fmt = (b) => {
-    if (!b) return ''
-    const u = ['B', 'KB', 'MB', 'GB']; let i = 0; let n = b
-    while (n >= 1024 && i < u.length - 1) { n /= 1024; i++ }
-    return `${n.toFixed(1)} ${u[i]}`
-  }
-  const setStatus = (t) => { $('status').textContent = t }
-  let infoHash = null
+  const img = (p) => p ? `https://image.tmdb.org/t/p/w342${p}` : ''
 
-  async function load(magnet) {
-    if (!magnet) return
-    setStatus('Fetching torrent metadata… (first peers can take a few seconds)')
-    $('load').disabled = true
-    $('files').innerHTML = ''
+  async function loadList(url, heading) {
+    $('heading').textContent = heading
+    $('grid').innerHTML = ''
     try {
-      const res = await fetch('/add?magnet=' + encodeURIComponent(magnet))
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed')
-      infoHash = data.infoHash
-      const b = data.best
-      const how = b ? ` · ${b.decision}${b.video ? ` (${b.video}/${b.audio || 'no audio'})` : ''}${b.seekable ? '' : ' · no seek yet'}` : ''
-      setStatus(`“${data.name}” · ${data.peers} peers · ${data.files.length} file(s)${how}`)
-      renderFiles(data.files, b)
-      if (b) play(b)
-    } catch (err) {
-      setStatus('Error: ' + err.message)
-    } finally {
-      $('load').disabled = false
+      const data = await (await fetch(url)).json()
+      render(data.results || [])
+    } catch { $('grid').innerHTML = '<p style="color:#8a8a93">Couldn’t load. Is the player service running?</p>' }
+  }
+
+  function render(items) {
+    const g = $('grid'); g.innerHTML = ''
+    if (!items.length) { g.innerHTML = '<p style="color:#8a8a93">No results.</p>'; return }
+    for (const m of items) {
+      const b = document.createElement('button')
+      b.className = 'card'
+      b.innerHTML = `<div class="poster">${m.vote ? `<span class="vote">★ ${m.vote.toFixed(1)}</span>` : ''}${m.poster ? `<img loading="lazy" src="${img(m.poster)}" alt="">` : ''}</div>`
+        + `<div class="meta"><div class="t">${m.title}</div><div class="y">${m.year || ''}</div></div>`
+      b.onclick = () => playMovie(m)
+      g.appendChild(b)
     }
   }
 
-  // Every file plays via /play — the server redirects to the seekable /stream path when the file is
-  // already browser-native, and otherwise remuxes/transcodes on the fly.
-  const playUrlFor = (index) => `/play/${infoHash}/${index}`
+  // --- local playback ---------------------------------------------------------
+  function openOverlay(title) {
+    $('otitle').textContent = title
+    $('ostatus').innerHTML = '<span class="spin"></span>Finding the best source and joining the swarm…'
+    $('video').removeAttribute('src')
+    $('overlay').classList.add('on')
+  }
+  function closeOverlay() {
+    const v = $('video'); v.pause(); v.removeAttribute('src'); v.load()
+    $('overlay').classList.remove('on')
+  }
+  $('oclose').onclick = closeOverlay
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeOverlay() })
 
-  function renderFiles(files, best) {
-    $('files').innerHTML = ''
-    files.forEach((f) => {
-      const row = document.createElement('div')
-      row.className = 'file' + (best && f.index === best.index ? ' active' : '')
-      row.innerHTML = `<span>${f.video ? '🎬 ' : '📄 '}${f.name}</span><span class="size">${fmt(f.length)}</span>`
-      if (f.video) row.onclick = () => { document.querySelectorAll('.file').forEach(r => r.classList.remove('active')); row.classList.add('active'); play({ name: f.name, index: f.index }) }
-      $('files').appendChild(row)
-    })
+  async function playMovie(m) {
+    openOverlay(`${m.title}${m.year ? ` (${m.year})` : ''}`)
+    try {
+      const r = await fetch(`/resolve?type=movie&tmdb=${m.id}`)
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error || 'Could not resolve')
+      const how = d.decision === 'direct' ? '' : d.decision === 'remux' ? ' · converting (remux)' : ' · transcoding'
+      $('ostatus').textContent = `${d.quality || ''}${how}${d.seekable ? '' : ' · seeking limited'}`
+      const v = $('video'); v.src = d.playUrl; v.play().catch(() => {})
+    } catch (err) {
+      $('ostatus').textContent = 'Error: ' + err.message
+    }
   }
 
-  function play(file) {
-    const p = $('player')
-    p.src = file.playUrl || playUrlFor(file.index)
-    p.play().catch(() => {})
-    setStatus('Streaming: ' + file.name)
+  async function playMagnet(magnet) {
+    openOverlay('Magnet')
+    try {
+      const d = await (await fetch('/add?magnet=' + encodeURIComponent(magnet))).json()
+      if (!d.best) throw new Error('No playable file')
+      $('ostatus').textContent = `${d.name} · ${d.best.decision}`
+      const v = $('video'); v.src = d.best.playUrl; v.play().catch(() => {})
+    } catch (err) { $('ostatus').textContent = 'Error: ' + err.message }
   }
 
-  $('load').onclick = () => load($('magnet').value.trim())
-  $('magnet').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('load').click() })
-  document.querySelectorAll('.presets button').forEach((b) => {
-    b.onclick = () => { $('magnet').value = b.dataset.magnet; load(b.dataset.magnet) }
+  // --- search (debounced) -----------------------------------------------------
+  let t
+  $('q').addEventListener('input', (e) => {
+    clearTimeout(t)
+    const q = e.target.value.trim()
+    t = setTimeout(() => q ? loadList('/api/tmdb/search?q=' + encodeURIComponent(q), `Results for “${q}”`)
+                          : loadList('/api/tmdb/trending', 'Trending this week'), 350)
   })
+  $('magnet').addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.value.trim()) playMagnet(e.target.value.trim()) })
+
+  loadList('/api/tmdb/trending', 'Trending this week')
 </script>
 </body>
 </html>
