@@ -3,6 +3,8 @@ import { forwardRef } from 'react'
 import Link from 'next/link'
 import TmdbImage from '@/src/components/TmdbImage'
 import TunisiaMark from '@/src/components/tunisian/TunisiaMark'
+import { useI18n } from '@/src/components/I18nProvider'
+import { isArabicScript } from '@/src/lib/i18n/locales'
 import { arabCountryHref } from '@/src/lib/arab-countries'
 import { cellOf, posterOpacity, rippleDelay } from '@/src/lib/arab-map'
 import { cn } from '@/src/lib/utils'
@@ -36,6 +38,7 @@ const MapTile = forwardRef<HTMLAnchorElement, { country: MapCountry, state: Tile
   { country, state, ...handlers },
   ref,
 ) {
+  const { t, locale } = useI18n()
   const { code, name, pick, n } = country
   const { x, y } = cellOf(code)
   const lit = !!pick?.poster
@@ -106,6 +109,8 @@ const MapTile = forwardRef<HTMLAnchorElement, { country: MapCountry, state: Tile
         {name}
       </span>
       <span className="sr-only sm:hidden">{name}</span>
+      {/* What the dashed ring says to the eye, said to a screen reader. */}
+      {state.dim && <span className="sr-only">{`${isArabicScript(locale) ? '، ' : ', '}${t('arabMap.kidsNothing')}`}</span>}
 
       {/* The country in the readout: a plain white ring, no motion (a slide crosses tiles fast). The
           keyboard's own outline already marks a focused tile, so the ring stands aside for it. */}
