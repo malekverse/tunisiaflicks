@@ -400,7 +400,7 @@ export const social = defineStrings({
     'social.ratings.friendStars': '{name}: {count} من 5',
 
     'social.visibility.private': 'أنا فقط',
-    'social.visibility.privateList': 'أعضاء هذه القائمة فقط',
+    'social.visibility.privateList': 'أعضاء القائمة فقط',
     'social.visibility.friends': 'الأصدقاء',
     'social.visibility.link': 'كل من لديه الرابط',
     'social.visibility.linkHint': 'يعتمد على الرابط الخاص بصفحتك. اسم المستخدم وحده لا يكفي لرؤيتها.',
@@ -714,7 +714,7 @@ export const social = defineStrings({
     'social.ratings.firstHint': 'صحابك يشوفو التقييمات متاعك من وقت اللي تشاركها.',
     'social.ratings.notRated': 'ما قيّمتوش مازال',
     'social.visibility.private': 'أنا برك',
-    'social.visibility.privateList': 'اللي في القائمة هاذي برك',
+    'social.visibility.privateList': 'اللي في القائمة برك',
     'social.visibility.friends': 'صحابي',
     'social.visibility.link': 'أي واحد عندو الرابط',
     'social.picker.label': 'ابعث لصحابك',
