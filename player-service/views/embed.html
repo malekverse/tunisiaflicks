@@ -8,6 +8,7 @@
   The local player as an embed: the TunisiaFlicks site (inside the desktop app) puts this page in its
   player frame as one more source, next to the third-party ones. Served from /embed/movie/:tmdb and
   /embed/tv/:tmdb/:season/:episode; it resolves the title to a torrent (/resolve) and plays it here.
+  "Play on TV" (top corner) sends it to a TV on the same Wi-Fi instead (/cast/…, see dlna.js).
 -->
 <style>
   :root { --red: #ff0f00; --text: #fff; --muted: rgba(255,255,255,.62); --faint: rgba(255,255,255,.4); }
@@ -43,11 +44,73 @@
   body:hover .badge.show { opacity: 1; }
   .buffer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; }
   .buffer[hidden] { display: none; }
+
+  /* Play on TV */
+  .cast-btn { position: absolute; top: 10px; inset-inline-end: 10px; z-index: 5; margin: 0; height: 36px; padding: 0 14px;
+    display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; background: rgba(0,0,0,.6); color: #fff;
+    backdrop-filter: blur(8px); font: 600 12.5px system-ui, sans-serif; opacity: 0; transition: opacity .3s, background .2s; }
+  .cast-btn[hidden] { display: none; }
+  body:hover .cast-btn, .cast-btn:focus-visible, body.paused .cast-btn { opacity: 1; }
+  .cast-btn:hover { background: rgba(0,0,0,.85); }
+  .cast-btn:focus-visible, .pick:focus-visible, .ctl:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+  .sheet { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; padding: 20px;
+    background: rgba(0,0,0,.78); backdrop-filter: blur(10px); }
+  .sheet[hidden] { display: none; }
+  .panel { width: min(26rem, 100%); text-align: start; }
+  .panel h2 { margin: 0; font-size: 19px; font-weight: 700; }
+  .panel p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+  .list { display: grid; gap: 8px; margin-top: 16px; }
+  .pick { margin: 0; height: auto; padding: 12px 14px; display: flex; align-items: center; gap: 12px; text-align: start;
+    border-radius: 14px; background: rgba(255,255,255,.08); color: #fff; font: 600 14px system-ui, sans-serif; }
+  .pick:hover { background: rgba(255,255,255,.14); }
+  .pick small { display: block; margin-top: 2px; color: var(--faint); font-weight: 500; font-size: 12px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+  .row button { margin: 0; }
+  .ghost { background: rgba(255,255,255,.1); color: #fff; }
+  .hint { margin-top: 14px !important; font-size: 12px !important; color: var(--faint) !important; }
+  .casting { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; padding: 24px; text-align: center;
+    background: radial-gradient(ellipse at center, rgba(255,15,0,.12), transparent 60%), #000; }
+  .casting[hidden] { display: none; }
+  .casting .tv-icon { color: var(--red); }
+  .casting h2 { margin: 14px 0 0; font-size: 20px; font-weight: 700; }
+  .casting .time { margin-top: 6px; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px; }
+  .ctl { margin: 0; height: 40px; min-width: 40px; padding: 0 16px; background: rgba(255,255,255,.1); color: #fff; }
+  .ctl.primary { background: #fff; color: #000; }
 </style>
 </head>
 <body>
 <video id="video" controls playsinline hidden></video>
 <span id="badge" class="badge"></span>
+<button id="castBtn" class="cast-btn" type="button" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/><path d="M2 12a9 9 0 0 1 8 8"/><path d="M2 16a5 5 0 0 1 4 4"/><line x1="2" x2="2.01" y1="20" y2="20"/></svg>Play on TV</button>
+
+<div id="sheet" class="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="panel">
+    <h2 id="sheetTitle">Play on TV</h2>
+    <p id="sheetText">Looking for TVs on your Wi-Fi…</p>
+    <div id="tvList" class="list"></div>
+    <div class="row">
+      <button id="searchAgain" class="ghost" type="button" hidden>Search again</button>
+      <button id="sheetClose" class="ghost" type="button">Cancel</button>
+    </div>
+    <p class="hint">Samsung, LG and most smart TVs, on the same Wi-Fi as this computer. If Windows asks, allow TunisiaFlicks on private networks.</p>
+  </div>
+</div>
+
+<div id="casting" class="casting" hidden>
+  <div class="stack">
+    <span class="tv-icon"><svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/><path d="M2 12a9 9 0 0 1 8 8"/><path d="M2 16a5 5 0 0 1 4 4"/><line x1="2" x2="2.01" y1="20" y2="20"/></svg></span>
+    <h2 id="castTitle">Playing on your TV</h2>
+    <div id="castTime" class="time">Starting…</div>
+    <div class="row" style="justify-content:center">
+      <button id="castBack" class="ctl" type="button" aria-label="Back 10 seconds">−10s</button>
+      <button id="castToggle" class="ctl primary" type="button">Pause</button>
+      <button id="castFwd" class="ctl" type="button" aria-label="Forward 30 seconds">+30s</button>
+    </div>
+    <div class="row" style="justify-content:center">
+      <button id="castStop" class="ctl" type="button">Watch here instead</button>
+    </div>
+  </div>
+</div>
 <div id="buffer" class="buffer" hidden><svg class="mark" viewBox="0 6 100 88" aria-hidden="true"><path d="M50 11.03 48.38 13.84 44.66 20.31 44.13 21.25 44.66 22.19 70.41 66.78 45.66 66.78 45.13 67.72 41.41 74.22 39.78 77 43 77 84.88 77.03 88.09 77 86.47 74.19 51.63 13.84Z"/><path d="M43.09 23 41.47 25.81 6.63 86.19 5 88.97 16.81 88.97 17.34 88.03 43.09 43.44 54.94 63.91 55.44 64.84 67.25 64.84 65.63 62.06 44.72 25.81Z"/><path d="M42.97 47.13 41.38 49.94 20.44 86.16 18.81 88.97 95 88.97 93.38 86.16 89.66 79.69 89.09 78.75 36.53 78.75 48.34 58.28 48.88 57.34 48.34 56.41 44.59 49.94Z"/></svg></div>
 
 <div id="loading" class="screen">
@@ -143,6 +206,8 @@
     clearTimeout(joining)
 
     infoHash = data.infoHash
+    current = data
+    $('castBtn').hidden = false
     const label = [data.quality, data.decision === 'direct' ? null : 'converted live'].filter(Boolean).join(' · ')
     $('badge').textContent = `TunisiaFlicks · ${label || 'ad-free'}`
     setStage(2, 'Buffering…', label)
@@ -178,6 +243,114 @@
     if (video.hidden && !$('error').hidden) return
     fail('Playback stopped', 'The stream was interrupted. Try again, or pick another source below.')
   })
+
+  // ---- Play on TV ----------------------------------------------------------------------------
+  let current = null      // the /resolve answer: what's playing here
+  let cast = null         // { id, device } while a TV plays it
+  let castTimer = null
+  let castState = { state: '', position: 0, duration: 0 }
+  const post = (url, body) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) })
+  const clock = (s) => {
+    if (s == null || !isFinite(s)) return '–:––'
+    s = Math.max(0, Math.floor(s))
+    const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, sec = String(s % 60).padStart(2, '0')
+    return h ? `${h}:${String(m).padStart(2, '0')}:${sec}` : `${m}:${sec}`
+  }
+
+  async function findTvs() {
+    $('sheet').hidden = false
+    $('sheetText').textContent = 'Looking for TVs on your Wi-Fi…'
+    $('tvList').replaceChildren()
+    $('searchAgain').hidden = true
+    let devices = []
+    try { devices = (await fetch('/cast/devices').then((r) => r.json())).devices || [] } catch {}
+    $('searchAgain').hidden = false
+    if (!devices.length) {
+      $('sheetText').textContent = 'No TV found. Check the TV is on, and on the same Wi-Fi as this computer.'
+      return $('searchAgain').focus()
+    }
+    $('sheetText').textContent = 'Choose a TV:'
+    for (const device of devices) {
+      const pick = document.createElement('button')
+      pick.type = 'button'
+      pick.className = 'pick'
+      pick.innerHTML = '<span></span>'
+      const label = pick.firstChild
+      label.textContent = device.name
+      if (device.model) { const small = document.createElement('small'); small.textContent = device.model; label.append(small) }
+      pick.addEventListener('click', () => startCast(device))
+      $('tvList').append(pick)
+    }
+    $('tvList').firstChild.focus()
+  }
+
+  async function startCast(device) {
+    $('sheetText').textContent = `Sending it to ${device.name}…`
+    $('tvList').replaceChildren()
+    const position = video.currentTime || 0
+    try {
+      const res = await post('/cast/start', { deviceId: device.id, infoHash: current.infoHash, index: current.index, title: current.name || current.title, position })
+      const body = await res.json()
+      if (!res.ok) throw new Error(body.error)
+      cast = { id: body.cast, device: device.name }
+    } catch (err) {
+      $('sheetText').textContent = `${device.name} didn’t take it (${err.message}). Try again, or pick another TV.`
+      return
+    }
+    video.pause()
+    $('sheet').hidden = true
+    $('castTitle').textContent = `Playing on ${cast.device}`
+    $('castTime').textContent = 'Starting…'
+    $('casting').hidden = false
+    $('castBtn').hidden = true
+    $('castToggle').focus()
+    castTimer = setInterval(pollCast, 2000)
+  }
+
+  async function pollCast() {
+    if (!cast) return
+    try {
+      const res = await fetch(`/cast/${cast.id}/status`)
+      if (!res.ok) return endCast(false)
+      castState = await res.json()
+    } catch { return }
+    const playing = castState.state === 'PLAYING'
+    $('castToggle').textContent = playing ? 'Pause' : 'Play'
+    $('castTime').textContent = castState.state === 'TRANSITIONING' ? 'Loading on the TV…'
+      : castState.state === 'STOPPED' || castState.state === 'NO_MEDIA_PRESENT' ? 'Stopped on the TV'
+      : `${clock(castState.position)} / ${clock(castState.duration)}`
+  }
+
+  async function endCast(stopTv) {
+    clearInterval(castTimer)
+    if (cast && stopTv) await post(`/cast/${cast.id}/stop`).catch(() => {})
+    cast = null
+    $('casting').hidden = true
+    $('castBtn').hidden = false
+    // Carry on here from where the TV was.
+    if (castState.position) { try { video.currentTime = castState.position } catch {} }
+    video.focus()
+  }
+
+  $('castBtn').addEventListener('click', findTvs)
+  $('searchAgain').addEventListener('click', findTvs)
+  $('sheetClose').addEventListener('click', () => { $('sheet').hidden = true; $('castBtn').focus() })
+  $('castToggle').addEventListener('click', async () => {
+    if (!cast) return
+    await post(`/cast/${cast.id}/${castState.state === 'PLAYING' ? 'pause' : 'play'}`).catch(() => {})
+    pollCast()
+  })
+  const nudge = (delta) => async () => {
+    if (!cast) return
+    await post(`/cast/${cast.id}/seek`, { position: Math.max(0, (castState.position || 0) + delta) }).catch(() => {})
+    pollCast()
+  }
+  $('castBack').addEventListener('click', nudge(-10))
+  $('castFwd').addEventListener('click', nudge(30))
+  $('castStop').addEventListener('click', () => endCast(true))
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('sheet').hidden) { $('sheet').hidden = true; $('castBtn').focus() } })
+  video.addEventListener('pause', () => document.body.classList.add('paused'))
+  video.addEventListener('play', () => document.body.classList.remove('paused'))
 
   $('retry').addEventListener('click', play)
   addEventListener('pagehide', stopStats)

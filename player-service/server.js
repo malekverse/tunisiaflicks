@@ -18,6 +18,8 @@ import cors from 'cors'
 import WebTorrent from 'webtorrent'
 import parseTorrent from 'parse-torrent'
 import { spawn } from 'node:child_process'
+import http from 'node:http'
+import crypto from 'node:crypto'
 import os from 'node:os'
 import path from 'node:path'
 import fs from 'node:fs'
@@ -25,6 +27,7 @@ import { fileURLToPath } from 'node:url'
 import * as ffbin from 'ffmpeg-ffprobe-static'
 import { analyze, ffmpegArgs } from './codec.js'
 import { tmdbTitle, movieMagnets, tvMagnets, rankOptions } from './resolve.js'
+import * as dlna from './dlna.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -328,6 +331,7 @@ app.get('/resolve', requireAllowedOrigin, async (req, res) => {
     const playPath = info.decision === 'direct' ? `/stream/${torrent.infoHash}/${index}` : `/play/${torrent.infoHash}/${index}`
     res.json({
       title: torrent.name,
+      name: names[0] || null,   // the title as TMDB has it (what a TV shows while casting)
       quality: choice.quality || null,
       decision: info.decision,
       seekable: info.decision === 'direct',
@@ -392,17 +396,13 @@ async function resolveFile(req, res) {
   return { entry, file: entry.torrent.files[index], index }
 }
 
-// DIRECT path: native byte-range streaming (fast start + instant seek). Used for H.264/AAC MP4.
-app.get('/stream/:infoHash/:index', async (req, res) => {
-  const found = await resolveFile(req, res)
-  if (!found) return
-  const { file } = found
-  file.select()
-
+/** Send a torrent file with HTTP Range support (206 / 416), for a <video> or a TV. HEAD too. */
+function sendRange(req, res, file, mime, extraHeaders = {}) {
   const total = file.length
   const range = req.headers.range
   let start = 0
   let end = total - 1
+  const headers = { 'Accept-Ranges': 'bytes', 'Content-Type': mime, 'Cache-Control': 'no-store', ...extraHeaders }
   if (range) {
     const match = /bytes=(\d*)-(\d*)/.exec(range)
     if (match) {
@@ -413,17 +413,24 @@ app.get('/stream/:infoHash/:index', async (req, res) => {
       res.writeHead(416, { 'Content-Range': `bytes */${total}` })
       return res.end()
     }
-    res.writeHead(206, {
-      'Content-Range': `bytes ${start}-${end}/${total}`, 'Accept-Ranges': 'bytes',
-      'Content-Length': end - start + 1, 'Content-Type': 'video/mp4', 'Cache-Control': 'no-store',
-    })
+    res.writeHead(206, { ...headers, 'Content-Range': `bytes ${start}-${end}/${total}`, 'Content-Length': end - start + 1 })
   } else {
-    res.writeHead(200, { 'Content-Length': total, 'Accept-Ranges': 'bytes', 'Content-Type': 'video/mp4', 'Cache-Control': 'no-store' })
+    res.writeHead(200, { ...headers, 'Content-Length': total })
   }
+  if (req.method === 'HEAD') return res.end()
   const stream = file.createReadStream({ start, end })
   stream.on('error', (err) => { console.error('[stream]', err.message); res.destroy() })
   res.on('close', () => stream.destroy())
   stream.pipe(res)
+}
+
+// DIRECT path: native byte-range streaming (fast start + instant seek). Used for H.264/AAC MP4.
+app.get('/stream/:infoHash/:index', async (req, res) => {
+  const found = await resolveFile(req, res)
+  if (!found) return
+  const { file } = found
+  file.select()
+  sendRange(req, res, file, 'video/mp4')
 })
 
 // REMUX / TRANSCODE path: ffmpeg → progressive fragmented MP4. Plays MKV/AC3/HEVC that <video>
@@ -454,6 +461,122 @@ app.get('/play/:infoHash/:index', async (req, res) => {
 
   input.pipe(ff.stdin)
   ff.stdout.pipe(res)
+})
+
+// ---- Play on TV (DLNA) --------------------------------------------------------------------------
+//
+// The TV fetches the video from this machine, so for this one thing the player answers on the home
+// network: a separate small server on the LAN address the TV was found from, serving only
+// /media/<token>/<name>, where the token is a random 256-bit secret made for that one cast and
+// dropped when it stops. Everything else (driving the engine, the API) stays loopback-only.
+//
+// The TV gets the original file, never a conversion: TVs decode MKV, HEVC, AC3 and DTS in hardware,
+// so even the copies a browser can't play go straight through, seekable, with no CPU spent.
+
+const MIME = {
+  '.mp4': 'video/mp4', '.m4v': 'video/mp4', '.mkv': 'video/x-matroska', '.webm': 'video/webm',
+  '.mov': 'video/quicktime', '.avi': 'video/x-msvideo', '.ts': 'video/mp2t', '.wmv': 'video/x-ms-wmv',
+  '.flv': 'video/x-flv', '.ogv': 'video/ogg',
+}
+const mimeOf = (name) => MIME[path.extname(name).toLowerCase()] || 'video/mp4'
+
+const devices = new Map()      // id -> TV, only ever from our own discovery
+const casts = new Map()        // token -> { infoHash, index, device }
+const lanServers = new Map()   // our LAN address -> Promise<port>
+
+function lanServer(address) {
+  if (!lanServers.has(address)) {
+    const started = new Promise((resolve, reject) => {
+      const srv = http.createServer((req, res) => {
+        const match = /^\/media\/([0-9a-f]{64})\/[^/]*$/.exec((req.url || '').split('?')[0])
+        const cast = match && casts.get(match[1])
+        if (!cast || (req.method !== 'GET' && req.method !== 'HEAD')) { res.writeHead(404); return res.end() }
+        const entry = active.get(cast.infoHash)
+        if (!entry) { res.writeHead(410); return res.end() }
+        touch(cast.infoHash)
+        const file = entry.torrent.files[cast.index]
+        file.select()
+        sendRange(req, res, file, mimeOf(file.name), { 'transferMode.dlna.org': 'Streaming', 'contentFeatures.dlna.org': dlna.DLNA_FEATURES })
+      })
+      srv.on('error', reject)
+      srv.listen(0, address, () => resolve(srv.address().port))
+    })
+    started.catch(() => lanServers.delete(address))
+    lanServers.set(address, started)
+  }
+  return lanServers.get(address)
+}
+
+/** The TVs on the home network that can play a video sent to them. */
+app.get('/cast/devices', requireAllowedOrigin, async (_req, res) => {
+  try {
+    const found = await dlna.discover()
+    for (const device of found) devices.set(device.id, device)
+    res.json({ devices: found.map((d) => ({ id: d.id, name: d.name, model: [d.manufacturer, d.model].filter(Boolean).join(' ') })) })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+/** Send a file of an active swarm to a TV: { deviceId, infoHash, index, title, position }. */
+app.post('/cast/start', requireAllowedOrigin, async (req, res) => {
+  const { deviceId, infoHash, index, title, position } = req.body ?? {}
+  const device = devices.get(deviceId)
+  if (!device) return res.status(404).json({ error: 'That TV is gone. Search again.' })
+  const entry = typeof infoHash === 'string' ? active.get(infoHash.toLowerCase()) : null
+  const i = Number(index)
+  if (!entry || !Number.isInteger(i) || i < 0 || i >= entry.torrent.files.length) return res.status(404).json({ error: 'Nothing playing to send' })
+  try {
+    const port = await lanServer(device.localAddress)
+    const token = crypto.randomBytes(32).toString('hex')
+    const file = entry.torrent.files[i]
+    for (const [other, cast] of casts) if (cast.device.id === device.id) casts.delete(other)   // one video per TV
+    casts.set(token, { infoHash: entry.torrent.infoHash, index: i, device })
+    const url = `http://${device.localAddress}:${port}/media/${token}/${encodeURIComponent(file.name)}`
+    await dlna.load(device, { url, title: String(title || file.name).slice(0, 200), mime: mimeOf(file.name), size: file.length })
+    // Pick up where the viewer was (a TV only seeks once it's playing).
+    if (Number(position) > 5) setTimeout(() => dlna.seek(device, Number(position)).catch(() => {}), 3000)
+    res.json({ cast: token, device: device.name })
+  } catch (err) {
+    console.error('[cast]', err.message)
+    res.status(502).json({ error: err.message })
+  }
+})
+
+function castFor(req, res) {
+  const cast = casts.get(String(req.params.cast))
+  if (!cast) res.status(404).json({ error: 'Not casting' })
+  return cast
+}
+
+/** Where the TV is (the player polls this while casting; it also keeps the swarm alive). */
+app.get('/cast/:cast/status', requireAllowedOrigin, async (req, res) => {
+  const cast = castFor(req, res)
+  if (!cast) return
+  touch(cast.infoHash)
+  try { res.json(await dlna.status(cast.device)) } catch (err) { res.status(502).json({ error: err.message }) }
+})
+
+/** play | pause | seek ({ position }) | stop. */
+app.post('/cast/:cast/:action', requireAllowedOrigin, async (req, res) => {
+  const cast = castFor(req, res)
+  if (!cast) return
+  const { device } = cast
+  try {
+    switch (req.params.action) {
+      case 'play': await dlna.play(device); break
+      case 'pause': await dlna.pause(device); break
+      case 'seek': await dlna.seek(device, Math.max(0, Number(req.body?.position) || 0)); break
+      case 'stop':
+        casts.delete(String(req.params.cast))
+        await dlna.stop(device).catch(() => {})
+        break
+      default: return res.status(400).json({ error: 'Unknown action' })
+    }
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(502).json({ error: err.message })
+  }
 })
 
 app.use(express.static(path.join(__dirname, 'public')))

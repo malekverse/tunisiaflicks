@@ -39,6 +39,9 @@ Each file is probed with `ffprobe`, then one of three paths is chosen (see `code
 | `GET /health` | liveness + byte counters |
 | `GET /resolve?type=movie&tmdb=550` | title → magnet → swarm → `playUrl`. Takes `imdb`, or `tmdb` (+ a TMDB key). TV: `?type=tv&tmdb=…&season=1&episode=1`. Ranks copies 1080p > 720p, x264 over x265/HEVC/AV1 (which need transcoding), then seeds, and tries up to 3 in turn if a swarm doesn't answer. TV releases must be named after the show (EZTV files some under the wrong show). |
 | `GET /embed/movie/:tmdb` · `GET /embed/tv/:tmdb/:season/:episode` | the player as an embed, for the TunisiaFlicks site's player frame (desktop app). Only the site's origins and loopback may frame it (`frame-ancestors`). |
+| `GET /cast/devices` | Play on TV: the DLNA TVs on the home network (most Samsung / LG TVs), from an SSDP search |
+| `POST /cast/start` | `{ deviceId, infoHash, index, title, position }`: send an active swarm's file to a TV |
+| `GET /cast/:cast/status` · `POST /cast/:cast/{play,pause,seek,stop}` | follow and drive the TV (`seek` takes `{ position }` in seconds) |
 | `GET /stats/:infoHash` | peers / speed / progress of an active swarm (the embed's loading screen) |
 | `GET\|POST /add?magnet=…` | join the swarm; returns the file list + `best` with `decision`, codecs and a ready-to-play `playUrl` |
 | `GET /stream/:infoHash/:index` | native byte-range stream (direct path), `206` |
@@ -51,7 +54,13 @@ app) or from a magnet you already resolved (`/add`). Either way, point the playe
 
 ## Security (it exposes a torrent engine, so it's locked down)
 
-- **Binds `127.0.0.1` only** (`HOST`) — never the LAN.
+- **Binds `127.0.0.1` only** (`HOST`) — the API never answers on the LAN. The one exception is Play on
+  TV: while casting, a separate small server on the LAN address the TV was found from serves only
+  `/media/<token>/<name>`, where the token is a random 256-bit secret for that one cast, dead once it
+  stops. TVs are only driven by ids from our own discovery, and a device description is only read
+  from the private address that answered the search. Windows asks once to allow it on private
+  networks. The TV gets the original file (TVs decode MKV / HEVC / AC3 themselves): no transcoding.
+  `node test-cast.mjs` tests it end to end against a fake TV.
 - **Host allow-list** rejects foreign `Host` headers (anti DNS-rebinding).
 - **Origin allow-list** (`ALLOWED_ORIGINS`) — only the app's web origins may drive it; a random site's
   `fetch` is refused, so no page can make your machine join a swarm.
