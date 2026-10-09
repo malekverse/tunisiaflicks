@@ -43,7 +43,9 @@ npm run dist:win     # or: dist (current OS)
 ```
 
 electron-builder bundles the app + `player-service` (incl. the static ffmpeg/ffprobe) into an
-installer under `dist/`. Notes:
+installer under `dist/` (`TunisiaFlicks-Setup.exe`). To publish one, push a `desktop-v1.2.3` tag:
+`.github/workflows/desktop-app.yml` builds it on Windows and releases it on GitHub, and the site's
+`/desktop` page and `/download/desktop` serve it within the hour (`docs/apps.md`). Notes:
 
 - **Per-platform binaries.** The bundled ffmpeg/ffprobe and WebTorrent's deps are OS-specific —
   build each target on (or for) that OS, and reinstall `player-service/node_modules` for the target

@@ -1,8 +1,8 @@
-// The apps: reading the GitHub release (src/lib/app-releases.ts) and telling devices apart
+// The apps: reading the GitHub releases (src/lib/app-releases.ts) and telling devices apart
 // (src/lib/device-platform.ts).
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { formatCertificate, pickRelease, readNotes } from '@/src/lib/app-releases'
+import { DESKTOP_ASSET, formatCertificate, pickDesktopRelease, pickRelease, readNotes } from '@/src/lib/app-releases'
 import { detectPlatform, isMacSafari } from '@/src/lib/device-platform'
 
 const SHA_A = 'a'.repeat(64)
@@ -68,6 +68,40 @@ test('a release offers only the files it has; one without APKs, or with odd link
   assert.equal(pickRelease([release('android-v1.0.0', { assets: [elsewhere] })]), null)
   assert.equal(pickRelease(null), null)
   assert.equal(pickRelease({ message: 'API rate limit exceeded' }), null)
+})
+
+const SHA_W = 'c'.repeat(64)
+const desktopRelease = (tag, extra = {}) => release(tag, {
+  body: `TunisiaFlicks for Windows.\n\n- ${DESKTOP_ASSET} SHA-256: \`${SHA_W}\``,
+  assets: [asset(DESKTOP_ASSET, 90_000_000), asset('SHA256SUMS', 100)],
+  ...extra,
+})
+
+test('the newest desktop-v release with its installer wins; Android releases, drafts and pre-releases are skipped', () => {
+  const picked = pickDesktopRelease([
+    release('android-v3.0.0'),
+    desktopRelease('desktop-v2.0.0', { draft: true }),
+    desktopRelease('desktop-v1.9.0', { prerelease: true }),
+    desktopRelease('desktop-v1.2.0'),
+    desktopRelease('desktop-v1.1.0'),
+  ])
+  assert.equal(picked.version, '1.2.0')
+  assert.equal(picked.file.sha256, SHA_W)
+  assert.equal(picked.file.size, 90_000_000)
+  assert.match(picked.file.url, /^https:\/\/github\.com\/.+\/TunisiaFlicks-Setup\.exe$/)
+  assert.match(picked.releaseUrl, /^https:\/\/github\.com\//)
+  // And the Android lookup never picks a desktop release.
+  assert.equal(pickRelease([desktopRelease('desktop-v1.2.0')]), null)
+})
+
+test('a desktop release without its installer, or with an odd link, is passed over', () => {
+  assert.equal(pickDesktopRelease([desktopRelease('desktop-v1.0.0', { assets: [asset('SHA256SUMS')] })]), null)
+  const elsewhere = { ...asset(DESKTOP_ASSET), browser_download_url: 'https://evil.example/setup.exe' }
+  assert.equal(pickDesktopRelease([desktopRelease('desktop-v1.0.0', { assets: [elsewhere] })]), null)
+  const fallback = pickDesktopRelease([desktopRelease('desktop-v1.1.0', { assets: [] }), desktopRelease('desktop-v1.0.0')])
+  assert.equal(fallback.version, '1.0.0')
+  assert.equal(pickDesktopRelease(null), null)
+  assert.equal(pickDesktopRelease({ message: 'API rate limit exceeded' }), null)
 })
 
 const UA = {

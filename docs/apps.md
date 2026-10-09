@@ -7,8 +7,9 @@ small offer that appears on the right device at the right moment:
 |---|---|---|
 | Android phones and tablets | An app (APK) that shows the site full screen in Chrome, a **Trusted Web Activity** | `android/phone`, `/download/android` |
 | Android TV, Google TV, TV boxes | An app (APK) that opens the site in TV mode, in a locked-down WebView | `android/tv`, `/download/tv` |
+| Windows | The desktop app: the site in its own window, with its own ad-free player first in the source bar and every pop-up blocked | `desktop/`, `/desktop`, `/download/desktop` |
 | iPhone and iPad | The site on the Home Screen (Apple only allows the App Store for apps) | Safari's Share > Add to Home Screen |
-| Windows, Mac, Linux, ChromeOS | The site installed from Chrome or Edge (its own window and icon) | the browser's install prompt; Safari: File > Add to Dock |
+| Mac, Linux, ChromeOS (and Windows) | The site installed from Chrome or Edge (its own window and icon) | the browser's install prompt; Safari: File > Add to Dock |
 | Other smart TVs | TV mode in the TV's browser | `/?tv=1` |
 
 Both Android apps show the live site, so a site update reaches every app at once. They only need a new
@@ -38,6 +39,7 @@ One card for the device in hand:
 - **Android TV in TV mode:** the address to type in the free Downloader app. (TV browsers outside TV mode get
   the TV-mode offer first.)
 - **iPhone / iPad:** Add to Home Screen, step by step.
+- **Windows:** the desktop app (its page, `/desktop`) once it has a release; until then, as other computers.
 - **Computers:** one-click install from Chrome or Edge; Safari on a Mac: File > Add to Dock.
 
 It never nags: only from a second visit or a third page, after the page settles, never on `/app`, sign-in or
@@ -76,6 +78,26 @@ git push origin android-v1.0.0
 `tunisiaflicks-android.apk`, `tunisiaflicks-tv.apk`, `SHA256SUMS`, and the checksums in the notes (the site
 reads them: keep their format). Versions are `android-vMAJOR.MINOR.PATCH` (minor and patch up to 99), each
 higher than the last. Within the hour the site offers the new version; nothing to change in Vercel.
+
+## The desktop app (desktop/)
+
+The Windows app is the site in an Electron window plus the local torrent player (`player-service/`); see
+`desktop/README.md`. The site presents it on `/desktop` (its own page), with a spotlight and a card on
+`/app`, and offers it to Windows visitors once it has a release. It reads the newest **`desktop-v…`
+release**: its `TunisiaFlicks-Setup.exe`, the size, and the checksum in the notes.
+
+```sh
+git tag desktop-v1.0.0
+git push origin desktop-v1.0.0
+```
+
+`.github/workflows/desktop-app.yml` builds the installer on Windows and creates a GitHub Release with
+`TunisiaFlicks-Setup.exe`, `SHA256SUMS` and the checksum in the notes (keep its format). Until a release
+exists, `/desktop` says the app is coming and `/download/desktop` leads there.
+
+The installer is unsigned unless the repository has the `WINDOWS_CERT_BASE64` (a .pfx in base64) and
+`WINDOWS_CERT_PASSWORD` secrets; unsigned, Windows SmartScreen warns on first run, and `/desktop` tells
+people how to get past it ("More info", then "Run anyway").
 
 ## The phone app (android/phone)
 

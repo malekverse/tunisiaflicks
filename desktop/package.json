@@ -21,7 +21,7 @@
       { "from": "../player-service", "to": "player-service", "filter": ["**/*", "!**/*.log", "!**/*.bin", "!add*.json", "!test-codec.mjs"] }
     ],
     "asar": true,
-    "win": { "target": ["nsis"], "icon": "app/icon.png", "artifactName": "TunisiaFlicks-Setup-${version}.${ext}" },
+    "win": { "target": ["nsis"], "icon": "app/icon.png", "artifactName": "TunisiaFlicks-Setup.${ext}" },
     "mac": { "target": ["dmg"] },
     "linux": { "target": ["AppImage"] },
     "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true }

@@ -1,6 +1,8 @@
-// The Android apps the site offers, found by itself: the newest "android-v…" release of this
-// repository on GitHub (published by .github/workflows/android-apps.yml). Nothing to configure:
-// push a tag, and within the hour /app, the offers and /download/… serve the new version.
+// The apps the site offers, found by themselves on this repository's GitHub releases:
+// - the Android apps: the newest "android-v…" release (.github/workflows/android-apps.yml);
+// - the Windows desktop app: the newest "desktop-v…" release (.github/workflows/desktop-app.yml).
+// Nothing to configure: push a tag, and within the hour /app, /desktop, the offers and /download/…
+// serve the new version.
 //
 // - APP_RELEASES_REPO: owner/name of the repository (default malekverse/tunisiaflicks).
 // The GitHub API answer is cached for an hour (60 unauthenticated calls an hour are plenty).
@@ -38,6 +40,7 @@ type GithubAsset = { name?: unknown; browser_download_url?: unknown; size?: unkn
 type GithubRelease = { tag_name?: unknown; draft?: unknown; prerelease?: unknown; published_at?: unknown; html_url?: unknown; body?: unknown; assets?: unknown }
 
 const TAG = /^android-v(\d+\.\d+\.\d+)$/
+const DESKTOP_TAG = /^desktop-v(\d+\.\d+\.\d+)$/
 const HTTPS_GITHUB = /^https:\/\/github\.com\//
 
 export const isAppId = (value: unknown): value is AppId => value === 'android' || value === 'tv'
@@ -55,7 +58,7 @@ export function formatCertificate(value: string): string | null {
  */
 export function readNotes(body: string): { files: Record<string, string>, cert: string | null } {
   const files: Record<string, string> = {}
-  for (const match of body.matchAll(/([\w.-]+\.apk) SHA-256: `([0-9a-fA-F]{64})`/g)) files[match[1]] = match[2].toLowerCase()
+  for (const match of body.matchAll(/([\w.-]+\.(?:apk|exe)) SHA-256: `([0-9a-fA-F]{64})`/g)) files[match[1]] = match[2].toLowerCase()
   const cert = /Signing certificate SHA-256: `([0-9A-Fa-f:]{64,95})`/.exec(body)
   return { files, cert: cert ? formatCertificate(cert[1]) : null }
 }
@@ -91,10 +94,45 @@ export function pickRelease(releases: unknown): AppReleases | null {
   return null
 }
 
+/** The Windows installer, published as this file. */
+export const DESKTOP_ASSET = 'TunisiaFlicks-Setup.exe'
+
+export type DesktopRelease = {
+  version: string
+  publishedAt: string
+  /** The release page on GitHub. */
+  releaseUrl: string
+  file: AppFile
+}
+
+/** The newest published desktop-v… release with its installer among `releases`, or null. */
+export function pickDesktopRelease(releases: unknown): DesktopRelease | null {
+  if (!Array.isArray(releases)) return null
+  for (const raw of releases as GithubRelease[]) {
+    if (!raw || raw.draft || raw.prerelease || typeof raw.tag_name !== 'string') continue
+    const tag = DESKTOP_TAG.exec(raw.tag_name)
+    if (!tag) continue
+    const asset = ((Array.isArray(raw.assets) ? raw.assets : []) as GithubAsset[])
+      .find((item) => item?.name === DESKTOP_ASSET && item.state !== 'starter')
+    if (!asset || typeof asset.browser_download_url !== 'string' || !HTTPS_GITHUB.test(asset.browser_download_url)) continue
+    return {
+      version: tag[1],
+      publishedAt: typeof raw.published_at === 'string' ? raw.published_at : '',
+      releaseUrl: typeof raw.html_url === 'string' && HTTPS_GITHUB.test(raw.html_url) ? raw.html_url : '',
+      file: {
+        url: asset.browser_download_url,
+        size: typeof asset.size === 'number' ? asset.size : 0,
+        sha256: readNotes(typeof raw.body === 'string' ? raw.body : '').files[DESKTOP_ASSET] ?? null,
+      },
+    }
+  }
+  return null
+}
+
 const REPO = /^[\w.-]+\/[\w.-]+$/
 
-/** The newest Android apps release, or null (none yet, or GitHub unreachable). Never throws. */
-export async function getAppReleases(): Promise<AppReleases | null> {
+/** The repository's recent releases, newest first (GitHub's answer as it is), or null. Never throws. */
+async function listReleases(): Promise<unknown> {
   const repo = process.env.APP_RELEASES_REPO?.trim() || 'malekverse/tunisiaflicks'
   if (!REPO.test(repo)) return null
   try {
@@ -106,10 +144,20 @@ export async function getAppReleases(): Promise<AppReleases | null> {
       next: { revalidate: 3600, tags: ['app-releases'] },
     }).finally(() => clearTimeout(timer))
     if (!response.ok) return null
-    return pickRelease(await response.json())
+    return await response.json()
   } catch {
     return null
   }
+}
+
+/** The newest Android apps release, or null (none yet, or GitHub unreachable). Never throws. */
+export async function getAppReleases(): Promise<AppReleases | null> {
+  return pickRelease(await listReleases())
+}
+
+/** The newest Windows desktop app release, or null (none yet, or GitHub unreachable). Never throws. */
+export async function getDesktopRelease(): Promise<DesktopRelease | null> {
+  return pickDesktopRelease(await listReleases())
 }
 
 /** Which apps can be downloaded right now (for the offers, which only need to know that). */

@@ -1,0 +1,101 @@
+# Builds the Windows desktop app (desktop/, with player-service/ inside it) and publishes its
+# installer as a GitHub Release, which the site offers on /desktop and /app and through
+# /download/desktop (it finds the newest release by itself; see src/lib/app-releases.ts).
+#
+# Runs only when a tag like desktop-v1.2.3 is pushed (never on pull requests, so a signing
+# certificate is never exposed to code from a fork). The release notes list the installer's SHA-256
+# in the format the site reads. Setup: docs/apps.md, "The desktop app".
+#
+# Optional repository secrets (code signing; without them the installer is unsigned and Windows
+# SmartScreen warns on first run, see desktop/README.md):
+# - WINDOWS_CERT_BASE64: the code-signing certificate (.pfx), base64-encoded
+# - WINDOWS_CERT_PASSWORD
+name: Desktop app
+
+on:
+  push:
+    tags: ['desktop-v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-app-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the version from the tag
+        id: version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          if [[ ! "$TAG" =~ ^desktop-v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "::error::Tags must look like desktop-v1.2.3"
+            exit 1
+          fi
+          echo "name=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: |
+            player-service/package-lock.json
+            desktop/package-lock.json
+
+      # The player service ships inside the app with its Windows binaries (ffmpeg, ffprobe).
+      - name: Install the player service
+        working-directory: player-service
+        run: npm ci --omit=dev
+
+      - name: Install the desktop app
+        working-directory: desktop
+        env:
+          VERSION: ${{ steps.version.outputs.name }}
+        run: |
+          npm ci
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
+
+      - name: Build the installer
+        working-directory: desktop
+        env:
+          WINDOWS_CERT_BASE64: ${{ secrets.WINDOWS_CERT_BASE64 }}
+          WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
+        run: |
+          if [ -n "${WINDOWS_CERT_BASE64:-}" ]; then
+            export CSC_LINK="$WINDOWS_CERT_BASE64" CSC_KEY_PASSWORD="$WINDOWS_CERT_PASSWORD"
+          else
+            echo "::warning::No WINDOWS_CERT_BASE64 secret: the installer is unsigned"
+            export CSC_IDENTITY_AUTO_DISCOVERY=false
+          fi
+          npx electron-builder --win --x64 --publish never
+          test -f dist/TunisiaFlicks-Setup.exe
+
+      - name: Publish the release
+        working-directory: desktop/dist
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          NAME: ${{ steps.version.outputs.name }}
+        run: |
+          sha=$(sha256sum TunisiaFlicks-Setup.exe | cut -d' ' -f1)
+          sha256sum TunisiaFlicks-Setup.exe > SHA256SUMS
+          # The site reads the "SHA-256" line below; keep its format.
+          cat > notes.md <<EOF
+          TunisiaFlicks for Windows, version $NAME: the whole site in its own window, with its own ad-free player.
+
+          Download and details: https://tunisiaflicks.vercel.app/desktop
+
+          - TunisiaFlicks-Setup.exe SHA-256: \`$sha\`
+          EOF
+          gh release create "$TAG" TunisiaFlicks-Setup.exe SHA256SUMS \
+            --title "Desktop app $NAME" --notes-file notes.md
