@@ -3,7 +3,7 @@
 // Kids, TVs, people without a page or friends, or when fewer than 3 titles are worth showing.
 // Mounted in src/app/page.tsx inside Suspense; its data is bounded to 4 seconds.
 import PosterCard from '@/src/components/PosterCard'
-import { Row, ROW_WIDTH, SectionHeader } from '@/src/components/rows/Row'
+import { Row, SectionHeader } from '@/src/components/rows/Row'
 import { getLocale, getT } from '@/src/lib/i18n/server'
 import { htmlLang } from '@/src/lib/i18n/locales'
 import { getFriendsActivity, type ActivityItem } from '@/src/lib/social/activity'
@@ -12,6 +12,9 @@ import { socialSelf } from '@/src/lib/social/session'
 import type { PublicIdentity, ShareMedia } from '@/src/lib/social/types'
 import { withTimeout } from '@/src/lib/with-timeout'
 import { AvatarStack } from './Avatar'
+
+// ROW_WIDTH.poster, written out: a value exported from a client module can't be read on the server.
+const POSTER_WIDTH = 'w-[34vw] max-w-[150px] sm:w-[156px] sm:max-w-none lg:w-[168px] 2xl:w-[196px]'
 
 const MIN_TITLES = 3
 
@@ -42,7 +45,7 @@ export default async function FriendsRow(): Promise<JSX.Element | null> {
   return (
     <section>
       <SectionHeader title={t('social.row.title')} href="/friends" />
-      <Row label={t('social.row.title')} itemClassName={ROW_WIDTH.poster}>
+      <Row label={t('social.row.title')} itemClassName={POSTER_WIDTH}>
         {Array.from(titles.values()).map(({ media, people }) => (
           <PosterCard
             key={`${media.media_type}-${media.id}`}
