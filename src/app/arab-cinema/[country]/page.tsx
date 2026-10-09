@@ -4,7 +4,8 @@ import { Baby, CloudOff, Film } from 'lucide-react'
 import RoomTint from '@/src/components/shell/RoomTint'
 import { EmptyState } from '@/src/components/MediaGrid'
 import RetryButton from '@/src/components/dramas/RetryButton'
-import { CountryHeader, Neighbours, PanelGrid, PanelRow, PeopleRow, PickCard } from '@/src/components/arab-map/Panel'
+import { CountryStats, CountryTitle, Neighbours, PanelGrid, PanelRow, PeopleRow, PickCard } from '@/src/components/arab-map/Panel'
+import { CountryBodySkeleton } from '@/src/components/arab-map/Skeletons'
 import { getCountryCinema, getCountryPeople, type CountryCinema } from '@/src/lib/arab-cinema'
 import { ARAB_COUNTRY_CODES, arabCountryName, isArabCountry, type ArabCountryCode } from '@/src/lib/arab-countries'
 import { MAP_ACCENT } from '@/src/lib/arab-map'
@@ -70,22 +71,24 @@ async function People({ code, name }: { code: ArabCountryCode, name: string }) {
   return <PeopleRow title={t('arabMap.people', { country: name })} people={people} />
 }
 
-/** One country: its numbers, today's pick, its rows (or everything, when there is little), its people, its neighbours. */
-export default async function CountryPage({ params }: Props) {
-  const code = countryFrom(params.country)
+/**
+ * Everything under the title, from TMDB: the numbers, today's pick, the rows (or everything at
+ * once, when there is little), the people born there and the neighbours. Or, when TMDB didn't
+ * answer, a way to try again; when nothing is on record (or nothing kid-safe), the neighbours.
+ */
+async function CountryBody({ code, name }: { code: ArabCountryCode, name: string }) {
   const t = getT()
   const locale = getLocale()
   const kids = await getKidsMode().catch(() => false)
-  const name = arabCountryName(code, locale)
   const nameOf = (other: ArabCountryCode) => arabCountryName(other, locale)
   const data = await withTimeout(getCountryCinema(code, locale, kids), 15000, null)
 
-  // TMDB didn't answer: say so, offer to try again (the map and the header stay usable).
+  // TMDB didn't answer: say so, offer to try again (the map and the title stay usable).
   if (!data || data.failed) {
     return (
       <div className="space-y-6">
         <RoomTint color={MAP_ACCENT} />
-        <CountryHeader name={name} films={null} series={null} first={null} locale={locale} t={t} />
+        <CountryStats name={name} films={null} series={null} first={null} locale={locale} t={t} />
         <EmptyState
           title={t('arabMap.error.title')}
           icon={<CloudOff aria-hidden className="h-6 w-6" />}
@@ -97,15 +100,14 @@ export default async function CountryPage({ params }: Props) {
     )
   }
 
-  const empty = data.films + data.series === 0
-  const header = <CountryHeader name={name} films={data.films} series={data.series} first={data.first} locale={locale} t={t} />
+  const stats = <CountryStats name={name} films={data.films} series={data.series} first={data.first} locale={locale} t={t} />
 
   // Nothing on record (or nothing kid-safe): an honest empty state, and the way to the neighbours.
-  if (empty) {
+  if (data.films + data.series === 0) {
     return (
       <div className="space-y-4">
         <RoomTint color={MAP_ACCENT} />
-        {header}
+        {stats}
         <EmptyState
           title={t(kids ? 'arabMap.kidsEmpty.title' : 'arabMap.empty.title')}
           icon={kids ? <Baby aria-hidden className="h-6 w-6" /> : <Film aria-hidden className="h-6 w-6" />}
@@ -120,7 +122,7 @@ export default async function CountryPage({ params }: Props) {
   return (
     <div className="space-y-10">
       <RoomTint poster={data.pick?.poster} color={data.pick?.poster ? undefined : MAP_ACCENT} />
-      {header}
+      {stats}
       {data.pick && <PickCard pick={data.pick} locale={locale} t={t} />}
 
       {data.everything ? (
@@ -137,6 +139,28 @@ export default async function CountryPage({ params }: Props) {
       )}
 
       <Neighbours code={code} nameOf={nameOf} t={t} />
+    </div>
+  )
+}
+
+/**
+ * One country. The title needs no data, so it comes first (the panel's largest paint, never
+ * waiting for TMDB); the rest streams in under it, in place of a skeleton of the same shape.
+ */
+export default function CountryPage({ params }: Props) {
+  const code = countryFrom(params.country)
+  const t = getT()
+  const locale = getLocale()
+  const name = arabCountryName(code, locale)
+
+  return (
+    <div>
+      <CountryTitle name={name} t={t} />
+      <div className="mt-5">
+        <Suspense fallback={<CountryBodySkeleton label={t('common.loadingAria')} />}>
+          <CountryBody code={code} name={name} />
+        </Suspense>
+      </div>
 
       <JsonLd data={{
         '@context': 'https://schema.org',

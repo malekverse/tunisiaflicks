@@ -1,4 +1,5 @@
 import { Skeleton } from '@/src/components/ui/skeleton'
+import { SectionHeader } from '@/src/components/rows/Row'
 import { MAP_CELLS } from '@/src/lib/arab-map'
 import { cn } from '@/src/lib/utils'
 
@@ -24,27 +25,26 @@ export function MapSkeleton({ label }: { label: string }) {
 
 const POSTER = 'w-[30vw] max-w-[140px] shrink-0 sm:w-[140px] xl:w-[128px] 2xl:w-[140px]'
 
-/** A country's panel while it loads: the name, the three numbers, today's pick, a row. */
-export function PanelSkeleton({ label }: { label: string }) {
+/**
+ * Under a country's title while TMDB answers: the three numbers, the source line, today's pick
+ * and a row, laid out like the real thing (CountryStats, PickCard, PanelRow).
+ */
+export function CountryBodySkeleton({ label }: { /** Left out inside PanelSkeleton (it says it once). */ label?: string }) {
   return (
-    <div className="space-y-8 pt-2 xl:pt-8" aria-busy="true" aria-label={label}>
+    <div className="space-y-10" aria-busy={label ? true : undefined} aria-label={label}>
       <div className="page-x">
-        <div className="flex items-start justify-between gap-3">
-          <Skeleton className="h-[clamp(40px,5.2vw,68px)] w-[min(280px,65%)] rounded-2xl" />
-          <Skeleton className="h-11 w-11 shrink-0 rounded-full" />
-        </div>
-        <div className="mt-6 grid grid-cols-3 gap-3">
-          {[0, 1, 2].map((index) => (
+        <div className="mb-4 grid grid-cols-[auto_auto_minmax(0,1fr)] gap-x-6 sm:gap-x-8">
+          {['w-12', 'w-12', 'w-24'].map((width, index) => (
             <div key={index} className="space-y-2">
-              <Skeleton className="h-3 w-14 rounded-full" />
+              <Skeleton className={cn('h-3 rounded-full', width)} />
               <Skeleton className="h-7 w-16 rounded-lg" />
             </div>
           ))}
         </div>
-        <Skeleton className="mt-5 h-3 w-[min(340px,85%)] rounded-full" />
+        <Skeleton className="h-3 w-[min(340px,85%)] rounded-full" />
       </div>
       <div className="page-x">
-        <div className="flex gap-4 rounded-[22px] bg-white/[0.03] p-4 ring-1 ring-white/[0.06] sm:p-5">
+        <div className="flex gap-4 rounded-[22px] bg-white/[0.03] p-4 ring-1 ring-white/[0.06] sm:gap-5 sm:p-5">
           <Skeleton className="aspect-[2/3] w-[92px] shrink-0 rounded-poster sm:w-[104px]" />
           <div className="flex-1 space-y-2.5 pt-1">
             <Skeleton className="h-3 w-20 rounded-full" />
@@ -59,6 +59,26 @@ export function PanelSkeleton({ label }: { label: string }) {
         </div>
       </div>
       <PanelRowSkeleton />
+    </div>
+  )
+}
+
+/**
+ * A country's panel before its page arrives (a tile was just chosen): the title's place and the
+ * body's. Once the page's first bytes are in, the real title replaces the first half at once.
+ */
+export function PanelSkeleton({ label }: { label: string }) {
+  return (
+    <div aria-busy="true" aria-label={label}>
+      <div className="page-x pt-1 xl:pt-8">
+        <div className="flex items-start justify-between gap-3">
+          <Skeleton className="h-[clamp(40px,5.2vw,68px)] w-[min(280px,65%)] rounded-2xl" />
+          <Skeleton className="h-11 w-11 shrink-0 rounded-full" />
+        </div>
+      </div>
+      <div className="mt-5">
+        <CountryBodySkeleton />
+      </div>
     </div>
   )
 }
@@ -78,27 +98,46 @@ export function PanelRowSkeleton({ className }: { className?: string }) {
   )
 }
 
-/** The index panel while it loads: the title, the intro, the first rows of the country list. */
-export function IndexSkeleton({ label }: { label: string }) {
+/** One row of the country list while it loads (the same 60px as CountryList's rows). */
+function CountryRowSkeleton() {
   return (
-    <div className="space-y-8 pt-2 xl:pt-8" aria-busy="true" aria-label={label}>
-      <div className="page-x space-y-4">
-        <Skeleton className="h-[clamp(34px,5vw,64px)] w-[min(320px,70%)] rounded-2xl" />
-        <Skeleton className="h-4 w-[min(420px,90%)] rounded-full" />
-        <Skeleton className="h-4 w-[min(300px,70%)] rounded-full" />
+    <li className="flex h-[60px] items-center gap-3">
+      <Skeleton className="h-12 w-8 shrink-0 rounded-[6px]" />
+      <div className="flex-1 space-y-1.5">
+        <Skeleton className="h-3.5 w-28 rounded-full" />
+        <Skeleton className="h-3 w-40 rounded-full" />
       </div>
-      <div className="page-x space-y-1">
-        <Skeleton className="mb-4 h-6 w-36 rounded-full" />
-        {Array.from({ length: 6 }).map((_, index) => (
-          <div key={index} className="flex h-[60px] items-center gap-3">
-            <Skeleton className="h-12 w-8 shrink-0 rounded-[6px]" />
-            <div className="flex-1 space-y-1.5">
-              <Skeleton className="h-3.5 w-28 rounded-full" />
-              <Skeleton className="h-3 w-40 rounded-full" />
-            </div>
-          </div>
-        ))}
+    </li>
+  )
+}
+
+/**
+ * The index panel under its title while the day's index loads: 'All countries' (its real title)
+ * and 22 rows, the exact height of the list that replaces them, so nothing under them moves.
+ */
+export function IndexBodySkeleton({ title, label }: { title: string, label?: string }) {
+  return (
+    <div aria-busy={label ? true : undefined} aria-label={label}>
+      <section aria-label={title}>
+        <SectionHeader title={title} />
+        <ul className="page-x divide-y divide-white/[0.06]">
+          {MAP_CELLS.map((cell) => <CountryRowSkeleton key={cell.code} />)}
+        </ul>
+      </section>
+    </div>
+  )
+}
+
+/** The index panel before its page arrives (back from a country): the title, the intro, the list. */
+export function IndexSkeleton({ label, title }: { label: string, title: string }) {
+  return (
+    <div className="space-y-10 pt-1 xl:pt-8" aria-busy="true" aria-label={label}>
+      <div className="page-x">
+        <Skeleton className="h-[clamp(40px,5.2vw,68px)] w-[min(320px,70%)] rounded-2xl" />
+        <Skeleton className="mt-4 h-4 w-[min(420px,90%)] rounded-full" />
+        <Skeleton className="mt-2.5 h-4 w-[min(300px,70%)] rounded-full" />
       </div>
+      <IndexBodySkeleton title={title} />
     </div>
   )
 }

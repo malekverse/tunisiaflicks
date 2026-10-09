@@ -67,18 +67,11 @@ function Stat({ label, children }: { label: string, children: React.ReactNode })
 }
 
 /**
- * A country's header: the close button (back to every country), the name as the page's title,
- * three numbers (films, series, the first film on record) and where they come from.
+ * A country's title: the name as the page's h1 and the close button (back to every country).
+ * Needs no data, so it is in the first bytes of the page (the panel's largest paint) while the
+ * numbers and rows stream in under it.
  */
-export function CountryHeader({ name, films, series, first, locale, t }: {
-  name: string
-  films: number | null
-  series: number | null
-  first: MapTitle | null
-  locale: Locale
-  t: Translate
-}) {
-  const format = new Intl.NumberFormat(dateLocale(locale))
+export function CountryTitle({ name, t }: { name: string, t: Translate }) {
   return (
     <header className="page-x pt-1 xl:pt-8">
       <div className="flex items-start justify-between gap-3">
@@ -92,8 +85,27 @@ export function CountryHeader({ name, films, series, first, locale, t }: {
           <X aria-hidden className="h-5 w-5" strokeWidth={2.2} />
         </CountryLink>
       </div>
+    </header>
+  )
+}
+
+/**
+ * Under the title: three numbers (films, series, the first film on record), each a label and a
+ * value, and where they come from. The numbers are left out when TMDB has nothing (or didn't answer).
+ */
+export function CountryStats({ name, films, series, first, locale, t }: {
+  name: string
+  films: number | null
+  series: number | null
+  first: MapTitle | null
+  locale: Locale
+  t: Translate
+}) {
+  const format = new Intl.NumberFormat(dateLocale(locale))
+  return (
+    <div className="page-x">
       {films !== null && films + (series ?? 0) > 0 && (
-        <dl className="mt-5 grid grid-cols-[auto_auto_minmax(0,1fr)] gap-x-6 sm:gap-x-8">
+        <dl className="mb-4 grid grid-cols-[auto_auto_minmax(0,1fr)] gap-x-6 sm:gap-x-8">
           <Stat label={t('arabMap.films')}>{format.format(films)}</Stat>
           <Stat label={t('arabMap.series')}>{format.format(series ?? 0)}</Stat>
           {first?.year ? (
@@ -106,8 +118,8 @@ export function CountryHeader({ name, films, series, first, locale, t }: {
           ) : <div />}
         </dl>
       )}
-      <p className="mt-4 max-w-[60ch] text-[12.5px] leading-relaxed text-white/50">{richT(t, 'arabMap.sourceCountry', { country: name })}</p>
-    </header>
+      <p className="max-w-[60ch] text-[12.5px] leading-relaxed text-white/50">{richT(t, 'arabMap.sourceCountry', { country: name })}</p>
+    </div>
   )
 }
 

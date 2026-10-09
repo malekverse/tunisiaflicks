@@ -1,9 +1,11 @@
+import { Suspense } from 'react'
 import { CloudOff } from 'lucide-react'
 import RoomTint from '@/src/components/shell/RoomTint'
 import { SectionHeader } from '@/src/components/rows/Row'
 import RetryButton from '@/src/components/dramas/RetryButton'
 import CountryList from '@/src/components/arab-map/CountryList'
 import { PanelRow } from '@/src/components/arab-map/Panel'
+import { IndexBodySkeleton } from '@/src/components/arab-map/Skeletons'
 import { getArabMapIndex } from '@/src/lib/arab-cinema'
 import { MAP_ACCENT, rippleDistance } from '@/src/lib/arab-map'
 import { getKidsMode } from '@/src/lib/profiles'
@@ -21,10 +23,10 @@ export function generateMetadata() {
 }
 
 /**
- * The map's index panel: the title, every country in a list (the map's accessible twin), today's
- * film from each country, and where the numbers come from.
+ * Every country in a list (the map's accessible twin), today's film from each country, and where
+ * the numbers come from. The day's index (cached, Kids apart); the map beside it reads the same.
  */
-export default async function ArabCinemaPage() {
+async function IndexBody() {
   const t = getT()
   const locale = getLocale()
   const kids = await getKidsMode().catch(() => false)
@@ -46,13 +48,7 @@ export default async function ArabCinemaPage() {
     }))
 
   return (
-    <div className="space-y-10 pt-1 xl:pt-8">
-      <RoomTint color={MAP_ACCENT} />
-      <div className="page-x">
-        <h1 className="font-display text-[clamp(40px,5.2vw,68px)] font-extrabold leading-[0.95] text-white">{t('arabMap.title')}</h1>
-        <p className="mt-3 max-w-[56ch] text-[15px] leading-relaxed text-white/70">{t('arabMap.intro')}</p>
-      </div>
-
+    <div className="space-y-10">
       <section aria-label={t('arabMap.all')}>
         <SectionHeader title={t('arabMap.all')} />
         <CountryList countries={index.countries} kids={kids} locale={locale} t={t} />
@@ -83,6 +79,30 @@ export default async function ArabCinemaPage() {
       )}
 
       <p className="page-x max-w-[64ch] text-[12.5px] leading-relaxed text-white/50">{t('arabMap.source')}</p>
+    </div>
+  )
+}
+
+/**
+ * The map's index panel. The title and the intro need no data, so they come first (the panel's
+ * largest paint, never waiting for TMDB); the list streams in under them, in place of 22 rows of
+ * skeleton, the same height.
+ */
+export default function ArabCinemaPage() {
+  const t = getT()
+  const locale = getLocale()
+
+  return (
+    <div className="space-y-10 pt-1 xl:pt-8">
+      <RoomTint color={MAP_ACCENT} />
+      <div className="page-x">
+        <h1 className="font-display text-[clamp(40px,5.2vw,68px)] font-extrabold leading-[0.95] text-white">{t('arabMap.title')}</h1>
+        <p className="mt-3 max-w-[56ch] text-[15px] leading-relaxed text-white/70">{t('arabMap.intro')}</p>
+      </div>
+
+      <Suspense fallback={<IndexBodySkeleton title={t('arabMap.all')} label={t('common.loadingAria')} />}>
+        <IndexBody />
+      </Suspense>
 
       <JsonLd data={{
         '@context': 'https://schema.org',
