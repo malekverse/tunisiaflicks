@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self'" />
+<title>TunisiaFlicks</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; color: #fff;
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { height: 100%; display: grid; place-items: center; text-align: center; padding: 24px; box-sizing: border-box;
+    background: radial-gradient(ellipse at center, rgba(255,15,0,.09), transparent 60%); }
+  .mark { width: 56px; height: 56px; fill: #ff0f00; }
+  .mark > path { animation: chase 1.2s ease-in-out infinite; }
+  .mark > path:nth-child(2) { animation-delay: .4s; }
+  .mark > path:nth-child(3) { animation-delay: .8s; }
+  @keyframes chase { 0%, 100% { opacity: .18; } 20%, 40% { opacity: 1; } 60% { opacity: .18; } }
+  @media (prefers-reduced-motion: reduce) { .mark > path { animation-duration: 2.4s; } }
+  h1 { margin: 22px 0 6px; font-size: 26px; font-weight: 800; letter-spacing: -.01em; }
+  p { margin: 0; color: rgba(255,255,255,.62); max-width: 26rem; }
+  button { margin-top: 22px; height: 42px; padding: 0 22px; border: 0; border-radius: 999px; cursor: pointer;
+    background: #ff0f00; color: #fff; font: 600 14px system-ui, sans-serif; }
+  button:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+  small { display: block; margin-top: 14px; color: rgba(255,255,255,.4); font-size: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <div>
+    <svg class="mark" viewBox="0 6 100 88" aria-hidden="true"><path d="M50 11.03 48.38 13.84 44.66 20.31 44.13 21.25 44.66 22.19 70.41 66.78 45.66 66.78 45.13 67.72 41.41 74.22 39.78 77 43 77 84.88 77.03 88.09 77 86.47 74.19 51.63 13.84Z"/><path d="M43.09 23 41.47 25.81 6.63 86.19 5 88.97 16.81 88.97 17.34 88.03 43.09 43.44 54.94 63.91 55.44 64.84 67.25 64.84 65.63 62.06 44.72 25.81Z"/><path d="M42.97 47.13 41.38 49.94 20.44 86.16 18.81 88.97 95 88.97 93.38 86.16 89.66 79.69 89.09 78.75 36.53 78.75 48.34 58.28 48.88 57.34 48.34 56.41 44.59 49.94Z"/></svg>
+    <h1>You&rsquo;re offline</h1>
+    <p>TunisiaFlicks needs the internet to find something to watch. We&rsquo;ll pick up where you were as soon as you&rsquo;re back.</p>
+    <button id="retry" type="button" autofocus>Try again</button>
+    <small id="auto">Retrying automatically…</small>
+  </div>
+</main>
+<script>
+  // The main process reloads the site (it knows the address); this page only asks.
+  const retry = () => window.tunisiaflicksDesktop?.retry()
+  document.getElementById('retry').addEventListener('click', retry)
+  window.addEventListener('online', retry)
+  setInterval(() => { if (navigator.onLine) retry() }, 15000)
+</script>
+</body>
+</html>

@@ -1,9 +1,10 @@
 # TunisiaFlicks desktop
 
-An Electron app that runs the ad-free torrent-streaming player (`../player-service`) on the viewer's
-own machine. The torrenting happens locally, so there's **no central bandwidth bill and no server
-acting as distributor** — and the window loads the local service over `http://127.0.0.1`, so there's
-no HTTPS→localhost mixed-content problem and no privileged bridge exposed to ad embeds.
+The TunisiaFlicks site in its own window, plus the ad-free local player. The window loads the real
+site, so the desktop app **is** TunisiaFlicks — the same UI, account, profiles, lists and every
+feature — and it never drifts from the web. On top of that it runs the torrent-streaming player
+(`../player-service`) on the viewer's own machine, and the site offers it as **one more source** in
+its player (first in the bar, named "TunisiaFlicks"), next to VidSrc, VidLink and the others.
 
 ## Run it (dev)
 
@@ -13,16 +14,27 @@ npm start
 ```
 
 `npm start` finds a free loopback port, launches `player-service` on it (via Electron's bundled
-Node), waits for `/health`, then opens the player window. The window is the service's browse UI:
-**search or pick a trending movie → it finds the best torrent, joins the swarm and plays locally,
-ad-free** (auto-picking 1080p/720p x264 so most titles stream with zero CPU). An "Advanced: paste a
-magnet" box handles any other torrent.
+Node) and opens the window on the site. To try it against a local copy of the site (e.g. before the
+site changes are deployed), point it there:
 
-> Set `TMDB_API_KEY` in your environment to use your own TMDB key; otherwise the service falls back
-> to the project key for browsing. Everything stays on the viewer's machine.
+```bash
+TF_SITE_URL=http://localhost:3000 npm start
+```
 
-> The bootstrap (free-port → spawn service → health-wait) is verified. The window itself needs a real
-> display, so run it on your desktop — it won't render in a headless/CI environment.
+## What the desktop adds to the site
+
+- **The local player as a source.** The preload bridge gives the site the player's address
+  (`window.tunisiaflicksDesktop.player`); `StreamSection` (via `src/hooks/use-desktop-app.ts`) puts
+  a "TunisiaFlicks" source first, which frames `/embed/movie/:id` or `/embed/tv/:id/:s/:e` from the
+  service. The other sources stay exactly as they are. In a browser there is no bridge and nothing
+  changes.
+- **No ad popups.** A new window or a navigation off the site only opens — in the real browser —
+  when the viewer clicked something on the site itself. Popups and redirects fired from inside a
+  source's frame (the ads) go nowhere. (The preload only runs in the top frame, so a source's frame
+  can never fake that click.)
+- **Desktop manners.** Dark title bar; the window remembers its size and position; F11 full screen,
+  Alt+←/→ and the mouse's back/forward buttons, Ctrl+R / F5, Ctrl +/−/0 zoom; Google sign-in works
+  (the app presents a plain Chrome user agent); a branded offline screen that comes back by itself.
 
 ## Build an installer
 
@@ -51,11 +63,7 @@ is named), or accept the SmartScreen warning, before shipping publicly. macOS ne
 
 ## Architecture / roadmap
 
-- **v1 (this):** window loads the local service's own player page. Self-contained, safe, works offline
-  from the site.
-- **Phase 2:** point the window at the real tunisiaflicks site and expose the local player to it via a
-  locked-down `contextIsolation` preload bridge (health probe + resolve-magnet + stream-URL), exposed
-  **only to the top frame**, never to third-party ad iframes. Then users browse the catalogue and play
-  locally. This needs matching changes in the site's `StreamSection` (a "TunisiaFlicks Player" source).
+- **Done:** the window shows the real site; the local player is a source in the site's player
+  (needs the site changes deployed — until then, use `TF_SITE_URL`).
 - **Auto-update:** design it in before public release (electron-updater) — if a bad build ever ships
   you need a signed channel to push a fix; it shares the signing identity above.
