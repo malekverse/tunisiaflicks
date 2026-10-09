@@ -106,7 +106,7 @@ export default async function ChipRail({ type = 'movie', className }: { type?: '
   return (
     <nav aria-label={t(day ? 'mood.titleDay' : 'mood.title')} className={cn('rail-x no-scrollbar flex items-center gap-2 overflow-x-auto overflow-y-hidden px-[var(--gutter)] py-1', className)}>
       {ask && (
-        <Link href="/search?mode=ask" className={cn(chip, 'glass gap-2.5 ps-1.5 text-white hover:bg-white/[0.14]')}>
+        <Link href="/search?mode=ask" data-ask-chip="" className={cn(chip, 'glass gap-2.5 ps-1.5 text-white hover:bg-white/[0.14]')}>
           <AiMark size={28} />
           {t('ai.ask')}
         </Link>

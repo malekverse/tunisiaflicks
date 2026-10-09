@@ -36,7 +36,7 @@ const TABLE: [string, Effect][] = [
   ['sci fi|scifi|science fiction|futuristic|خيال علمي', { genre: 'scifi' }],
   ['fantasy|fantastique|magical|فانتازيا|خيالي|خيالية', { genre: 'fantasy' }],
   ['mystery|mysteries|whodunit|detective|mystere|enquete|غموض|لغز|بوليسي|بوليسية', { genre: 'mystery' }],
-  ['crime|gangster|gangsters|policier|polar|جريمة|جرائم|عصابات', { genre: 'crime' }],
+  ['crime|gangster|gangsters|policier|policiers|policiere|policieres|polar|جريمة|جرائم|عصابات', { genre: 'crime' }],
   ['war|guerre|حرب|حروب', { genre: 'war' }],
   ['western|westerns|cowboy|cowboys', { genre: 'western' }],
   ['family|families|kids|children|famille|familial|familiaux|enfants|عائلي|عائلية|عائلة|العائلة|العايلة|عايلة|اطفال|صغار|3ayla|sghar', { genre: 'family' }],
@@ -168,6 +168,9 @@ const LIKE_TRIGGERS = [['similar', 'to'], ['like'], ['comme'], ['genre', 'de'], 
 const LIKE_LEADS = new Set(['', 'movie', 'movies', 'film', 'films', 'series', 'show', 'shows', 'something', 'anything', 'stuff', 'one', 'chose', 'فيلم', 'افلام', 'مسلسل', 'شي', 'شيء', 'حاجه', 'haja', '7aja', 'aflem'].map(normalizeQuery))
 const LIKE_ENDS = new Set(['but', 'mais', 'ama', 'اما', 'لكن', 'with', 'avec', 'from', 'des', 'in', 'en', 'set', 'for', 'pour', 'and', 'et', 'و', 'مع', 'من', 'في', 'm3a'])
 
+// "No horror", "sans horreur", "بدون رعب": the genre right after one of these is excluded.
+const NEGATIONS = new Set(['no', 'without', 'sans', 'pas', 'aucun', 'بدون', 'بلا', 'غير', 'منغير', 'bla', 'bidoun'].map(normalizeQuery))
+
 const year = (token: string) => (/^(?:19|20)\d\d$/.test(token) ? Number(token) : null)
 
 /**
@@ -275,7 +278,14 @@ export function quickPlan(q: string, now = new Date()): RawPlan & { complete: bo
       mark(i, i + size)
       if ('stop' in effect || 'skip' in effect) continue
       if ('genre' in effect) {
-        if (!plan.genres.some((genre) => genre.id === effect.genre) && plan.genres.length < 3) plan.genres.push({ id: effect.genre, span: words })
+        // "no horror", or "pas d'horreur" (two words before it).
+        const negation = i > 0 && NEGATIONS.has(tokens[i - 1]) ? 1 : i > 1 && tokens[i - 2] === 'pas' && (tokens[i - 1] === 'd' || tokens[i - 1] === 'de') ? 2 : 0
+        if (negation) {
+          if (!plan.without.some((genre) => genre.id === effect.genre) && plan.without.length < 3) plan.without.push({ id: effect.genre, span: span(i - negation, i + size) })
+          mark(i - negation, i)
+        } else if (!plan.genres.some((genre) => genre.id === effect.genre) && plan.genres.length < 3) {
+          plan.genres.push({ id: effect.genre, span: words })
+        }
       } else if ('kind' in effect) {
         plan.kind = plan.kind === 'any' || plan.kind === effect.kind ? effect.kind : 'any'
       } else if ('country' in effect) {
@@ -301,7 +311,7 @@ export function quickPlan(q: string, now = new Date()): RawPlan & { complete: bo
   }
 
   plan.unmatched = tokens.filter((_, i) => !used[i]).slice(0, 6)
-  const understood = plan.kind !== 'any' || plan.genres.length > 0 || plan.keywords.length > 0 || plan.places.length > 0 || plan.countries.length > 0
+  const understood = plan.kind !== 'any' || plan.genres.length > 0 || plan.without.length > 0 || plan.keywords.length > 0 || plan.places.length > 0 || plan.countries.length > 0
     || !!plan.like || !!plan.years || !!plan.runtime || plan.sort !== 'rel'
   return { ...plan, complete: understood && plan.unmatched.length === 0 }
 }

@@ -194,6 +194,18 @@ test('quickPlan: themes, places, regions, quality, length and comparisons', () =
   assert.deepEqual(facets('films comme amelie').like, 'amelie')
 })
 
+test('quickPlan: excluded genres', () => {
+  const war = quickPlan('war movies but not too violent, no horror', NOW)
+  assert.deepEqual(war.genres.map((genre) => genre.id), ['war'])
+  assert.deepEqual(war.without.map((genre) => genre.id), ['horror'])
+  assert.deepEqual(war.without[0].span, 'no horror')
+  assert.deepEqual(quickPlan('une comédie sans romance', NOW).without.map((genre) => genre.id), ['romance'])
+  assert.deepEqual(quickPlan('un film pas d’horreur', NOW).without.map((genre) => genre.id), ['horror'])
+  assert.deepEqual(quickPlan('des films d’horreur', NOW).genres.map((genre) => genre.id), ['horror'], '"d’" alone is not a negation')
+  assert.deepEqual(quickPlan('فيلم عائلي بدون رعب', NOW).without.map((genre) => genre.id), ['horror'])
+  assert.deepEqual(quickPlan('une série policière française', NOW).genres.map((genre) => genre.id), ['crime'])
+})
+
 test('quickPlan: years and recency', () => {
   assert.deepEqual(facets('films after 2015').years, [2015, null])
   assert.deepEqual(facets('films before 2000').years, [null, 2000])

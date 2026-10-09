@@ -7,7 +7,7 @@
 // - Signed in: per account, 10 a minute and 80 a day.
 // - ai-run: 40 runs a minute for the whole site; ai:global: 6 calls a minute per model.
 // Requests that only replay a plan (a chip removed, Show more, a shared p= link) never reach the
-// model: they count three times more loosely per minute and not at all per day.
+// model: they have their own minute windows, three times looser, and don't count per day.
 // Keys are hashed (hashId): no account id, cookie or IP is stored.
 import 'server-only'
 import { aiDb, hashId } from './cache'
@@ -59,19 +59,22 @@ async function hit(key: string, limit: number, windowSeconds: number, now: numbe
  */
 export async function checkAskLimits(who: Asker, o: { interpret: boolean }, now = Date.now()): Promise<LimitCheck> {
   const factor = o.interpret ? 1 : LIMITS.replayFactor
+  // Questions and replays count in separate minute windows: removing a few chips never uses up
+  // the questions of the minute.
+  const minute = o.interpret ? 'm' : 'r'
   type Window = { key: string, limit: number, seconds: number, code: 'rate_minute' | 'rate_day' | 'busy' }
-  const windows: Window[] = [{ key: 'ai-run', limit: LIMITS.run * factor, seconds: MINUTE, code: 'busy' }]
+  const windows: Window[] = [{ key: o.interpret ? 'ai-run' : 'ai-run:r', limit: LIMITS.run * factor, seconds: MINUTE, code: 'busy' }]
   if (who.userId) {
     const id = hashId(`u:${who.userId}`)
-    windows.push({ key: `u:${id}:m`, limit: LIMITS.user.minute * factor, seconds: MINUTE, code: 'rate_minute' })
+    windows.push({ key: `u:${id}:${minute}`, limit: LIMITS.user.minute * factor, seconds: MINUTE, code: 'rate_minute' })
     if (o.interpret) windows.push({ key: `u:${id}:d`, limit: LIMITS.user.day, seconds: DAY, code: 'rate_day' })
   } else {
     const ip = hashId(`ip:${ipKey(who.ip)}`)
-    windows.push({ key: `ip:${ip}:m`, limit: LIMITS.ip.minute * factor, seconds: MINUTE, code: 'rate_minute' })
+    windows.push({ key: `ip:${ip}:${minute}`, limit: LIMITS.ip.minute * factor, seconds: MINUTE, code: 'rate_minute' })
     if (o.interpret) windows.push({ key: `ip:${ip}:d`, limit: LIMITS.ip.day, seconds: DAY, code: 'rate_day' })
     if (who.guestId) {
       const guest = hashId(`g:${who.guestId}`)
-      windows.push({ key: `g:${guest}:m`, limit: LIMITS.guest.minute * factor, seconds: MINUTE, code: 'rate_minute' })
+      windows.push({ key: `g:${guest}:${minute}`, limit: LIMITS.guest.minute * factor, seconds: MINUTE, code: 'rate_minute' })
       if (o.interpret) windows.push({ key: `g:${guest}:d`, limit: LIMITS.guest.day, seconds: DAY, code: 'rate_day' })
     }
   }

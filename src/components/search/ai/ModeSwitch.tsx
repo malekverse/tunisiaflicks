@@ -13,7 +13,7 @@ export function ModeSwitch({ mode, onChange, className }: { mode: SearchMode, on
   const t = useT()
   const pill = useId()
   return (
-    <div role="group" aria-label={t('ai.mode')} className={cn('flex w-fit shrink-0 rounded-full bg-white/[0.07] p-1', className)}>
+    <div role="group" aria-label={t('ai.mode')} data-ask-switch="" className={cn('flex w-fit shrink-0 rounded-full bg-white/[0.07] p-1', className)}>
       {(['titles', 'ask'] as const).map((value) => {
         const on = mode === value
         const Icon = value === 'ask' ? Sparkle : Search
