@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { StreamProvider } from '@/src/lib/stream-providers'
 import type { SourceHealth } from '@/src/lib/stream-health'
+import { LOCAL_PLAYER_SOURCE } from '@/src/hooks/use-desktop-app'
 
 const REMEMBER_KEY = 'tf-stream-source'
 /** Seconds of (visible) playback after which a source counts as "worked". */
@@ -20,7 +21,8 @@ const report = (name: string, ok: boolean) =>
 
 /**
  * Which stream source to play: the one that last worked for this viewer, else the first one that
- * isn't reported down by other viewers. Sources reported down move to the end of the bar.
+ * isn't reported down by other viewers. Sources reported down move to the end of the bar, and
+ * sandboxed ones (no pop-up or redirect ads) come before the others.
  */
 export function useStreamSource(services: StreamProvider[], { playing }: { playing: boolean }) {
   const [health, setHealth] = useState<Record<string, SourceHealth>>({})
@@ -35,11 +37,13 @@ export function useStreamSource(services: StreamProvider[], { playing }: { playi
     return () => { cancelled = true }
   }, [])
 
-  // Curated order, with sources reported down moved last (stable otherwise).
-  const ordered = useMemo(
-    () => [...services].sort((a, b) => Number(health[a.name]?.status === 'down') - Number(health[b.name]?.status === 'down')),
-    [services, health],
-  )
+  // Curated order, with sources reported down moved last, and among the rest the sandboxed ones
+  // (fewer ads) first; stable otherwise. The desktop app's local player keeps its place at the top.
+  const ordered = useMemo(() => {
+    const rank = (item: StreamProvider) =>
+      health[item.name]?.status === 'down' ? 2 : item.sandbox || item.name === LOCAL_PLAYER_SOURCE ? 0 : 1
+    return [...services].sort((a, b) => rank(a) - rank(b))
+  }, [services, health])
 
   const fallback = (ordered.find((item) => item.name === remembered) ?? ordered[0])?.name ?? null
   const selected = (chosen && ordered.some((item) => item.name === chosen)) ? chosen : fallback

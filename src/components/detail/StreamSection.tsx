@@ -1,7 +1,7 @@
 "use client"
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { m } from 'framer-motion'
-import { Check, Layers, Lightbulb, LightbulbOff, LogOut, Play, SkipForward, TriangleAlert } from 'lucide-react'
+import { Check, Layers, Lightbulb, LightbulbOff, LogOut, Play, ShieldCheck, SkipForward, TriangleAlert } from 'lucide-react'
 import { toast } from '@/src/hooks/use-toast'
 import type { StreamProvider } from '@/src/lib/stream-providers'
 import { cn } from '@/src/lib/utils'
@@ -245,6 +245,9 @@ export default function StreamSection({ services: providerServices, media, downl
         if (name === source.remembered) return t('stream.lastWorked')
         return status === 'good' ? t('stream.healthGood') : status === 'down' ? t('stream.healthDown') : undefined
     }
+    /** The source bar's tooltip: how the source is doing, and "fewer ads" on a sandboxed one. */
+    const sourceTitle = (item: StreamProvider) =>
+        [healthLabel(item.name), item.sandbox ? t('stream.fewerAds') : undefined].filter(Boolean).join(' · ') || undefined
 
     const sourceName = source.current?.name ?? ''
     const briefing = tv && enabled && !started
@@ -432,7 +435,7 @@ export default function StreamSection({ services: providerServices, media, downl
                                         type="button"
                                         role="tab"
                                         aria-selected={active}
-                                        title={healthLabel(item.name)}
+                                        title={sourceTitle(item)}
                                         onClick={() => select(item.name)}
                                         className={cn(
                                             'relative inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-medium outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-red-500',
@@ -446,6 +449,12 @@ export default function StreamSection({ services: providerServices, media, downl
                                                 ? <Check aria-hidden className={cn('h-3.5 w-3.5', active ? 'text-emerald-600' : 'text-emerald-400')} />
                                                 : (status === 'good' || status === 'down') && <span aria-hidden className={cn('h-1.5 w-1.5 rounded-full', status === 'down' ? 'bg-amber-400' : 'bg-emerald-400')} />}
                                             {item.name}
+                                            {item.sandbox && (
+                                                <>
+                                                    <ShieldCheck aria-hidden className={cn('h-3.5 w-3.5', active ? 'text-black/55' : 'text-white/45')} />
+                                                    <span className="sr-only">{t('stream.fewerAds')}</span>
+                                                </>
+                                            )}
                                         </span>
                                     </button>
                                 )

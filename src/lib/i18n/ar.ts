@@ -648,6 +648,7 @@ export const ar: Record<CoreKey, string> = {
   'stream.lastWorked': 'عمل معك في المرة السابقة',
   'stream.healthGood': 'يعمل لدى أغلب المشاهدين',
   'stream.healthDown': 'تم الإبلاغ مؤخرًا أنه لا يعمل',
+  'stream.fewerAds': 'إعلانات أقل: بلا نوافذ منبثقة ولا إعادة توجيه',
 
   // Swipe to decide
   'swipe.title': 'اسحب لتقرّر',

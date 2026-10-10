@@ -178,6 +178,7 @@ export const tn: Partial<Record<TKey, string>> = {
   'stream.lastWorked': 'خدم معاك المرة اللي فاتت',
   'stream.healthGood': 'خدّام عند أغلب الناس',
   'stream.healthDown': 'الناس قالو ما يخدمش هالأيامات',
+  'stream.fewerAds': 'إشهار أقل: بلاش بوب أب وبلاش تحويل لمواقع أخرى',
   'download.button': 'تيليشارجي',
 
   // Countdown

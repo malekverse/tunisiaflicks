@@ -647,6 +647,7 @@ export const en = {
   'stream.lastWorked': 'Worked for you last time',
   'stream.healthGood': 'Working for most viewers',
   'stream.healthDown': 'Reported as not working lately',
+  'stream.fewerAds': 'Fewer ads: no pop-ups or redirects',
 
   // Swipe to decide
   'swipe.title': 'Swipe to decide',

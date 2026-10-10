@@ -660,6 +660,7 @@ export const fr: Record<CoreKey, string> = {
   'stream.lastWorked': 'A fonctionné pour vous la dernière fois',
   'stream.healthGood': 'Fonctionne pour la plupart des spectateurs',
   'stream.healthDown': 'Signalée en panne récemment',
+  'stream.fewerAds': 'Moins de pub : ni pop-up ni redirection',
 
   // Swipe to decide
   'swipe.title': 'Swipez pour choisir',
