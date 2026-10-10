@@ -649,6 +649,9 @@ export const ar: Record<CoreKey, string> = {
   'stream.healthGood': 'يعمل لدى أغلب المشاهدين',
   'stream.healthDown': 'تم الإبلاغ مؤخرًا أنه لا يعمل',
   'stream.fewerAds': 'إعلانات أقل: بلا نوافذ منبثقة ولا إعادة توجيه',
+  'stream.adFree.desktop': 'شاهد دون إعلانات في تطبيق TunisiaFlicks للحاسوب',
+  'stream.adFree.blocker': 'نصيحة: مانع إعلانات مثل uBlock Origin يوقف أغلب إعلانات هذه المصادر ونوافذها المنبثقة.',
+  'stream.adFree.dismiss': 'إخفاء هذه النصيحة',
 
   // Swipe to decide
   'swipe.title': 'اسحب لتقرّر',

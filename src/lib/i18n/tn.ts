@@ -179,6 +179,9 @@ export const tn: Partial<Record<TKey, string>> = {
   'stream.healthGood': 'خدّام عند أغلب الناس',
   'stream.healthDown': 'الناس قالو ما يخدمش هالأيامات',
   'stream.fewerAds': 'إشهار أقل: بلاش بوب أب وبلاش تحويل لمواقع أخرى',
+  'stream.adFree.desktop': 'تفرّج بلاش إشهار في أبليكاسيون TunisiaFlicks متاع البي سي',
+  'stream.adFree.blocker': 'نصيحة: بلوكور إشهار كيما uBlock Origin ينحّي أغلب الإشهار والبوب أب متاع هالسورسات.',
+  'stream.adFree.dismiss': 'خبّي النصيحة',
   'download.button': 'تيليشارجي',
 
   // Countdown

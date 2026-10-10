@@ -661,6 +661,9 @@ export const fr: Record<CoreKey, string> = {
   'stream.healthGood': 'Fonctionne pour la plupart des spectateurs',
   'stream.healthDown': 'Signalée en panne récemment',
   'stream.fewerAds': 'Moins de pub : ni pop-up ni redirection',
+  'stream.adFree.desktop': 'Regardez sans pub dans l’app TunisiaFlicks pour ordinateur',
+  'stream.adFree.blocker': 'Astuce : un bloqueur de pub comme uBlock Origin arrête la plupart des pubs et des pop-up de ces sources.',
+  'stream.adFree.dismiss': 'Masquer cette astuce',
 
   // Swipe to decide
   'swipe.title': 'Swipez pour choisir',

@@ -15,6 +15,7 @@ import KeyGlyph from '@/src/components/tv/KeyGlyph'
 import TmdbImage from '@/src/components/TmdbImage'
 import { Button } from '@/src/components/ui/button'
 import { BrandLoader } from '@/src/components/brand/BrandMark'
+import AdFreeTip from '@/src/components/detail/AdFreeTip'
 
 /** TV mode: after this many briefings on a device, the briefing shrinks to a short hint. */
 const FULL_BRIEFINGS = 3
@@ -38,7 +39,8 @@ const PLAYER_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-presen
  * when one is down. The source that last played for this viewer is reopened, and sources other
  * viewers report as broken move to the end (crowd-sourced, see use-stream-source / lib/stream-health).
  * Inside the desktop app, its ad-free local player comes first in the bar (`media` says what to
- * play; see hooks/use-desktop-app).
+ * play; see hooks/use-desktop-app). Sources that play sandboxed (no pop-up or redirect ads) are
+ * marked in the bar, and a line under the player says how to watch without the ads (AdFreeTip).
  *
  * In TV mode the player waits for the remote: a briefing ("Ready on {source}", the keys, [Start
  * watching]) comes first, then Start goes full screen, keeps the screen awake and hands the remote
@@ -486,7 +488,10 @@ export default function StreamSection({ services: providerServices, media, downl
                 </div>
 
                 <div className={cn('mt-3 flex flex-col-reverse gap-2 sm:flex-row sm:items-start sm:justify-between', lightsOff && 'relative z-[61]')}>
-                    <p className="max-w-[70ch] text-xs leading-relaxed text-white/40">{t('stream.note')}</p>
+                    <div className="flex flex-col gap-2">
+                        {enabled && <AdFreeTip />}
+                        <p className="max-w-[70ch] text-xs leading-relaxed text-white/40">{t('stream.note')}</p>
+                    </div>
                     {enabled && source.ready && (
                         <button
                             type="button"

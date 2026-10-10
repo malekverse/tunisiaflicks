@@ -3,7 +3,7 @@
 // Which strings go to the browser (see clientMessages in ./index.ts): the root layout sends every
 // key that is in neither list below (the shell), a <ClientMessages scope> adds its scope's keys to
 // the pages under it, and the server-only keys never leave the server.
-// 608 of 2611 keys on every page, 1457 in 30 scopes, 546 server-only.
+// 608 of 2614 keys on every page, 1460 in 30 scopes, 546 server-only.
 
 export type MessageScope =
   | 'activate/layout'
@@ -1709,6 +1709,9 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'soundtrack.tracks',
     'soundtrack.tracksLabel',
     'soundtrack.wrong',
+    'stream.adFree.blocker',
+    'stream.adFree.desktop',
+    'stream.adFree.dismiss',
     'stream.changed',
     'stream.fewerAds',
     'stream.healthDown',
@@ -2477,6 +2480,9 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'soundtrack.tracks',
     'soundtrack.tracksLabel',
     'soundtrack.wrong',
+    'stream.adFree.blocker',
+    'stream.adFree.desktop',
+    'stream.adFree.dismiss',
     'stream.changed',
     'stream.fewerAds',
     'stream.healthDown',

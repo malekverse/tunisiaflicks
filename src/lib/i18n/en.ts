@@ -648,6 +648,9 @@ export const en = {
   'stream.healthGood': 'Working for most viewers',
   'stream.healthDown': 'Reported as not working lately',
   'stream.fewerAds': 'Fewer ads: no pop-ups or redirects',
+  'stream.adFree.desktop': 'Watch ad-free in the TunisiaFlicks desktop app',
+  'stream.adFree.blocker': "Tip: an ad blocker such as uBlock Origin stops most of these sources' ads and pop-ups.",
+  'stream.adFree.dismiss': 'Hide this tip',
 
   // Swipe to decide
   'swipe.title': 'Swipe to decide',
