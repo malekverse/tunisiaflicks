@@ -48,5 +48,6 @@ export function fillProviders(templates: ProviderTemplate[], type: 'movie' | 'tv
   return templates.map((template) => ({
     name: template.name,
     url: type === 'movie' ? fill(template.movie, { id }) : fill(template.tv, { id, season, episode }),
+    ...(template.sandbox ? { sandbox: true } : {}),
   }))
 }

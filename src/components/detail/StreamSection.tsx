@@ -21,6 +21,12 @@ const FULL_BRIEFINGS = 3
 const VISITS_KEY = 'tf-tv-player-visits'
 /** TV mode: a source that hasn't loaded after this long is called slow. */
 const SLOW_MS = 12_000
+/**
+ * The iframe sandbox for the sources that play inside one (ProviderTemplate.sandbox): scripts and
+ * the video run, but without allow-popups or allow-top-navigation their pop-up and redirect ads
+ * can't open. allowFullScreen still applies inside it.
+ */
+const PLAYER_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-presentation'
 
 /**
  * The player: a framed 16:9 screen with an ambient glow in the poster's colour, the source
@@ -335,6 +341,7 @@ export default function StreamSection({ services: providerServices, media, downl
                                     title={t('stream.player')}
                                     className="absolute inset-0 h-full w-full"
                                     referrerPolicy="origin"
+                                    sandbox={source.current?.sandbox ? PLAYER_SANDBOX : undefined}
                                     allowFullScreen
                                     // The desktop app's own player too: its full screen, picture in picture and autoplay.
                                     allow={tv || sourceName === LOCAL_PLAYER_SOURCE ? 'autoplay; fullscreen; encrypted-media; picture-in-picture' : undefined}

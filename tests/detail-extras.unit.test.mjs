@@ -207,8 +207,19 @@ test('STREAM_PROVIDERS on the server changes the sources, and the player fills i
     assert.deepEqual(templates.map((item) => item.name), ['Test'])
     assert.deepEqual(assets.fillProviders(templates, 'movie', '550'), [{ name: 'Test', url: 'https://example.test/m/550' }])
     assert.deepEqual(assets.fillProviders(templates, 'tv', '1396', 2, 5), [{ name: 'Test', url: 'https://example.test/t/1396?s=2&e=5' }])
+    // `sandbox` is carried to the player when it's true, and an entry with a non-boolean one is skipped.
+    process.env.STREAM_PROVIDERS = JSON.stringify([
+      { name: 'Boxed', movie: 'https://example.test/m/{id}', tv: 'https://example.test/t/{id}', sandbox: true },
+      { name: 'Open', movie: 'https://example.test/o/{id}', tv: 'https://example.test/o/{id}', sandbox: false },
+      { name: 'Odd', movie: 'https://example.test/x/{id}', tv: 'https://example.test/x/{id}', sandbox: 'yes' },
+    ])
+    assert.deepEqual(assets.fillProviders(providers.getProviderTemplates(), 'movie', '603'), [
+      { name: 'Boxed', url: 'https://example.test/m/603', sandbox: true },
+      { name: 'Open', url: 'https://example.test/o/603' },
+    ])
     process.env.STREAM_PROVIDERS = 'not json'
     assert.deepEqual(providers.getProviderTemplates().map((item) => item.name), before.map((item) => item.name))
+    assert.ok(before.some((item) => item.sandbox === true))
   } finally {
     if (saved === undefined) delete process.env.STREAM_PROVIDERS
     else process.env.STREAM_PROVIDERS = saved
