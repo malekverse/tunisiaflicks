@@ -25,7 +25,8 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    # Two full native builds (phone and TV, two architectures each).
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 
@@ -96,7 +97,8 @@ jobs:
             cp android/app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/$1"
           }
           build tunisiaflicks-android.apk
-          EXPO_TV=1 build tunisiaflicks-tv.apk
+          export EXPO_TV=1
+          build tunisiaflicks-tv.apk
 
       - name: Check the signatures and compute the checksums
         id: sums
