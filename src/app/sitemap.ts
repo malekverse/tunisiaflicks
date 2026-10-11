@@ -18,7 +18,7 @@ type Kind = 'movie' | 'tv'
 async function collectIds(kind: Kind): Promise<number[]> {
   const lists = [`trending/${kind}/week`, `${kind}/popular`, `${kind}/top_rated`]
   const requests = lists.flatMap((path) =>
-    Array.from({ length: PAGES_PER_LIST }, (_, i) => tmdbFetchSafe<{ results: any[] }>(path, { page: i + 1 }, 86400))
+    Array.from({ length: PAGES_PER_LIST }, (_, i) => tmdbFetchSafe<{ results: any[] }>(path, { page: i + 1 }, 86400, { shared: true }))
   )
   const pages = await Promise.all(requests)
   return Array.from(new Set(pages.flatMap((page) => (page?.results ?? []).map((item) => item.id as number))))

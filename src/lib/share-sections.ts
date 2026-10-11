@@ -12,7 +12,7 @@ const posters = (items: any[] | null | undefined, count = 12) =>
   (items ?? []).filter((item) => item.poster_path).slice(0, count).map((item) => `https://image.tmdb.org/t/p/w342${item.poster_path}`)
 
 const list = async (path: string, params: Record<string, string | number> = {}) =>
-  posters((await tmdbFetchSafe<{ results: any[] }>(path, params, 21600))?.results)
+  posters((await tmdbFetchSafe<{ results: any[] }>(path, params, 21600, { shared: true }))?.results)
 
 type Section = Omit<SectionCard, 'posters'> & { posters: () => Promise<string[]> }
 

@@ -7,6 +7,7 @@ export interface Profile {
   name: string
   color: string     // one of PROFILE_COLORS
   kids: boolean     // Kids profile: catalogue limited to G/PG and kids TV, switching away needs the password
+  halal?: boolean   // Halal mode: no titles with sex scenes, nudity or an intimate romance at the centre (lib/halal)
 }
 
 export const MAX_PROFILES = 5

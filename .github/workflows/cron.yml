@@ -18,6 +18,7 @@ on:
     - cron: '5 */3 * * *'    # nights: movie-night reminders and closing votes
     - cron: '10 2 * * *'     # badges: 03:10 Tunis
     - cron: '23 */3 * * *'   # tunisian-tv: the channels' new videos
+    - cron: '47 */6 * * *'   # halal: grade the main lists' new titles for Halal mode
   workflow_dispatch:
     inputs:
       job:
@@ -30,6 +31,7 @@ on:
           - nights
           - badges
           - tunisian-tv
+          - halal
 
 permissions: {}
 
@@ -54,11 +56,12 @@ jobs:
             '5 */3 * * *') JOB=nights ;;
             '10 2 * * *') JOB=badges ;;
             '23 */3 * * *') JOB=tunisian-tv ;;
+            '47 */6 * * *') JOB=halal ;;
             '') JOB="$INPUT_JOB" ;;
             *) echo "::error::No job for the schedule '$SCHEDULE'"; exit 1 ;;
           esac
           case "$JOB" in
-            digest|nights|badges|tunisian-tv) ;;
+            digest|nights|badges|tunisian-tv|halal) ;;
             *) echo "::error::Unknown job"; exit 1 ;;
           esac
           echo "job=$JOB" >> "$GITHUB_OUTPUT"

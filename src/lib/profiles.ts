@@ -18,6 +18,7 @@ const toProfile = (raw: any): Profile => ({
   name: String(raw.name),
   color: PROFILE_COLORS.includes(raw.color) ? raw.color : PROFILE_COLORS[0],
   kids: raw.kids === true,
+  halal: raw.halal === true,
 })
 
 export function newProfile(name: string, color: string = PROFILE_COLORS[0], kids = false) {
@@ -98,6 +99,17 @@ export async function getKidsMode(): Promise<boolean> {
   if (!active) return false
   if (active.profile) return active.profile.kids
   return active.profiles.some((profile) => profile.kids)
+}
+
+/**
+ * Halal mode for the catalogue (see lib/halal). Like Kids mode, until a profile is picked on this
+ * device an account with any Halal-mode profile browses in Halal mode.
+ */
+export async function getHalalMode(): Promise<boolean> {
+  const active = await getActiveProfile()
+  if (!active) return false
+  if (active.profile) return active.profile.halal === true
+  return active.profiles.some((profile) => profile.halal === true)
 }
 
 /**

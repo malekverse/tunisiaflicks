@@ -1,5 +1,6 @@
 // Server-side TMDB helper. The API key only ever lives on the server (TMDB_API_KEY).
 import { LOCALE_META, type Locale } from '@/src/lib/i18n/locales'
+import { mayCarryTitles } from '@/src/lib/halal-rules'
 
 const BASE_URL = 'https://api.themoviedb.org/3'
 
@@ -15,14 +16,19 @@ export class TmdbError extends Error {
 }
 
 type Params = Record<string, string | number | boolean | undefined>
+export type TmdbOptions = { shared?: boolean }
 
 /**
  * GET a TMDB endpoint. Throws when the key is missing or TMDB answers with an error, so callers
  * decide whether to fail (detail pages) or degrade gracefully (home page rows).
  * Responses are cached by Next's data cache for `revalidate` seconds.
  * English (`en-US`) unless `params.language` says otherwise.
+ *
+ * Halal mode: an answer that carries titles (lists, search, recommendations, filmographies) comes
+ * back without the titles it hides when the viewer's profile is in Halal mode (see lib/halal).
+ * `shared`: the answer is cached for everyone (sitemap, share cards), so it's never filtered.
  */
-export async function tmdbFetch<T = any>(path: string, params: Params = {}, revalidate = 3600): Promise<T> {
+export async function tmdbFetch<T = any>(path: string, params: Params = {}, revalidate = 3600, { shared = false }: TmdbOptions = {}): Promise<T> {
   const apiKey = process.env.TMDB_API_KEY
   if (!apiKey) {
     throw new Error('TMDB_API_KEY is not set')
@@ -39,13 +45,17 @@ export async function tmdbFetch<T = any>(path: string, params: Params = {}, reva
   if (!res.ok) {
     throw new TmdbError(res.status, `TMDB ${path} failed: ${res.status} ${res.statusText}`)
   }
-  return res.json()
+  const json = await res.json()
+  if (shared || !mayCarryTitles(path, params)) return json
+  // Loaded only here: it reads the viewer's profile, which nothing else in this module needs.
+  const { halalFilter } = await import('@/src/lib/halal')
+  return halalFilter(path, json)
 }
 
 /** Like `tmdbFetch`, but resolves to `null` instead of throwing (and logs the reason). */
-export async function tmdbFetchSafe<T = any>(path: string, params: Params = {}, revalidate = 3600): Promise<T | null> {
+export async function tmdbFetchSafe<T = any>(path: string, params: Params = {}, revalidate = 3600, options: TmdbOptions = {}): Promise<T | null> {
   try {
-    return await tmdbFetch<T>(path, params, revalidate)
+    return await tmdbFetch<T>(path, params, revalidate, options)
   } catch (error) {
     console.error(error)
     return null

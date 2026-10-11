@@ -11,7 +11,7 @@ export const contentType = 'image/jpeg'
 const ROLES: Record<string, string> = { Acting: 'Actor', Directing: 'Director', Writing: 'Writer', Production: 'Producer' }
 
 export default async function Image({ params }: { params: { id: string } }) {
-  const person = /^\d+$/.test(params.id) ? await tmdbFetchSafe(`person/${params.id}`, { append_to_response: 'combined_credits' }, 86400) : null
+  const person = /^\d+$/.test(params.id) ? await tmdbFetchSafe(`person/${params.id}`, { append_to_response: 'combined_credits' }, 86400, { shared: true }) : null
   if (!person) return renderFallbackCard()
 
   const knownFor = [...(person.combined_credits?.cast ?? []), ...(person.combined_credits?.crew ?? [])]
