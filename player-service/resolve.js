@@ -1,6 +1,10 @@
 // Resolve a title to a torrent magnet, so the player can go straight from "a movie/episode" to a
 // local stream. TMDB id → IMDB id → magnet (YTS for movies, EZTV for TV). Mirrors the site's
 // src/lib/downloads.ts, in plain JS, plus the TMDB id→IMDB step.
+//
+// The TMDB lookups go through the site (SITE_URL, /api/player/*), which holds the TMDB key: the
+// player ships inside the desktop installer, so it must not carry a key of its own. TMDB_API_KEY
+// still works as a local-dev override (then the player asks TMDB directly).
 
 const YTS_TRACKERS = [
   'udp://open.demonii.com:1337/announce',
@@ -14,6 +18,8 @@ const YTS_TRACKERS = [
 const YTS_MIRRORS = ['https://yts.mx', 'https://yts.lt', 'https://yts.am']
 const EZTV_HOST = 'https://eztvx.to'
 const TMDB = 'https://api.themoviedb.org/3'
+const SITE_URL = (process.env.SITE_URL || 'https://tunisiaflicks.vercel.app').replace(/\/+$/, '')
+const TMDB_KEY = process.env.TMDB_API_KEY || ''
 
 const normalizeImdb = (imdbId) => (/^tt?\d+$/.test(String(imdbId)) ? String(imdbId).replace(/^tt/, '') : null)
 
@@ -34,20 +40,52 @@ function buildMagnet(hash, name) {
   return `magnet:?xt=urn:btih:${hash}&dn=${encodeURIComponent(name)}${trackers}`
 }
 
-/** TMDB id → IMDB id (needs a TMDB key). */
-export async function tmdbToImdb(type, tmdbId, key) {
-  return (await tmdbTitle(type, tmdbId, key))?.imdb ?? null
+/** TMDB id → IMDB id. */
+export async function tmdbToImdb(type, tmdbId) {
+  return (await tmdbTitle(type, tmdbId))?.imdb ?? null
 }
 
-/** TMDB id → { imdb, names } (the title and the original title, to check torrent names against). */
-export async function tmdbTitle(type, tmdbId, key) {
-  if (!key) return null
+// Titles don't change: remember them for the session (the site caches them too).
+const titles = new Map()
+
+/** TMDB id → { imdb, names, year } (names: the title and the original title, to check torrent names against). */
+export async function tmdbTitle(type, tmdbId) {
   const kind = type === 'tv' ? 'tv' : 'movie'
-  const json = await fetchJson(`${TMDB}/${kind}/${encodeURIComponent(tmdbId)}?api_key=${key}&append_to_response=external_ids`)
-  if (!json) return null
-  const names = [json.name, json.original_name, json.title, json.original_title].filter((n) => typeof n === 'string' && n.trim())
-  const year = Number((json.release_date || json.first_air_date || '').slice(0, 4)) || null
-  return { imdb: json.imdb_id || json.external_ids?.imdb_id || null, names: [...new Set(names)], year }
+  const id = String(tmdbId)
+  if (!/^\d{1,9}$/.test(id)) return null
+  const key = `${kind}:${id}`
+  if (titles.has(key)) return titles.get(key)
+
+  let info = null
+  if (TMDB_KEY) {
+    const json = await fetchJson(`${TMDB}/${kind}/${id}?api_key=${TMDB_KEY}&append_to_response=external_ids`)
+    if (json) {
+      const names = [json.name, json.original_name, json.title, json.original_title].filter((n) => typeof n === 'string' && n.trim())
+      const year = Number((json.release_date || json.first_air_date || '').slice(0, 4)) || null
+      info = { imdb: json.imdb_id || json.external_ids?.imdb_id || null, names: [...new Set(names)], year }
+    }
+  } else {
+    const json = await fetchJson(`${SITE_URL}/api/player/title?type=${kind}&id=${id}`)
+    if (json) info = { imdb: json.imdb || null, names: Array.isArray(json.names) ? json.names : [], year: json.year || null }
+  }
+  if (info) {
+    if (titles.size >= 500) titles.delete(titles.keys().next().value)
+    titles.set(key, info)
+  }
+  return info
+}
+
+/** Trending movies this week, or the movies matching `query`, for the browse page: [{ id, title, year, poster, vote }]. */
+export async function browseMovies(query = '') {
+  const q = String(query).trim().slice(0, 100)
+  if (!TMDB_KEY) {
+    const json = await fetchJson(`${SITE_URL}/api/player/browse${q ? `?q=${encodeURIComponent(q)}` : ''}`)
+    return Array.isArray(json?.results) ? json.results : []
+  }
+  const json = await fetchJson(q
+    ? `${TMDB}/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}&include_adult=false`
+    : `${TMDB}/trending/movie/week?api_key=${TMDB_KEY}`)
+  return (json?.results || []).map((m) => ({ id: m.id, title: m.title, year: (m.release_date || '').slice(0, 4), poster: m.poster_path, vote: m.vote_average }))
 }
 
 /** "Marvel's Agents of S.H.I.E.L.D." → "marvels agents of s h i e l d" (for comparing names). */

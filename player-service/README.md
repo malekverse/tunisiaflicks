@@ -53,10 +53,12 @@ Each file is probed with `ffprobe`, then one of three paths is chosen (see `code
 | `GET\|POST /add?magnet=…` | join the swarm; returns the file list + `best` with `decision`, codecs and a ready-to-play `playUrl` |
 | `GET /stream/:infoHash/:index` | native byte-range stream (direct path), `206` |
 | `GET /play/:infoHash/:index?t=&audio=` | ffmpeg remux/transcode → progressive MP4, from `t` seconds, with audio track `audio` (redirects to `/stream` for a direct file's first track) |
-| `GET /api/tmdb/trending` · `GET /api/tmdb/search?q=` | thin TMDB movie proxy for the built-in browse page (keeps the key server-side) |
+| `GET /api/tmdb/trending` · `GET /api/tmdb/search?q=` | trending / search movies for the built-in browse page, through the site's `/api/player/browse` (no TMDB key here) |
 
 Two ways to drive it: from a TMDB id (`/resolve`, used by the built-in browse page and the desktop
-app) or from a magnet you already resolved (`/add`). Either way, point the player at the returned
+app) or from a magnet you already resolved (`/add`). A TMDB id becomes an IMDB id and the title's
+names through the site (`SITE_URL`'s `/api/player/title`), which holds the TMDB key: the player ships
+inside the desktop installer, so it carries no key of its own. Either way, point the player at the returned
 `playUrl`. The built-in page at `/` is a search + trending grid that plays a movie locally on click.
 
 The built-in providers (YTS, EZTV, The Pirate Bay) and the default Torrentio extension mean a popular
@@ -116,7 +118,8 @@ own time; subtitles are drawn by the page on that clock.
 | `HOST` | `127.0.0.1` | loopback only; don't change unless you know why |
 | `PORT` | `8080` | |
 | `ALLOWED_ORIGINS` | `http://localhost:3000,https://tunisiaflicks.vercel.app` | web origins allowed to drive it (loopback origins are always allowed) |
-| `TMDB_API_KEY` | project key (dev fallback) | powers `/resolve` (tmdb→imdb) and the browse proxy; server-side only |
+| `SITE_URL` | `https://tunisiaflicks.vercel.app` | the TunisiaFlicks site the player asks for title details (TMDB id → IMDB id, names, year) and the browse feed (`/api/player/title`, `/api/player/browse`); the desktop app passes the site it shows. `http://localhost:3000` to use a local site |
+| `TMDB_API_KEY` | none | local-dev override: ask TMDB directly with this key instead of the site. Never set it in a build you ship |
 | `DOWNLOAD_DIR` | OS temp `/tunisiaflicks-stream` | scratch space for pieces |
 | `MAX_TORRENTS` | `12` | concurrent swarms kept alive |
 | `IDLE_MS` | `600000` | drop a swarm after 10 min unused |

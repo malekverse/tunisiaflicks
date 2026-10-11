@@ -27,7 +27,7 @@ import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import * as ffbin from 'ffmpeg-ffprobe-static'
 import { analyze, ffmpegArgs, withAudio } from './codec.js'
-import { tmdbTitle, movieMagnets, tvMagnets, rankOptions } from './resolve.js'
+import { tmdbTitle, browseMovies, movieMagnets, tvMagnets, rankOptions } from './resolve.js'
 import * as dlna from './dlna.js'
 import { audioLanguagesOf, createAddonStore, decodeSubtitle, languageOf, sourceFromStream, mediaId } from './addons.js'
 import { extraBuiltIns, rankForTitle } from './providers.js'
@@ -55,11 +55,6 @@ const ALLOWED_ORIGINS = new Set(
 // ffmpeg/ffprobe: bundled binaries, overridable, with a PATH fallback.
 const FFMPEG = process.env.FFMPEG_PATH || ffbin.ffmpegPath || 'ffmpeg'
 const FFPROBE = process.env.FFPROBE_PATH || ffbin.ffprobePath || 'ffprobe'
-
-// TMDB key — lets /resolve turn a TMDB id into a magnet, and powers the browse proxy. Server-side
-// only (the viewer never sees it). Falls back to the project's public key for local dev.
-const TMDB_KEY = process.env.TMDB_API_KEY || 'b5d2609c326586f7f753f77b085a0b31'
-const TMDB_API = 'https://api.themoviedb.org/3'
 
 const VIDEO_EXT = ['.mp4', '.m4v', '.mkv', '.webm', '.mov', '.avi', '.ts', '.ogv', '.flv', '.wmv']
 const isVideo = (name) => VIDEO_EXT.includes(path.extname(name).toLowerCase())
@@ -359,7 +354,7 @@ async function sourcesFor(title) {
   const cached = titleSources.get(title.key)
   if (cached && Date.now() - cached.at < SOURCES_TTL) return cached.payload
 
-  const info = await tmdbTitle(title.type, title.tmdb, TMDB_KEY)
+  const info = await tmdbTitle(title.type, title.tmdb)
   const imdb = info?.imdb || null
   const names = info?.names ?? []
   if (!imdb) return { imdb: null, names, list: [] }
@@ -536,7 +531,7 @@ app.get('/subtitles', requireAllowedOrigin, async (req, res) => {
   const title = titleOf(req.query)
   if (!title) return res.status(400).json({ error: 'Provide type and tmdb' })
   try {
-    const info = await tmdbTitle(title.type, title.tmdb, TMDB_KEY)
+    const info = await tmdbTitle(title.type, title.tmdb)
     if (!info?.imdb) return res.json({ subtitles: [] })
     const kind = title.type === 'tv' ? 'series' : 'movie'
     const [answers, builtIn] = await Promise.all([
@@ -659,20 +654,11 @@ const sendEmbed = (_req, res) => {
 app.get('/embed/movie/:tmdb', sendEmbed)
 app.get('/embed/tv/:tmdb/:season/:episode', sendEmbed)
 
-// Minimal TMDB browse proxy for the desktop app's own page (keeps the key server-side).
+// Browse feed for the desktop app's own page: TMDB through the site (resolve.js), so no key here.
 app.get('/api/tmdb/:kind', requireAllowedOrigin, async (req, res) => {
   const { kind } = req.params   // 'trending' | 'search'
-  const q = typeof req.query.q === 'string' ? req.query.q.trim() : ''
-  const url = kind === 'search' && q
-    ? `${TMDB_API}/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}&include_adult=false`
-    : `${TMDB_API}/trending/movie/week?api_key=${TMDB_KEY}`
-  try {
-    const r = await fetch(url, { signal: AbortSignal.timeout(12000) })
-    const json = await r.json()
-    res.json({ results: (json.results || []).map((m) => ({ id: m.id, title: m.title, year: (m.release_date || '').slice(0, 4), poster: m.poster_path, vote: m.vote_average })) })
-  } catch (err) {
-    res.status(502).json({ error: err.message })
-  }
+  const q = kind === 'search' && typeof req.query.q === 'string' ? req.query.q : ''
+  res.json({ results: await browseMovies(q) })
 })
 
 /** Resolve :infoHash/:index to a torrent file, with bounds checks. */
