@@ -1,6 +1,6 @@
-# Builds the Android apps (android/: tv and phone) and publishes them as a GitHub Release, which the
-# site offers on /app and through /download/android and /download/tv (it finds the newest release
-# by itself; see src/lib/app-releases.ts).
+# Builds the Android apps (mobile/: one React Native app, built for phones and for Android TV) and
+# publishes them as a GitHub Release, which the site offers on /app and through /download/android
+# and /download/tv (it finds the newest release by itself; see src/lib/app-releases.ts).
 #
 # Runs only when a tag like android-v1.2.3 is pushed (never on pull requests, so the signing key is
 # never exposed to code from a fork). Both apps are signed with the same key. The release notes list
@@ -25,7 +25,7 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
 
@@ -49,7 +49,17 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install the app's packages
+        working-directory: mobile
+        run: npm ci
 
       - name: Android SDK packages
         run: |
@@ -66,8 +76,10 @@ jobs:
           fi
           echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
 
+      # The native projects are generated (expo prebuild), once for phones and once for TV
+      # (EXPO_TV=1: react-native-tvos, the TV launcher and banner), each built and signed by Gradle.
       - name: Build the signed APKs
-        working-directory: android
+        working-directory: mobile
         env:
           TF_KEYSTORE_PATH: ${{ runner.temp }}/release.jks
           TF_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -75,11 +87,16 @@ jobs:
           TF_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           TF_VERSION_NAME: ${{ steps.version.outputs.name }}
           TF_VERSION_CODE: ${{ steps.version.outputs.code }}
+          NODE_ENV: production
         run: |
-          chmod +x gradlew
-          ./gradlew :tv:assembleRelease :phone:assembleRelease --no-daemon
-          cp tv/build/outputs/apk/release/tv-release.apk "$RUNNER_TEMP/tunisiaflicks-tv.apk"
-          cp phone/build/outputs/apk/release/phone-release.apk "$RUNNER_TEMP/tunisiaflicks-android.apk"
+          build() {
+            npx expo prebuild --platform android --clean --no-install
+            # Phones and TV boxes are ARM; x86 is only emulators (and would double the size).
+            (cd android && ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=armeabi-v7a,arm64-v8a)
+            cp android/app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/$1"
+          }
+          build tunisiaflicks-android.apk
+          EXPO_TV=1 build tunisiaflicks-tv.apk
 
       - name: Check the signatures and compute the checksums
         id: sums
