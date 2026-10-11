@@ -1,6 +1,6 @@
 // The empty and error states: an icon, a title, one helpful sentence and an action (the site's EmptyState).
-import type { ReactNode } from 'react'
-import { StyleSheet, View } from 'react-native'
+import { useEffect, useRef, type ReactNode } from 'react'
+import { Animated, Easing, StyleSheet, View } from 'react-native'
 import { CloudOff, TriangleAlert } from 'lucide-react-native'
 import { ApiError } from '@/lib/api'
 import { useT } from '@/i18n'
@@ -9,9 +9,19 @@ import { Button } from './Button'
 import { Display, Text } from './Text'
 
 export function EmptyState({ icon, title, text, action }: { icon: ReactNode, title: string, text?: string, action?: ReactNode }) {
+  // The icon floats, gently.
+  const float = useRef(new Animated.Value(0)).current
+  useEffect(() => {
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(float, { toValue: 1, duration: 1600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      Animated.timing(float, { toValue: 0, duration: 1600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+    ]))
+    loop.start()
+    return () => loop.stop()
+  }, [float])
   return (
     <View style={styles.box}>
-      <View style={styles.icon}>{icon}</View>
+      <Animated.View style={[styles.icon, { transform: [{ translateY: float.interpolate({ inputRange: [0, 1], outputRange: [0, -6] }) }] }]}>{icon}</Animated.View>
       <Display size={isTV ? 30 : 22} style={styles.center}>{title}</Display>
       {text ? <Text tone="secondary" style={[styles.center, styles.text]}>{text}</Text> : null}
       {action ? <View style={{ marginTop: 18 }}>{action}</View> : null}

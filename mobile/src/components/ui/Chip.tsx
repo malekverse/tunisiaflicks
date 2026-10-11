@@ -1,6 +1,7 @@
 // A pill to pick something (Movies or Shows, a genre, a season): glass, white when chosen or focused.
 import { StyleSheet } from 'react-native'
 import { colors, isTV, radius } from '@/theme/tokens'
+import { haptics } from '@/lib/haptics'
 import { Focusable } from './Focusable'
 import { Text } from './Text'
 
@@ -9,7 +10,10 @@ type Props = { label: string, selected?: boolean, onPress: () => void, hasTVPref
 export function Chip({ label, selected = false, onPress, hasTVPreferredFocus, role = 'button' }: Props) {
   return (
     <Focusable
-      onPress={onPress}
+      onPress={() => {
+        if (!selected) haptics.tick()
+        onPress()
+      }}
       plain
       radius={radius.pill}
       hasTVPreferredFocus={hasTVPreferredFocus}

@@ -2,12 +2,14 @@
 // - Phones: the site's floating glass bar at the bottom, the current tab in a white pill.
 // - TV: a bar along the top (the site's TV mode): the logo, then the tabs; the focused tab turns
 //   into a white pill, the current one keeps a red line.
-import { StyleSheet, View } from 'react-native'
+import { useEffect, useRef, useState } from 'react'
+import { Animated, I18nManager, StyleSheet, View } from 'react-native'
 import type { ComponentProps } from 'react'
 import type { Tabs } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Bookmark, Compass, House, Search, UserRound, type LucideIcon } from 'lucide-react-native'
 import { useT, type StringKey } from '@/i18n'
+import { haptics } from '@/lib/haptics'
 import { colors, isTV, radius, sizes, space } from '@/theme/tokens'
 import { Focusable } from '../ui/Focusable'
 import { Text } from '../ui/Text'
@@ -57,32 +59,83 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
     )
   }
 
+  return <PhoneBar state={state} go={go} />
+}
+
+/**
+ * Phones: a glass bar floating over the bottom of the page. The white-glass pill slides to the chosen
+ * tab (a spring, and a tick of the motor), and the chosen icon pops.
+ */
+function PhoneBar({ state, go }: { state: BottomTabBarProps['state'], go: (name: string, key: string, focused: boolean) => void }) {
+  const t = useT()
+  const insets = useSafeAreaInsets()
+  const [slot, setSlot] = useState(0)
+  const x = useRef(new Animated.Value(0)).current
+  const routes = state.routes.filter((route) => TABS[route.name])
+  const currentKey = state.routes[state.index]?.key
+  const position = Math.max(0, routes.findIndex((route) => route.key === currentKey))
+  // Right to left (Arabic), the row starts on the right and so does the pill (its `left` is mirrored
+  // there), so it slides the other way.
+  const offset = (I18nManager.isRTL ? -position : position) * slot
+
+  const placed = useRef(false)
+  useEffect(() => {
+    if (!slot) return
+    if (!placed.current) {
+      x.setValue(offset)
+      placed.current = true
+      return
+    }
+    Animated.spring(x, { toValue: offset, useNativeDriver: true, damping: 20, stiffness: 260, mass: 0.8 }).start()
+  }, [offset, slot, x])
+
   return (
     <View pointerEvents="box-none" style={[styles.phoneWrap, { paddingBottom: Math.max(insets.bottom, 10) }]}>
-      <View style={styles.phoneBar}>
-        {state.routes.map((route, index) => {
+      <View style={styles.phoneBar} onLayout={(event) => setSlot((event.nativeEvent.layout.width - 12) / routes.length)}>
+        {slot ? <Animated.View pointerEvents="none" style={[styles.pill, { width: slot, transform: [{ translateX: x }] }]} /> : null}
+        {routes.map((route) => {
           const tab = TABS[route.name]
-          if (!tab) return null
-          const current = state.index === index
-          const Icon = tab.icon
+          const current = route.key === currentKey
           return (
-            <Focusable
+            <PhoneTab
               key={route.key}
-              onPress={() => go(route.name, route.key, current)}
-              radius={radius.pill}
-              containerStyle={styles.phoneSlot}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: current }}
-              accessibilityLabel={t(tab.label)}
-              style={[styles.phoneTab, current && styles.phoneTabOn]}
-            >
-              <Icon size={22} color={current ? colors.white : colors.text3} strokeWidth={current ? 2.2 : 1.9} />
-              <Text weight={current ? 'semibold' : 'medium'} size={11} tone={current ? 'primary' : 'tertiary'} numberOfLines={1}>{t(tab.label)}</Text>
-            </Focusable>
+              icon={tab.icon}
+              label={t(tab.label)}
+              current={current}
+              onPress={() => {
+                if (!current) haptics.tick()
+                go(route.name, route.key, current)
+              }}
+            />
           )
         })}
       </View>
     </View>
+  )
+}
+
+function PhoneTab({ icon: Icon, label, current, onPress }: { icon: LucideIcon, label: string, current: boolean, onPress: () => void }) {
+  const pop = useRef(new Animated.Value(1)).current
+  useEffect(() => {
+    if (!current) return
+    pop.setValue(0.7)
+    Animated.spring(pop, { toValue: 1, useNativeDriver: true, damping: 9, stiffness: 300, mass: 0.6 }).start()
+  }, [current, pop])
+  return (
+    <Focusable
+      onPress={onPress}
+      radius={radius.pill}
+      containerStyle={styles.phoneSlot}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: current }}
+      accessibilityLabel={label}
+      style={styles.phoneTab}
+    >
+      <Animated.View style={{ transform: [{ scale: pop }] }}>
+        <Icon size={22} color={current ? colors.white : colors.text3} strokeWidth={current ? 2.2 : 1.9} />
+      </Animated.View>
+      <Text weight={current ? 'semibold' : 'medium'} size={11} tone={current ? 'primary' : 'tertiary'} numberOfLines={1}>{label}</Text>
+    </Focusable>
   )
 }
 
@@ -110,7 +163,7 @@ const styles = StyleSheet.create({
   },
   phoneSlot: { flex: 1 },
   phoneTab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2, borderRadius: 26 },
-  phoneTabOn: { backgroundColor: 'rgba(255,255,255,0.12)' },
+  pill: { position: 'absolute', left: 6, top: 6, bottom: 6, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.13)' },
   tvBar: {
     position: 'absolute',
     top: 28,

@@ -18,7 +18,7 @@ import { ArrowLeft, Check, Layers, ShieldCheck, SkipForward, TriangleAlert } fro
 import { SITE, orderSources, reportSource, sourceUrl, useSeason, useSourceHealth, useTitle, type Kind, type Source } from '@/lib/api'
 import { useStore } from '@/lib/store'
 import { useIsArabic, useT } from '@/i18n'
-import { Loader } from '@/components/brand/Logo'
+import { FilmLeader } from '@/components/motion/FilmLeader'
 import { Button, IconButton } from '@/components/ui/Button'
 import { Focusable } from '@/components/ui/Focusable'
 import { ErrorState } from '@/components/ui/States'
@@ -61,7 +61,7 @@ export default function WatchScreen() {
   const season = Number(params.season ?? last?.season ?? 1)
   const episode = Number(params.episode ?? (params.season ? 1 : last?.episode ?? 1))
 
-  if (title.isPending || health.isPending) return <View style={styles.page}><StatusBar hidden /><Loader /></View>
+  if (title.isPending || health.isPending) return <View style={[styles.page, styles.loading]}><StatusBar hidden /><FilmLeader /></View>
   if (title.isError) return <View style={styles.page}><ErrorState error={title.error} onRetry={() => title.refetch()} /></View>
   if (!title.data.sources.length) return <View style={styles.page}><ErrorState error={null} onRetry={() => router.back()} /></View>
   return (
@@ -242,8 +242,8 @@ function Player({ kind, id, name, season, episode, sources, seasons, saved }: Pl
 
       {!loaded ? (
         <View style={styles.loading} pointerEvents="none">
-          <Loader />
-          <Text tone="secondary" size={isTV ? 20 : 14} style={{ marginTop: -50 }}>{t('player.loading')}</Text>
+          <FilmLeader />
+          <Text tone="secondary" size={isTV ? 20 : 14} style={{ marginTop: 22 }}>{t('player.loading')}</Text>
         </View>
       ) : null}
 
