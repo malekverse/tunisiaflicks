@@ -88,6 +88,8 @@ function spawnService() {
       DATA_DIR: path.join(app.getPath('userData'), 'player'),
       // The site the window shows may frame the player and drive it.
       ALLOWED_ORIGINS: [process.env.ALLOWED_ORIGINS, 'https://tunisiaflicks.vercel.app', 'http://localhost:3000', SITE_ORIGIN].filter(Boolean).join(','),
+      // The player looks titles up through this site (it holds the TMDB key; the app carries none).
+      SITE_URL: SITE_ORIGIN,
     },
     stdio: 'inherit',
   })

@@ -21,6 +21,11 @@ site changes are deployed), point it there:
 TF_SITE_URL=http://localhost:3000 npm start
 ```
 
+The app passes that site to the player as `SITE_URL`: the player looks titles up (TMDB id → IMDB id
+and names) through the site's `/api/player/title` and `/api/player/browse`, so the TMDB key only
+lives on the server (Vercel's `TMDB_API_KEY`) and never in the installer. A local site needs its own
+`TMDB_API_KEY` in `.env.local` for that.
+
 ## What the desktop adds to the site
 
 - **The local player as a source.** The preload bridge gives the site the player's address
