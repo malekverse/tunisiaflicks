@@ -132,6 +132,9 @@ inside a page of the app's, full screen. An ad that opens a window or redirects 
 the app says so; `sandbox` sources play sandboxed ("fewer ads"). The sources are tried best first (the one
 that played last time, then the site's order with the ones viewers report broken last, from
 `/api/stream-health`), and "This source doesn't work" reports it and moves on. Next episode for shows.
+On TV the remote's OK plays and pauses by tapping the middle of the player (`mobile/modules/tv-remote`,
+a small native module: the sources' controls sit in nested frames the remote's keys can't reach); up
+or Back brings the bar back, and Back again leaves.
 
 **Updates.** You > the update banner appears when `/api/app/v1/version` has a newer release; it opens
 `/download/android` (or `tv`), and Android installs it over the old one.

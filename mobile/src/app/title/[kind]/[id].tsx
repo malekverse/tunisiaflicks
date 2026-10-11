@@ -76,7 +76,7 @@ function TitleView({ title }: { title: Title }) {
 
   const playLabel = title.kind === 'tv' && watched?.season ? t('title.playEpisode', { season: watched.season, episode: watched.episode ?? 1 }) : t('title.play')
   const backdrop = tmdbImage(title.backdrop, isTV ? image.backdropFull : image.backdrop)
-  const heroHeight = isTV ? height * 0.82 : Math.min(width * 0.62, 320)
+  const heroHeight = isTV ? height : Math.min(width * 0.62, 320)
 
   const header = (
     <View style={isTV ? [styles.tvHero, { height: heroHeight }] : undefined}>
@@ -94,7 +94,7 @@ function TitleView({ title }: { title: Title }) {
         {title.logo ? (
           <Image
             source={tmdbImage(title.logo.path, image.logo)}
-            style={{ width: Math.min(isTV ? width * 0.34 : width * 0.66, (isTV ? 170 : 96) * title.logo.ratio), height: Math.min(isTV ? 170 : 96, (isTV ? width * 0.34 : width * 0.66) / title.logo.ratio), alignSelf: isTV ? 'flex-start' : 'center' }}
+            style={{ width: Math.min(isTV ? width * 0.3 : width * 0.66, (isTV ? 120 : 96) * title.logo.ratio), height: Math.min(isTV ? 120 : 96, (isTV ? width * 0.3 : width * 0.66) / title.logo.ratio), alignSelf: isTV ? 'flex-start' : 'center' }}
             contentFit="contain"
             accessibilityLabel={title.title}
           />
@@ -114,7 +114,7 @@ function TitleView({ title }: { title: Title }) {
         </View>
         {title.overview ? (
           <Focusable onPress={() => setExpanded((e) => !e)} plain disabled={isTV} accessibilityRole="button" accessibilityLabel={title.overview}>
-            <Text tone="secondary" size={isTV ? 20 : 15} numberOfLines={expanded ? undefined : isTV ? 4 : 3} style={{ lineHeight: isTV ? 30 : 22, textAlign: isTV ? 'auto' : 'left' }}>{title.overview}</Text>
+            <Text tone="secondary" size={isTV ? 20 : 15} numberOfLines={expanded ? undefined : 3} style={{ lineHeight: isTV ? 30 : 22, textAlign: isTV ? 'auto' : 'left' }}>{title.overview}</Text>
           </Focusable>
         ) : null}
       </View>
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   glassButton: { backgroundColor: 'rgba(0,0,0,0.45)' },
   body: { paddingHorizontal: space.page, marginTop: -64, gap: 12 },
   tvHero: { justifyContent: 'flex-end' },
-  tvBody: { paddingHorizontal: space.page, paddingBottom: 60, gap: 16 },
+  tvBody: { paddingHorizontal: space.page, paddingBottom: 48, gap: 14 },
   facts: { flexDirection: 'row', alignItems: 'center', gap: isTV ? 18 : 12, flexWrap: 'wrap' },
   actions: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 4 },
   action: { alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 14, minWidth: isTV ? 110 : 76 },

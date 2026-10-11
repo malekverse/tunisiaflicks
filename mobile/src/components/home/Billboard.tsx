@@ -125,31 +125,33 @@ function TvBillboard({ items }: { items: BillboardItem[] }) {
   const t = useT()
   const router = useRouter()
   const [index, setIndex] = useState(0)
-  const [paused, setPaused] = useState(false)
+  // Bumped whenever the focus moves between its buttons: the next title waits until you've settled.
+  const [moved, setMoved] = useState(0)
+  const touch = useCallback(() => setMoved((m) => m + 1), [])
   const item = items[index % items.length]
   const play = usePlay(item)
 
   useEffect(() => {
-    if (paused) return
-    const timer = setInterval(() => setIndex((i) => (i + 1) % items.length), 9000)
+    const timer = setInterval(() => setIndex((i) => (i + 1) % items.length), 12000)
     return () => clearInterval(timer)
-  }, [paused, items.length])
+  }, [moved, items.length])
 
-  const hero = height * 0.78
+  const hero = height * 0.86
   return (
     <View style={{ height: hero }}>
       <Image source={tmdbImage(item.backdrop, image.backdropFull)} style={StyleSheet.absoluteFill} contentFit="cover" transition={600} />
       <LinearGradient colors={['rgba(0,0,0,0.9)', 'rgba(0,0,0,0.45)', 'transparent']} start={{ x: 0, y: 0 }} end={{ x: 0.75, y: 0 }} style={StyleSheet.absoluteFill} />
       <LinearGradient colors={['transparent', colors.black]} locations={[0.55, 1]} style={StyleSheet.absoluteFill} />
       <View style={[styles.tvBody, { width: width * 0.46 }]}>
-        <TitleArt item={item} width={width * 0.36} maxHeight={hero * 0.24} />
+        <TitleArt item={item} width={width * 0.32} maxHeight={hero * 0.17} />
         <Facts item={item} size={20} />
-        <Text tone="secondary" size={20} numberOfLines={3} style={{ lineHeight: 30 }}>{item.overview}</Text>
+        <Text tone="secondary" size={20} numberOfLines={2} style={{ lineHeight: 30 }}>{item.overview}</Text>
         <View style={[styles.actions, { marginTop: 8 }]}>
           <Button
             label={t('title.play')}
             icon={<Play color={colors.white} fill={colors.white} size={24} />}
             onPress={play}
+            onFocus={touch}
             size="large"
             hasTVPreferredFocus
           />
@@ -157,12 +159,11 @@ function TvBillboard({ items }: { items: BillboardItem[] }) {
             label={t('title.moreInfo')}
             variant="secondary"
             size="large"
-            icon={<Info color={colors.white} size={24} />}
+            icon={(color) => <Info color={color} size={24} />}
             onPress={() => router.push({ pathname: '/title/[kind]/[id]', params: { kind: item.kind, id: String(item.id) } })}
+            onFocus={touch}
           />
-          <View onTouchStart={() => setPaused(true)}>
-            <ListButton item={item} />
-          </View>
+          <ListButton item={item} />
         </View>
       </View>
       <View style={[styles.dots, styles.tvDots]}>

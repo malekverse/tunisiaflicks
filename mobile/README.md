@@ -19,3 +19,4 @@ cd android && ./gradlew assembleRelease
 - `src/theme/tokens.ts`: the design tokens from `docs/DESIGN.md`.
 - `src/lib`: the API (React Query) and what's kept on the device (zustand).
 - `src/i18n`: English, French and Arabic (Tunisian uses Arabic).
+- `modules/tv-remote`: a small native module, the TV remote's OK as a tap on the player.

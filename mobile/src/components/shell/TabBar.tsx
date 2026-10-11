@@ -35,7 +35,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
   if (isTV) {
     return (
       <View style={styles.tvBar}>
-        <View style={styles.tvLogo}><Wordmark height={22} /></View>
+        <View style={styles.tvLogo}><Wordmark height={20} /></View>
         {state.routes.map((route, index) => {
           const tab = TABS[route.name]
           if (!tab) return null
@@ -45,8 +45,8 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
             <Focusable key={route.key} onPress={() => go(route.name, route.key, current)} plain focusScale={1} accessibilityRole="tab" accessibilityState={{ selected: current }}>
               {({ focused }) => (
                 <View style={[styles.tvTab, focused && styles.tvTabFocused]}>
-                  <Icon size={24} color={focused ? colors.black : current ? colors.white : colors.text2} strokeWidth={2} />
-                  <Text weight="semibold" size={20} style={{ color: focused ? colors.black : current ? colors.white : colors.text2 }}>{t(tab.label)}</Text>
+                  <Icon size={22} color={focused ? colors.black : current ? colors.white : colors.text2} strokeWidth={2} />
+                  <Text weight="semibold" size={19} style={{ color: focused ? colors.black : current ? colors.white : colors.text2 }}>{t(tab.label)}</Text>
                   {current && !focused ? <View style={styles.tvLine} /> : null}
                 </View>
               )}
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 2,
     height: 76,
     paddingHorizontal: 14,
     borderRadius: 38,
@@ -127,8 +127,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
   },
-  tvLogo: { paddingHorizontal: 18 },
-  tvTab: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 56, paddingHorizontal: 22, borderRadius: 28 },
+  tvLogo: { paddingHorizontal: 14 },
+  tvTab: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 56, paddingHorizontal: 18, borderRadius: 28 },
   tvTabFocused: { backgroundColor: colors.white },
-  tvLine: { position: 'absolute', start: 24, end: 24, bottom: 4, height: 3, borderRadius: 2, backgroundColor: colors.red },
+  tvLine: { position: 'absolute', start: 20, end: 20, bottom: 4, height: 3, borderRadius: 2, backgroundColor: colors.red },
 })

@@ -9,7 +9,8 @@ type Variant = 'primary' | 'secondary' | 'ghost'
 
 type Props = {
   label: string
-  icon?: ReactNode
+  /** An element, or a function of the text colour (so the icon turns black with the text on a focused glass button). */
+  icon?: ReactNode | ((color: string) => ReactNode)
   onPress: () => void
   variant?: Variant
   size?: 'default' | 'large'
@@ -18,14 +19,16 @@ type Props = {
   disabled?: boolean
   hasTVPreferredFocus?: boolean
   accessibilityLabel?: string
+  onFocus?: () => void
 }
 
-export function Button({ label, icon, onPress, variant = 'primary', size = 'default', style, haptic, disabled, hasTVPreferredFocus, accessibilityLabel }: Props) {
+export function Button({ label, icon, onPress, variant = 'primary', size = 'default', style, haptic, disabled, hasTVPreferredFocus, accessibilityLabel, onFocus }: Props) {
   const large = size === 'large'
   const height = isTV ? (large ? 64 : 54) : large ? 52 : 44
   return (
     <Focusable
       onPress={onPress}
+      onFocus={onFocus}
       haptic={haptic}
       disabled={disabled}
       hasTVPreferredFocus={hasTVPreferredFocus}
@@ -41,16 +44,19 @@ export function Button({ label, icon, onPress, variant = 'primary', size = 'defa
         style,
       ]}
     >
-      {({ focused }) => (
+      {({ focused }) => {
+        const color = variant === 'secondary' && focused ? colors.black : colors.white
+        return (
         <>
-          {icon ? <View style={styles.icon}>{icon}</View> : null}
-          <Text weight="semibold" size={isTV ? 20 : large ? 16 : 15} style={{ color: variant === 'secondary' && focused ? colors.black : colors.white }}>
-            {label}
-          </Text>
           {/* On TV the focused glass button turns white, like the site's TV mode. */}
           {isTV && focused && variant !== 'primary' ? <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.focusFill]} /> : null}
+          {icon ? <View style={styles.icon}>{typeof icon === 'function' ? icon(color) : icon}</View> : null}
+          <Text weight="semibold" size={isTV ? 20 : large ? 16 : 15} style={{ color }}>
+            {label}
+          </Text>
         </>
-      )}
+        )
+      }}
     </Focusable>
   )
 }
@@ -73,7 +79,7 @@ export function IconButton({ icon, onPress, label, size = isTV ? 56 : 44, style,
 }
 
 const styles = StyleSheet.create({
-  button: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, overflow: 'hidden' },
+  button: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   primary: {
     backgroundColor: colors.redDeep,
     // The red glows a little, like the site's primary button.
@@ -85,6 +91,6 @@ const styles = StyleSheet.create({
   },
   secondary: { backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.16)' },
   icon: { zIndex: 1 },
-  focusFill: { backgroundColor: colors.white, zIndex: -1 },
+  focusFill: { backgroundColor: colors.white, borderRadius: radius.pill },
   iconButton: { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.1)' },
 })

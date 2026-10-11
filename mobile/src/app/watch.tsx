@@ -7,7 +7,7 @@
 // The bar (back, the title, Sources, Next episode) shows for a few seconds, then gets out of the
 // way: a tap on the small button brings it back (on TV: Back, and Back again leaves).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { BackHandler, Modal, ScrollView, StyleSheet, View } from 'react-native'
+import { BackHandler, Modal, ScrollView, StyleSheet, View, useTVEventHandler } from 'react-native'
 import { WebView, type WebViewNavigation } from 'react-native-webview'
 import { LinearGradient } from 'expo-linear-gradient'
 import * as NavigationBar from 'expo-navigation-bar'
@@ -24,6 +24,7 @@ import { Focusable } from '@/components/ui/Focusable'
 import { ErrorState } from '@/components/ui/States'
 import { Display, Text } from '@/components/ui/Text'
 import { colors, isTV, radius } from '@/theme/tokens'
+import { tapWebView } from '../../modules/tv-remote'
 
 const BAR_MS = 5000
 const SLOW_MS = 15000
@@ -38,7 +39,14 @@ function playerPage(url: string, sandbox: boolean) {
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="origin">
 <style>html,body{margin:0;height:100%;background:#000;overflow:hidden}iframe{position:fixed;inset:0;width:100%;height:100%;border:0}</style></head>
 <body><iframe src="${escape(url)}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="origin"${sandbox ? ` sandbox="${SANDBOX}"` : ''}></iframe>
-<script>document.querySelector('iframe').addEventListener('load',function(){window.ReactNativeWebView.postMessage('loaded')});</script></body></html>`
+<script>
+var f=document.querySelector('iframe');
+// The remote's keys (OK, the arrows) go to the player: give its frame the focus, and take it back there.
+function focusPlayer(){try{f.focus();f.contentWindow&&f.contentWindow.focus()}catch(e){}}
+f.addEventListener('load',function(){window.ReactNativeWebView.postMessage('loaded');focusPlayer()});
+window.addEventListener('focus',focusPlayer);
+document.addEventListener('keydown',function(){if(document.activeElement!==f)focusPlayer()},true);
+</script></body></html>`
 }
 
 export default function WatchScreen() {
@@ -99,6 +107,7 @@ function Player({ kind, id, name, season, episode, sources, seasons, saved }: Pl
   const [picker, setPicker] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const reported = useRef(new Set<string>())
+  const web = useRef<WebView>(null)
 
   // The next episode: the next one this season, or the first of the next season.
   const seasonData = useSeason(id, kind === 'tv' ? season ?? 1 : null).data
@@ -141,6 +150,19 @@ function Player({ kind, id, name, season, episode, sources, seasons, saved }: Pl
     const timer = setTimeout(() => setBar(false), BAR_MS)
     return () => clearTimeout(timer)
   }, [bar, picker, slow, index])
+
+  // TV, with the bar gone: OK plays and pauses (a tap in the middle of the player, where the remote's
+  // keys can't reach), up brings the bar back.
+  useTVEventHandler(useCallback((event: { eventType?: string, eventKeyAction?: number }) => {
+    if (!isTV || bar || picker || event.eventKeyAction !== 1) return
+    if (event.eventType === 'select') tapWebView(0.5, 0.5)
+    else if (event.eventType === 'up') setBar(true)
+  }, [bar, picker]))
+
+  // TV: once the bar is gone, the remote talks to the player.
+  useEffect(() => {
+    if (isTV && !bar && !picker) web.current?.requestFocus()
+  }, [bar, picker])
 
   useEffect(() => {
     if (!notice) return
@@ -194,6 +216,7 @@ function Player({ kind, id, name, season, episode, sources, seasons, saved }: Pl
     <View style={styles.page}>
       <StatusBar hidden />
       <WebView
+        ref={web}
         key={`${source.name}-${season}-${episode}`}
         source={{ html, baseUrl: SITE }}
         style={styles.web}
@@ -215,7 +238,6 @@ function Player({ kind, id, name, season, episode, sources, seasons, saved }: Pl
         overScrollMode="never"
         webviewDebuggingEnabled={__DEV__}
         androidLayerType="hardware"
-        hasTVPreferredFocus={!bar}
       />
 
       {!loaded ? (
@@ -235,8 +257,8 @@ function Player({ kind, id, name, season, episode, sources, seasons, saved }: Pl
                 {[subtitle, source.name, source.sandbox ? t('player.fewerAds') : null].filter(Boolean).join('  ·  ')}
               </Text>
             </View>
-            {next ? <Button label={t('player.next')} variant="secondary" icon={<SkipForward color={colors.white} size={isTV ? 22 : 18} />} onPress={goNext} /> : null}
-            <Button label={t('player.sources')} variant="secondary" icon={<Layers color={colors.white} size={isTV ? 22 : 18} />} onPress={() => setPicker(true)} hasTVPreferredFocus />
+            {next ? <Button label={t('player.next')} variant="secondary" icon={(color) => <SkipForward color={color} size={isTV ? 22 : 18} />} onPress={goNext} /> : null}
+            <Button label={t('player.sources')} variant="secondary" icon={(color) => <Layers color={color} size={isTV ? 22 : 18} />} onPress={() => setPicker(true)} hasTVPreferredFocus />
           </LinearGradient>
           {slow ? (
             <View style={styles.slow}>
@@ -289,7 +311,7 @@ function Player({ kind, id, name, season, episode, sources, seasons, saved }: Pl
                 )
               })}
             </ScrollView>
-            <Button label={t('player.report')} variant="secondary" icon={<TriangleAlert color={colors.white} size={isTV ? 22 : 18} />} onPress={reportBroken} />
+            <Button label={t('player.report')} variant="secondary" icon={(color) => <TriangleAlert color={color} size={isTV ? 22 : 18} />} onPress={reportBroken} />
           </View>
         </View>
       </Modal>
