@@ -20,6 +20,9 @@ import { ToastHost } from '@/components/motion/Toast'
 import { PeekHost } from '@/components/media/Peek'
 import { colors } from '@/theme/tokens'
 
+// A title opened from a link to the site still has Home under it: Back goes there, not out of the app.
+export const unstable_settings = { initialRouteName: '(tabs)' }
+
 SplashScreen.preventAutoHideAsync().catch(() => {})
 // No fade: the intro takes over from the splash screen's A exactly where it is.
 SplashScreen.setOptions({ fade: false })

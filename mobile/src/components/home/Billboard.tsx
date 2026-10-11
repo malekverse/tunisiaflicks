@@ -170,7 +170,8 @@ function Burst({ progress }: { progress: Animated.Value }) {
 function PhoneBillboard({ items }: { items: BillboardItem[] }) {
   const { width: screen } = useWindowDimensions()
   const width = screen - space.page * 2 + 12
-  const scrollX = useRef(new Animated.Value(0)).current
+  // Right to left, the row starts scrolled to its far end (the first card is on the right).
+  const scrollX = useRef(new Animated.Value(centre(0, items.length, width))).current
   const [index, setIndex] = useState(0)
   const onViewable = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     if (viewableItems[0]?.index != null) setIndex(viewableItems[0].index)
@@ -184,7 +185,8 @@ function PhoneBillboard({ items }: { items: BillboardItem[] }) {
         keyExtractor={(item) => `${item.kind}:${item.id}`}
         renderItem={({ item, index: i }) => <PhoneSlide item={item} width={width} index={i} count={items.length} scrollX={scrollX} />}
         showsHorizontalScrollIndicator={false}
-        snapToInterval={width}
+        // Explicit stops rather than snapToInterval, which snaps back in right-to-left on Android.
+        snapToOffsets={items.map((_, i) => i * width)}
         decelerationRate="fast"
         disableIntervalMomentum
         contentContainerStyle={{ paddingHorizontal: space.page - 6 }}
