@@ -16,8 +16,9 @@ import { languages } from './languages'
 import { accountSecurity } from './account-security'
 import { apps } from './apps'
 import { desktop } from './desktop'
+import { halal } from './halal'
 
-const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop]
+const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop, halal]
 
 export type FeatureKey =
   | keyof typeof aiSearch.en
@@ -36,6 +37,7 @@ export type FeatureKey =
   | keyof typeof accountSecurity.en
   | keyof typeof apps.en
   | keyof typeof desktop.en
+  | keyof typeof halal.en
 
 type Language = 'en' | 'ar' | 'tn' | 'fr'
 

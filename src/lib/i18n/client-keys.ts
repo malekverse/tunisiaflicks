@@ -3,7 +3,7 @@
 // Which strings go to the browser (see clientMessages in ./index.ts): the root layout sends every
 // key that is in neither list below (the shell), a <ClientMessages scope> adds its scope's keys to
 // the pages under it, and the server-only keys never leave the server.
-// 608 of 2614 keys on every page, 1460 in 30 scopes, 546 server-only.
+// 608 of 2629 keys on every page, 1471 in 30 scopes, 550 server-only.
 
 export type MessageScope =
   | 'activate/layout'
@@ -255,6 +255,10 @@ export const SERVER_ONLY_KEYS: readonly string[] = [
   'genre.fallback',
   'genre.heading',
   'genre.subtitle',
+  'halal.blocked.desc',
+  'halal.blocked.home',
+  'halal.blocked.settings',
+  'halal.blocked.title',
   'hero.addFavorites',
   'hero.cast',
   'hero.castAs',
@@ -1639,6 +1643,9 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'extras.type.Teaser',
     'extras.type.Trailer',
     'extras.videos',
+    'halal.report.button',
+    'halal.report.done',
+    'halal.report.text',
     'hero.backdropAlt',
     'hero.posterAlt',
     'hero.present',
@@ -1916,6 +1923,14 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'digest.unverifiedBlocked',
     'digest.weekly.hint',
     'digest.weekly.label',
+    'halal.settings.desc',
+    'halal.settings.hint',
+    'halal.settings.how',
+    'halal.settings.kids',
+    'halal.settings.off',
+    'halal.settings.on',
+    'halal.settings.switch',
+    'halal.settings.title',
     'languages.settings.desc',
     'languages.settings.title',
     'languages.site.hint',
@@ -2398,6 +2413,9 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'extras.type.Teaser',
     'extras.type.Trailer',
     'extras.videos',
+    'halal.report.button',
+    'halal.report.done',
+    'halal.report.text',
     'hero.backdropAlt',
     'hero.posterAlt',
     'hero.present',

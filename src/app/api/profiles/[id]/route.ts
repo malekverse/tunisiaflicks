@@ -1,4 +1,4 @@
-// Rename / recolour / Kids toggle (PATCH) and delete (DELETE) one of the signed-in account's profiles.
+// Rename / recolour / Kids and Halal mode toggles (PATCH) and delete (DELETE) one of the signed-in account's profiles.
 // The id is only ever matched inside the session user's own document, so foreign ids simply 404.
 import { NextRequest, NextResponse } from 'next/server'
 import { ObjectId } from 'mongodb'
@@ -58,6 +58,12 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       if (page) return NextResponse.json({ error: "A profile with a page can't become a Kids profile. Delete the page first.", code: 'kidsHasHandle' }, { status: 400 })
     }
     set['profiles.$.kids'] = body.kids
+  }
+  // Halal mode: only a grown-up profile gets here (requireGrownUpProfile), so a Kids profile can't
+  // switch it off for itself.
+  if (body?.halal !== undefined) {
+    if (typeof body.halal !== 'boolean') return NextResponse.json({ error: 'Invalid Halal mode setting' }, { status: 400 })
+    set['profiles.$.halal'] = body.halal
   }
   if (Object.keys(set).length === 0) {
     return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })

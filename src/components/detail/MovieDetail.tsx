@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useRef } from 'react'
 import MediaHero from '@/src/components/detail/MediaHero'
 import StreamSection from '@/src/components/detail/StreamSection'
+import HalalReport from '@/src/components/halal/HalalReport'
 import SectionNav, { type Section } from '@/src/components/detail/SectionNav'
 import { CastRow, DetailsGrid } from '@/src/components/detail/DetailSections'
 import MoreLikeThis, { type SimilarTab } from '@/src/components/detail/MoreLikeThis'
@@ -27,6 +28,8 @@ export type DetailServerProps = {
   /** The stream sources' URL templates (server only: STREAM_PROVIDERS). */
   providers: ProviderTemplate[]
   kids: boolean
+  /** The profile is in Halal mode: "Not halal? Report it" under the player. */
+  halal?: boolean
   signedIn: boolean
   /** Whether the ratings band shows: signed in, or there is an average to show a guest. */
   ratings: boolean
@@ -57,7 +60,7 @@ export function detailSections(t: ReturnType<typeof useT>, o: { episodes?: boole
 }
 
 /** A movie page: the hero, the player, ratings, similar titles, extras, the cast and the facts. */
-export default function MovieDetail({ id, data, similar, providers, kids, signedIn, ratings, tabs, trailers, extras, soundtrack: initialSoundtrack }: DetailServerProps) {
+export default function MovieDetail({ id, data, similar, providers, kids, halal, signedIn, ratings, tabs, trailers, extras, soundtrack: initialSoundtrack }: DetailServerProps) {
   const t = useT()
   const ambient = useAmbientColor(data.poster_path)
   useRoomLight(ambient)
@@ -98,6 +101,7 @@ export default function MovieDetail({ id, data, similar, providers, kids, signed
           media={{ type: 'movie', id }}
           downloadSlot={imdbId ? <DownloadDialog type="movie" imdbId={imdbId} title={data.title} /> : undefined}
         />
+        {halal && <HalalReport kind="movie" id={id} className="-mt-12" />}
         {ratings && <RatingsBand id="ratings" media={media} />}
         {tabs.length > 0 && <MoreLikeThis kind="movie" id={id} kids={kids} closest={similar} tabs={tabs} />}
         <ExtrasSection type="movie" id={id} title={data.title ?? ''} kids={kids} groups={extras} soundtrack={soundtrack} />

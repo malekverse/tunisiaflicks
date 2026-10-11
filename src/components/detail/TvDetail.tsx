@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import MediaHero from '@/src/components/detail/MediaHero'
 import StreamSection from '@/src/components/detail/StreamSection'
+import HalalReport from '@/src/components/halal/HalalReport'
 import SectionNav from '@/src/components/detail/SectionNav'
 import EpisodeBrowser, { type Episode, type Season } from '@/src/components/detail/EpisodeBrowser'
 import { CastRow, DetailsGrid } from '@/src/components/detail/DetailSections'
@@ -33,7 +34,7 @@ const scrollToPlayer = () => {
 }
 
 /** A show page: the hero, the player, the episodes, ratings, similar shows, extras, the cast and the facts. */
-export default function TvDetail({ id, data, similar, resume, providers, kids, signedIn, ratings, tabs, trailers, extras, soundtrack: initialSoundtrack, englishName }: DetailServerProps & {
+export default function TvDetail({ id, data, similar, resume, providers, kids, halal, signedIn, ratings, tabs, trailers, extras, soundtrack: initialSoundtrack, englishName }: DetailServerProps & {
   /** Episode to reopen (from "Continue watching" links: /tv/:id?s=&e=). */
   resume?: Pick
   /** TMDB's English name, when the page shows a translated one (torrent releases use it). */
@@ -174,6 +175,7 @@ export default function TvDetail({ id, data, similar, resume, providers, kids, s
             />
           ) : undefined}
         />
+        {halal && <HalalReport kind="tv" id={id} className="-mt-12" />}
 
         {seasons.length > 0 && (
           <EpisodeBrowser

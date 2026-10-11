@@ -17,10 +17,11 @@ import SocialPrivacySettings from '@/src/components/social/SocialPrivacySettings
 import DigestSettings from '@/src/components/digest/DigestSettings';
 import SupporterSettings from '@/src/components/support/SupporterSettings';
 import TvSessionsSetting from '@/src/components/tv/TvSessionsSetting';
+import HalalSettings from '@/src/components/profile/HalalSettings';
 import clientPromise from '@/src/lib/mongodb';
 import { ObjectId } from 'mongodb';
 import { getT } from '@/src/lib/i18n/server';
-import { getKidsMode } from '@/src/lib/profiles';
+import { getActiveProfile, getKidsMode } from '@/src/lib/profiles';
 
 export const generateMetadata = () => ({ title: `${getT()('nav.settings')} | TunisiaFlicks` });
 
@@ -48,6 +49,7 @@ export default async function ProfilePage() {
   const t = getT();
   // Kids profiles don't get the grown-up sections (privacy, email, supporter), nor their nav entries.
   const kids = await getKidsMode();
+  const profile = (await getActiveProfile())?.profile ?? null;
 
   return (
     <div className="page-top pb-10">
@@ -67,6 +69,9 @@ export default async function ProfilePage() {
 
             {/* Viewer profiles ("Who's watching?") */}
             <ProfileManager />
+
+            {/* Halal mode for the profile in use (#halal) */}
+            {profile && <HalalSettings profileId={profile.id} profileName={profile.name} initial={profile.halal === true} kids={profile.kids} />}
 
             {/* Your page, who sees what, friend requests, blocked people (#privacy) */}
             {!kids && <SocialPrivacySettings />}

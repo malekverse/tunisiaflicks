@@ -6,7 +6,9 @@ import { catalogueLanguage, localizeDetail, logoLanguages, translatedRecord } fr
 import { getLocale } from '@/src/lib/i18n/server'
 import KidsBlocked from '@/src/components/profiles/KidsBlocked'
 import { filterKidSafe, isKidSafe } from '@/src/lib/kids'
-import { getActiveProfile, getKidsMode } from '@/src/lib/profiles'
+import { getActiveProfile, getHalalMode, getKidsMode } from '@/src/lib/profiles'
+import HalalBlocked from '@/src/components/halal/HalalBlocked'
+import { isHalalHidden } from '@/src/lib/halal'
 import { pageMetadata } from '@/src/lib/seo'
 import { getProviderTemplates } from '@/src/lib/stream-providers'
 import { ratingSummary } from '@/src/lib/social/ratings'
@@ -69,8 +71,10 @@ export default async function TvPage({ params, searchParams }: Props) {
     getKidsMode(),
     getActiveProfile(),
   ])
+  const halal = await getHalalMode()
 
   if (kids && !(await isKidSafe(show, 'tv'))) return <KidsBlocked />
+  if (halal && (await isHalalHidden(show, 'tv'))) return <HalalBlocked />
   const id = String(show.id ?? params.id)
   const signedIn = !!active
   const [similar, summary, soundtrack] = await Promise.all([
@@ -91,6 +95,7 @@ export default async function TvPage({ params, searchParams }: Props) {
       resume={parseResume(searchParams)}
       providers={getProviderTemplates()}
       kids={kids}
+      halal={halal}
       signedIn={signedIn}
       ratings={signedIn || (summary?.average !== null && summary?.average !== undefined)}
       tabs={similarTabs(similar.length, variationFacts('tv', show), kids, locale)}

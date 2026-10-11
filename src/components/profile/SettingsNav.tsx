@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { m } from 'framer-motion'
 import {
-  BellRing, Clapperboard, Database, HandHeart, Languages, Library, Lock, ShieldCheck, Smartphone, UserRound, Users, type LucideIcon,
+  BellRing, Clapperboard, Database, HandHeart, Languages, Library, Lock, Moon, ShieldCheck, Smartphone, UserRound, Users, type LucideIcon,
 } from 'lucide-react'
 import { useT } from '@/src/components/I18nProvider'
 import { spring } from '@/src/lib/motion'
@@ -16,6 +16,7 @@ import type { TKey } from '@/src/lib/i18n'
 export const SETTINGS_SECTIONS: { id: string, label: TKey, icon: LucideIcon, grownUp?: boolean }[] = [
   { id: 'account', label: 'settings.account', icon: UserRound },
   { id: 'profiles', label: 'profiles.title', icon: Users },
+  { id: 'halal', label: 'halal.settings.title', icon: Moon },
   { id: 'privacy', label: 'social.privacy.title', icon: Lock, grownUp: true },
   { id: 'display', label: 'languages.settings.title', icon: Languages },
   { id: 'playback', label: 'settings.playback', icon: Clapperboard },
