@@ -42,19 +42,19 @@ export type ProviderTemplate = {
 // Ordered best-first; the first one is selected by default.
 //
 // The set was probed for reachability + a real player payload (2026). Dead/unreachable providers
-// (embed.su, AutoEmbed) and one that returned an in-player 500 (VidFast) were removed. These are
+// (embed.su, AutoEmbed), one that returned an in-player 500 (VidFast) and one that redirected to
+// an unrelated site instead of a player (VidSrc.rip, October 2026) were removed. These are
 // client-rendered, region-gated players, so availability varies by the viewer's network — hence
 // several sources to switch between. If one stops working, drop it here; the UI updates everywhere.
 //
 // `sandbox`: tried in a sandboxed iframe (October 2026, The Matrix and Game of Thrones S1E1), only
 // Vidzee played. VidSrc, VidLink, VidSrc.su, 2Embed and MultiEmbed showed a "sandbox not allowed"
-// screen, and VidSrc.rip redirected to an unrelated site with or without it.
+// screen.
 const BUILT_IN: ProviderTemplate[] = [
   { name: 'VidSrc', movie: 'https://vidsrc.to/embed/movie/{id}', tv: 'https://vidsrc.to/embed/tv/{id}/{season}/{episode}' },
   { name: 'VidLink', movie: 'https://vidlink.pro/movie/{id}', tv: 'https://vidlink.pro/tv/{id}/{season}/{episode}' },
   { name: 'Vidzee', movie: 'https://player.vidzee.wtf/embed/movie/{id}', tv: 'https://player.vidzee.wtf/embed/tv/{id}/{season}/{episode}', sandbox: true },
   { name: 'VidSrc.su', movie: 'https://vidsrc.su/embed/movie/{id}', tv: 'https://vidsrc.su/embed/tv/{id}/{season}/{episode}' },
-  { name: 'VidSrc.rip', movie: 'https://vidsrc.rip/embed/movie/{id}', tv: 'https://vidsrc.rip/embed/tv/{id}/{season}/{episode}' },
   { name: '2Embed', movie: 'https://www.2embed.cc/embed/{id}', tv: 'https://www.2embed.cc/embedtv/{id}&s={season}&e={episode}' },
   { name: 'MultiEmbed', movie: 'https://multiembed.mov/?video_id={id}&tmdb=1', tv: 'https://multiembed.mov/?video_id={id}&tmdb=1&s={season}&e={episode}' },
 ]
