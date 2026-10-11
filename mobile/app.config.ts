@@ -53,6 +53,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ['expo-build-properties', { android: { minSdkVersion: 24, enableProguardInReleaseBuilds: true, enableShrinkResourcesInReleaseBuilds: true, usesCleartextTraffic: API.startsWith('http://') } }],
     ['@react-native-tvos/config-tv', { isTV: TV, androidTVBanner: './assets/tv-banner.png' }],
     './plugins/with-release-signing',
+    './plugins/with-gradle-memory',
   ],
   experiments: { typedRoutes: true },
   extra: { api: API, tv: TV },
