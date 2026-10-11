@@ -7,7 +7,7 @@ export function useTvMode(): boolean {
   return useContext(TvModeContext)?.tv ?? false
 }
 
-/** Whether the page runs inside the Android TV app (its WebView adds 'TunisiaFlicksTV/' to the user agent). */
+/** Whether the page runs inside the old 1.x Android TV app (its WebView adds 'TunisiaFlicksTV/' to the user agent). */
 export function useInTvApp(): boolean {
   return useContext(TvModeContext)?.inApp ?? false
 }

@@ -1,6 +1,7 @@
 // The inline script (root layout, <head>) that decides, before the first paint, whether this page
-// load is the start of an app: the Android TV app (its user agent), the Android phone app (its start
-// address carries ?source=android-app), or the site installed from a browser (a standalone window).
+// load is the start of an app: the old 1.x Android TV app (its user agent), the old 1.x Android phone
+// app (its start address carries ?source=android-app), or the site installed from a browser (a
+// standalone window). The 1.x checks stay until their users have updated to the native apps (mobile/).
 // Then, once per app session, it shows the launch (AppLaunch, globals.css .tf-launch) and takes it
 // away again. A website visit never sees it. Server-safe on purpose (a string for the layout).
 

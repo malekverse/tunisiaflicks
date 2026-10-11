@@ -141,8 +141,9 @@ export default async function RootLayout({
   const locale = getLocale();
   const t = getT();
   // Who's watching (Kids hide grown-up items from the nav without a flash), TV mode (cookie
-  // tf-tv=1, see src/middleware.ts), the Android TV app (its WebView adds this token to the user
-  // agent), and the season (the nav slot, and the room's default light).
+  // tf-tv=1, see src/middleware.ts), the old 1.x Android TV app (its WebView adds this token to the
+  // user agent; the native app doesn't load the site's pages, so drop this once nobody runs 1.x),
+  // and the season (the nav slot, and the room's default light).
   const kids = await getKidsMode().catch(() => false);
   const tv = isTvMode();
   // The search pill offers Ask (AI search) too: never for Kids or in TV mode.

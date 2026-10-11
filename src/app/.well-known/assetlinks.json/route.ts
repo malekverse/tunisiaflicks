@@ -1,9 +1,10 @@
-// /.well-known/assetlinks.json: tells Android that the TunisiaFlicks phone app (android/phone, a
-// Trusted Web Activity) belongs to this site, so Chrome shows it full screen with no address bar.
+// /.well-known/assetlinks.json: tells Android that the TunisiaFlicks phone app (mobile/) belongs to
+// this site, so links to it open straight in the app (Android App Links).
 //
 // Nothing to configure: the signing certificate comes from the newest Android release's notes
 // (src/lib/app-releases.ts). Optional overrides:
-// - ANDROID_TWA_PACKAGE: the package name (default com.tunisiaflicks.app)
+// - ANDROID_TWA_PACKAGE: the package name (default com.tunisiaflicks.app; the name is from the old
+//   Trusted Web Activity, kept so existing Vercel settings still apply)
 // - ANDROID_TWA_SHA256: more certificate fingerprints, comma-separated (e.g. a debug key while testing)
 // 404 until there's at least one fingerprint.
 import { NextResponse } from 'next/server'

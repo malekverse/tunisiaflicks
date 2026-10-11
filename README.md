@@ -152,11 +152,11 @@ in Settings `#security`. `/app` offers the apps.
 ### The apps
 
 `/app` and a well-timed offer (`src/components/apps/AppOffer.tsx`) give each device its app, from the site
-itself: Android phones and Android TV get APKs (`android/phone`, a Trusted Web Activity, and `android/tv`, a
-locked-down WebView), served through `/download/android` and `/download/tv`; iPhone and iPad add the site to
-the Home Screen; Windows, Mac and Linux install it from the browser. The site finds the newest `android-v…`
-GitHub release by itself (`src/lib/app-releases.ts`); a tag builds and signs both APKs
-(`.github/workflows/android-apps.yml`). Setup and releasing: `docs/apps.md`.
+itself: Android phones and Android TV get APKs (one React Native app in `mobile/`, built for phones and for
+TV), served through `/download/android` and `/download/tv`; iPhone and iPad add the site to the Home Screen;
+Windows, Mac and Linux install it from the browser. The site finds the newest `android-v…` GitHub release by
+itself (`src/lib/app-releases.ts`); a tag builds and signs both APKs (`.github/workflows/android-apps.yml`).
+Setup and releasing: `docs/apps.md`.
 
 ## Project layout
 
