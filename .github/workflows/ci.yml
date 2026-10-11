@@ -1,6 +1,7 @@
 # Lint, type-check, unit tests, build, then start the app against a throwaway MongoDB and run the
 # smoke tests. Free on GitHub Actions. Add a TMDB_API_KEY repository secret to also smoke-test the
-# TMDB pages.
+# TMDB pages. A second job tests the local player (player-service/) and syntax-checks the desktop
+# app, so a dependency bump can't quietly break playback.
 name: CI
 
 on:
@@ -57,3 +58,24 @@ jobs:
       - name: Server log
         if: failure()
         run: cat server.log
+
+  player:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: player-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: player-service/package-lock.json
+      - run: npm ci
+      - name: Syntax-check the player and the desktop app
+        run: for f in *.js ../desktop/*.js; do node --check "$f"; done
+      # Unit tests (pure logic) + the ffmpeg pipeline on synthesized MKV/HEVC/AC3 files. No network,
+      # no swarm. (test-cast.mjs needs a LAN and real peers, so it stays a manual `npm run test:cast`.)
+      - name: Player tests
+        run: npm test

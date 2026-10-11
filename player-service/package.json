@@ -6,7 +6,9 @@
   "description": "Standalone torrent -> HTTP range-streaming service for TunisiaFlicks. Runs on a long-lived server (e.g. an Oracle Cloud Always Free VM), NOT on Vercel.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test test-unit.mjs && node test-codec.mjs",
+    "test:cast": "node test-cast.mjs"
   },
   "engines": {
     "node": ">=18"
