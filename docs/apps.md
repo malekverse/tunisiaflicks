@@ -5,15 +5,16 @@ small offer that appears on the right device at the right moment:
 
 | Device | What they get | Where it comes from |
 |---|---|---|
-| Android phones and tablets | An app (APK) that shows the site full screen in Chrome, a **Trusted Web Activity** | `android/phone`, `/download/android` |
-| Android TV, Google TV, TV boxes | An app (APK) that opens the site in TV mode, in a locked-down WebView | `android/tv`, `/download/tv` |
+| Android phones and tablets | A native app (APK), React Native | `mobile/`, `/download/android` |
+| Android TV, Google TV, TV boxes | The same app built for TV: remote focus, the TV launcher | `mobile/` (EXPO_TV=1), `/download/tv` |
 | Windows | The desktop app: the site in its own window, with its own ad-free player first in the source bar and every pop-up blocked | `desktop/`, `/desktop`, `/download/desktop` |
 | iPhone and iPad | The site on the Home Screen (Apple only allows the App Store for apps) | Safari's Share > Add to Home Screen |
 | Mac, Linux, ChromeOS (and Windows) | The site installed from Chrome or Edge (its own window and icon) | the browser's install prompt; Safari: File > Add to Dock |
 | Other smart TVs | TV mode in the TV's browser | `/?tv=1` |
 
-Both Android apps show the live site, so a site update reaches every app at once. They only need a new
-version when the wrapper itself changes (icon, name, a fix in the TV app).
+Both Android apps are one React Native app (`mobile/`) built twice. They read the site's app API
+(`/api/app/v1`, below), so lists, titles and the stream sources change with the site; the screens
+themselves need a new version.
 
 ## How the site finds the apps (nothing to configure)
 
@@ -24,8 +25,8 @@ certificate listed in the release notes. From that:
 - `/download/android` and `/download/tv` redirect to the newest files (and to `/app` while there's none);
 - `/app` shows the version, size, date and "Check the file";
 - the offer appears for Android only once there's a release;
-- `/.well-known/assetlinks.json` lists the signing certificate, which is what makes Chrome open the phone app
-  full screen with no address bar.
+- `/.well-known/assetlinks.json` lists the signing certificate, which lets links to the site's titles open
+  straight in the phone app (Android App Links).
 
 Optional settings in Vercel: `APP_RELEASES_REPO` (default `malekverse/tunisiaflicks`), `ANDROID_TWA_PACKAGE`
 (default `com.tunisiaflicks.app`), `ANDROID_TWA_SHA256` (extra fingerprints, e.g. a debug key while testing).
@@ -109,52 +110,57 @@ The installer is unsigned unless the repository has the `WINDOWS_CERT_BASE64` (a
 `WINDOWS_CERT_PASSWORD` secrets; unsigned, Windows SmartScreen warns on first run, and `/desktop` tells
 people how to get past it ("More info", then "Run anyway").
 
-## The phone app (android/phone)
+## The Android apps (mobile/)
 
-Google's Trusted Web Activity launcher (`androidbrowserhelper`): Chrome shows the site full screen, so signing
-in (Google included), notifications and everything else work as on the site. Starts at
-`/?source=android-app` (the site then never offers the app inside the app). Links to the site open in the app.
-Splash screen and notification icon from the logo. If the phone has no browser that supports Trusted Web
-Activities, it opens a Custom Tab instead. Android 5.0 and newer.
+One Expo (React Native) app, in the site's design (`docs/DESIGN.md`: true black, the red as the signal
+light, the display face for titles), built twice from the same code:
 
-Until `/.well-known/assetlinks.json` lists the app's certificate (from the first release on), Chrome shows a
-thin address bar on top: that's the only difference.
+- **Phones and tablets**, `com.tunisiaflicks.app`: a floating tab bar (Home, Discover, Search, My List,
+  You), pull to refresh, haptics, links to the site's `/movie/…` and `/tv/…` pages open in the app.
+- **Android TV**, `com.tunisiaflicks.tv` (`EXPO_TV=1`, react-native-tvos): the tab bar along the top, a
+  full-screen billboard, everything a size up, a white ring and a lift on the focused item.
 
-## The TV app (android/tv)
+Both keep the package names and signing key of the earlier apps, so they install as updates.
 
-One Activity with a WebView on `https://tunisiaflicks.vercel.app/?tv=1`, for TVs and boxes without a good
-browser. Everything else (the remote-friendly interface, signing in from a phone at `/activate`) is the site.
+**Data.** The app reads `/api/app/v1` on the site (`src/lib/app-api`, `src/app/api/app/v1`): `home`,
+`title/{movie|tv}/{id}`, `title/tv/{id}/season/{n}`, `search`, `list/{key}`, `genres`, `version`. Public,
+cached by Vercel's CDN, rate-limited per address, with `?lang=en|fr|ar|tn` and `?kids=1`; the TMDB key stays
+on the server. Language, Kids mode, My List, the watch history and recent searches live on the device.
 
-- **Stays on the site.** A page can only go to `tunisiaflicks.vercel.app`; any other address is cancelled (with
-  an "open it on your phone" message). Players inside frames still load.
-- **Locked down.** No new windows, no file or content access, no mixed content, no JavaScript bridge, every
-  permission request and every bad certificate refused, Safe Browsing on.
-- **Back** asks the page first (`window.tfTvBack()` closes the player menu or a sheet), then goes back, then
-  leaves the app (the back callback on Android 13+, the key event before).
-- **Full screen video**, an **"Update Android System WebView"** screen below WebView 100, and a
-  **"No connection"** screen.
-- The site recognizes it by the user agent suffix `TunisiaFlicksTV/<version>` and hides "Exit TV mode".
+**The player** (`mobile/src/app/watch.tsx`): the site's sources (`getProviderTemplates`), each in a frame
+inside a page of the app's, full screen. An ad that opens a window or redirects the page is blocked and
+the app says so; `sandbox` sources play sandboxed ("fewer ads"). The sources are tried best first (the one
+that played last time, then the site's order with the ones viewers report broken last, from
+`/api/stream-health`), and "This source doesn't work" reports it and moves on. Next episode for shows.
 
-Android 5.0 and newer; listed in the TV launcher (with its banner) and the phone launcher.
+**Updates.** You > the update banner appears when `/api/app/v1/version` has a newer release; it opens
+`/download/android` (or `tv`), and Android installs it over the old one.
+
+**Languages.** English, French, Arabic and Tunisian (Arabic strings). Android lays a screen out right to
+left only at launch, so switching between a left-to-right and a right-to-left language closes the app
+after saying so.
 
 ## Building them yourself
 
-Needs JDK 17+ (Android Studio's `jbr` works) and the Android SDK with platform 36.
+Needs Node 22, JDK 17+ (Android Studio's `jbr` works) and the Android SDK. On Windows, work from a short path
+(e.g. `C:	f`): the native build breaks on paths over 260 characters.
 
 ```sh
-cd android
-./gradlew assembleDebug      # tv/build/outputs/apk/debug and phone/build/outputs/apk/debug
-./gradlew lintDebug
+cd mobile
+npm ci
+npm run typecheck
+npx expo prebuild --platform android --clean            # phones (EXPO_TV=1 for TV)
+cd android && ./gradlew assembleRelease                 # android/app/build/outputs/apk/release
 ```
 
-`assembleRelease` without the `TF_KEYSTORE_*` variables builds unsigned APKs.
+`TF_API_URL` points a build at another site (an emulator reaches the computer's dev server at
+`http://10.0.2.2:3000`). `assembleRelease` without the `TF_KEYSTORE_*` variables signs with Expo's debug key.
 
 ## When something goes wrong
 
-- **The phone app shows an address bar:** `/.well-known/assetlinks.json` doesn't list its certificate yet (no
-  release, or the app was signed with another key). Open that address to check.
-- **Blank screen on a TV:** the TV's WebView is broken or very old. Update "Android System WebView" (Play
-  Store, or the box's system updates), then restart the TV.
-- **"This link opens outside TunisiaFlicks" on a TV:** working as intended; open that link on a phone.
+- **Links to the site open in the browser, not the app:** `/.well-known/assetlinks.json` doesn't list the
+  app's certificate (no release, or the app was signed with another key). Open that address to check.
+- **The player stays black on a TV:** the TV's WebView is broken or very old. Update "Android System
+  WebView" (Play Store, or the box's system updates), then try another source.
 - **An update can't be installed** ("App not installed", conflicting package): it was signed with another key.
   Uninstall the old app first.
