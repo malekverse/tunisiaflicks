@@ -21,6 +21,14 @@ export const CRON_LEASE_MS = 70_000
 /** Time budgets. cron-job.org gives up on a request after 30s, so its calls (and unknown ones) get 22s. */
 export const LONG_BUDGET_MS = 45_000
 export const SHORT_BUDGET_MS = 22_000
+/**
+ * When the answer leaves at the latest, counted from the start of the request, whatever the job is
+ * still doing: cron-job.org aborts at 30s (a run that misses it is a failure there, and repeated
+ * failures can switch the job off), and maxDuration is 60s. A job past it keeps going in the
+ * background (Vercel's waitUntil) and the answer says `more: true, late: true`.
+ */
+export const SHORT_REPLY_BY_MS = 27_000
+export const LONG_REPLY_BY_MS = 55_000
 
 /** Days a run stays in the cronRuns log. */
 const RUN_LOG_DAYS = 14
@@ -66,9 +74,24 @@ export function isCronAuthorized(r: Request): boolean {
  * When a run must stop starting new work. GitHub Actions and Vercel's cron wait for the answer
  * (maxDuration 60s): 45s. cron-job.org aborts at 30s, and anything unknown gets the same 22s.
  */
-export function cronDeadline(source: string): number {
-  const long = source === 'github' || source === 'vercel' || /vercel-cron/i.test(source)
-  return Date.now() + (long ? LONG_BUDGET_MS : SHORT_BUDGET_MS)
+const isLongSource = (source: string) => source === 'github' || source === 'vercel' || /vercel-cron/i.test(source)
+
+/** When the job should stop starting new work: its budget, counted from `from` (the request's start). */
+export function cronDeadline(source: string, from = Date.now()): number {
+  return from + (isLongSource(source) ? LONG_BUDGET_MS : SHORT_BUDGET_MS)
+}
+
+/** When the answer must leave at the latest (see SHORT_REPLY_BY_MS), counted from `from`. */
+export function cronReplyBy(source: string, from = Date.now()): number {
+  return from + (isLongSource(source) ? LONG_REPLY_BY_MS : SHORT_REPLY_BY_MS)
+}
+
+/** Work that may finish after the answer is sent (Vercel's waitUntil; elsewhere the server keeps running). */
+function keepAlive(work: Promise<unknown>) {
+  try {
+    const context = (globalThis as any)[Symbol.for('@vercel/request-context')]?.get?.()
+    context?.waitUntil?.(work)
+  } catch { /* not on Vercel */ }
 }
 
 /** Who is calling: the X-Cron-Source header, or Vercel's cron by its user agent. */
@@ -144,32 +167,54 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } })
 
 /**
- * The whole life of a cron request: secret → lease (70s) → fn({ deadline, source }) → answer.
+ * The whole life of a cron request: secret → lease (70s) → fn({ deadline, source }) → answer, by
+ * the reply time at the latest (SHORT_REPLY_BY_MS / LONG_REPLY_BY_MS).
  * 401 when the secret is wrong; 200 `{ ok, job, status, more, ms, ...stats }` otherwise, including
  * when another run holds the lease ('busy') or there is nothing to do ('idle'), so schedulers
  * don't report those as failures; 500 `{ ok: false }` when the job throws.
  */
-export async function runCron(r: Request, name: string, fn: (ctx: CronContext) => Promise<CronResult>): Promise<Response> {
+export async function runCron(
+  r: Request,
+  name: string,
+  fn: (ctx: CronContext) => Promise<CronResult>,
+  /** For the tests: when the answer leaves at the latest (default cronReplyBy). */
+  { replyBy }: { replyBy?: number } = {},
+): Promise<Response> {
   if (!isCronAuthorized(r)) return json({ ok: false, error: 'Unauthorized' }, 401)
+  // The budget counts from the start of the request, not from when the lease is held.
   const started = Date.now()
   const source = cronSource(r)
-  try {
-    const run = await withLease(name, CRON_LEASE_MS, () => fn({ deadline: cronDeadline(source), source }))
-    const ms = Date.now() - started
-    if (!('value' in run)) {
-      await logRun({ job: name, source, status: 'busy', ms, stats: {} })
-      return json({ ok: true, job: name, status: 'busy', more: false, ms })
+  const deadline = cronDeadline(source, started)
+
+  const answer = (async () => {
+    try {
+      const run = await withLease(name, CRON_LEASE_MS, () => fn({ deadline, source }))
+      const ms = Date.now() - started
+      if (!('value' in run)) {
+        await logRun({ job: name, source, status: 'busy', ms, stats: {} })
+        return json({ ok: true, job: name, status: 'busy', more: false, ms })
+      }
+      const { more: rawMore, status: declared, ...stats } = run.value ?? {}
+      const more = rawMore === true
+      const status: CronStatus = declared ?? (more ? 'more' : 'done')
+      const clean = plainStats(stats)
+      await logRun({ job: name, source, status, ms, stats: clean })
+      return json({ ok: true, job: name, status, more, ms, ...clean })
+    } catch (error) {
+      const ms = Date.now() - started
+      console.error(`cron ${name} failed:`, error)
+      await logRun({ job: name, source, status: 'error', ms, stats: {} })
+      return json({ ok: false, job: name, status: 'error', more: false, ms }, 500)
     }
-    const { more: rawMore, status: declared, ...stats } = run.value ?? {}
-    const more = rawMore === true
-    const status: CronStatus = declared ?? (more ? 'more' : 'done')
-    const clean = plainStats(stats)
-    await logRun({ job: name, source, status, ms, stats: clean })
-    return json({ ok: true, job: name, status, more, ms, ...clean })
-  } catch (error) {
-    const ms = Date.now() - started
-    console.error(`cron ${name} failed:`, error)
-    await logRun({ job: name, source, status: 'error', ms, stats: {} })
-    return json({ ok: false, job: name, status: 'error', more: false, ms }, 500)
-  }
+  })()
+
+  // A run still going at the reply time answers now and finishes in the background (it keeps the
+  // lease until then, and logs its real result when it's done).
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const late = new Promise<null>((resolve) => { timer = setTimeout(() => resolve(null), Math.max(0, (replyBy ?? cronReplyBy(source, started)) - Date.now())) })
+  const first = await Promise.race([answer, late])
+  clearTimeout(timer)
+  if (first) return first
+  keepAlive(answer)
+  return json({ ok: true, job: name, status: 'more', more: true, late: true, ms: Date.now() - started })
 }

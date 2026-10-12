@@ -16,7 +16,11 @@ How a route behaves (`src/lib/cron.ts`):
   comma-separated entry of `CRON_SECRETS_EXTRA` that is at least 32 characters long. With no
   secret configured, nothing is ever allowed in.
 - `X-Cron-Source: github` (or Vercel's own cron) gets 45 seconds; `X-Cron-Source: cron-job`, and
-  anything else, gets 22.
+  anything else, gets 22, counted from the start of the request.
+- The answer leaves by 27 seconds for cron-job.org (it aborts at 30, and repeated failures can
+  switch a job off) and by 55 for GitHub and Vercel, whatever the job is still doing: a run that
+  overruns answers `more: true, late: true` and finishes in the background, keeping its lease and
+  logging its real result when it's done.
 - Only one run of a job at a time: a second call while one is running answers `busy`.
 - The answer is JSON: `{ ok, job, status, more, ms, ...counts }`, where `status` is `done`,
   `more`, `busy`, `idle` (nothing to do right now) or `quota` (the day's e-mail budget is spent).

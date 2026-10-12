@@ -105,6 +105,15 @@ describe('cron: time budgets', () => {
     assert.ok(Math.abs(budget('vercel') - 45_000) < 50)
     assert.ok(Math.abs(budget('vercel-cron/1.0') - 45_000) < 50)
   })
+  test('the answer leaves by 27s for cron-job.org (it aborts at 30s), 55s for GitHub and Vercel', () => {
+    const from = Date.now()
+    assert.equal(cron.cronReplyBy('cron-job', from) - from, 27_000)
+    assert.equal(cron.cronReplyBy('unknown', from) - from, 27_000)
+    assert.equal(cron.cronReplyBy('github', from) - from, 55_000)
+    // The work stops well before the answer has to leave.
+    assert.ok(cron.cronReplyBy('cron-job', from) - cron.cronDeadline('cron-job', from) >= 5_000)
+    assert.ok(cron.cronReplyBy('github', from) - cron.cronDeadline('github', from) >= 5_000)
+  })
   test('the source comes from X-Cron-Source, or the Vercel cron user agent', () => {
     assert.equal(cron.cronSource(request({ 'x-cron-source': 'cron-job' })), 'cron-job')
     assert.equal(cron.cronSource(request({ 'x-cron-source': 'GitHub' })), 'github')
@@ -162,6 +171,28 @@ describe('cron: lease and answers', { skip: !HAS_DB && 'no MONGODB_URI' }, () =>
     // Released: the next run gets it.
     const third = await (await cron.runCron(auth('github'), `${name}-busy`, async () => ({}))).json()
     assert.equal(third.status, 'done')
+  })
+
+  test('a run past its reply time answers "more" in time, then finishes and frees the lease', async () => {
+    let finished = false
+    const started = Date.now()
+    const res = await cron.runCron(auth('cron-job'), `${name}-late`, async () => {
+      await new Promise((resolve) => setTimeout(resolve, 600))
+      finished = true
+      return { n: 1 }
+    }, { replyBy: Date.now() + 150 })
+    const body = await res.json()
+    assert.ok(Date.now() - started < 550, 'answered before the job finished')
+    assert.equal(res.status, 200)
+    assert.equal(body.status, 'more')
+    assert.equal(body.more, true)
+    assert.equal(body.late, true)
+    assert.equal(finished, false)
+    // The job goes on in the background and releases the lease when it's done.
+    await new Promise((resolve) => setTimeout(resolve, 900))
+    assert.equal(finished, true)
+    const next = await (await cron.runCron(auth('cron-job'), `${name}-late`, async () => ({}))).json()
+    assert.equal(next.status, 'done')
   })
 
   test('a failing job answers 500 and frees the lease', async () => {
