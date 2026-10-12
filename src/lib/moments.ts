@@ -12,6 +12,7 @@
 import { unstable_cache } from 'next/cache'
 import { tmdbFetchSafe, tmdbLanguage } from '@/src/lib/tmdb'
 import { filterKidSafe, kidsDiscoverParams } from '@/src/lib/kids'
+import { filterHalal } from '@/src/lib/halal'
 import { addDays, daysBetween, DHU_AL_HIJJAH, hijriPeriod, nextHijriPeriod, ramadanOf, SHAWWAL, tunisDate } from '@/src/lib/hijri'
 import { arabRamadanSeries, ramadanSeasons, tunisianRamadanSeries } from '@/src/lib/ramadan'
 import { hash, shuffled } from '@/src/lib/seed'
@@ -318,7 +319,7 @@ export async function sequelRow(locale: Locale, kids: boolean, today = tunisDate
     const data = await tmdbFetchSafe<any>(`movie/${part.id}`, { language }, 86400)
     return data ? { ...part, title: data.title || part.title, overview: data.overview || part.overview } : part
   }))
-  const items = kids ? await filterKidSafe(localized, 'movie') : localized
+  const items = await filterHalal(kids ? await filterKidSafe(localized, 'movie') : localized, 'movie')
   const titles = language === 'en-US' ? sequels.map((entry) => entry.upcoming.title) : await Promise.all(sequels.map(async (entry) =>
     (await tmdbFetchSafe<any>(`movie/${entry.upcoming.id}`, { language }, 86400))?.title || entry.upcoming.title))
   return { items, titles }

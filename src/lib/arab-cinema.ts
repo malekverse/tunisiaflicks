@@ -4,6 +4,7 @@
 // The index costs 3 TMDB requests per country (66 per language and profile kind, once a day) and is
 // cached whole, per language, per day, and separately for Kids (filtered before it is cached).
 import { unstable_cache } from 'next/cache'
+import { filterHalal } from '@/src/lib/halal'
 import { tmdbFetchSafe, tmdbLanguage } from '@/src/lib/tmdb'
 import { tunisDate } from '@/src/lib/hijri'
 import { withTimeout } from '@/src/lib/with-timeout'
@@ -129,7 +130,12 @@ export async function getArabMapIndex(locale: Locale, kids: boolean): Promise<Ar
     INDEX_DEADLINE,
     null,
   )
-  return index ?? namesOnlyIndex(locale, date)
+  if (!index) return namesOnlyIndex(locale, date)
+  // The index is shared by everyone; in Halal mode, a country's film of the day it hides is left out.
+  const picks = index.countries.map((country) => country.pick).filter((pick): pick is MapTitle => pick !== null)
+  const allowed = new Set((await filterHalal(picks)).map((pick) => `${pick.kind}:${pick.id}`))
+  if (allowed.size === picks.length) return index
+  return { ...index, countries: index.countries.map((country) => (country.pick && !allowed.has(`${country.pick.kind}:${country.pick.id}`) ? { ...country, pick: null } : country)) }
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -11,6 +11,7 @@ import { tmdbRecord } from './media'
 import { canSeeDoc, normalizePrivacy } from './privacy'
 import { resolveAll } from './ratings'
 import { tunisDay } from './rules'
+import { filterHalal } from '@/src/lib/halal'
 import type { ProfileRef, PublicIdentity, ShareMedia } from './types'
 
 export type ActivityItem = {
@@ -195,11 +196,18 @@ export async function getFriendsActivity(viewer: ProfileRef, opts?: { before?: s
   const limit = Math.min(Math.max(Math.floor(opts?.limit ?? 20), 1), MAX_PAGE)
   const offset = opts?.before && /^[0-9]{1,4}$/.test(opts.before) ? Number(opts.before) : 0
   const locale = opts?.locale
-  return unstable_cache(
+  const feed = await unstable_cache(
     () => computeFeed(viewer, offset, limit, locale),
     ['friends-activity', viewer.userId, viewer.profileId, String(offset), String(limit), locale ?? ''],
     { revalidate: 300, tags: [`friends:${viewer.profileId}`] },
   )()
+  return { ...feed, items: await withoutHalalHidden(feed.items) }
+}
+
+/** In Halal mode, friends' watches of titles it hides are left out (after the cache: it's per viewer). */
+async function withoutHalalHidden(items: ActivityItem[]): Promise<ActivityItem[]> {
+  const allowed = new Set((await filterHalal(items.map((item) => item.media))).map((media) => `${media.media_type}:${media.id}`))
+  return allowed.size === items.length ? items : items.filter((item) => allowed.has(`${item.media.media_type}:${item.media.id}`))
 }
 
 /**
@@ -221,5 +229,6 @@ export async function getRecentActivity(owner: ProfileRef, viewer: ProfileRef | 
   const raws = isOwner
     ? items.flatMap((item) => visibleWatches(page._id, [item], new Date(0), now + activityDelayMs()))
     : visibleWatches(page._id, items, new Date(page.activitySince ?? now), now)
-  return present(raws.slice(0, Math.min(Math.max(limit, 1), MAX_PAGE)), locale)
+  const shown = await present(raws.slice(0, Math.min(Math.max(limit, 1), MAX_PAGE)), locale)
+  return isOwner ? shown : withoutHalalHidden(shown)
 }

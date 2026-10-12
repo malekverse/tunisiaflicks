@@ -8,6 +8,7 @@ import { randomBytes, randomInt, randomUUID } from 'crypto'
 import clientPromise from '@/src/lib/mongodb'
 import { tmdbFetchSafe, tmdbLanguage } from '@/src/lib/tmdb'
 import { filterKidSafe, kidsDiscoverParams } from '@/src/lib/kids'
+import { filterHalal } from '@/src/lib/halal'
 import type { Locale } from '@/src/lib/i18n'
 
 export type SwipeKind = 'movie' | 'tv' | 'both'
@@ -134,7 +135,8 @@ async function buildSeedDeck(seed: string[], kids: boolean, locale: Locale): Pro
   let similar: { item: any, media: 'movie' | 'tv' }[] = []
   for (const record of records) {
     if (!record) continue
-    if (!kids || (await filterKidSafe([record.data], record.media)).length) firsts.push(toCard(record.data, record.media))
+    const allowed = (!kids || (await filterKidSafe([record.data], record.media)).length) && (await filterHalal([record.data], record.media)).length
+    if (allowed) firsts.push(toCard(record.data, record.media))
     for (const item of record.data.recommendations?.results ?? []) {
       const media = item.media_type === 'tv' ? 'tv' : item.media_type === 'movie' ? 'movie' : record.media
       if (item.poster_path) similar.push({ item, media })

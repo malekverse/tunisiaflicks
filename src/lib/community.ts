@@ -5,6 +5,7 @@ import { unstable_cache } from 'next/cache'
 import clientPromise from '@/src/lib/mongodb'
 import { tmdbFetchSafe, tmdbLanguage } from '@/src/lib/tmdb'
 import { filterKidSafe } from '@/src/lib/kids'
+import { filterHalal } from '@/src/lib/halal'
 import type { Locale } from '@/src/lib/i18n'
 
 const WINDOW_DAYS = 7
@@ -63,6 +64,6 @@ export async function getCommunityTrending(kids: boolean, locale: Locale): Promi
       viewers: counts[index].viewers,
     }]
   })
-  const visible = kids ? await filterKidSafe(items) : items
+  const visible = await filterHalal(kids ? await filterKidSafe(items) : items)
   return visible.length >= MIN_TITLES ? visible.slice(0, 20) : []
 }

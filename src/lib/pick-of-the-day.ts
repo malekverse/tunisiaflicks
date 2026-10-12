@@ -14,6 +14,7 @@ import { tmdbFetchSafe, tmdbLanguage } from '@/src/lib/tmdb'
 import { localizeDetail, logoLanguages, translatedRecord } from '@/src/lib/tmdb-locale'
 import { formatDate } from '@/src/lib/i18n/format'
 import { filterKidSafe, kidsDiscoverParams } from '@/src/lib/kids'
+import { filterHalal, viewerInHalalMode } from '@/src/lib/halal'
 import { activeMoments, anniversaries, momentItems, sequelCatchUps, type MomentId } from '@/src/lib/moments'
 import { addDays, tunisDate } from '@/src/lib/hijri'
 import { hash } from '@/src/lib/seed'
@@ -145,11 +146,12 @@ async function picksCollection() {
   }
 }
 
-const pickKey = (date: string, kids: boolean) => `${date}${kids ? ':kids' : ''}`
+// Halal mode gets its own pick of the day, chosen among the titles it shows.
+const pickKey = (date: string, kids: boolean, halal = false) => `${date}${kids ? ':kids' : ''}${halal ? ':halal' : ''}`
 
-async function choose(date: string, kids: boolean): Promise<{ kind: Kind, id: number, reason: PickReason } | null> {
+async function choose(date: string, kids: boolean, halal = false): Promise<{ kind: Kind, id: number, reason: PickReason } | null> {
   const collection = await picksCollection()
-  const stored = await collection?.findOne({ _id: pickKey(date, kids) }).catch(() => null)
+  const stored = await collection?.findOne({ _id: pickKey(date, kids, halal) }).catch(() => null)
   if (stored) return stored
 
   // What was picked this past year (never again), and yesterday's kind of reason (not twice running).
@@ -168,7 +170,8 @@ async function choose(date: string, kids: boolean): Promise<{ kind: Kind, id: nu
     themeCandidates(date, kids, seed).catch(() => []),
   ])
   const fresh = (list: Candidate[]) => list.filter((item) => !used.has(`${item.kind}:${item.id}`) && item.reason.type !== yesterday)
-  const tiers = [fresh([...sequels, ...birthdays, ...seasons]), fresh(moment), theme.filter((item) => !used.has(`${item.kind}:${item.id}`))]
+  const allowed = (list: Candidate[]) => (halal ? filterHalal(list, undefined, { on: true }) : Promise.resolve(list))
+  const tiers = await Promise.all([allowed(fresh([...sequels, ...birthdays, ...seasons])), allowed(fresh(moment)), allowed(theme.filter((item) => !used.has(`${item.kind}:${item.id}`)))])
   const tier = tiers.find((list) => list.length > 0)
   if (!tier) return null
   // Among the best few of the tier, the day's draw.
@@ -176,7 +179,7 @@ async function choose(date: string, kids: boolean): Promise<{ kind: Kind, id: nu
   const winner = best[(seed >>> 8) % best.length]
 
   if (!collection) return winner
-  const doc: StoredPick = { _id: pickKey(date, kids), date, kids, kind: winner.kind, id: winner.id, reason: winner.reason, expires_at: new Date(Date.parse(`${date}T00:00:00Z`) + 400 * 86400000) }
+  const doc: StoredPick = { _id: pickKey(date, kids, halal), date, kids, kind: winner.kind, id: winner.id, reason: winner.reason, expires_at: new Date(Date.parse(`${date}T00:00:00Z`) + 400 * 86400000) }
   try {
     // Two first requests at once: the one stored first wins, for both.
     return (await collection.findOneAndUpdate({ _id: doc._id }, { $setOnInsert: doc }, { upsert: true, returnDocument: 'after' })).value ?? winner
@@ -210,7 +213,7 @@ async function describe(reason: PickReason, locale: Locale): Promise<string> {
 }
 
 export async function getPickOfTheDay(kids: boolean, locale: Locale, date = tunisToday()): Promise<PickOfTheDay | null> {
-  const pick = await choose(date, kids)
+  const pick = await choose(date, kids, await viewerInHalalMode())
   if (!pick) return null
   const [english, translated, why] = await Promise.all([
     tmdbFetchSafe(`${pick.kind}/${pick.id}`, { append_to_response: 'images', include_image_language: logoLanguages(locale) }, 86400),

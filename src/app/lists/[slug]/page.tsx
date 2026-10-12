@@ -9,6 +9,7 @@ import { getT } from '@/src/lib/i18n/server'
 import { pageMetadata } from '@/src/lib/seo'
 import { livePending, visibilityOf } from '@/src/lib/shared-lists/rules'
 import { loadListViewer, nameOf, peopleFor, resolveAccess, toListView } from '@/src/lib/shared-lists/server'
+import { filterHalal } from '@/src/lib/halal'
 
 export const dynamic = 'force-dynamic'
 
@@ -66,7 +67,9 @@ export default async function ListPage({ params, searchParams }: Props) {
   if (access === 'none') notFound()
 
   const member = access === 'owner' || access === 'editor'
-  const view = await toListView(list, access, viewer, ownerProfileId)
+  const listView = await toListView(list, access, viewer, ownerProfileId)
+  // In Halal mode, a list someone else made shows only the titles it allows (members keep theirs).
+  const view = member ? listView : { ...listView, items: await filterHalal(listView.items) }
   // Invited by name, waiting to answer.
   const pending = !member && viewer?.profileId ? livePending(list.pending, Date.now()).find((entry) => entry.profileId === viewer.profileId) : undefined
 

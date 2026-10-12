@@ -279,7 +279,7 @@ export async function hiddenTitles(input: TitleRef[], { grade = true }: { grade?
     docs.set(key, { ...(docs.get(key) ?? { _id: key }), facts: found })
     return collection().then((col) => col.updateOne(
       { _id: key },
-      { $set: { facts: found, title: ref.title, year: ref.year, updatedAt: new Date() } },
+      { $set: { facts: found, ...(ref.title ? { title: ref.title, year: ref.year } : {}), updatedAt: new Date() } },
       { upsert: true },
     ))
   }
@@ -297,7 +297,8 @@ export async function hiddenTitles(input: TitleRef[], { grade = true }: { grade?
   // Grades for what isn't settled (a report or TMDB's facts settle it for good), asked in the
   // background, the most popular titles first (lists come sorted that way).
   const settled = (doc: Doc | undefined) => (doc?.reports ?? 0) > 0 || (doc?.facts !== undefined && hiddenByFacts(doc.facts))
-  const ungraded = grade ? refs.filter((ref) => !settled(docs.get(keyOf(ref))) && needsGrades(docs.get(keyOf(ref)))) : []
+  // (A title the AI can't be told the name of is left to the warm-up job and later visits.)
+  const ungraded = grade ? refs.filter((ref) => ref.title && !settled(docs.get(keyOf(ref))) && needsGrades(docs.get(keyOf(ref)))) : []
   inBackground(Promise.all([...factWrites, ungraded.length ? gradeTitles(ungraded) : null]))
   return hidden
 }
@@ -307,6 +308,19 @@ export async function isHalalHidden(item: any, kind: Kind): Promise<boolean> {
   const ref = titleRef({ ...item, media_type: kind }, kind)
   if (!ref) return false
   return (await hiddenTitles([ref])).has(keyOf(ref))
+}
+
+/**
+ * For rows that don't come straight from a TMDB list answer (built from title details, read from a
+ * shared cache or the database): the items without the titles Halal mode hides, when the viewer is
+ * in Halal mode (`on` says so instead, where there is no viewer to ask). Items that aren't titles
+ * stay. `kind` is for items without a media_type.
+ */
+export async function filterHalal<T>(items: T[], kind?: Kind, { on }: { on?: boolean } = {}): Promise<T[]> {
+  if (!items.length || !(on ?? (await viewerInHalalMode()))) return items
+  const refs = items.map((item: any) => titleRef(item?.kind && !item.media_type ? { ...item, media_type: item.kind } : item, kind ?? null))
+  const hidden = await hiddenTitles(refs.filter((ref): ref is TitleRef => ref !== null))
+  return items.filter((_, index) => !refs[index] || !hidden.has(keyOf(refs[index]!)))
 }
 
 /**
