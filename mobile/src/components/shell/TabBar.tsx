@@ -3,7 +3,7 @@
 // - TV: a bar along the top (the site's TV mode): the logo, then the tabs; the focused tab turns
 //   into a white pill, the current one keeps a red line.
 import { useEffect, useRef, useState } from 'react'
-import { Animated, I18nManager, StyleSheet, View } from 'react-native'
+import { Animated, I18nManager, StyleSheet, TVFocusGuideView, View } from 'react-native'
 import type { ComponentProps } from 'react'
 import type { Tabs } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -36,7 +36,9 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
 
   if (isTV) {
     return (
-      <View style={styles.tvBar}>
+      // A focus guide: the remote's Up from anywhere on the page lands here, on the current tab (the
+      // page's own scroll view would otherwise keep the focus to itself).
+      <TVFocusGuideView autoFocus style={styles.tvBar}>
         <View style={styles.tvLogo}><Wordmark height={20} /></View>
         {state.routes.map((route, index) => {
           const tab = TABS[route.name]
@@ -55,7 +57,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
             </Focusable>
           )
         })}
-      </View>
+      </TVFocusGuideView>
     )
   }
 

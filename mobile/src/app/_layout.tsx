@@ -17,6 +17,7 @@ import { useStore } from '@/lib/store'
 import { isRtl } from '@/i18n'
 import { Intro } from '@/components/motion/Intro'
 import { ToastHost } from '@/components/motion/Toast'
+import { ConfirmHost } from '@/components/motion/Confirm'
 import { PeekHost } from '@/components/media/Peek'
 import { colors } from '@/theme/tokens'
 
@@ -80,6 +81,7 @@ export default function RootLayout() {
           </Stack>
           <PeekHost />
           <ToastHost />
+          <ConfirmHost />
           {intro ? <Intro start={splashGone} onDone={introDone} /> : null}
         </QueryClientProvider>
       </SafeAreaProvider>
