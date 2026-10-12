@@ -134,9 +134,12 @@ describe('cron: lease and answers', { skip: !HAS_DB && 'no MONGODB_URI' }, () =>
   })
 
   test('done, with the stats and a 22s deadline for cron-job.org', async () => {
+    // The budget counts from the start of the request, not from when the job starts (the first run
+    // in this file also waits for the database connection before it holds the lease).
     let budget = 0
+    const sent = Date.now()
     const res = await cron.runCron(auth('cron-job'), name, async (ctx) => {
-      budget = ctx.deadline - Date.now()
+      budget = ctx.deadline - sent
       assert.equal(ctx.source, 'cron-job')
       return { sent: 3, more: false }
     })
@@ -146,7 +149,7 @@ describe('cron: lease and answers', { skip: !HAS_DB && 'no MONGODB_URI' }, () =>
     assert.equal(body.status, 'done')
     assert.equal(body.more, false)
     assert.equal(body.sent, 3)
-    assert.ok(budget > 21_000 && budget <= 22_000, `budget ${budget}`)
+    assert.ok(budget >= 22_000 && budget < 22_500, `budget ${budget}`)
   })
 
   test('more, idle and quota are passed through', async () => {
