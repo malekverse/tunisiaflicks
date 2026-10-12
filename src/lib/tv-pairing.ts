@@ -68,7 +68,7 @@ export const formatUserCode = (code: string) => `${code.slice(0, 3)} ${code.slic
 /** The device family, from a fixed list (the only thing kept about the TV). */
 export function deviceLabelFromUa(ua: string | null | undefined): DeviceLabel {
   const s = ua ?? ''
-  if (/TunisiaFlicksTV\//.test(s)) return 'app'
+  if (/TunisiaFlicksTV\//.test(s)) return 'app' // the old 1.x TV app (a WebView), until its users update
   if (/AFT[A-Z]|Fire ?TV/i.test(s)) return 'fireTv'
   if (/GoogleTV|Google TV|Chromecast/i.test(s)) return 'googleTv'
   if (/BRAVIA/i.test(s)) return 'sonyTv'

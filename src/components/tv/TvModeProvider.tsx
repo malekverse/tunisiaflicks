@@ -1,5 +1,6 @@
 // TV mode for client components: whether this request is in TV mode (cookie tf-tv=1, read by the
-// root layout) and whether the page runs inside the Android TV app (user agent 'TunisiaFlicksTV/').
+// root layout) and whether the page runs inside the old 1.x Android TV app, a WebView (user agent
+// 'TunisiaFlicksTV/'; kept until its users have updated to the native app).
 // Read it with useTvMode() from src/hooks/use-tv-mode.ts. Real, not a stub: tv-mode owns it from
 // wave 2 and keeps the signature.
 "use client"

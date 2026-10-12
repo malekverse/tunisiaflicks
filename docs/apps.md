@@ -44,9 +44,9 @@ One card for the device in hand:
 - **Computers:** one-click install from Chrome or Edge; Safari on a Mac: File > Add to Dock.
 
 It never nags: only from a second visit or a third page, after the page settles, never on `/app`, sign-in or
-download pages, never inside an app (the TV app's user agent, the phone app's `?source=android-app` start
-address, or any installed site), and not while the e-mail reminder shows. "Not now" quiets it for 3 weeks
-(6 months after three times); downloading or installing, for 4 months. `/app`, the account menu, the phone
+download pages, never inside an app (the old 1.x TV app's user agent, the old 1.x phone app's
+`?source=android-app` start address, or any installed site; the native apps don't load the site's pages), and
+not while the e-mail reminder shows. "Not now" quiets it for 3 weeks (6 months after three times); downloading or installing, for 4 months. `/app`, the account menu, the phone
 menu ("Get the app") and the footer always lead to it.
 
 ## One-time setup: the signing key
