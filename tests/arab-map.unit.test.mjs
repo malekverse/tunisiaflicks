@@ -2,7 +2,7 @@
 // birthplace rules and the index (Kids filtering, its cache key, failure handling) against a fake
 // TMDB.
 //   node --import ./tests/register.mjs --test tests/arab-map.unit.test.mjs
-import { test, describe, beforeEach, afterEach } from 'node:test'
+import { test, describe, after, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { ARAB_COUNTRY_CODES, arabCountryName } from '@/src/lib/arab-countries'
 import {
@@ -11,6 +11,13 @@ import {
 } from '@/src/lib/arab-map'
 import { bornIn, filmOfTheDay, withoutMislabelled } from '@/src/lib/country-cinema'
 import { buildArabMapIndex, getCountryCinema, indexCacheKey, mapLimit, namesOnlyIndex } from '@/src/lib/arab-cinema'
+
+// These tests need no database, but with MONGODB_URI set (CI) the fake TMDB's lists go through
+// tmdbFetch's Halal check, which loads the profiles and with them a MongoDB connection: close it,
+// or the file never ends.
+after(async () => {
+  if (process.env.MONGODB_URI) await (await (await import('@/src/lib/mongodb')).default).close()
+})
 
 describe('the grid', () => {
   test('holds the 22 members once each, inside 9 by 5, no two on one square', () => {
