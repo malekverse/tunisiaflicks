@@ -139,6 +139,21 @@ or Back brings the bar back, and Back again leaves.
 **Updates.** You > the update banner appears when `/api/app/v1/version` has a newer release; it opens
 `/download/android` (or `tv`), and Android installs it over the old one.
 
+**How it feels** (`mobile/src/components/motion`, all on React Native's Animated with the native
+driver; Reanimated froze the app and isn't used):
+
+- Pull to refresh (Home, Discover): the logo's A fills with red as you pull, lights up with a tick of
+  the motor when letting go will refresh, and a projector beam sweeps under it while it loads.
+- The opening: the splash screen's A rushes toward you and the app appears through it.
+- Press and hold any title for a peek (the picture, the story, Play, My List, Details); double tap the
+  billboard to add to My List (a burst of the A). Every My List change shows a toast.
+- The billboard's cards sink back and the pictures drift as you swipe; the tab bar's pill slides; title
+  pages have a parallax picture and a header that fades in with the title.
+- Loading shows the shapes of what's coming, shimmering; the player counts down like a film leader.
+- Questions (restart for a new direction, clear the history) rise in the app's own sheet (a dialog on
+  TV, the remote kept inside and starting on the safe answer).
+- TV: Up from anywhere reaches the top bar (a focus guide around it).
+
 **Languages.** English, French, Arabic and Tunisian (Arabic strings). Android lays a screen out right to
 left only at launch, so switching between a left-to-right and a right-to-left language closes the app
 after saying so.
