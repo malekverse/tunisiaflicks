@@ -105,13 +105,13 @@ describe('cron: time budgets', () => {
     assert.ok(Math.abs(budget('vercel') - 45_000) < 50)
     assert.ok(Math.abs(budget('vercel-cron/1.0') - 45_000) < 50)
   })
-  test('the answer leaves by 27s for cron-job.org (it aborts at 30s), 55s for GitHub and Vercel', () => {
+  test('the answer leaves by 24s for cron-job.org (it aborts at 30s, start-up included), 55s for GitHub and Vercel', () => {
     const from = Date.now()
-    assert.equal(cron.cronReplyBy('cron-job', from) - from, 27_000)
-    assert.equal(cron.cronReplyBy('unknown', from) - from, 27_000)
+    assert.equal(cron.cronReplyBy('cron-job', from) - from, 24_000)
+    assert.equal(cron.cronReplyBy('unknown', from) - from, 24_000)
     assert.equal(cron.cronReplyBy('github', from) - from, 55_000)
-    // The work stops well before the answer has to leave.
-    assert.ok(cron.cronReplyBy('cron-job', from) - cron.cronDeadline('cron-job', from) >= 5_000)
+    // The work stops before the answer has to leave.
+    assert.ok(cron.cronReplyBy('cron-job', from) - cron.cronDeadline('cron-job', from) >= 2_000)
     assert.ok(cron.cronReplyBy('github', from) - cron.cronDeadline('github', from) >= 5_000)
   })
   test('the source comes from X-Cron-Source, or the Vercel cron user agent', () => {

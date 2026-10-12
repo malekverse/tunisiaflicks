@@ -25,9 +25,10 @@ export const SHORT_BUDGET_MS = 22_000
  * When the answer leaves at the latest, counted from the start of the request, whatever the job is
  * still doing: cron-job.org aborts at 30s (a run that misses it is a failure there, and repeated
  * failures can switch the job off), and maxDuration is 60s. A job past it keeps going in the
- * background (Vercel's waitUntil) and the answer says `more: true, late: true`.
+ * background (Vercel's waitUntil) and the answer says `more: true, late: true`. cron-job.org also
+ * counts the ~2.5s before this code runs (connection, cold start), hence 24s and not 27s.
  */
-export const SHORT_REPLY_BY_MS = 27_000
+export const SHORT_REPLY_BY_MS = 24_000
 export const LONG_REPLY_BY_MS = 55_000
 
 /** Days a run stays in the cronRuns log. */

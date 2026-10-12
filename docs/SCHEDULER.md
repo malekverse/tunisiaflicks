@@ -17,8 +17,8 @@ How a route behaves (`src/lib/cron.ts`):
   secret configured, nothing is ever allowed in.
 - `X-Cron-Source: github` (or Vercel's own cron) gets 45 seconds; `X-Cron-Source: cron-job`, and
   anything else, gets 22, counted from the start of the request.
-- The answer leaves by 27 seconds for cron-job.org (it aborts at 30, and repeated failures can
-  switch a job off) and by 55 for GitHub and Vercel, whatever the job is still doing: a run that
+- The answer leaves by 24 seconds for cron-job.org (it aborts at 30, counting the ~2.5s before the
+  route runs, and repeated failures can switch a job off) and by 55 for GitHub and Vercel, whatever the job is still doing: a run that
   overruns answers `more: true, late: true` and finishes in the background, keeping its lease and
   logging its real result when it's done.
 - Only one run of a job at a time: a second call while one is running answers `busy`.
