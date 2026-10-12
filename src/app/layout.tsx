@@ -104,7 +104,10 @@ const baseMetadata: Metadata = {
   icons: {
     // The vector "A" (app/icon.svg), sharp at every size; favicon.ico stays for older browsers.
     icon: [{ url: '/icon.svg', type: 'image/svg+xml', sizes: 'any' }],
-    apple: '/icons/apple-touch-icon.png',
+    // iPhone home screen. At the root too (/apple-touch-icon.png and -precomposed): iOS asks for
+    // those addresses directly when it doesn't read the page's link (Chrome and in-app browsers on
+    // iPhone, or Add to Home Screen before the page has loaded), and shows a letter otherwise.
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
   },
   appleWebApp: {
     capable: true,
