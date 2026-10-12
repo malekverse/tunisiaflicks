@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router'
 import Svg, { Text as SvgText } from 'react-native-svg'
 import type { Card } from '@/lib/api'
 import { colors, fonts, image, isTV, radius, sizes, tmdbImage } from '@/theme/tokens'
+import { peek } from './Peek'
 import { Focusable } from '../ui/Focusable'
 import { Text } from '../ui/Text'
 import { Rating } from '../ui/Rating'
@@ -16,6 +17,9 @@ function useOpen(card: Pick<Card, 'kind' | 'id'>) {
   const router = useRouter()
   return () => router.push({ pathname: '/title/[kind]/[id]', params: { kind: card.kind, id: String(card.id) } })
 }
+
+/** Press and hold: the peek (phones only). */
+const holdFor = (card: Card, custom?: () => void) => (isTV ? custom : custom ?? (() => peek(card)))
 
 /** A blank card in the same shape while there's no picture (and as the skeleton). */
 export function Blank({ style }: { style?: object }) {
@@ -30,7 +34,8 @@ export const PosterCard = memo(function PosterCard({ card, width = sizes.poster,
   return (
     <Focusable
       onPress={open}
-      onLongPress={onLongPress}
+      onLongPress={holdFor(card, onLongPress)}
+      delayLongPress={320}
       onFocus={onFocus}
       hasTVPreferredFocus={hasTVPreferredFocus}
       radius={radius.poster}
@@ -56,7 +61,7 @@ export const LandscapeCard = memo(function LandscapeCard({ card, width = sizes.l
   const open = useOpen(card)
   const uri = tmdbImage(card.backdrop ?? card.poster, image.backdrop)
   return (
-    <Focusable onPress={open} onFocus={onFocus} radius={radius.tile} focusScale={1.05} accessibilityRole="link" accessibilityLabel={card.title} style={{ width }}>
+    <Focusable onPress={open} onLongPress={holdFor(card)} delayLongPress={320} onFocus={onFocus} radius={radius.tile} focusScale={1.05} accessibilityRole="link" accessibilityLabel={card.title} style={{ width }}>
       <View style={[styles.tile, { width, height: width * 0.5625 }]}>
         {uri ? <Image source={uri} style={StyleSheet.absoluteFill} contentFit="cover" transition={180} recyclingKey={`l${card.kind}${card.id}`} /> : null}
         <LinearGradient colors={['transparent', 'rgba(0,0,0,0.85)']} style={styles.tileShade} />
@@ -79,7 +84,7 @@ export const Top10Card = memo(function Top10Card({ card, rank, onFocus }: CardPr
   const posterWidth = sizes.top10 * 0.72
   const numberHeight = posterWidth * 1.5
   return (
-    <Focusable onPress={open} onFocus={onFocus} radius={radius.poster} focusScale={1.06} accessibilityRole="link" accessibilityLabel={`${rank}. ${card.title}`} style={[styles.top10, { width: sizes.top10 + (rank >= 10 ? 26 : 0) }]}>
+    <Focusable onPress={open} onLongPress={holdFor(card)} delayLongPress={320} onFocus={onFocus} radius={radius.poster} focusScale={1.06} accessibilityRole="link" accessibilityLabel={`${rank}. ${card.title}`} style={[styles.top10, { width: sizes.top10 + (rank >= 10 ? 26 : 0) }]}>
       <Svg width={rank >= 10 ? 120 : 76} height={numberHeight} style={styles.rank}>
         <SvgText
           x={rank >= 10 ? 60 : 38}

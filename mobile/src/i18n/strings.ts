@@ -2,6 +2,8 @@
 // falls back); titles and overviews come from the server in the chosen language. French typography:
 // a no-break space before : ; ! ? (NBSP below).
 const NBSP = ' '
+// A narrow no-break space, inside French quotation marks.
+const NNBSP = '\u202f'
 
 const en = {
   'nav.home': 'Home',
@@ -98,6 +100,13 @@ const en = {
 
   'error.title': 'Something went wrong',
   'error.offline': 'You\'re offline. Check your connection.',
+  'refresh.pull': 'Pull for something new',
+  'refresh.release': 'Let go to roll',
+  'refresh.loading': 'Changing the reel…',
+  'list.added': 'Added to My List',
+  'list.removed': 'Removed from My List',
+  'peek.details': 'Details',
+  'search.try': 'Try “{q}”',
 }
 
 export type StringKey = keyof typeof en
@@ -197,6 +206,13 @@ const fr: Partial<Record<StringKey, string>> = {
 
   'error.title': 'Un problème est survenu',
   'error.offline': 'Vous êtes hors ligne. Vérifiez votre connexion.',
+  'refresh.pull': 'Tirez pour du nouveau',
+  'refresh.release': 'Lâchez pour lancer',
+  'refresh.loading': 'On change de bobine…',
+  'list.added': 'Ajouté à Ma liste',
+  'list.removed': 'Retiré de Ma liste',
+  'peek.details': 'Détails',
+  'search.try': 'Essayez «' + NNBSP + '{q}' + NNBSP + '»',
 }
 
 const ar: Record<StringKey, string> = {
@@ -294,6 +310,13 @@ const ar: Record<StringKey, string> = {
 
   'error.title': 'حدث خطأ ما',
   'error.offline': 'أنت غير متصل. تحقّق من الاتصال.',
+  'refresh.pull': 'اسحب لترى الجديد',
+  'refresh.release': 'اترك للتحديث',
+  'refresh.loading': 'نبدّل البكرة…',
+  'list.added': 'أُضيف إلى قائمتي',
+  'list.removed': 'أُزيل من قائمتي',
+  'peek.details': 'التفاصيل',
+  'search.try': 'جرّب «{q}»',
 }
 
 export type Locale = 'en' | 'fr' | 'ar' | 'tn'

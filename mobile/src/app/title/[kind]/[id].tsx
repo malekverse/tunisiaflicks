@@ -1,18 +1,22 @@
 // A movie or a show: the picture and its logo, the facts, Play (the next episode for a show you're
 // following), My List, the trailer and Share; then the story, the seasons and their episodes, the cast
 // and more like it. On TV the same, as a full-screen hero with the focus on Play.
-import { useMemo, useState } from 'react'
-import { FlatList, ScrollView, Share, StyleSheet, View, useWindowDimensions } from 'react-native'
+// Phones: the picture drifts slower than the page (parallax), and once it has scrolled away a glass
+// header with the title fades in; the hero's parts rise in as the page opens.
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Animated, Easing, FlatList, Share, StyleSheet, View, useWindowDimensions } from 'react-native'
 import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ArrowLeft, Check, Clapperboard, Play, Plus, Share2, ShieldAlert } from 'lucide-react-native'
 import { ApiError, SITE, useSeason, useTitle, type Episode, type Kind, type Title } from '@/lib/api'
-import { useInMyList, useStore } from '@/lib/store'
+import { useStore } from '@/lib/store'
 import { useIsArabic, useT } from '@/i18n'
 import { Row, SectionHeader } from '@/components/media/Row'
-import { Loader } from '@/components/brand/Logo'
+import { Bone, ShimmerGroup } from '@/components/motion/Shimmer'
+import { Rise } from '@/components/motion/Rise'
+import { useMyListToggle } from '@/components/media/useMyListToggle'
 import { Button, IconButton } from '@/components/ui/Button'
 import { Chip } from '@/components/ui/Chip'
 import { Focusable } from '@/components/ui/Focusable'
@@ -29,7 +33,7 @@ export default function TitleScreen() {
   const t = useT()
   const router = useRouter()
 
-  if (query.isPending) return <View style={styles.page}><Loader /></View>
+  if (query.isPending) return <TitleBones />
   if (query.isError) {
     const error = query.error
     if (error instanceof ApiError && error.status === 403) {
@@ -54,8 +58,8 @@ function TitleView({ title }: { title: Title }) {
   const insets = useSafeAreaInsets()
   const arabic = useIsArabic()
   const { width, height } = useWindowDimensions()
-  const inList = useInMyList(title.kind, title.id)
-  const toggle = useStore((state) => state.toggleMyList)
+  const { inList, toggle } = useMyListToggle({ id: title.id, kind: title.kind, title: title.title, poster: title.poster, backdrop: title.backdrop, year: title.year })
+  const scrollY = useRef(new Animated.Value(0)).current
   const watched = useStore((state) => state.history.find((w) => w.kind === title.kind && w.id === title.id))
   const [season, setSeason] = useState<number | null>(title.kind === 'tv' ? (watched?.season ?? title.seasons[0]?.number ?? null) : null)
   const [expanded, setExpanded] = useState(false)
@@ -80,17 +84,19 @@ function TitleView({ title }: { title: Title }) {
 
   const header = (
     <View style={isTV ? [styles.tvHero, { height: heroHeight }] : undefined}>
-      <View style={isTV ? StyleSheet.absoluteFill : { height: heroHeight }}>
+      <Animated.View
+        style={isTV ? StyleSheet.absoluteFill : {
+          height: heroHeight,
+          transform: [{ translateY: scrollY.interpolate({ inputRange: [0, heroHeight], outputRange: [0, heroHeight * 0.45], extrapolateLeft: 'clamp' }) }],
+          opacity: scrollY.interpolate({ inputRange: [0, heroHeight], outputRange: [1, 0.3], extrapolate: 'clamp' }),
+        }}
+      >
         {backdrop ? <Image source={backdrop} style={StyleSheet.absoluteFill} contentFit="cover" transition={300} /> : null}
         <LinearGradient colors={['rgba(0,0,0,0.5)', 'transparent', colors.black]} locations={[0, 0.35, 1]} style={StyleSheet.absoluteFill} />
         {isTV ? <LinearGradient colors={['rgba(0,0,0,0.92)', 'transparent']} start={{ x: 0, y: 0 }} end={{ x: 0.8, y: 0 }} style={StyleSheet.absoluteFill} /> : null}
-      </View>
-      {isTV ? null : (
-        <View style={[styles.topButtons, { top: insets.top + 8 }]}>
-          <IconButton label={t('common.close')} onPress={() => router.back()} icon={<ArrowLeft color={colors.white} size={22} style={arabic ? { transform: [{ scaleX: -1 }] } : undefined} />} style={styles.glassButton} />
-        </View>
-      )}
+      </Animated.View>
       <View style={isTV ? [styles.tvBody, { width: width * 0.48 }] : styles.body}>
+        <Rise distance={14}>
         {title.logo ? (
           <Image
             source={tmdbImage(title.logo.path, image.logo)}
@@ -101,14 +107,18 @@ function TitleView({ title }: { title: Title }) {
         ) : (
           <Display size={isTV ? 60 : 34} style={{ textAlign: isTV ? 'auto' : 'center' }} accessibilityRole="header">{title.title}</Display>
         )}
+        </Rise>
+        <Rise delay={90} distance={12} style={{ gap: 12 }}>
         <View style={[styles.facts, !isTV && { justifyContent: 'center' }]}>
           {title.rating ? <Rating value={title.rating} /> : null}
           {facts.map((fact) => <Text key={fact} tone="secondary" weight="medium" size={isTV ? 20 : 14}>{fact}</Text>)}
         </View>
         {title.genres.length ? <Text tone="tertiary" size={isTV ? 18 : 13} style={{ textAlign: isTV ? 'auto' : 'center' }}>{title.genres.map((g) => g.name).join(' / ')}</Text> : null}
+        </Rise>
+        <Rise delay={170} distance={12} style={{ gap: 12 }}>
         <Button label={playLabel} icon={<Play color={colors.white} fill={colors.white} size={isTV ? 24 : 20} />} onPress={playMain} haptic size="large" hasTVPreferredFocus style={isTV ? { alignSelf: 'flex-start', marginTop: 10 } : { marginTop: 6 }} />
         <View style={[styles.actions, isTV && { justifyContent: 'flex-start' }]}>
-          <Action label={inList ? t('title.inMyList') : t('title.myList')} onPress={() => toggle({ id: title.id, kind: title.kind, title: title.title, poster: title.poster, backdrop: title.backdrop, year: title.year })} icon={inList ? <Check color={colors.white} size={isTV ? 28 : 24} /> : <Plus color={colors.white} size={isTV ? 28 : 24} />} />
+          <Action label={inList ? t('title.inMyList') : t('title.myList')} onPress={toggle} icon={<Pop on={inList}>{inList ? <Check color={colors.white} size={isTV ? 28 : 24} strokeWidth={2.4} /> : <Plus color={colors.white} size={isTV ? 28 : 24} />}</Pop>} />
           {title.trailer ? <Action label={t('title.trailer')} onPress={() => router.push({ pathname: '/trailer', params: { key: title.trailer! } })} icon={<Clapperboard color={colors.white} size={isTV ? 28 : 24} />} /> : null}
           {isTV ? null : <Action label={t('common.share')} onPress={share} icon={<Share2 color={colors.white} size={24} />} />}
         </View>
@@ -117,13 +127,19 @@ function TitleView({ title }: { title: Title }) {
             <Text tone="secondary" size={isTV ? 20 : 15} numberOfLines={expanded ? undefined : 3} style={{ lineHeight: isTV ? 30 : 22, textAlign: isTV ? 'auto' : 'left' }}>{title.overview}</Text>
           </Focusable>
         ) : null}
+        </Rise>
       </View>
     </View>
   )
 
   return (
     <View style={styles.page}>
-      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 40 }} showsVerticalScrollIndicator={false}>
+      <Animated.ScrollView
+        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+        showsVerticalScrollIndicator={false}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+        scrollEventThrottle={16}
+      >
         {header}
         <View style={styles.sections}>
           {title.kind === 'tv' && title.seasons.length > 0 ? (
@@ -132,7 +148,58 @@ function TitleView({ title }: { title: Title }) {
           {title.cast.length > 0 ? <Cast cast={title.cast} /> : null}
           {title.similar.length > 0 ? <Row title={t('title.moreLikeThis')} items={title.similar} /> : null}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
+      {isTV ? null : (
+        // The header: the back button always; the glass and the title once the picture has gone.
+        <View pointerEvents="box-none" style={[styles.bar, { paddingTop: insets.top + 8 }]}>
+          <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.barGlass, { opacity: scrollY.interpolate({ inputRange: [heroHeight - 170, heroHeight - 90], outputRange: [0, 1], extrapolate: 'clamp' }) }]} />
+          <IconButton label={t('common.close')} onPress={() => router.back()} icon={<ArrowLeft color={colors.white} size={22} style={arabic ? { transform: [{ scaleX: -1 }] } : undefined} />} style={styles.glassButton} />
+          <Animated.View
+            pointerEvents="none"
+            style={{
+              flex: 1,
+              // The title arrives as the logo slides under the header.
+              opacity: scrollY.interpolate({ inputRange: [heroHeight - 100, heroHeight - 40], outputRange: [0, 1], extrapolate: 'clamp' }),
+              transform: [{ translateY: scrollY.interpolate({ inputRange: [heroHeight - 100, heroHeight - 40], outputRange: [8, 0], extrapolate: 'clamp' }) }],
+            }}
+          >
+            <Display size={20} numberOfLines={1}>{title.title}</Display>
+          </Animated.View>
+        </View>
+      )}
+    </View>
+  )
+}
+
+/** An icon that pops when it changes (My List's plus becoming a check). */
+function Pop({ on, children }: { on: boolean, children: React.ReactNode }) {
+  const scale = useRef(new Animated.Value(1)).current
+  const first = useRef(true)
+  useEffect(() => {
+    if (first.current) { first.current = false; return }
+    scale.setValue(0.4)
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, damping: 8, stiffness: 280, mass: 0.6 }).start()
+  }, [on, scale])
+  return <Animated.View style={{ transform: [{ scale }] }}>{children}</Animated.View>
+}
+
+/** The page while it loads: the picture, the title and the buttons as shimmering shapes. */
+function TitleBones() {
+  const { width } = useWindowDimensions()
+  const heroHeight = isTV ? 420 : Math.min(width * 0.62, 320)
+  return (
+    <View style={styles.page}>
+      <ShimmerGroup>
+        <Bone style={{ height: heroHeight, borderRadius: 0 }} />
+        <View style={{ padding: space.page, gap: 14, alignItems: isTV ? 'flex-start' : 'center' }}>
+          <Bone style={{ width: width * 0.55, height: 44, borderRadius: 10 }} />
+          <Bone style={{ width: width * 0.4, height: 14, borderRadius: 6 }} />
+          <Bone style={{ alignSelf: 'stretch', height: 52, borderRadius: 26, marginTop: 8 }} />
+          <Bone style={{ alignSelf: 'stretch', height: 14, borderRadius: 6, marginTop: 14 }} />
+          <Bone style={{ alignSelf: 'stretch', height: 14, borderRadius: 6 }} />
+          <Bone style={{ width: width * 0.6, height: 14, borderRadius: 6 }} />
+        </View>
+      </ShimmerGroup>
     </View>
   )
 }
@@ -162,7 +229,13 @@ function Seasons({ title, season, onSeason, onPlay, current }: { title: Title, s
           renderItem={({ item }) => <Chip label={t('title.season', { n: item.number })} selected={item.number === season} onPress={() => onSeason(item.number)} role="tab" />}
         />
       ) : null}
-      {isPending ? <Loader size={34} /> : (
+      {isPending ? (
+        <ShimmerGroup>
+          <View style={{ paddingHorizontal: space.page, gap: 14, flexDirection: isTV ? 'row' : 'column' }}>
+            {[0, 1, 2].map((i) => <Bone key={i} style={isTV ? { width: 340, height: 191, borderRadius: radius.tile } : { height: 77, borderRadius: radius.tile }} />)}
+          </View>
+        </ShimmerGroup>
+      ) : (
         <FlatList
           horizontal={isTV}
           scrollEnabled={isTV}
@@ -226,7 +299,8 @@ function Cast({ cast }: { cast: Title['cast'] }) {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.black },
-  topButtons: { position: 'absolute', start: space.page, flexDirection: 'row', gap: 10, zIndex: 2 },
+  bar: { position: 'absolute', top: 0, start: 0, end: 0, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: space.page, paddingBottom: 10 },
+  barGlass: { backgroundColor: 'rgba(10,10,10,0.94)', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.hairline },
   glassButton: { backgroundColor: 'rgba(0,0,0,0.45)' },
   body: { paddingHorizontal: space.page, marginTop: -64, gap: 12 },
   tvHero: { justifyContent: 'flex-end' },

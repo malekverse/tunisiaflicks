@@ -1,10 +1,10 @@
 // You: the language, Kids mode, the app's version (and the update when there's one: it downloads
 // from the site, like the first install), the website and privacy, and clearing the watch history.
-import { Alert, BackHandler, I18nManager, Linking, ScrollView, StyleSheet, View } from 'react-native'
+import { BackHandler, I18nManager, Linking, ScrollView, StyleSheet, View } from 'react-native'
 import * as Application from 'expo-application'
 import * as WebBrowser from 'expo-web-browser'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Check, ChevronRight, Download, Globe, History, Shield, Smile } from 'lucide-react-native'
+import { Check, ChevronRight, Download, Globe, History, Languages, Shield, Smile, type LucideIcon } from 'lucide-react-native'
 import { SITE, useVersion } from '@/lib/api'
 import { useStore } from '@/lib/store'
 import { LOCALES, directionMismatch, isRtl, useIsArabic, useT, type Locale } from '@/i18n'
@@ -14,6 +14,7 @@ import { Focusable } from '@/components/ui/Focusable'
 import { Display, Text } from '@/components/ui/Text'
 import { RoomLight } from '@/components/ui/RoomLight'
 import { useTabBarSpace } from '@/components/shell/TabBar'
+import { confirm } from '@/components/motion/Confirm'
 import { colors, isTV, radius, space, type } from '@/theme/tokens'
 import { translate } from '@/i18n/strings'
 import { newer } from '@/lib/version'
@@ -35,7 +36,7 @@ export default function YouScreen() {
   const download = isTV ? version.data?.tv : version.data?.android
   const update = latest && download && newer(latest, current) ? latest : null
 
-  const chooseLanguage = (next: Locale) => {
+  const chooseLanguage = async (next: Locale) => {
     if (next === locale) return
     setLocale(next)
     if (!directionMismatch(next)) return
@@ -43,16 +44,20 @@ export default function YouScreen() {
     I18nManager.allowRTL(true)
     I18nManager.forceRTL(isRtl(next))
     const name = LOCALES.find((l) => l.id === next)?.name ?? next
-    Alert.alert(translate(next, 'you.restartTitle'), translate(next, 'you.restartText', { language: name }), [
-      { text: translate(next, 'common.cancel'), style: 'cancel' },
-      { text: translate(next, 'you.restartNow'), onPress: () => BackHandler.exitApp() },
-    ])
+    const close = await confirm({
+      title: translate(next, 'you.restartTitle'),
+      text: translate(next, 'you.restartText', { language: name }),
+      ok: translate(next, 'you.restartNow'),
+      cancel: translate(next, 'common.cancel'),
+      icon: <Languages color={colors.white} size={26} />,
+    })
+    // A moment for the choice to be saved before the app closes.
+    if (close) setTimeout(() => BackHandler.exitApp(), 300)
   }
 
-  const confirmClear = () => Alert.alert(t('you.clearHistory'), undefined, [
-    { text: t('common.cancel'), style: 'cancel' },
-    { text: t('search.clear'), style: 'destructive', onPress: clearHistory },
-  ])
+  const confirmClear = async () => {
+    if (await confirm({ title: t('you.clearHistory'), ok: t('search.clear'), cancel: t('common.cancel'), destructive: true, icon: <History color={colors.white} size={26} /> })) clearHistory()
+  }
 
   const chevron = <ChevronRight color={colors.text3} size={isTV ? 24 : 18} style={arabic ? { transform: [{ scaleX: -1 }] } : undefined} />
 
@@ -92,7 +97,7 @@ export default function YouScreen() {
               <Item
                 first
                 onPress={() => setKids(!kids)}
-                icon={<Smile color={colors.text2} size={isTV ? 26 : 20} />}
+                icon={Smile}
                 label={t('you.kids')}
                 sub={t('you.kidsText')}
                 selected={kids}
@@ -102,9 +107,9 @@ export default function YouScreen() {
             </Group>
 
             <Group title="TunisiaFlicks">
-              {isTV ? null : <Item first onPress={() => Linking.openURL(SITE)} icon={<Globe color={colors.text2} size={20} />} label={t('you.website')} right={chevron} />}
-              {isTV ? null : <Item onPress={() => WebBrowser.openBrowserAsync(`${SITE}/privacy`, { toolbarColor: '#000000' })} icon={<Shield color={colors.text2} size={20} />} label={t('you.privacy')} right={chevron} />}
-              <Item first={isTV} onPress={confirmClear} disabled={!hasHistory} icon={<History color={colors.text2} size={isTV ? 26 : 20} />} label={t('you.clearHistory')} />
+              {isTV ? null : <Item first onPress={() => Linking.openURL(SITE)} icon={Globe} label={t('you.website')} right={chevron} />}
+              {isTV ? null : <Item onPress={() => WebBrowser.openBrowserAsync(`${SITE}/privacy`, { toolbarColor: '#000000' })} icon={Shield} label={t('you.privacy')} right={chevron} />}
+              <Item first={isTV} onPress={confirmClear} disabled={!hasHistory} icon={History} label={t('you.clearHistory')} />
             </Group>
 
             <View style={styles.about}>
@@ -130,7 +135,7 @@ function Group({ title, children }: { title: string, children: React.ReactNode }
 type ItemProps = {
   label: string
   sub?: string
-  icon?: React.ReactNode
+  icon?: LucideIcon
   right?: React.ReactNode
   onPress: () => void
   first?: boolean
@@ -140,7 +145,7 @@ type ItemProps = {
   role?: 'button' | 'switch' | 'radio'
 }
 
-function Item({ label, sub, icon, right, onPress, first, selected, disabled, hasTVPreferredFocus, role = 'button' }: ItemProps) {
+function Item({ label, sub, icon: Icon, right, onPress, first, selected, disabled, hasTVPreferredFocus, role = 'button' }: ItemProps) {
   return (
     <Focusable
       onPress={onPress}
@@ -154,7 +159,7 @@ function Item({ label, sub, icon, right, onPress, first, selected, disabled, has
     >
       {({ focused }) => (
         <View style={[styles.item, !first && styles.itemLine, focused && styles.itemFocused, disabled && { opacity: 0.45 }]}>
-          {icon}
+          {Icon ? <Icon color={focused ? colors.black : colors.text2} size={isTV ? 26 : 20} /> : null}
           <View style={{ flex: 1, gap: 2 }}>
             <Text weight="medium" size={isTV ? 21 : 15.5} style={focused ? { color: colors.black } : undefined}>{label}</Text>
             {sub ? <Text tone="tertiary" size={isTV ? 16 : 12.5} style={focused ? { color: 'rgba(0,0,0,0.6)' } : undefined}>{sub}</Text> : null}

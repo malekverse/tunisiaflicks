@@ -8,13 +8,45 @@ import { Clock, Search as SearchIcon, SearchX, X } from 'lucide-react-native'
 import { useSearch } from '@/lib/api'
 import { useStore } from '@/lib/store'
 import { useT } from '@/i18n'
-import { Grid } from '@/components/media/Grid'
-import { Loader } from '@/components/brand/Logo'
+import { Grid, useGridColumns } from '@/components/media/Grid'
+import { GridBones } from '@/components/motion/Shimmer'
 import { Focusable } from '@/components/ui/Focusable'
 import { EmptyState, ErrorState } from '@/components/ui/States'
 import { Display, Text } from '@/components/ui/Text'
 import { useTabBarSpace } from '@/components/shell/TabBar'
 import { colors, fonts, isTV, radius, type } from '@/theme/tokens'
+
+// Titles the empty field suggests, typed out one after another (a few Tunisian ones among them).
+const SUGGESTIONS = ['Dachra', 'Breaking Bad', 'Fatma', 'Inception', 'Hedi', 'Squid Game', 'Halfaouine']
+
+/** The suggestion being typed out (then erased) while `active`, one letter at a time. */
+function useTypewriter(words: string[], active: boolean) {
+  const [text, setText] = useState('')
+  useEffect(() => {
+    if (!active) return
+    let word = 0
+    let length = 0
+    let erasing = false
+    let timer: ReturnType<typeof setTimeout>
+    const step = () => {
+      const current = words[word % words.length]
+      if (!erasing) {
+        length += 1
+        setText(current.slice(0, length))
+        if (length === current.length) { erasing = true; timer = setTimeout(step, 1700); return }
+        timer = setTimeout(step, 85)
+      } else {
+        length -= 1
+        setText(current.slice(0, length))
+        if (length === 0) { erasing = false; word += 1; timer = setTimeout(step, 400); return }
+        timer = setTimeout(step, 35)
+      }
+    }
+    timer = setTimeout(step, 700)
+    return () => clearTimeout(timer)
+  }, [words, active])
+  return text
+}
 
 function useDebounced(value: string, ms: number) {
   const [debounced, setDebounced] = useState(value)
@@ -37,6 +69,8 @@ export default function SearchScreen() {
   const clearSearches = useStore((state) => state.clearSearches)
   const input = useRef<TextInput>(null)
   const focused = useIsFocused()
+  const typed = useTypewriter(SUGGESTIONS, focused && !text)
+  const { columns, cardWidth } = useGridColumns()
 
   // Remember a search once it has found something.
   useEffect(() => {
@@ -54,7 +88,7 @@ export default function SearchScreen() {
           ref={input}
           value={text}
           onChangeText={setText}
-          placeholder={t('search.placeholder')}
+          placeholder={typed ? t('search.try', { q: typed }) : t('search.placeholder')}
           placeholderTextColor={colors.text3}
           style={styles.input}
           returnKeyType="search"
@@ -96,7 +130,7 @@ export default function SearchScreen() {
       <EmptyState icon={<SearchIcon color={colors.text2} size={30} />} title={t('nav.search')} text={t('search.hint')} />
     )
   } else if (search.isPending) {
-    body = <Loader />
+    body = <GridBones columns={columns} cardWidth={cardWidth} />
   } else if (search.isError && !search.data) {
     body = <ErrorState error={search.error} onRetry={() => search.refetch()} />
   } else if (results.length === 0) {

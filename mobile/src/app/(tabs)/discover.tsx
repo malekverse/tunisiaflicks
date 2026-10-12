@@ -2,6 +2,7 @@
 // rows: popular, top rated, Tunisian, and what's new.
 import { useState } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
+import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useGenres, useList, type Kind } from '@/lib/api'
@@ -10,6 +11,8 @@ import { Row, SectionHeader } from '@/components/media/Row'
 import { Chip } from '@/components/ui/Chip'
 import { Display } from '@/components/ui/Text'
 import { RoomLight } from '@/components/ui/RoomLight'
+import { RefreshScrollView } from '@/components/motion/PullToRefresh'
+import { Rise } from '@/components/motion/Rise'
 import { useTabBarSpace } from '@/components/shell/TabBar'
 import { colors, isTV, space, type } from '@/theme/tokens'
 
@@ -25,11 +28,13 @@ export default function DiscoverScreen() {
   const bottom = useTabBarSpace()
   const [kind, setKind] = useState<Kind>('movie')
   const genres = useGenres()
+  const queryClient = useQueryClient()
+  const refresh = () => Promise.all([genres.refetch(), queryClient.refetchQueries({ queryKey: ['list'] })])
 
   return (
     <View style={styles.page}>
       <RoomLight />
-      <ScrollView contentContainerStyle={{ paddingTop: isTV ? 140 : insets.top + 12, paddingBottom: bottom + 24 }} showsVerticalScrollIndicator={false}>
+      <RefreshScrollView onRefresh={refresh} top={insets.top + 6} contentContainerStyle={{ paddingTop: isTV ? 140 : insets.top + 12, paddingBottom: bottom + 24 }} showsVerticalScrollIndicator={false}>
         {isTV ? null : <Display size={type.pageTitle} style={styles.title} accessibilityRole="header">{t('nav.discover')}</Display>}
         <View style={styles.kinds}>
           <Chip label={t('discover.movies')} selected={kind === 'movie'} onPress={() => setKind('movie')} role="tab" hasTVPreferredFocus />
@@ -58,10 +63,11 @@ export default function DiscoverScreen() {
           </View>
         ) : null}
 
-        <View style={styles.rows}>
+        {/* Switching Movies and Shows, the rows rise in again. */}
+        <Rise key={kind} style={styles.rows}>
           {LISTS[kind].map((key) => <ListRow key={key} listKey={key} title={t(`row.${key}` as StringKey)} />)}
-        </View>
-      </ScrollView>
+        </Rise>
+      </RefreshScrollView>
     </View>
   )
 }
