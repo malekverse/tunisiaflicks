@@ -6,6 +6,7 @@ import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { ramadanOf } from '@/src/lib/hijri'
 import { ramadanStatus } from '@/src/lib/ramadan'
+import { MIN_FILM_SECONDS, type FilmUploadCandidate } from '@/src/lib/tunisian-film'
 import { withTimeout } from '@/src/lib/with-timeout'
 import { youtubeThumb } from '@/src/lib/youtube'
 import { channelBySlug, enabledChannels, uploadsPlaylist, type TvChannelDef } from './channels'
@@ -453,6 +454,42 @@ export async function getTvSeriesEpisodes(seriesId: string): Promise<TvEpisode[]
     return await cachedSeriesEpisodes(seriesId)
   } catch (error) {
     console.error('tunisian-tv: reading a series failed', error)
+    return []
+  }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Full films: the trusted channels' long uploads (lib/tunisian-film matches a film to one of them)
+
+/** A film-length upload here: known, long, embeddable, not a clip or a live. */
+const FILM_UPLOAD = { ...PLAYABLE, duration: { $gte: MIN_FILM_SECONDS } }
+
+async function buildFilmUploadIndex(): Promise<FilmUploadCandidate[]> {
+  const db = await ttv()
+  // Every candidate comes from an enabled (trusted, official) channel: the allowlist is the ingestion
+  // itself — these collections only ever hold uploads from the channels in lib/tunisian-tv/channels.
+  const videos = await db.videos.find(
+    { channelId: { $in: enabledChannels().map((def) => def.slug) }, ...FILM_UPLOAD },
+    { projection: { _id: 1, channelId: 1, title: 1, duration: 1, views: 1, publishedAt: 1 } },
+  ).sort({ duration: -1 }).limit(1500).toArray()
+  return videos.map((video) => ({
+    id: video._id,
+    channel: video.channelId,
+    title: cleanTitle(video.title),
+    duration: video.duration ?? null,
+    views: video.views ?? null,
+    publishedAt: new Date(video.publishedAt).toISOString(),
+  }))
+}
+
+const cachedFilmUploadIndex = unstable_cache(buildFilmUploadIndex, ['ttv-film-uploads', 'v1'], { revalidate: REVALIDATE, tags: TAGS })
+
+/** Every film-length upload on the trusted channels, longest first. Never throws. */
+export async function getFilmUploadIndex(): Promise<FilmUploadCandidate[]> {
+  try {
+    return await cachedFilmUploadIndex()
+  } catch (error) {
+    console.error('tunisian-tv: the film upload index failed', error)
     return []
   }
 }

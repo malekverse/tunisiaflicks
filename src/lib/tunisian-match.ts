@@ -20,7 +20,7 @@ const ORDINALS: Record<string, number> = {
 }
 
 /** Lower case, no diacritics or tashkeel, the Arabic letters that are written several ways folded. */
-function fold(text: string): string {
+export function fold(text: string): string {
   return (text ?? '')
     .normalize('NFKD')
     .replace(/[̀-ͯ]/g, '')
