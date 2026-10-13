@@ -14,6 +14,7 @@
 // Pure, no I/O: the matching and the normalisation are unit tested (tests/tunisian-film.unit.test.ts).
 // The database side (reading the trusted channels' long uploads) is in lib/tunisian-tv/read.
 import { fold } from '@/src/lib/tunisian-match'
+import { parseEpisodeTitle } from '@/src/lib/tunisian-tv/parse'
 
 const ARABIC = /[؀-ۿ]/
 const LATIN = /[a-z]/
@@ -26,8 +27,9 @@ export const MIN_FILM_SECONDS = 40 * 60
 const STOP_WORDS = new Set([
   'film', 'films', 'movie', 'cinema', 'complet', 'complete', 'kamel', 'full', 'hd', 'fhd', '4k', 'vf', 'vostfr', 'vo',
   'le', 'la', 'les', 'el', 'al', 'un', 'une', 'the', 'officiel', 'official',
+  'tunisien', 'tunisienne', 'tunisian', 'tounsi', 'tunisie', 'tunisia',
   // The Arabic words are written in their FOLDED form (see fold(): ة→ه, أ→ا …), as the tokens are.
-  'فيلم', 'الفيلم', 'مشاهده', 'كامل', 'كامله', 'كاملا', 'تونسي', 'تونسيه', 'اونلاين', 'جوده', 'عاليه', 'بجوده', 'سينما',
+  'فيلم', 'الفيلم', 'مشاهده', 'كامل', 'كامله', 'كاملا', 'تونسي', 'تونسيه', 'اونلاين', 'جوده', 'عاليه', 'بجوده', 'سينما', 'قصير',
 ])
 
 /** An upload that is a clip, teaser or trailer rather than the film itself (belt and braces with the duration). */
@@ -90,8 +92,8 @@ function titleMatches(queryKeys: { ar: string[], latin: string[] }, candidate: S
 
 /**
  * The full-length upload a film is, from uploads on trusted channels only (the caller passes only
- * allowlisted channels' uploads). A candidate must run at least MIN_FILM_SECONDS, not be a clip, and
- * have a title that matches the film's. A year in both that is more than a year apart rules a
+ * allowlisted channels' uploads). A candidate must run at least MIN_FILM_SECONDS, not be a clip or a
+ * numbered episode, and have a title that matches the film's. A year in both that is more than a year apart rules a
  * candidate out (another film of the same name). Among the matches: the tightest title (fewest extra
  * words), then a matching year, then the longest, then the most watched. None: null.
  */
@@ -106,6 +108,8 @@ export function matchFilmUpload(query: FilmMatchQuery, candidates: readonly Film
   for (const candidate of candidates) {
     if (typeof candidate.duration !== 'number' || candidate.duration < MIN_FILM_SECONDS) continue
     if (CLIP_WORDS.test(candidate.title)) continue
+    // A numbered episode runs as long as a film ("Sahbek Rajel Season 2 | EP1", 51 min): never one.
+    if (parseEpisodeTitle(candidate.title).episode !== null) continue
     const tokens = filmTokens(candidate.title)
     const tokenSet = new Set(tokens)
     if (!queryKeys.some((keys) => titleMatches(keys, tokenSet))) continue

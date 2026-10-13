@@ -53,6 +53,32 @@ test('matchFilmUpload: a clip, a short upload or an unknown duration never match
   assert.equal(matchFilmUpload({ titles: ['Bastardo'] }, [upload({ id: 'aaaaaaaaaaa', title, duration: null })]), null)
 })
 
+test('matchFilmUpload: a numbered episode is never the film, however long', () => {
+  // Goubantini's own uploads: the series' episodes run as long as a film.
+  const episodes = [
+    upload({ id: 'sahbekep001', channel: 'goubantini', title: 'Sahbek Rajel Season 2 | EP1 | Goubantini Cinéma', duration: 51 * 60 }),
+    upload({ id: 'babbnetep03', title: 'مسلسل باب البنات - الحلقة 3', duration: 45 * 60 }),
+  ]
+  assert.equal(matchFilmUpload({ titles: ['Sahbek Rajel'], year: 2020 }, episodes), null)
+  assert.equal(matchFilmUpload({ titles: ['باب البنات'] }, episodes), null)
+})
+
+test('matchFilmUpload: a producer\'s own full films, as KDH PROD titles them', () => {
+  // Live titles from KDH PROD (films); only the two film-length ones can match.
+  const kdh = [
+    upload({ id: 'maftounsi01', channel: 'kdh-prod', title: 'مافتونسي"  فيلم تونسي كامل" | Film tunisien complet " Maftounsi " (2021) - (2022)', duration: 3893 }),
+    upload({ id: 'maftotrail1', channel: 'kdh-prod', title: 'مافتونسي"  فيلم تونسي" | Film tunisien "Maftounsi" | Bande-annonce | (2020) - trailer', duration: 120 }),
+    upload({ id: 'zmenghrib01', channel: 'kdh-prod', title: 'زمان غريب"  فيلم تونسي كامل" | Film tunisien complet " ZMEN GHRIB " (2019)', duration: 3274 }),
+    upload({ id: 'bouchkara01', channel: 'kdh-prod', title: 'بوشكارة" فيلم تونسي كامل" | Film tunisien complet " Bouchkara " (2021) - (2022)', duration: 2042 }),
+  ]
+  assert.equal(matchFilmUpload({ titles: ['Maftounsi'], year: 2021 }, kdh)?.id, 'maftounsi01')
+  assert.equal(matchFilmUpload({ titles: ['فيلم زمان غريب'] }, kdh)?.id, 'zmenghrib01')
+  // 34 minutes: a medium-length film, under the bar.
+  assert.equal(matchFilmUpload({ titles: ['Bouchkara'] }, kdh), null)
+  // "tunisien", "complet", "film" are filler: the title's own words are what's compared.
+  assert.deepEqual(filmTokens('Film tunisien complet " Maftounsi " (2021)'), ['maftounsi'])
+})
+
 test('matchFilmUpload: only a confident title; a short one-word name does not match on its own', () => {
   // "باب" (door) is one short word: too little to match a film called that.
   assert.equal(matchFilmUpload({ titles: ['باب'] }, [upload({ id: 'aaaaaaaaaaa', title: 'فيلم باب العرش كامل', duration: 90 * 60 })]), null)
