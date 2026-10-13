@@ -10,6 +10,7 @@ import TmdbImage from './TmdbImage'
 import TitleArtwork from './TitleArtwork'
 import FollowButton from './FollowButton'
 import { usePeekTrigger } from '@/src/hooks/use-peek-trigger'
+import type { PeekItem } from '@/src/store/peek'
 import { useMediaQuery } from '@/src/hooks/use-media-query'
 
 export type PosterCardProps = {
@@ -22,7 +23,8 @@ export type PosterCardProps = {
     /** `posterImg` is already a full URL (not a TMDB path). */
     externalImg?: boolean
     id?: string
-    mediaType?: 'movie' | 'tv'
+    /** 'anime': an AniList title (cover and banner are full URLs; see components/anime/AnimeCard). */
+    mediaType?: 'movie' | 'tv' | 'anime'
     /** Show the media type as a small badge (used by mixed search results). */
     showTypeBadge?: boolean
     /** Right-click menu, hover preview and long-press sheet. Off for non-TMDB items. */
@@ -41,6 +43,8 @@ export type PosterCardProps = {
     overlay?: React.ReactNode
     /** Hover preview / long-press sheet (off where the card has its own buttons on top). */
     peek?: boolean
+    /** More for the preview than a TMDB card carries (an anime's trailer, genre names, format). */
+    peekExtra?: Pick<PeekItem, 'trailer' | 'genres' | 'format'>
     className?: string
 }
 
@@ -55,19 +59,20 @@ const POSTER_SIZES = '(min-width: 1536px) 220px, (min-width: 640px) 180px, 140px
 export default function PosterCard({
     posterImg, title, voteAverage, releaseDate, link, externalImg, id,
     mediaType = 'movie', showTypeBadge = false, actions = true, notify = false,
-    backdropImg, genreIds, overview, bare = false, priority = false, overlay, peek: allowPeek = true, className,
+    backdropImg, genreIds, overview, bare = false, priority = false, overlay, peek: allowPeek = true, peekExtra, className,
 }: PosterCardProps) {
     const t = useT()
     const itemId = id || (link ? link.split('/').pop()?.split('?')[0] : '') || ''
     const rating = typeof voteAverage === 'number' ? voteAverage : parseFloat(voteAverage)
     const year = releaseDate ? releaseDate.substring(0, 4) : ''
-    const peekable = allowPeek && actions && !externalImg && /^\d+$/.test(itemId)
+    // TMDB titles, and anime (whose pictures are full URLs); not other outside pictures.
+    const peekable = allowPeek && actions && (!externalImg || mediaType === 'anime') && /^\d+$/.test(itemId)
     const coarse = useMediaQuery('(hover: none)')
     // An outside poster (the Tunisian catalogue) that fails to load gets the title placeholder too.
     const [externalFailed, setExternalFailed] = useState(false)
     const peek = usePeekTrigger(peekable ? {
         id: itemId, kind: mediaType, title, poster: posterImg, backdrop: backdropImg,
-        rating: Number.isFinite(rating) ? rating : undefined, date: releaseDate, genreIds, overview,
+        rating: Number.isFinite(rating) ? rating : undefined, date: releaseDate, genreIds, overview, ...peekExtra,
     } : null)
 
     const isExternalLink = !!link && /^https?:\/\//.test(link)
@@ -109,7 +114,7 @@ export default function PosterCard({
                 )}
                 {showTypeBadge && (
                     <span className="glass absolute start-2 top-2 rounded-full px-2 py-0.5 text-[10.5px] font-medium text-white/90">
-                        {t(mediaType === 'tv' ? 'common.tvShow' : 'common.movie')}
+                        {t(mediaType === 'anime' ? 'anime.nav' : mediaType === 'tv' ? 'common.tvShow' : 'common.movie')}
                     </span>
                 )}
                 {overlay}
@@ -138,7 +143,7 @@ export default function PosterCard({
         <div className="relative">
             {/* Right-click on desktop; touch screens get the long-press sheet instead. */}
             <MediaContextMenu {...meta} disabled={coarse}>{card}</MediaContextMenu>
-            {notify && itemId && (
+            {notify && itemId && mediaType !== 'anime' && (
                 <FollowButton variant="card" mediaType={mediaType} id={itemId} title={title} className="absolute end-2 top-2 z-10" />
             )}
         </div>

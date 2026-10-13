@@ -39,7 +39,8 @@ export default function ContinueWatching() {
     let cancelled = false
     getWatchHistory().then((history: WatchHistoryItem[]) => {
       if (cancelled) return
-      const recent = history.slice(0, MAX_ITEMS)
+      // Movies and shows (an anime's progress stays on the device and never comes from here).
+      const recent = history.filter((item): item is WatchHistoryItem & { media_type: 'movie' | 'tv' } => item.media_type !== 'anime').slice(0, MAX_ITEMS)
       setItems(recent)
       if (recent.length) getResumeArt(recent.map(({ id, media_type }) => ({ id, media_type }))).then((found) => { if (!cancelled) setArt(found) }).catch(() => {})
     })

@@ -4,7 +4,8 @@ import { create } from 'zustand'
 
 export type PeekItem = {
   id: string
-  kind: 'movie' | 'tv'
+  /** 'anime': an AniList title (its pictures are full URLs, its page is /anime/[id]). */
+  kind: 'movie' | 'tv' | 'anime'
   title: string
   poster?: string | null
   backdrop?: string | null
@@ -12,6 +13,11 @@ export type PeekItem = {
   date?: string | null
   genreIds?: number[]
   overview?: string
+  /** Anime: the trailer's YouTube id, known already (TMDB titles look theirs up). */
+  trailer?: string | null
+  /** Anime: genre names (translated) and the format ("TV", "Film"…), as the card shows them. */
+  genres?: string[]
+  format?: string
 }
 
 type PeekState = {

@@ -25,12 +25,20 @@ const TRAILER_DELAY_MS = 650
 const SHEET_CLOSE_MS = 320
 
 const detailHref = (item: PeekItem) => `/${item.kind}/${item.id}`
-const playHref = (item: PeekItem) => item.kind === 'tv' ? `/tv/${item.id}?s=1&e=1` : `/movie/${item.id}#streamSection`
+const playHref = (item: PeekItem) => item.kind === 'tv' ? `/tv/${item.id}?s=1&e=1` : `/${item.kind}/${item.id}#streamSection`
 const libraryItem = (item: PeekItem) => ({ id: item.id, title: item.title, poster_path: item.poster, media_type: item.kind })
+
+/** A TMDB picture, or an anime's (AniList gives full URLs). */
+function Picture({ item, kind, path, sizes, className }: { item: PeekItem, kind: 'poster' | 'backdrop', path?: string | null, sizes: string, className?: string }) {
+    if (item.kind !== 'anime') return <TmdbImage kind={kind} path={path} alt="" fill sizes={sizes} className={className} />
+    // eslint-disable-next-line @next/next/no-img-element
+    return path ? <img src={path} alt="" className={cn('absolute inset-0 h-full w-full', className)} /> : null
+}
 
 function Meta({ item, className }: { item: PeekItem, className?: string }) {
     const { t, locale } = useI18n()
-    const genres = genreNames(item.genreIds, locale)
+    const genres = item.kind === 'anime' ? item.genres ?? [] : genreNames(item.genreIds, locale)
+    const kindLabel = item.kind === 'anime' ? item.format ?? t('anime.nav') : item.kind === 'tv' ? t('common.tvShow') : t('common.movie')
     return (
         <div className={className}>
             <p className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[13px] text-white/75">
@@ -40,7 +48,7 @@ function Meta({ item, className }: { item: PeekItem, className?: string }) {
                     </span>
                 )}
                 {item.date && <span>{item.date.slice(0, 4)}</span>}
-                <span className="rounded-md border border-white/20 px-1.5 py-px text-[11px] leading-4 text-white/70">{item.kind === 'tv' ? t('common.tvShow') : t('common.movie')}</span>
+                <span className="rounded-md border border-white/20 px-1.5 py-px text-[11px] leading-4 text-white/70">{kindLabel}</span>
             </p>
             {genres.length > 0 && <p className="mt-1.5 truncate text-[12.5px] text-white/55">{genres.join(' / ')}</p>}
         </div>
@@ -85,13 +93,15 @@ function HoverPreview({ item, rect }: { item: PeekItem, rect: DOMRect }) {
         if (!autoplay) return
         let cancelled = false
         const timer = setTimeout(() => {
-            fetchTrailerKey(item.kind, item.id).then((key) => { if (!cancelled) setTrailer(key) })
+            // An anime brings its trailer with it; a movie or show asks TMDB.
+            if (item.kind === 'anime') setTrailer(item.trailer ?? null)
+            else fetchTrailerKey(item.kind, item.id).then((key) => { if (!cancelled) setTrailer(key) })
         }, TRAILER_DELAY_MS)
         return () => {
             cancelled = true
             clearTimeout(timer)
         }
-    }, [autoplay, item.kind, item.id])
+    }, [autoplay, item.kind, item.id, item.trailer])
 
     const margin = 16
     // Stay clear of the desktop rail (on the start side: left, or right in Arabic).
@@ -120,7 +130,7 @@ function HoverPreview({ item, rect }: { item: PeekItem, rect: DOMRect }) {
             className="z-[55] overflow-hidden rounded-[18px] bg-[#141416] text-white shadow-[0_30px_80px_-10px_rgb(0_0_0/0.95)] ring-1 ring-white/10"
         >
             <div className="relative aspect-video overflow-hidden bg-white/5">
-                <TmdbImage kind="backdrop" path={item.backdrop || item.poster} alt="" fill sizes={`${Math.round(width)}px`} className="object-cover" />
+                <Picture item={item} kind="backdrop" path={item.backdrop || item.poster} sizes={`${Math.round(width)}px`} className="object-cover" />
                 {trailer && <YouTubeBackdrop videoKey={trailer} loop muted={muted} zoom={1.3} onState={(state) => setPlaying(state === 'playing')} />}
                 <div aria-hidden className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-[#141416] via-[#141416]/40 to-transparent" />
                 <p className="absolute bottom-2.5 start-4 end-14 line-clamp-2 font-display text-[22px] font-bold leading-tight drop-shadow-[0_2px_12px_rgb(0_0_0/0.8)]"><bdi>{item.title}</bdi></p>
@@ -175,6 +185,7 @@ function QuickSheet({ item, onClose }: { item: PeekItem | null, onClose: () => v
     // One sheet at a time: this one slides away first, then the ShareSheet comes up.
     const share = () => {
         if (!current) return
+        if (current.kind === 'anime') return
         const media = { media_type: current.kind, id: current.id, title: current.title, poster_path: current.poster ?? null }
         onClose()
         setTimeout(() => openShare({ kind: 'title', media }), SHEET_CLOSE_MS)
@@ -187,7 +198,7 @@ function QuickSheet({ item, onClose }: { item: PeekItem | null, onClose: () => v
                     <div className="px-5 pb-6 pt-4">
                         <div className="flex gap-4">
                             <div className="relative aspect-[2/3] w-[104px] shrink-0 overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/10">
-                                <TmdbImage kind="poster" path={current.poster} alt="" fill sizes="104px" className="object-cover" />
+                                <Picture item={current} kind="poster" path={current.poster} sizes="104px" className="object-cover" />
                             </div>
                             <div className="min-w-0 flex-1">
                                 <DrawerTitle className="font-display text-[24px] font-bold leading-tight"><bdi>{current.title}</bdi></DrawerTitle>
@@ -198,11 +209,11 @@ function QuickSheet({ item, onClose }: { item: PeekItem | null, onClose: () => v
                         <Button asChild size="lg" className="mt-5 w-full">
                             <Link href={playHref(current)} onClick={onClose}><Play aria-hidden className="h-5 w-5 fill-current" />{t('billboard.play')}</Link>
                         </Button>
-                        <div className="mt-4 grid grid-cols-4 gap-2 text-center text-[11.5px] text-white/70">
+                        <div className={cn('mt-4 grid gap-2 text-center text-[11.5px] text-white/70', current.kind === 'anime' ? 'grid-cols-3' : 'grid-cols-4')}>
                             {[
                                 { label: actions.saved ? t('billboard.inMyList') : t('billboard.myList'), icon: actions.saved ? <Check className="h-5 w-5" /> : <Plus className="h-5 w-5" />, onClick: actions.toggleSaved, active: actions.saved },
                                 { label: t('peek.favorite'), icon: <Heart className={cn('h-5 w-5', actions.favorite && 'fill-current text-red-500')} />, onClick: actions.toggleFavorite, active: actions.favorite },
-                                { label: t('peek.share'), icon: <Share2 className="h-5 w-5" />, onClick: share },
+                                ...(current.kind === 'anime' ? [] : [{ label: t('peek.share'), icon: <Share2 className="h-5 w-5" />, onClick: share, active: undefined }]),
                             ].map((action) => (
                                 <button key={action.label} type="button" onClick={action.onClick} aria-pressed={action.active} className="pressable flex flex-col items-center gap-1.5 rounded-2xl py-2">
                                     <span aria-hidden className="grid h-11 w-11 place-items-center rounded-full bg-white/[0.08] text-white">{action.icon}</span>

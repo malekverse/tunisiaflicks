@@ -32,7 +32,8 @@ export type MediaMeta = {
     id?: string
     title: string
     posterPath?: string
-    mediaType: 'movie' | 'tv'
+    /** 'anime': an AniList title (favorites and saved only: lists and sharing take TMDB titles). */
+    mediaType: 'movie' | 'tv' | 'anime'
 }
 
 const isUnauthorized = (error: unknown) => error instanceof Error && error.message === 'Unauthorized'
@@ -57,8 +58,8 @@ function useMediaActions({ id, title, posterPath, mediaType }: MediaMeta) {
         }
     }, [id, title, posterPath, mediaType, t])
 
-    // Lists are for signed-in people (the menu item itself hides on Kids profiles).
-    const lists = !!id && status === 'authenticated'
+    // Lists are for signed-in people (the menu item itself hides on Kids profiles), and TMDB titles.
+    const lists = !!id && status === 'authenticated' && mediaType !== 'anime'
 
     return useMemo(() => ({
         favorite: () => save(addToFavorites,
@@ -68,7 +69,7 @@ function useMediaActions({ id, title, posterPath, mediaType }: MediaMeta) {
             { title: t('toast.savedForLater'), description: t('toast.savedForLaterDesc', { title }) },
             t('toast.saveFailed')),
         // One sheet for every way of sharing: friends, a night, a list, WhatsApp and the rest, the link.
-        share: id
+        share: id && mediaType !== 'anime'
             ? () => openShare({ kind: 'title', media: { media_type: mediaType, id: String(id), title, poster_path: posterPath ?? null } })
             : null,
         addToList: lists

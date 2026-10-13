@@ -10,7 +10,8 @@ import {
 } from '@/src/lib/user-content'
 
 export type LibraryList = 'favorites' | 'saved'
-export type LibraryItem = { id: string, title: string, poster_path?: string | null, media_type: 'movie' | 'tv' }
+/** 'anime': an AniList title (its poster_path is the cover's URL). */
+export type LibraryItem = { id: string, title: string, poster_path?: string | null, media_type: 'movie' | 'tv' | 'anime' }
 
 const key = (item: { id: string | number, media_type: string }) => `${item.media_type}:${item.id}`
 
@@ -50,7 +51,7 @@ export const useLibraryStore = create<LibraryState>()((set, get) => ({
     })
     update(!had)
     try {
-      if (had) await (list === 'favorites' ? removeFromFavorites(item.id) : removeFromSaved(item.id))
+      if (had) await (list === 'favorites' ? removeFromFavorites(item.id, item.media_type) : removeFromSaved(item.id, item.media_type))
       else {
         const entry = { id: item.id, title: item.title, poster_path: item.poster_path ?? undefined, media_type: item.media_type, added_at: new Date() }
         await (list === 'favorites' ? addToFavorites(entry) : saveForLater(entry))

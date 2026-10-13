@@ -29,7 +29,7 @@ type Config = {
   icon: LucideIcon
   title: TKey
   load: () => Promise<Item[]>
-  remove: (id: string) => Promise<unknown>
+  remove: (id: string, mediaType?: ContentItem['media_type']) => Promise<unknown>
   /** Puts a removed title back (the toast's Undo). History has none: re-adding would rewrite the date. */
   restore?: (item: Item) => Promise<unknown>
   loadFailed: TKey
@@ -93,7 +93,7 @@ const CONFIG: Record<LibraryKind, Config> = {
   },
 }
 
-type TypeFilter = 'all' | 'movie' | 'tv'
+type TypeFilter = 'all' | 'movie' | 'tv' | 'anime'
 type ProgressFilter = 'all' | 'in-progress' | 'completed'
 type Order = 'newest' | 'oldest'
 
@@ -193,7 +193,7 @@ export default function LibraryCollection({ kind }: { kind: LibraryKind }) {
     haptic(8)
     setItems((current) => current?.filter((other) => keyOf(other) !== keyOf(item)) ?? current)
     try {
-      await config.remove(item.id)
+      await config.remove(item.id, item.media_type)
       toast({
         title: t(config.removed),
         description: t(config.removedDesc, { title: item.title }),
@@ -218,6 +218,9 @@ export default function LibraryCollection({ kind }: { kind: LibraryKind }) {
         <Chip active={type === 'all'} onClick={() => setType('all')}>{t('common.all')}</Chip>
         <Chip active={type === 'movie'} onClick={() => setType('movie')}>{t('common.movies')}</Chip>
         <Chip active={type === 'tv'} onClick={() => setType('tv')}>{t('common.tvShows')}</Chip>
+        {(type === 'anime' || items?.some((item) => item.media_type === 'anime')) && (
+          <Chip active={type === 'anime'} onClick={() => setType('anime')}>{t('anime.nav')}</Chip>
+        )}
       </ChipGroup>
       {kind === 'history' && (
         <>
@@ -320,6 +323,7 @@ const LibraryCard = React.forwardRef<HTMLDivElement, { item: Item, kind: Library
           id={item.id}
           title={item.title}
           posterImg={item.poster_path}
+          externalImg={item.media_type === 'anime'}
           mediaType={item.media_type}
           link={href}
           overlay={percent > 0 && percent < 100 ? (
@@ -342,7 +346,7 @@ const LibraryCard = React.forwardRef<HTMLDivElement, { item: Item, kind: Library
         <Link href={href} aria-hidden tabIndex={-1} className="mt-2.5 block px-0.5">
           <p className="truncate text-[13.5px] font-medium text-white/90 transition-colors group-hover/item:text-white"><bdi>{item.title}</bdi></p>
           <p className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[12px] text-white/50">
-            <span>{t(item.media_type === 'tv' ? 'common.tvShow' : 'common.movie')}</span>
+            <span>{t(item.media_type === 'anime' ? 'anime.nav' : item.media_type === 'tv' ? 'common.tvShow' : 'common.movie')}</span>
             {episode && <span>{episode}</span>}
             {kind === 'history'
               ? <span>{date.toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}</span>

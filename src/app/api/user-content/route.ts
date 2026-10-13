@@ -12,7 +12,19 @@ import { safeTimeZone } from '@/src/lib/badges/time';
 
 const isEpisodeNumber = (value: unknown): value is number => Number.isInteger(value) && (value as number) >= 0 && (value as number) <= 999
 
-type ParsedItem = { id: string, title: string, poster_path: string | null, media_type: 'movie' | 'tv', season?: number, episode?: number, progress?: number }
+type ParsedItem = { id: string, title: string, poster_path: string | null, media_type: 'movie' | 'tv' | 'anime', season?: number, episode?: number, progress?: number }
+
+type MediaType = ParsedItem['media_type']
+const isMediaType = (value: unknown): value is MediaType => value === 'movie' || value === 'tv' || value === 'anime'
+/** An anime's cover: AniList's image server only (a TMDB title's poster is a path, like "/abc.jpg"). */
+const ANILIST_COVER = /^https:\/\/s4\.anilist\.co\/file\/anilistcdn\/[A-Za-z0-9/._-]+$/
+
+/**
+ * The entries an add replaces or a remove takes out: the same id and the same kind (an anime and
+ * a movie can share an id number). Older entries saved without a kind still match by id.
+ */
+const sameEntry = (ids: (string | number)[], mediaType: MediaType) =>
+  ({ id: { $in: ids }, $or: [{ media_type: mediaType }, { media_type: { $exists: false } }] })
 
 /**
  * The item as the client sent it, checked field by field (these titles are shown back on other
@@ -23,11 +35,12 @@ function parseItem(raw: any): ParsedItem | null {
   if (!raw || typeof raw !== 'object') return null
   const id = typeof raw.id === 'number' ? String(raw.id) : raw.id
   if (typeof id !== 'string' || !/^[0-9]{1,9}$/.test(id)) return null
-  if (raw.media_type !== 'movie' && raw.media_type !== 'tv') return null
+  if (!isMediaType(raw.media_type)) return null
   const title = cleanText(raw.title, 200)
   if (!title) return null
   const poster = raw.poster_path ?? null
-  if (poster !== null && (typeof poster !== 'string' || !/^[/][A-Za-z0-9._-]+$/.test(poster))) return null
+  const posterPattern = raw.media_type === 'anime' ? ANILIST_COVER : /^[/][A-Za-z0-9._-]+$/
+  if (poster !== null && (typeof poster !== 'string' || !posterPattern.test(poster))) return null
   const item: ParsedItem = { id, title, poster_path: poster, media_type: raw.media_type }
   if (raw.season !== undefined || raw.episode !== undefined) {
     if (!isEpisodeNumber(raw.season) || !isEpisodeNumber(raw.episode)) return null
@@ -95,7 +108,8 @@ export async function POST(request: NextRequest) {
     }
 
     const item = parseItem(body?.item);
-    if (!item) {
+    // An anime's progress lives on the device (components/anime): it only goes to favorites and saved.
+    if (!item || (item.media_type === 'anime' && type === 'history')) {
       return NextResponse.json({ error: 'Invalid item data' }, { status: 400 });
     }
 
@@ -132,7 +146,7 @@ export async function POST(request: NextRequest) {
       {
         $setOnInsert: { userId: userId, profileId: profileId, type: type },
         // Remove if exists to avoid duplicates (older entries may hold the id as a number).
-        $pull: { items: { id: { $in: [item.id, Number(item.id)] } } } as any
+        $pull: { items: sameEntry([item.id, Number(item.id)], item.media_type) } as any
       },
       { upsert: true }
     );
@@ -145,9 +159,9 @@ export async function POST(request: NextRequest) {
 
     // Badges: the day of this play goes into the profile's private log (skipped when the profile
     // turned badges off). The browser's time zone only places the play on a day; it isn't kept.
-    if (type === 'history') {
+    if (type === 'history' && item.media_type !== 'anime') {
       try {
-        await recordPlay({ userId, profileId }, item, { timeZone: safeTimeZone(body?.item?.tz), kids: owner.profile.kids });
+        await recordPlay({ userId, profileId }, { ...item, media_type: item.media_type }, { timeZone: safeTimeZone(body?.item?.tz), kids: owner.profile.kids });
       } catch (error) {
         console.error('Recording the play for badges failed:', error);
       }
@@ -171,6 +185,9 @@ export async function DELETE(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const type = searchParams.get('type'); // 'favorites', 'saved', or 'history'
     const itemId = searchParams.get('itemId'); // ID of the item to remove
+    // Its kind, so an anime and a movie with the same id number aren't both removed (older
+    // clients don't send it: then every entry with that id goes, as before).
+    const mediaType = searchParams.get('mediaType');
 
     if (!type || !['favorites', 'saved', 'history'].includes(type)) {
       return NextResponse.json({ error: 'Invalid list type' }, { status: 400 });
@@ -188,7 +205,7 @@ export async function DELETE(request: NextRequest) {
     const ids: (string | number)[] = /^[0-9]{1,9}$/.test(itemId) ? [itemId, Number(itemId)] : [itemId];
     const result = await userContentCollection.updateOne(
       { userId: userId, profileId: profileId, type: type },
-      { $pull: { items: { id: { $in: ids } } } as any }
+      { $pull: { items: isMediaType(mediaType) ? sameEntry(ids, mediaType) : { id: { $in: ids } } } as any }
     );
 
     // Badges: a title taken out of the history leaves the daily log too.

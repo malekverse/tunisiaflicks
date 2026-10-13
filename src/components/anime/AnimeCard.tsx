@@ -18,8 +18,9 @@ export function useNow(everyMs = 30_000): number | null {
 }
 
 /**
- * An anime as a poster: cover, title, year and score under it, and on the cover what fans look
- * for first: the next episode's countdown while it airs, else the format when it isn't a series.
+ * An anime as a poster, behaving like a movie's (hover preview with the trailer, long press,
+ * right-click menu): cover, title, year and score under it, and on the cover what fans look for
+ * first: the next episode's countdown while it airs, else the format when it isn't a series.
  * `badge` replaces that (Continue watching shows the episode you're on).
  */
 export default function AnimeCard({ card, badge, priority, className }: { card: Card, badge?: string, priority?: boolean, className?: string }) {
@@ -35,9 +36,19 @@ export default function AnimeCard({ card, badge, priority, className }: { card: 
   }
   return (
     <PosterCard
+      // Like a movie's card: the hover preview (with the trailer), the long-press sheet and the
+      // right-click menu, saving to the account's favorites and "watch later".
+      id={String(card.id)}
+      mediaType="anime"
       posterImg={card.cover}
       externalImg
-      actions={false}
+      backdropImg={card.banner}
+      overview={card.description ?? undefined}
+      peekExtra={{
+        trailer: card.trailer,
+        genres: card.genres.slice(0, 3).map((genre) => t(`anime.genre.${genre}` as TKey)),
+        format: card.format ? t(`anime.format.${card.format}` as TKey) : undefined,
+      }}
       title={card.title}
       voteAverage={card.score ?? undefined}
       releaseDate={card.year ? String(card.year) : null}

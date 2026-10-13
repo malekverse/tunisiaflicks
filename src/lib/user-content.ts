@@ -7,8 +7,8 @@ export async function addToFavorites(item: ContentItem) {
 }
 
 // Remove an item from favorites
-export async function removeFromFavorites(itemId: string) {
-  return removeFromUserContent('favorites', itemId);
+export async function removeFromFavorites(itemId: string, mediaType?: ContentItem['media_type']) {
+  return removeFromUserContent('favorites', itemId, mediaType);
 }
 
 // Get user's favorites
@@ -22,8 +22,8 @@ export async function saveForLater(item: ContentItem) {
 }
 
 // Remove an item from saved list
-export async function removeFromSaved(itemId: string) {
-  return removeFromUserContent('saved', itemId);
+export async function removeFromSaved(itemId: string, mediaType?: ContentItem['media_type']) {
+  return removeFromUserContent('saved', itemId, mediaType);
 }
 
 // Get user's saved items
@@ -84,9 +84,10 @@ async function addToUserContent(type: 'favorites' | 'saved' | 'history', item: C
 }
 
 // Generic function to remove an item from a user content list
-async function removeFromUserContent(type: 'favorites' | 'saved' | 'history', itemId: string) {
+async function removeFromUserContent(type: 'favorites' | 'saved' | 'history', itemId: string, mediaType?: ContentItem['media_type']) {
   try {
-    const response = await fetch(`/api/user-content?type=${type}&itemId=${itemId}`, {
+    const query = new URLSearchParams({ type, itemId: String(itemId), ...(mediaType ? { mediaType } : {}) })
+    const response = await fetch(`/api/user-content?${query}`, {
       method: 'DELETE',
     });
 

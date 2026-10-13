@@ -73,11 +73,11 @@ export default function UserContent() {
   }, [activeTab, t]);
 
   // Removing is instant; the title comes back if the server says no.
-  const handleRemoveFromFavorites = async (id: string, title: string) => {
+  const handleRemoveFromFavorites = async (id: string, title: string, mediaType: ContentItem['media_type']) => {
     const before = favorites;
-    setFavorites(favorites.filter(item => item.id !== id));
+    setFavorites(favorites.filter(item => item.id !== id || item.media_type !== mediaType));
     try {
-      await removeFromFavorites(id);
+      await removeFromFavorites(id, mediaType);
       toast({
         title: t('toast.removedFavorites'),
         description: t('toast.removedFavoritesDesc', { title }),
@@ -93,11 +93,11 @@ export default function UserContent() {
     }
   };
 
-  const handleRemoveFromSaved = async (id: string, title: string) => {
+  const handleRemoveFromSaved = async (id: string, title: string, mediaType: ContentItem['media_type']) => {
     const before = savedItems;
-    setSavedItems(savedItems.filter(item => item.id !== id));
+    setSavedItems(savedItems.filter(item => item.id !== id || item.media_type !== mediaType));
     try {
-      await removeFromSaved(id);
+      await removeFromSaved(id, mediaType);
       toast({
         title: t('toast.removedSaved'),
         description: t('toast.removedSavedDesc', { title }),
@@ -134,7 +134,12 @@ export default function UserContent() {
       >
         <Link href={href} title={caption} className="group/poster block outline-none">
           <span className="relative block aspect-[2/3] overflow-hidden rounded-poster bg-white/[0.05] ring-1 ring-inset ring-white/[0.07] transition-transform duration-300 ease-out group-hover/poster:-translate-y-1 group-active/poster:scale-[0.97] group-focus-visible/poster:ring-2 group-focus-visible/poster:ring-red-500">
-            <TmdbImage kind="poster" path={item.poster_path} alt={item.title} fill sizes="118px" className="object-cover" />
+            {item.media_type === 'anime' ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              item.poster_path ? <img src={item.poster_path} alt={item.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover" /> : null
+            ) : (
+              <TmdbImage kind="poster" path={item.poster_path} alt={item.title} fill sizes="118px" className="object-cover" />
+            )}
             {listType === 'history' && progress && progress < 100 ? (
               <span aria-hidden className="absolute inset-x-2 bottom-2 h-1 overflow-hidden rounded-full bg-white/25">
                 <span className="block h-full rounded-full bg-red-500" style={{ width: `${progress}%` }} />
@@ -142,15 +147,15 @@ export default function UserContent() {
             ) : null}
           </span>
           <span className="mt-2 block truncate px-0.5 text-[13px] font-medium text-white/85"><bdi>{item.title}</bdi></span>
-          <span className="block px-0.5 text-[11.5px] text-white/45">{item.media_type === 'movie' ? t('common.movie') : t('common.tvShow')}</span>
+          <span className="block px-0.5 text-[11.5px] text-white/45">{item.media_type === 'anime' ? t('anime.nav') : item.media_type === 'movie' ? t('common.movie') : t('common.tvShow')}</span>
         </Link>
         {listType === 'favorites' && (
-          <CardAction label={`${t('lists.remove')}: ${item.title}`} tone="danger" onClick={() => handleRemoveFromFavorites(item.id, item.title)} className="absolute end-0 top-0">
+          <CardAction label={`${t('lists.remove')}: ${item.title}`} tone="danger" onClick={() => handleRemoveFromFavorites(item.id, item.title, item.media_type)} className="absolute end-0 top-0">
             <X aria-hidden className="h-4 w-4" strokeWidth={2.4} />
           </CardAction>
         )}
         {listType === 'saved' && (
-          <CardAction label={`${t('lists.remove')}: ${item.title}`} tone="danger" onClick={() => handleRemoveFromSaved(item.id, item.title)} className="absolute end-0 top-0">
+          <CardAction label={`${t('lists.remove')}: ${item.title}`} tone="danger" onClick={() => handleRemoveFromSaved(item.id, item.title, item.media_type)} className="absolute end-0 top-0">
             <X aria-hidden className="h-4 w-4" strokeWidth={2.4} />
           </CardAction>
         )}

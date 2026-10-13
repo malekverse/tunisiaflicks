@@ -44,10 +44,10 @@ export function useLibraryToggle() {
           ? {
             title: t('toast.savedForLater'),
             description: t('toast.savedForLaterDesc', { title }),
-            ...(lists ? {
+            ...(lists && item.media_type !== 'anime' ? {
               action: {
                 label: t('sharedLists.add.toast'),
-                onClick: () => openAddToList({ media_type: item.media_type, id: String(item.id), title: item.title, poster_path: item.poster_path ?? null }),
+                onClick: () => openAddToList({ media_type: item.media_type as 'movie' | 'tv', id: String(item.id), title: item.title, poster_path: item.poster_path ?? null }),
               },
             } : {}),
           }
