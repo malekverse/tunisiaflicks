@@ -37,6 +37,7 @@ export const tn: Partial<Record<TKey, string>> = {
   'nav.discover': 'اكتشف',
   'nav.discovery': 'اكتشف',
   'nav.search': 'لوّج',
+  'nav.beta': 'تجريبي',
   'nav.tunisian': 'تونسي',
   'nav.comingSoon': 'قريب يخرجو',
   'nav.topRated': 'الأحسن',
@@ -462,6 +463,8 @@ export const tn: Partial<Record<TKey, string>> = {
   'search.noResultsHint': 'ثبّت في الكتيبة ولا جرّب العنوان الأصلي.',
 
   // Tunisian hub
+  'tunisian.betaTitle': 'القسم التونسي مازال تجريبي',
+  'tunisian.betaNote': 'موش كل الأفلام والمسلسلات موجودين توا، وفما إلي ما يخدمش مليح. قاعدين نزيدو مصادر ونصلحو التشغيل على طول.',
   'tunisian.subtitle': 'مسلسلات وأفلام تونسية، من متاع رمضان لين الجديد.',
   'tunisian.typeSwitch': 'ورّي',
   'tunisian.count': '{count} عنوان',

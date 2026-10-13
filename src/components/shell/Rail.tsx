@@ -86,6 +86,18 @@ export default function Rail({ kids: kidsProp, seasonal }: RailProps = {}) {
                 >
                     {t(entry.label)}
                 </span>
+                {entry.badge && (
+                    <span
+                        aria-hidden
+                        className={cn(
+                            'ms-2 shrink-0 rounded-full bg-red-500/15 px-1.5 py-[3px] text-[9px] font-bold uppercase leading-none tracking-wide text-red-300 ring-1 ring-inset ring-red-500/25 transition-opacity duration-200',
+                            open ? 'opacity-100' : 'opacity-0',
+                        )}
+                        style={{ transitionDelay: open ? `${80 + index * 18}ms` : '0ms' }}
+                    >
+                        {t(entry.badge)}
+                    </span>
+                )}
             </>
         )
         const className = 'group relative mx-2 flex h-11 items-center rounded-xl outline-none transition-colors duration-150 hover:bg-white/[0.06] focus-visible:bg-white/[0.08] focus-visible:outline-none'

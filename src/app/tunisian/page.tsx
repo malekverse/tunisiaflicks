@@ -1,3 +1,4 @@
+import { TriangleAlert } from 'lucide-react'
 import PosterCard from '@/src/components/PosterCard'
 import { EmptyState, GRID_CLASS } from '@/src/components/MediaGrid'
 import SegmentedLinks from '@/src/components/browse/SegmentedLinks'
@@ -63,6 +64,13 @@ export default async function TunisianPage({ searchParams }: { searchParams: { t
       </header>
 
       <div className="page-x">
+        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-400/20 bg-amber-400/[0.07] px-4 py-3.5">
+          <TriangleAlert aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-amber-300" />
+          <div className="min-w-0">
+            <p className="text-[14px] font-semibold text-white">{t('tunisian.betaTitle')}</p>
+            <p className="mt-0.5 text-[13px] leading-relaxed text-white/60">{t('tunisian.betaNote')}</p>
+          </div>
+        </div>
         {titles === null ? (
           <EmptyState>{t('tunisian.failed')}</EmptyState>
         ) : visible.length === 0 ? (

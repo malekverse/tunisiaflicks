@@ -44,6 +44,7 @@ export const ar: Record<CoreKey, string> = {
   'nav.discover': 'اكتشف',
   'nav.discovery': 'استكشاف',
   'nav.search': 'بحث',
+  'nav.beta': 'تجريبي',
   'nav.tunisian': 'تونسي',
   'nav.comingSoon': 'قريباً',
   'nav.topRated': 'الأعلى تقييماً',
@@ -862,6 +863,8 @@ export const ar: Record<CoreKey, string> = {
   'search.noResultsHint': 'تحقق من الإملاء أو جرّب العنوان الأصلي.',
 
   // Tunisian hub
+  'tunisian.betaTitle': 'القسم التونسي تجريبي',
+  'tunisian.betaNote': 'ليست كل الأفلام والمسلسلات متوفرة بعد، وبعضها قد لا يُشغَّل بسلاسة. نضيف المصادر ونصلح التشغيل باستمرار.',
   'tunisian.subtitle': 'مسلسلات وأفلام صُنعت في تونس، من مفضّلات رمضان إلى أحدث الإصدارات.',
   'tunisian.typeSwitch': 'عرض',
   'tunisian.count': 'العناوين: {count}',

@@ -54,8 +54,11 @@ export default function MenuSheet({ open, onOpenChange, account, kids: kidsProp,
         const Icon = item.icon
         const content = (
             <>
-                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white/[0.07] transition-colors group-active:bg-white/[0.12]">
+                <span className="relative grid h-12 w-12 place-items-center rounded-2xl bg-white/[0.07] transition-colors group-active:bg-white/[0.12]">
                     <Icon aria-hidden className="h-[22px] w-[22px] text-white/85" strokeWidth={1.8} />
+                    {item.badge && (
+                        <span aria-hidden className="absolute -end-1 -top-1 rounded-full bg-red-500/90 px-1 py-[1px] text-[8px] font-bold uppercase leading-none tracking-wide text-white">{t(item.badge)}</span>
+                    )}
                 </span>
                 <span className="line-clamp-2 text-center text-[11.5px] leading-tight text-white/75">{t(item.label)}</span>
             </>

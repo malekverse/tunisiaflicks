@@ -23,6 +23,8 @@ export type NavItem = {
   plain?: boolean
   /** More paths that light this item up (Library is lit on /favorites, /history and /lists too). */
   match?: string[]
+  /** A small pill after the label (e.g. "Beta"). */
+  badge?: TKey
   /** Hidden on Kids profiles. */
   grownUp?: boolean
   /** Where a Kids profile goes instead (Tunisian: the cinema, which has kid-safe titles). */
@@ -43,7 +45,7 @@ export const BROWSE: NavItem[] = [
 
 /** The world's cinema and TV: Tunisian, then each hub, then the seasonal slot (see Rail). */
 export const WORLD: NavItem[] = [
-  { href: '/tunisian', label: 'nav.tunisian', icon: TunisiaIcon, kidsHref: '/tunisian/cinema' },
+  { href: '/tunisian', label: 'nav.tunisian', icon: TunisiaIcon, badge: 'nav.beta', kidsHref: '/tunisian/cinema' },
   { href: '/dramas', label: 'dramas.nav', icon: Drama, grownUp: true },
   // Kids get a filtered catalogue (no grownUp; see lib/anime/model).
   { href: '/anime', label: 'anime.nav', icon: Swords },

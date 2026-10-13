@@ -42,6 +42,7 @@ export const en = {
   'nav.discover': 'Discover',
   'nav.discovery': 'Discovery',
   'nav.search': 'Search',
+  'nav.beta': 'Beta',
   'nav.tunisian': 'Tunisian',
   'nav.comingSoon': 'Coming Soon',
   'nav.topRated': 'Top Rated',
@@ -862,6 +863,8 @@ export const en = {
 
   // Tunisian hub
   'tunisian.subtitle': 'Series and films made in Tunisia, from Ramadan favourites to the latest releases.',
+  'tunisian.betaTitle': 'Tunisian is in beta',
+  'tunisian.betaNote': 'Not every film and series is here yet, and some may not play smoothly. We’re adding sources and fixing playback all the time.',
   'tunisian.typeSwitch': 'Show',
   'tunisian.count': '{count} titles',
 

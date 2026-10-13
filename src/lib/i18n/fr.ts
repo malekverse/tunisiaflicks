@@ -55,6 +55,7 @@ export const fr: Record<CoreKey, string> = {
   'nav.discover': 'Découvrir',
   'nav.discovery': 'Découverte',
   'nav.search': 'Rechercher',
+  'nav.beta': 'Bêta',
   'nav.tunisian': 'Tunisie',
   'nav.comingSoon': 'Prochainement',
   'nav.topRated': 'Les mieux notés',
@@ -874,6 +875,8 @@ export const fr: Record<CoreKey, string> = {
   'search.noResultsHint': 'Vérifiez l’orthographe, ou essayez le titre original.',
 
   // Tunisian hub
+  'tunisian.betaTitle': 'Le tunisien est en bêta',
+  'tunisian.betaNote': 'Tous les films et séries ne sont pas encore là, et certains peuvent ne pas se lire correctement. Nous ajoutons des sources et corrigeons la lecture en continu.',
   'tunisian.subtitle': 'Des séries et des films tunisiens, des incontournables du ramadan aux dernières sorties.',
   'tunisian.typeSwitch': 'Afficher',
   'tunisian.count': '{count} titres',
