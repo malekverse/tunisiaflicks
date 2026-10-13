@@ -30,6 +30,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${card.title}${card.year ? ` (${card.year})` : ''}`,
     description: card.description?.slice(0, 300) ?? undefined,
     path: `/anime/${id}`,
+    // The share image comes from ./opengraph-image.tsx.
+    card: false,
   })
 }
 

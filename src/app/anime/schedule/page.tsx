@@ -12,7 +12,7 @@ export const maxDuration = 30
 
 export function generateMetadata() {
   const t = getT()
-  return pageMetadata({ title: t('anime.schedule.title'), description: t('anime.schedule.subtitle'), path: '/anime/schedule' })
+  return pageMetadata({ title: t('anime.schedule.title'), description: t('anime.schedule.subtitle'), path: '/anime/schedule', card: 'anime' })
 }
 
 export default async function AnimeSchedule() {

@@ -7,6 +7,7 @@ import { getTunisianTitles } from '@/src/lib/tunisian'
 import { arabRamadanSeries, ramadanSeasons, tunisianRamadanSeries } from '@/src/lib/ramadan'
 import { dramaShareSection } from '@/src/lib/dramas'
 import { arabCinemaShareSection } from '@/src/lib/arab-cinema'
+import { getAnimeRow } from '@/src/lib/anime/server'
 
 const posters = (items: any[] | null | undefined, count = 12) =>
   (items ?? []).filter((item) => item.poster_path).slice(0, count).map((item) => `https://image.tmdb.org/t/p/w342${item.poster_path}`)
@@ -103,6 +104,15 @@ export const SHARE_SECTIONS = {
   'dramas-turkish': dramaShareSection('turkish'),
   'dramas-korean': dramaShareSection('korean'),
   'arab-cinema': arabCinemaShareSection(),
+  anime: {
+    title: 'Anime',
+    subtitle: "This season's anime, the all-time favourites and what airs next, with every episode's countdown.",
+    cta: 'Watch now',
+    glow: '120 110 255',
+    // Shared by everyone, so no viewer: Kids and Halal mode apply on the pages, not on the card.
+    posters: async () => ((await getAnimeRow('trending', { kids: false, halal: false, language: 'english' })) ?? [])
+      .flatMap((card) => (card.cover ? [card.cover] : [])).slice(0, 12),
+  },
   search: {
     title: 'Find anything',
     subtitle: 'Every movie, show and actor, in English, French and Arabic.',

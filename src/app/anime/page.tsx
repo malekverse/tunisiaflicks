@@ -21,7 +21,7 @@ export const maxDuration = 30
 
 export function generateMetadata() {
   const t = getT()
-  return pageMetadata({ title: t('anime.title'), description: t('anime.meta'), path: '/anime' })
+  return pageMetadata({ title: t('anime.title'), description: t('anime.meta'), path: '/anime', card: 'anime' })
 }
 
 async function Hero({ viewer }: { viewer: AnimeViewer }) {

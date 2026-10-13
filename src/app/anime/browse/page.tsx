@@ -17,7 +17,7 @@ type Params = Record<string, string | undefined>
 
 export function generateMetadata() {
   const t = getT()
-  return pageMetadata({ title: t('anime.browse.title'), description: t('anime.browse.subtitle'), path: '/anime/browse' })
+  return pageMetadata({ title: t('anime.browse.title'), description: t('anime.browse.subtitle'), path: '/anime/browse', card: 'anime' })
 }
 
 const STATUSES: readonly AnimeStatus[] = ['RELEASING', 'FINISHED', 'NOT_YET_RELEASED']
