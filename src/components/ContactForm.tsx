@@ -2,10 +2,10 @@
 import React, { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { AnimatePresence, m } from 'framer-motion'
-import { ChevronDown } from 'lucide-react'
 import { Button } from '@/src/components/ui/button'
 import { Input } from '@/src/components/ui/input'
 import { Textarea } from '@/src/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select'
 import { useT } from '@/src/components/I18nProvider'
 import { EMAIL_RE, Field, FormNotice, SubmitButton, SuccessCheck, focusFirst, invalidClass } from '@/src/components/auth/fields'
 import { CONTACT_TOPICS } from '@/src/lib/contact'
@@ -57,7 +57,7 @@ export default function ContactForm({ kind }: { kind: Kind }) {
     }))
   }, [session])
 
-  const set = (key: keyof Values) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const set = (key: keyof Values) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setValues((current) => ({ ...current, [key]: event.target.value }))
     setInvalid((current) => current.filter((name) => name !== key))
   }
@@ -158,17 +158,14 @@ export default function ContactForm({ kind }: { kind: Kind }) {
           {kind === 'contact' ? (
             <Field id="topic" label={t('form.topic')}>
               {(a11y) => (
-                <div className="relative">
-                  <select
-                    {...a11y}
-                    className="flex h-11 w-full cursor-pointer appearance-none rounded-xl border border-white/10 bg-white/[0.05] pe-11 ps-4 text-[15px] text-white outline-none transition-[border-color,background-color,box-shadow] duration-200 hover:border-white/20 focus-visible:border-red-500/70 focus-visible:bg-white/[0.07] focus-visible:ring-4 focus-visible:ring-red-500/15 [&>option]:bg-neutral-900"
-                    value={values.topic}
-                    onChange={set('topic')}
-                  >
-                    {CONTACT_TOPICS.map((topic) => <option key={topic} value={topic}>{t(`form.topic.${topic}` as TKey)}</option>)}
-                  </select>
-                  <ChevronDown aria-hidden className="pointer-events-none absolute end-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
-                </div>
+                <Select value={values.topic} onValueChange={(topic) => setValues((current) => ({ ...current, topic }))}>
+                  <SelectTrigger {...a11y} className="text-[15px] focus-visible:border-red-500/70 focus-visible:ring-4 focus-visible:ring-red-500/15">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CONTACT_TOPICS.map((topic) => <SelectItem key={topic} value={topic}>{t(`form.topic.${topic}` as TKey)}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               )}
             </Field>
           ) : (

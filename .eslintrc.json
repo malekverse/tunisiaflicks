@@ -2,5 +2,14 @@
   "extends": "next/core-web-vitals",
   "ignorePatterns": [
     "mobile/"
-  ]
+  ],
+  "rules": {
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "JSXOpeningElement[name.name='select']",
+        "message": "Use the site's Select (src/components/ui/select): a native <select> opens the browser's own list, out of the site's design."
+      }
+    ]
+  }
 }

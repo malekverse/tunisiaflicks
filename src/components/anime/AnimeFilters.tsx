@@ -6,8 +6,11 @@ import { useI18n } from '@/src/components/I18nProvider'
 import { FORMATS, SEASONS, SORTS } from '@/src/lib/anime/model'
 import type { TKey } from '@/src/lib/i18n'
 import { cn } from '@/src/lib/utils'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select'
 
 const STATUSES = ['RELEASING', 'FINISHED', 'NOT_YET_RELEASED'] as const
+/** "Any" in a filter (the site's Select can't hold an empty value). */
+const ANY = 'any'
 
 /**
  * Browse's search box and filters. Everything lives in the address (?q=&genre=&season=…), so a
@@ -47,17 +50,18 @@ export default function AnimeFilters({ genres }: { genres: readonly string[] }) 
   const filtered = ['genre', 'season', 'year', 'format', 'status', 'sort', 'q'].some((key) => params.get(key))
 
   const select = (key: string, label: TKey, options: { value: string, label: string }[]) => (
-    <label className="flex min-w-0 flex-col gap-1.5">
-      <span className="text-[12px] font-medium text-white/50">{t(label)}</span>
-      <select
-        value={params.get(key) ?? ''}
-        onChange={(event) => update({ [key]: event.target.value || null })}
-        className="h-10 min-w-0 rounded-[12px] bg-white/[0.06] px-3 text-[14px] text-white outline-none ring-1 ring-inset ring-white/10 focus-visible:ring-2 focus-visible:ring-red-500 [&>option]:bg-neutral-900"
-      >
-        <option value="">{any}</option>
-        {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-      </select>
-    </label>
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <span id={`anime-filter-${key}`} className="text-[12px] font-medium text-white/50">{t(label)}</span>
+      <Select value={params.get(key) || ANY} onValueChange={(value) => update({ [key]: value === ANY ? null : value })}>
+        <SelectTrigger aria-labelledby={`anime-filter-${key}`} className="h-10 min-w-0 rounded-[12px] px-3 text-[14px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className="max-h-[min(320px,var(--radix-select-content-available-height))]">
+          <SelectItem value={ANY}>{any}</SelectItem>
+          {options.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    </div>
   )
 
   return (
