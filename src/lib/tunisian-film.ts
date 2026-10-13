@@ -162,10 +162,14 @@ export type CuratedFilmSource = {
 }
 
 /**
- * Hand-verified film sources. Empty on purpose: entries are added only once checked, so nothing here
- * ever claims a film can be watched where it can't. Keyed by TMDB id (stable) or the blog slug.
+ * Hand-verified film sources: an entry is added only once a human has checked the film really is
+ * where it points, so nothing here ever claims a film can be watched where it can't. Keyed by TMDB id
+ * (stable; getTunisianDetail matches films to TMDB) or the blog slug (`slug:year/month/slug`).
  */
-export const CURATED_FILM_SOURCES: Record<string, CuratedFilmSource> = {}
+export const CURATED_FILM_SOURCES: Record<string, CuratedFilmSource> = {
+  // Fleur d'Alep / The Flower of Aleppo (زهرة حلب), Ridha Behi, 2016 — on Artify (verified 2026-10-13).
+  'tmdb:413928': { legal: { platform: 'artify', url: 'https://artify.tn/media/the-flower-of-aleppo?m=5ed0fd4c6050e36c0b6cd151' } },
+}
 
 /** The curated source for a film, by its keys (`tmdb:…` preferred, then `slug:…`). */
 export function curatedFilmSource(keys: readonly string[], map: Record<string, CuratedFilmSource> = CURATED_FILM_SOURCES): CuratedFilmSource | null {

@@ -101,7 +101,14 @@ test('curatedFilmSource / legalWatchLink: exact keys only, validated', () => {
   assert.equal(legalWatchLink(['tmdb:absent'], map), null)
 })
 
-test('the shipped curated map is empty until entries are verified by hand', () => {
-  // Nothing claims a film can be watched where no human checked it.
-  assert.deepEqual(CURATED_FILM_SOURCES, {})
+test('the shipped curated map holds only valid, hand-verified entries', () => {
+  // Fleur d'Alep (TMDB 413928) is pinned to its Artify page.
+  assert.deepEqual(legalWatchLink(['tmdb:413928']), { platform: 'artify', url: 'https://artify.tn/media/the-flower-of-aleppo?m=5ed0fd4c6050e36c0b6cd151' })
+  // Every entry is usable: a full upload ({ id, channel }) or a legal link that survives validation.
+  for (const [key, source] of Object.entries(CURATED_FILM_SOURCES)) {
+    assert.match(key, /^(?:tmdb:\d+|slug:\d{4}\/\d{2}\/[^/]+)$/, `${key}: keyed by tmdb id or blog slug`)
+    if (source.youtube) assert.match(source.youtube.id, /^[\w-]{11}$/, `${key}: a YouTube id`)
+    if (source.legal) assert.ok(normalizeLegalLink(source.legal), `${key}: the legal link validates`)
+    assert.ok(source.youtube || source.legal, `${key}: has a source`)
+  }
 })
