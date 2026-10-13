@@ -22,6 +22,7 @@ import { pushToUser } from '@/src/lib/push'
 import { isKidSafe } from '@/src/lib/kids'
 import { tmdbFetchSafe } from '@/src/lib/tmdb'
 import { createTranslator } from '@/src/lib/i18n'
+import { isLocale } from '@/src/lib/i18n/locales'
 
 const TMDB_CONCURRENCY = 6
 /** Gmail allows ~500 messages a day; whatever is left over goes out on the next run. */
@@ -46,19 +47,12 @@ export type ReleaseAlertStats = {
 
 const isDuplicateKey = (error: unknown) => error instanceof MongoServerError && error.code === 11000
 
-const formatDate = (date?: string | null) =>
-  date ? new Date(`${date}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : null
-
-function headline(doc: Pick<ReleaseNotification, 'kind' | 'episode'>, releaseDate?: string | null) {
-  if (doc.kind === 'movie_released') {
-    const date = formatDate(releaseDate)
-    return date ? `Out now (released ${date})` : 'Out now'
-  }
+/** What happened, for the e-mail (it words it in the account's language, lib/account-emails). */
+function releaseEvent(doc: Pick<ReleaseNotification, 'kind' | 'episode'>, releaseDate?: string | null): ReleaseAlert['event'] {
+  if (doc.kind === 'movie_released') return { kind: 'movie', date: releaseDate ?? null }
   const episode = doc.episode
-  if (!episode) return 'New episode out now'
-  const name = episode.name ? ` · ${episode.name}` : ''
-  const date = formatDate(episode.air_date)
-  return `New episode: ${episodeCode(episode)}${name}${date ? ` (aired ${date})` : ''}`
+  if (!episode) return { kind: 'episode' }
+  return { kind: 'episode', code: episodeCode(episode), name: episode.name || null, date: episode.air_date ?? null }
 }
 
 /** Runs `worker` over `items` with at most `limit` in flight; stops picking up new items once `shouldStop()`. */
@@ -224,7 +218,7 @@ export async function runReleaseAlerts({ deadline = Date.now() + 50_000 }: { dea
     if (docs.length === 0) continue
     const ids = docs.map((doc) => doc._id)
 
-    const user = ObjectId.isValid(userId) ? await users.findOne({ _id: new ObjectId(userId) }, { projection: { email: 1, name: 1, emailPrefs: 1 } }) : null
+    const user = ObjectId.isValid(userId) ? await users.findOne({ _id: new ObjectId(userId) }, { projection: { email: 1, name: 1, emailPrefs: 1, locale: 1 } }) : null
     if (!user?.email) {
       // Account gone or without an email: keep the in-app notifications, never try to email them.
       await notifications.updateMany({ _id: { $in: ids } }, { $set: { email_status: 'failed', email_claim: null } })
@@ -248,11 +242,11 @@ export async function runReleaseAlerts({ deadline = Date.now() + 50_000 }: { dea
       tmdbId: doc.tmdbId,
       title: doc.title,
       poster_path: doc.poster_path,
-      headline: headline(doc, releaseDates.get(doc.tmdbId)),
+      event: releaseEvent(doc, releaseDates.get(doc.tmdbId)),
     }))
 
     try {
-      const result = await sendReleaseAlertsEmail(user.email, user.name, alerts)
+      const result = await sendReleaseAlertsEmail(user.email, alerts, isLocale(user.locale) ? user.locale : undefined)
       if (result === 'quota') {
         // Today's bulk budget is spent: back to pending (not an attempt), and stop e-mailing.
         await notifications.updateMany({ _id: { $in: ids }, email_claim: claim }, { $set: { email_status: 'pending', email_claim: null } })

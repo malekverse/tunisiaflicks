@@ -10,6 +10,7 @@
 import { dateLocale, htmlLang, isArabicScript, type Locale } from '@/src/lib/i18n/locales'
 import type { Translate } from '@/src/lib/i18n/translate'
 import type { DigestSection, DigestTile } from '@/src/lib/digest/providers'
+import { BLACK, FONT, HAIRLINE, RED, SECONDARY, SURFACE, TERTIARY, WHITE, mix } from '@/src/lib/email-palette'
 
 export type DigestHero = {
   title: string
@@ -47,15 +48,7 @@ export type DigestEmailInput = {
 
 export type RenderedDigest = { subject: string; preheader: string; html: string; text: string }
 
-// ---- Colours (white at the site's strengths, flattened on black) --------------------------------
-const BLACK = '#000000'
-const SURFACE = '#0b0b0b'
-const HAIRLINE = '#242424'
-const WHITE = '#ffffff'
-const SECONDARY = '#b3b3b3' // white/70
-const TERTIARY = '#8c8c8c' // white/55, never fainter
-const RED = '#e50f05'
-const FONT = `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans Arabic', Tahoma, sans-serif`
+// Colours and type: shared with the account e-mails (lib/email-palette).
 
 const WIDTH = 600
 const GUTTER = 24
@@ -86,11 +79,6 @@ const shorten = (text: string, max: number) => (text.length > max ? `${text.slic
 function rgb(color: string | null | undefined): [number, number, number] | null {
   const parts = color?.trim().split(/[\s,]+/).map(Number)
   return parts && parts.length === 3 && parts.every((n) => Number.isFinite(n) && n >= 0 && n <= 255) ? parts as [number, number, number] : null
-}
-
-/** `color` mixed into `base` at `amount` (0..1), as #rrggbb. */
-function mix(color: [number, number, number], base: [number, number, number], amount: number) {
-  return `#${color.map((value, i) => Math.round(base[i] + (value - base[i]) * amount).toString(16).padStart(2, '0')).join('')}`
 }
 
 const IMAGE_BASE = 'https://image.tmdb.org/t/p'
