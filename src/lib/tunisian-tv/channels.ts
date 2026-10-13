@@ -18,6 +18,13 @@ export type TvChannelDef = {
   kind: TvChannelKind
   /** The brand's light ('r g b'), until the avatar gives a better one. */
   color: string
+  /**
+   * Films only: a Tunisian producer or distributor, on the allowlist for full films (lib/tunisian-film
+   * matches the catalogue's films to its film-length uploads). Ingested like the others (uploads,
+   * embedding, durations, and its back catalogue with the API), but never shown as Tunisian TV: no
+   * hub, channel page, series or lives.
+   */
+  films?: true
 }
 
 export const TV_CHANNELS: readonly TvChannelDef[] = [
@@ -31,6 +38,11 @@ export const TV_CHANNELS: readonly TvChannelDef[] = [
   { slug: 'mosaique-fm', name: 'Mosaique FM', nameAr: 'Mosaique FM', youtubeId: 'UC6y8T-vG9SeQ-FKOCt_o8MA', handle: '@mosaiquefm', kind: 'radio', color: '40 170 200' },
   { slug: 'diwan-fm', name: 'Diwan FM', nameAr: 'Diwan FM', youtubeId: 'UCWbA7UIK1pKf2aFvoDyi61w', handle: '@radiodiwan', kind: 'radio', color: '60 180 120' },
   { slug: 'jawhara-fm', name: 'Jawhara FM', nameAr: 'Jawhara FM', youtubeId: 'UCXowBzuwUrjfRt68d5VphAg', handle: '@JawharaFM', kind: 'radio', color: '235 150 50' },
+  // Films only (never shown, so they go by their Latin name). Both upload their own work:
+  // Goubantini, the distributor and producer (Sabek el Khir, Super Tounsi, Sahbek Rajel), mostly
+  // trailers today; KDH PROD, an independent producer (Kheyri Habboubi), its full films and shorts.
+  { slug: 'goubantini', name: 'Goubantini Cinéma', nameAr: 'Goubantini Cinéma', youtubeId: 'UCsv0gjpDdRXUXjUzmcRYe-Q', handle: '@Goubantini_Films', kind: 'tv', color: '200 30 40', films: true },
+  { slug: 'kdh-prod', name: 'KDH PROD', nameAr: 'KDH PROD', youtubeId: 'UCiY1AoY0434EHRVEEMU4H1w', handle: '@KDHPROD_films', kind: 'tv', color: '90 90 90', films: true },
 ]
 
 /** Path segments under /tunisian/tv that are never a channel. */
@@ -56,10 +68,15 @@ export function enabledChannels(env: Env = process.env): TvChannelDef[] {
   return TV_CHANNELS.filter((channel) => (only.length === 0 || only.includes(channel.slug)) && !off.has(channel.slug))
 }
 
-/** An enabled channel by its slug, or null (unknown, reserved, malformed or switched off). */
+/** The enabled channels shown as Tunisian TV: every one but the films-only ones. */
+export function tvChannels(env: Env = process.env): TvChannelDef[] {
+  return enabledChannels(env).filter((channel) => !channel.films)
+}
+
+/** A channel shown as Tunisian TV, by its slug, or null (unknown, reserved, malformed, switched off or films only). */
 export function channelBySlug(slug: unknown, env: Env = process.env): TvChannelDef | null {
   if (typeof slug !== 'string' || !SLUG.test(slug) || RESERVED_SLUGS.includes(slug)) return null
-  return enabledChannels(env).find((channel) => channel.slug === slug) ?? null
+  return tvChannels(env).find((channel) => channel.slug === slug) ?? null
 }
 
 /** The channel a YouTube channel id belongs to (enabled or not). */

@@ -43,6 +43,8 @@ export type TtvChannelDoc = {
   live: { videoId: string, title: string, since: Date } | null
   playlists: TtvPlaylistRef[]
   playlistsListedAt?: Date | null
+  /** A films-only channel: when its back catalogue was last read (ingest phaseCatalogue). */
+  catalogueReadAt?: Date | null
   updatedAt: Date
 }
 

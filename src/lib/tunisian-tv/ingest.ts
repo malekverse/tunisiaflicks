@@ -9,15 +9,20 @@
 //    channels; never search.list; 3,000 units a day at most). Without it, each playlist's feed
 //    (15 entries): such series are never "complete". On-air playlists every 2h (30 min for a
 //    Ramadan series during Ramadan), the others weekly.
+// B2. Film catalogues: with the API, a films-only channel's latest 200 uploads, weekly.
 // C. Verify: oEmbed for 40 new videos and 20 checked more than 7 days ago; cover checks.
 // D. Derive: series, kinds, cadence, Ramadan, colours (derive.ts).
 // E. Prune (retention below), then revalidateTag('ttv').
+//
+// A films-only channel (channels.ts `films`) goes through A (no lives feed), B2, C and E only: its
+// uploads feed the film matching (lib/tunisian-film), never a series, the hub or a channel page.
 import 'server-only'
 import { revalidateTag } from 'next/cache'
 import { Binary, type AnyBulkWriteOperation } from 'mongodb'
 import { ramadanStatus } from '@/src/lib/ramadan'
 import { isYouTubeId } from '@/src/lib/youtube'
 import type { CronResult } from '@/src/lib/cron'
+import { MIN_FILM_SECONDS } from '@/src/lib/tunisian-film'
 import { enabledChannels, livesPlaylist, tunisianTvOff, uploadsPlaylist, type TvChannelDef } from './channels'
 import { ttv, type TtvChannelDoc, type TtvCollections, type TtvPlaylistRef, type TtvSeriesDoc, type TtvVideoDoc } from './db'
 import { deriveChannel, seriesIdOf } from './derive'
@@ -68,6 +73,9 @@ const fromEntry = (entry: FeedEntry, live = false): Upload => ({
   id: entry.id, title: entry.title, description: entry.description, publishedAt: entry.publishedAt, views: entry.views, live,
 })
 
+/** A films-only channel's upload keeps no description (only drama episodes show one) and is never live. */
+const filmsOnly = (def: TvChannelDef, upload: Upload): Upload => (def.films ? { ...upload, description: '', live: false } : upload)
+
 /** The upsert of one upload; `series` files it under a playlist's series. */
 function upsertVideo(channel: string, upload: Upload, now: Date, series?: { id: string, playlistId: string }): AnyBulkWriteOperation<TtvVideoDoc> {
   const info = parseEpisodeTitle(upload.title)
@@ -117,7 +125,8 @@ type FeedRead = {
 async function readChannel(def: TvChannelDef, deadline: number): Promise<FeedRead> {
   const [uploads, lives] = await Promise.all([
     fetchFeedWithRetry({ playlist: uploadsPlaylist(def.youtubeId) }, deadline),
-    fetchFeed({ playlist: livesPlaylist(def.youtubeId) }, deadline),
+    // A films-only channel is never shown live: its lives feed isn't read (as if it had none).
+    def.films ? Promise.resolve({ ok: false as const, status: 404 }) : fetchFeed({ playlist: livesPlaylist(def.youtubeId) }, deadline),
   ])
   const mine = (entry: FeedEntry) => !entry.isShort && (!entry.channelId || entry.channelId === def.youtubeId)
   let entries: FeedEntry[] | null = uploads.ok && (!uploads.feed.channelId || uploads.feed.channelId === def.youtubeId) ? uploads.feed.entries.filter(mine) : null
@@ -193,7 +202,7 @@ async function phaseFeeds(db: TtvCollections, defs: TvChannelDef[], docs: Map<st
     for (const entry of [...read.uploads, ...(read.lives ?? [])]) {
       if (seen.has(entry.id)) continue
       seen.add(entry.id)
-      writes.push(upsertVideo(read.def.slug, fromEntry(entry, entry.id === liveEntry?.id), now))
+      writes.push(upsertVideo(read.def.slug, filmsOnly(read.def, fromEntry(entry, entry.id === liveEntry?.id)), now))
     }
 
     const update: Partial<TtvChannelDoc> = { feedReadAt: now, updatedAt: now }
@@ -210,7 +219,8 @@ async function phaseFeeds(db: TtvCollections, defs: TvChannelDef[], docs: Map<st
       const known = new Set(doc.playlists.map((ref) => ref.id))
       const found = read.uploads.flatMap((entry) => playlistIdsIn(entry.description)).filter((id) => isPlaylistId(id) && !known.has(id))
       const fresh = [...new Set(found)].map((id): TtvPlaylistRef => ({ id, readAt: null, failures: 0 }))
-      if (fresh.length) update.playlists = [...fresh, ...doc.playlists].slice(0, MAX_PLAYLISTS_PER_CHANNEL)
+      // A films-only channel's playlists are never read (they would become series).
+      if (fresh.length && !read.def.films) update.playlists = [...fresh, ...doc.playlists].slice(0, MAX_PLAYLISTS_PER_CHANNEL)
     } else if (!outage) {
       update.feedFailures = doc.feedFailures + 1
     }
@@ -424,6 +434,37 @@ async function phasePlaylists(db: TtvCollections, defs: TvChannelDef[], docs: Ma
 }
 
 // ---------------------------------------------------------------------------------------------
+// B2. Film catalogues
+
+const CATALOGUE_EVERY_MS = 7 * DAY
+
+/**
+ * With the API, once a week: a films-only channel's back catalogue (its latest 200 uploads, through
+ * its uploads playlist). Its full films are usually older than the 15 uploads its feed lists. Filed
+ * under no series; Verify then reads their durations, which the film matching needs.
+ */
+async function phaseCatalogue(db: TtvCollections, defs: TvChannelDef[], docs: Map<string, TtvChannelDoc>, o: { deadline: number, now: Date }, stats: Stats) {
+  if (!youtubeApiKey()) return
+  let read = 0
+  for (const def of defs) {
+    const doc = docs.get(def.slug)
+    if (!doc || (doc.catalogueReadAt && o.now.getTime() - doc.catalogueReadAt.getTime() < CATALOGUE_EVERY_MS)) continue
+    if (timeLeft(o.deadline) < 7000) {
+      stats.more = true
+      break
+    }
+    const result = await readPlaylistWithApi(db, def, { id: uploadsPlaylist(def.youtubeId), title: 'Uploads' }, o.deadline)
+    // Nothing read (the API is off for today, or failed): tried again next run.
+    if (!result || 'rejected' in result) continue
+    if (result.uploads.length) await db.videos.bulkWrite(result.uploads.map((upload) => upsertVideo(def.slug, filmsOnly(def, upload), o.now)), { ordered: false })
+    doc.catalogueReadAt = o.now
+    await db.channels.updateOne({ _id: def.slug }, { $set: { catalogueReadAt: o.now } })
+    read += result.uploads.length
+  }
+  stats.catalogueVideos = read
+}
+
+// ---------------------------------------------------------------------------------------------
 // C. Verify
 
 async function phaseVerify(db: TtvCollections, docs: Map<string, TtvChannelDoc>, o: { deadline: number, now: Date }, stats: Stats) {
@@ -558,15 +599,18 @@ async function phaseDerive(db: TtvCollections, defs: TvChannelDef[], o: { deadli
 // E. Prune
 
 /**
- * Retention: removed videos 30 days after they went; videos in no series after 45 days; videos
- * of hidden series (clips, or mostly unplayable) after 30; a talk or entertainment show keeps its
- * latest 60.
+ * Retention: removed videos 30 days after they went; videos in no series after 45 days, but for the
+ * ones the film matching reads (a films-only channel's, and film-length uploads); videos of hidden
+ * series (clips, or mostly unplayable) after 30; a talk or entertainment show keeps its latest 60.
  */
-async function phasePrune(db: TtvCollections, o: { now: Date }, stats: Stats) {
+async function phasePrune(db: TtvCollections, filmChannels: string[], o: { now: Date }, stats: Stats) {
   const ago = (days: number) => new Date(o.now.getTime() - days * DAY)
   let pruned = 0
   pruned += (await db.videos.deleteMany({ status: 'gone', goneAt: { $lt: ago(30) } })).deletedCount
-  pruned += (await db.videos.deleteMany({ seriesId: null, publishedAt: { $lt: ago(45) }, live: { $ne: true } })).deletedCount
+  pruned += (await db.videos.deleteMany({
+    seriesId: null, publishedAt: { $lt: ago(45) }, live: { $ne: true }, channelId: { $nin: filmChannels },
+    $or: [{ duration: null }, { duration: { $lt: MIN_FILM_SECONDS } }],
+  })).deletedCount
   const hidden = await db.series.find({ hidden: true }, { projection: { _id: 1 } }).toArray()
   if (hidden.length) pruned += (await db.videos.deleteMany({ seriesId: { $in: hidden.map((item) => item._id) }, publishedAt: { $lt: ago(30) } })).deletedCount
   // 60 videos are at least 20 broadcasts (three parts at most): only those shows can be over.
@@ -589,6 +633,9 @@ export async function runTunisianTvIngest(o: { deadline: number, scope?: IngestS
   const scope = o.scope ?? 'full'
   const db = await ttv()
   const defs = enabledChannels()
+  // The films-only channels: their uploads are read and checked, but never made into series.
+  const tvDefs = defs.filter((def) => !def.films)
+  const filmDefs = defs.filter((def) => def.films)
   const stats: Stats = { more: false, api: !!youtubeApiKey() }
 
   await db.meta.updateOne({ _id: 'state' }, { $setOnInsert: { startedAt: now } }, { upsert: true })
@@ -605,11 +652,12 @@ export async function runTunisianTvIngest(o: { deadline: number, scope?: IngestS
   // Checking new videos comes before playlists: a tile must never offer what can't play here.
   if (timeLeft(o.deadline) > 4000) await timed('Verify', () => phaseVerify(db, docs, ctx, stats))
   else stats.more = true
-  if (scope === 'full' && timeLeft(o.deadline) > 7000) await timed('Playlists', () => phasePlaylists(db, defs, docs, ctx, stats))
+  if (scope === 'full' && timeLeft(o.deadline) > 7000) await timed('Playlists', () => phasePlaylists(db, tvDefs, docs, ctx, stats))
   else if (scope === 'full') stats.more = true
-  await timed('Derive', () => phaseDerive(db, defs, ctx, stats))
+  if (scope === 'full' && filmDefs.length && timeLeft(o.deadline) > 7000) await timed('Catalogue', () => phaseCatalogue(db, filmDefs, docs, ctx, stats))
+  await timed('Derive', () => phaseDerive(db, tvDefs, ctx, stats))
   // Pruning can wait for the next run when this one is out of time.
-  if (timeLeft(o.deadline) > 1500) await timed('Prune', () => phasePrune(db, ctx, stats))
+  if (timeLeft(o.deadline) > 1500) await timed('Prune', () => phasePrune(db, filmDefs.map((def) => def.slug), ctx, stats))
   else stats.more = true
   if (youtubeApiKey()) stats.units = await unitsToday(db)
 

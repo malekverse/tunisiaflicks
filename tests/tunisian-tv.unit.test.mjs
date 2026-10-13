@@ -12,7 +12,7 @@ import {
   airingCadence, classifySeries, cleanDescription, decodeXml, formatDuration, groupParts, isRamadanStart, looksLiveNow,
   parseEpisodeTitle, parseFeed, parseIsoDuration, playlistIdsIn, seriesKey,
 } from '@/src/lib/tunisian-tv/parse'
-import { RESERVED_SLUGS, TV_CHANNELS, channelBySlug, enabledChannels, livesPlaylist, tunisianTvOff, uploadsPlaylist } from '@/src/lib/tunisian-tv/channels'
+import { RESERVED_SLUGS, TV_CHANNELS, channelBySlug, enabledChannels, livesPlaylist, tunisianTvOff, tvChannels, uploadsPlaylist } from '@/src/lib/tunisian-tv/channels'
 import { tunisianTv } from '@/src/lib/i18n/features/tunisian-tv'
 
 const FIXTURES = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'tunisian-tv')
@@ -262,18 +262,19 @@ test('durations', () => {
 // Channels
 
 test('channels: the table, reserved slugs and the switches', () => {
-  assert.equal(TV_CHANNELS.length, 10)
+  assert.equal(TV_CHANNELS.length, 12)
   for (const channel of TV_CHANNELS) {
     assert.match(channel.youtubeId, /^UC[A-Za-z0-9_-]{22}$/, channel.slug)
     assert.match(channel.slug, /^[a-z0-9-]+$/)
     assert.ok(!RESERVED_SLUGS.includes(channel.slug))
     assert.match(channel.color, /^\d{1,3} \d{1,3} \d{1,3}$/)
   }
-  assert.equal(new Set(TV_CHANNELS.map((channel) => channel.slug)).size, 10)
+  assert.equal(new Set(TV_CHANNELS.map((channel) => channel.slug)).size, 12)
+  assert.equal(new Set(TV_CHANNELS.map((channel) => channel.youtubeId)).size, 12)
   assert.equal(uploadsPlaylist('UCJW9gatYczI191TunQxMGbA'), 'UULFJW9gatYczI191TunQxMGbA')
   assert.equal(livesPlaylist('UCJW9gatYczI191TunQxMGbA'), 'UULVJW9gatYczI191TunQxMGbA')
 
-  assert.equal(enabledChannels({}).length, 10)
+  assert.equal(enabledChannels({}).length, 12)
   assert.deepEqual(enabledChannels({ TUNISIAN_TV_CHANNELS: 'nessma, elhiwar' }).map((c) => c.slug), ['elhiwar', 'nessma'])
   assert.equal(enabledChannels({ TUNISIAN_TV_CHANNELS_OFF: 'nessma' }).some((c) => c.slug === 'nessma'), false)
   assert.equal(enabledChannels({ TUNISIAN_TV_CHANNELS_OFF: '*' }).length, 0)
@@ -281,6 +282,20 @@ test('channels: the table, reserved slugs and the switches', () => {
   assert.equal(channelBySlug('watania-1', {})?.name, 'Watania 1')
   for (const bad of ['series', 'live', 'WATANIA-1', '../x', '', null, 'nope']) assert.equal(channelBySlug(bad, {}), null, String(bad))
   assert.equal(channelBySlug('nessma', { TUNISIAN_TV_CHANNELS_OFF: 'nessma' }), null)
+})
+
+test('channels: the films-only ones are ingested, never shown as Tunisian TV', () => {
+  const films = TV_CHANNELS.filter((channel) => channel.films).map((channel) => channel.slug)
+  assert.deepEqual(films, ['goubantini', 'kdh-prod'])
+  // Ingested (enabledChannels feeds the cron and the film matching)…
+  for (const slug of films) assert.ok(enabledChannels({}).some((channel) => channel.slug === slug), slug)
+  // …but no hub, channel page or series: not among the TV channels, and their page is a 404.
+  assert.equal(tvChannels({}).length, 10)
+  assert.equal(tvChannels({}).some((channel) => channel.films), false)
+  for (const slug of films) assert.equal(channelBySlug(slug, {}), null, slug)
+  // The switches apply to them too.
+  assert.equal(enabledChannels({ TUNISIAN_TV_CHANNELS_OFF: 'goubantini' }).some((channel) => channel.slug === 'goubantini'), false)
+  assert.deepEqual(tvChannels({ TUNISIAN_TV_CHANNELS: 'kdh-prod, nessma' }).map((channel) => channel.slug), ['nessma'])
 })
 
 // ---------------------------------------------------------------------------------------------

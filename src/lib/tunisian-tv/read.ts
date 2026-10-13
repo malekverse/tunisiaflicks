@@ -9,7 +9,7 @@ import { ramadanStatus } from '@/src/lib/ramadan'
 import { MIN_FILM_SECONDS, type FilmUploadCandidate } from '@/src/lib/tunisian-film'
 import { withTimeout } from '@/src/lib/with-timeout'
 import { youtubeThumb } from '@/src/lib/youtube'
-import { channelBySlug, enabledChannels, uploadsPlaylist, type TvChannelDef } from './channels'
+import { channelBySlug, enabledChannels, tvChannels, uploadsPlaylist, type TvChannelDef } from './channels'
 import { ttv, type TtvChannelDoc, type TtvSeriesDoc, type TtvVideoDoc } from './db'
 import { deriveChannel } from './derive'
 import { fetchFeed } from './net'
@@ -114,7 +114,7 @@ type Loaded = { channels: ChannelLite[], series: SeriesLite[], videos: VideoLite
 
 async function loadFromDb(o: { channel?: string, since?: Date, limit: number }): Promise<Loaded | null> {
   const db = await ttv()
-  const enabled = enabledChannels().map((def) => def.slug)
+  const enabled = tvChannels().map((def) => def.slug)
   const channelFilter = o.channel ? [o.channel] : enabled
   const [channels, series, videos, state] = await Promise.all([
     db.channels.find({ _id: { $in: channelFilter }, disabled: { $ne: true } }, { projection: { avatarData: 0, playlists: 0 } }).toArray(),
@@ -178,7 +178,7 @@ async function loadFromFeeds(defs: TvChannelDef[]): Promise<Loaded> {
 }
 
 async function load(o: { channel?: string, since?: Date, limit: number }): Promise<Loaded> {
-  const defs = o.channel ? enabledChannels().filter((def) => def.slug === o.channel) : enabledChannels()
+  const defs = o.channel ? tvChannels().filter((def) => def.slug === o.channel) : tvChannels()
   if (defs.length === 0) return { channels: [], series: [], videos: [], updatedAt: null, bootstrap: false }
   let stored: Loaded | null = null
   try {
@@ -401,7 +401,7 @@ const PLAYABLE = { status: { $nin: ['gone', 'blocked'] as TtvVideoDoc['status'][
 
 async function buildDramaIndex(): Promise<TvDramaEntry[]> {
   const db = await ttv()
-  const channels = enabledChannels().map((def) => def.slug)
+  const channels = tvChannels().map((def) => def.slug)
   const [series, counts] = await Promise.all([
     db.series.find({ channelId: { $in: channels }, hidden: false, kind: 'drama' }, { projection: { _id: 1, channelId: 1, title: 1, titleAlt: 1 } }).sort({ lastAt: -1 }).toArray(),
     // Episodes, not uploads: the parts of one broadcast count once.
@@ -440,7 +440,7 @@ export type TvEpisode = Pick<TtvVideoDoc, '_id' | 'title' | 'episode' | 'part' |
 async function buildSeriesEpisodes(seriesId: string): Promise<TvEpisode[]> {
   const db = await ttv()
   const videos = await db.videos.find(
-    { seriesId, channelId: { $in: enabledChannels().map((def) => def.slug) }, ...PLAYABLE },
+    { seriesId, channelId: { $in: tvChannels().map((def) => def.slug) }, ...PLAYABLE },
     { projection: { _id: 1, title: 1, episode: 1, part: 1, season: 1, subtitle: 1, publishedAt: 1 } },
   ).sort({ publishedAt: 1 }).limit(400).toArray()
   return videos.map((video) => ({ ...video, title: cleanTitle(video.title), subtitle: video.subtitle ? cleanTitle(video.subtitle) : null, publishedAt: new Date(video.publishedAt).toISOString() }))
@@ -461,13 +461,14 @@ export async function getTvSeriesEpisodes(seriesId: string): Promise<TvEpisode[]
 // ---------------------------------------------------------------------------------------------
 // Full films: the trusted channels' long uploads (lib/tunisian-film matches a film to one of them)
 
-/** A film-length upload here: known, long, embeddable, not a clip or a live. */
-const FILM_UPLOAD = { ...PLAYABLE, duration: { $gte: MIN_FILM_SECONDS } }
+/** A film-length upload here: known, long, embeddable, not a clip, a live or a numbered episode. */
+const FILM_UPLOAD = { ...PLAYABLE, duration: { $gte: MIN_FILM_SECONDS }, episode: null }
 
 async function buildFilmUploadIndex(): Promise<FilmUploadCandidate[]> {
   const db = await ttv()
-  // Every candidate comes from an enabled (trusted, official) channel: the allowlist is the ingestion
-  // itself — these collections only ever hold uploads from the channels in lib/tunisian-tv/channels.
+  // Every candidate comes from an enabled (trusted, official) channel, the films-only ones included:
+  // the allowlist is the ingestion itself — these collections only ever hold uploads from the
+  // channels in lib/tunisian-tv/channels.
   const videos = await db.videos.find(
     { channelId: { $in: enabledChannels().map((def) => def.slug) }, ...FILM_UPLOAD },
     { projection: { _id: 1, channelId: 1, title: 1, duration: 1, views: 1, publishedAt: 1 } },
@@ -482,7 +483,7 @@ async function buildFilmUploadIndex(): Promise<FilmUploadCandidate[]> {
   }))
 }
 
-const cachedFilmUploadIndex = unstable_cache(buildFilmUploadIndex, ['ttv-film-uploads', 'v1'], { revalidate: REVALIDATE, tags: TAGS })
+const cachedFilmUploadIndex = unstable_cache(buildFilmUploadIndex, ['ttv-film-uploads', 'v2'], { revalidate: REVALIDATE, tags: TAGS })
 
 /** Every film-length upload on the trusted channels, longest first. Never throws. */
 export async function getFilmUploadIndex(): Promise<FilmUploadCandidate[]> {
@@ -504,7 +505,7 @@ export async function searchTvSeries(query: string, limit = 8): Promise<TvSeries
     const db = await ttv()
     const pattern = new RegExp(escapeRegex(text), 'i')
     const found = await db.series.find({
-      hidden: false, kind: { $ne: 'clips' }, channelId: { $in: enabledChannels().map((def) => def.slug) }, $or: [{ title: pattern }, { titleAlt: pattern }],
+      hidden: false, kind: { $ne: 'clips' }, channelId: { $in: tvChannels().map((def) => def.slug) }, $or: [{ title: pattern }, { titleAlt: pattern }],
     }).sort({ lastAt: -1 }).limit(Math.min(20, limit)).toArray()
     return found.map((item) => seriesView(item, null))
   } catch {
