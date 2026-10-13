@@ -1,10 +1,11 @@
 // Unit tests for the Tunisian catalogue's parsing (src/lib/tunisian): the player a post or an
 // episode page embeds (YouTube, VK Video, iframely), the episode links that are real (not the
-// source's placeholders), and which titles have something to watch. No network:
+// source's placeholders), which titles have something to watch, and a Tunisian TV series' uploads
+// as the seasons of a series the source has no episodes of. No network:
 //   npm run test:unit
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { episodeLinks, isPlayable, playerIn, toSourceUrl, youtubeIdIn } from '@/src/lib/tunisian'
+import { episodeLinks, isPlayable, playerIn, toSourceUrl, tvSeasons, youtubeIdIn } from '@/src/lib/tunisian'
 
 test('youtubeIdIn: embeds, watch links, short links; nothing for placeholders', () => {
   assert.equal(youtubeIdIn('<div class="player-container"><iframe src="https://www.youtube.com/embed/OoRz5T7VuvE?si=g1DHx1le_LGD02rc"></iframe></div>'), 'OoRz5T7VuvE')
@@ -58,4 +59,24 @@ test('playerIn: YouTube, VK Video and iframely players; typos repaired; anything
   assert.equal(playerIn('<iframe src="https://evil.example/video_ext.php"></iframe>'), null)
   assert.equal(playerIn('<iframe src="javascript:alert(1)"></iframe>'), null)
   assert.equal(playerIn('<iframe src="ضع_هنا_رابط_سيرفر_المشاهدة"></iframe>'), null)
+})
+
+test('tvSeasons: uploads by season, in episode and part order, each once, all playing here', () => {
+  const upload = (id: string, episode: number | null, o: { part?: number, season?: number, at?: string, subtitle?: string } = {}) => ({
+    _id: id, title: `Upload ${id}`, episode, part: o.part ?? null, season: o.season ?? null, subtitle: o.subtitle ?? null, publishedAt: o.at ?? '2026-02-20T20:00:00.000Z',
+  })
+  const seasons = tvSeasons([
+    upload('aaaaaaaaaa2', 2),
+    upload('aaaaaaaaa1b', 1, { part: 2 }),
+    upload('aaaaaaaaa1a', 1, { part: 1 }),
+    // The same episode uploaded again: the latest one plays.
+    upload('aaaaaaaold2', 2, { at: '2026-02-19T20:00:00.000Z' }),
+    upload('bbbbbbbbbb1', 1, { season: 2 }),
+    upload('ccccccccccc', null, { subtitle: 'الحلقة الخاصة' }),
+  ])
+  assert.deepEqual(seasons.map((season) => season.season), [1, 2])
+  assert.deepEqual(seasons[0].episodes.map((episode) => episode.label), ['الحلقة 1 · الجزء 1', 'الحلقة 1 · الجزء 2', 'الحلقة 2', 'الحلقة الخاصة'])
+  assert.deepEqual(seasons[0].episodes[2], { label: 'الحلقة 2', url: 'https://www.youtube.com/watch?v=aaaaaaaaaa2', media: { type: 'youtube', id: 'aaaaaaaaaa2' } })
+  assert.deepEqual(seasons[1].episodes.map((episode) => episode.media), [{ type: 'youtube', id: 'bbbbbbbbbb1' }])
+  assert.deepEqual(tvSeasons([]), [])
 })

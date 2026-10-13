@@ -389,6 +389,74 @@ export async function tunisianTvSitemap(): Promise<{ path: string, priority: num
   ]
 }
 
+// ---------------------------------------------------------------------------------------------
+// The Tunisian catalogue's series the source never added episodes to (lib/tunisian)
+
+/** A drama series and its episodes that play here, per season ('1' when unnumbered). */
+export type TvDramaEntry = { id: string, channel: string, title: string, titleAlt: string | null, seasons: Record<string, number> }
+
+/** What plays here: not gone, not blocked from embedding, no clip or live. */
+const PLAYABLE = { status: { $nin: ['gone', 'blocked'] as TtvVideoDoc['status'][] }, clip: { $ne: true }, live: { $ne: true } }
+
+async function buildDramaIndex(): Promise<TvDramaEntry[]> {
+  const db = await ttv()
+  const channels = enabledChannels().map((def) => def.slug)
+  const [series, counts] = await Promise.all([
+    db.series.find({ channelId: { $in: channels }, hidden: false, kind: 'drama' }, { projection: { _id: 1, channelId: 1, title: 1, titleAlt: 1 } }).sort({ lastAt: -1 }).toArray(),
+    // Episodes, not uploads: the parts of one broadcast count once.
+    db.videos.aggregate<{ _id: { series: string, season: number | null }, episodes: unknown[] }>([
+      { $match: { channelId: { $in: channels }, seriesId: { $ne: null }, ...PLAYABLE } },
+      { $group: { _id: { series: '$seriesId', season: '$season' }, episodes: { $addToSet: { $ifNull: ['$episode', '$_id'] } } } },
+    ]).toArray(),
+  ])
+  const seasons = new Map<string, Record<string, number>>()
+  for (const row of counts) {
+    const bySeason = seasons.get(row._id.series) ?? {}
+    const season = String(row._id.season ?? 1)
+    bySeason[season] = (bySeason[season] ?? 0) + row.episodes.length
+    seasons.set(row._id.series, bySeason)
+  }
+  return series.flatMap((item) => {
+    const found = seasons.get(item._id)
+    return found ? [{ id: item._id, channel: item.channelId, title: item.title, titleAlt: item.titleAlt, seasons: found }] : []
+  })
+}
+
+const cachedDramaIndex = unstable_cache(buildDramaIndex, ['ttv-drama-index', 'v1'], { revalidate: REVALIDATE, tags: TAGS })
+
+/** Every drama series with episodes that play here, most recent first. Never throws. */
+export async function getTvDramaIndex(): Promise<TvDramaEntry[]> {
+  try {
+    return await cachedDramaIndex()
+  } catch (error) {
+    console.error('tunisian-tv: the drama index failed', error)
+    return []
+  }
+}
+
+export type TvEpisode = Pick<TtvVideoDoc, '_id' | 'title' | 'episode' | 'part' | 'season' | 'subtitle'> & { publishedAt: string }
+
+async function buildSeriesEpisodes(seriesId: string): Promise<TvEpisode[]> {
+  const db = await ttv()
+  const videos = await db.videos.find(
+    { seriesId, channelId: { $in: enabledChannels().map((def) => def.slug) }, ...PLAYABLE },
+    { projection: { _id: 1, title: 1, episode: 1, part: 1, season: 1, subtitle: 1, publishedAt: 1 } },
+  ).sort({ publishedAt: 1 }).limit(400).toArray()
+  return videos.map((video) => ({ ...video, title: cleanTitle(video.title), subtitle: video.subtitle ? cleanTitle(video.subtitle) : null, publishedAt: new Date(video.publishedAt).toISOString() }))
+}
+
+const cachedSeriesEpisodes = unstable_cache(buildSeriesEpisodes, ['ttv-series-episodes', 'v1'], { revalidate: REVALIDATE, tags: TAGS })
+
+/** A series' uploads that play here, oldest first. Never throws. */
+export async function getTvSeriesEpisodes(seriesId: string): Promise<TvEpisode[]> {
+  try {
+    return await cachedSeriesEpisodes(seriesId)
+  } catch (error) {
+    console.error('tunisian-tv: reading a series failed', error)
+    return []
+  }
+}
+
 const escapeRegex = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 /** Series whose name contains `query` (either script), most recent first. Never throws. */

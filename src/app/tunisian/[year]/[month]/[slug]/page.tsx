@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Clock } from 'lucide-react'
+import { Clock, Tv } from 'lucide-react'
 import TunisianSeasons from '@/src/components/detail/TunisianSeasons'
 import TunisianPlay from '@/src/components/detail/TunisianPlay'
 import PosterCard from '@/src/components/PosterCard'
@@ -11,7 +11,10 @@ import RoomTint from '@/src/components/shell/RoomTint'
 import { Button } from '@/src/components/ui/button'
 import { getKidsMode } from '@/src/lib/profiles'
 import { getTunisianDetail, getTunisianTitles } from '@/src/lib/tunisian'
-import { getT } from '@/src/lib/i18n/server'
+import { getLocale, getT } from '@/src/lib/i18n/server'
+import { isArabicScript } from '@/src/lib/i18n/locales'
+import { channelBySlug } from '@/src/lib/tunisian-tv/channels'
+import { tvSeriesHref } from '@/src/lib/tunisian-tv/view'
 import { pageMetadata } from '@/src/lib/seo'
 
 export const dynamic = 'force-dynamic'
@@ -56,6 +59,8 @@ export default async function TunisianDetailPage({ params }: Props) {
   const more = ((await getTunisianTitles()) ?? []).filter((title) => title.slug !== detail.slug).slice(0, 12)
 
   const episodeCount = detail.seasons.reduce((total, season) => total + season.episodes.length, 0)
+  // Episodes from a channel's own uploads (the source has none): say whose, and link to them there.
+  const tvChannel = detail.tv ? channelBySlug(detail.tv.channel) : null
 
   return (
     <div className="w-full min-w-0 space-y-12 pb-10">
@@ -92,6 +97,15 @@ export default async function TunisianDetailPage({ params }: Props) {
                   <Clock aria-hidden className="h-4 w-4" />{t('tunisian.notYet')}
                 </p>
               ))}
+            {detail.tv && tvChannel && (
+              <Link
+                href={tvSeriesHref(detail.tv.channel, detail.tv.seriesId)}
+                className="mt-7 inline-flex items-center gap-2 rounded-full bg-white/[0.07] px-4 py-2.5 text-[14px] text-white/75 ring-1 ring-inset ring-white/10 transition-colors duration-200 hover:bg-white/[0.12] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+              >
+                <Tv aria-hidden className="h-4 w-4 shrink-0" />
+                {t('ttv.fromChannel', { channel: isArabicScript(getLocale()) ? tvChannel.nameAr : tvChannel.name })}
+              </Link>
+            )}
           </div>
         </div>
       </section>

@@ -88,6 +88,8 @@ export const tunisianTv = defineStrings({
     'ttv.ramadan.rowNow': 'On Tunisian TV this Ramadan',
     'ttv.ramadan.rowOf': 'Ramadan {year} on Tunisian TV',
     'ttv.ramadan.rowNote': 'Full episodes from the channels',
+    /** A Tunisian Vibes series whose episodes come from a channel's own uploads. */
+    'ttv.fromChannel': 'Official episodes from {channel}, on Tunisian TV',
 
     'ttv.digest.title': 'New on Tunisian TV',
     'ttv.digest.episode': 'Episode {n}',
@@ -176,6 +178,7 @@ export const tunisianTv = defineStrings({
     'ttv.ramadan.rowNow': 'على التلفزة التونسية في رمضان هذا',
     'ttv.ramadan.rowOf': 'رمضان {year} على التلفزة التونسية',
     'ttv.ramadan.rowNote': 'حلقات كاملة من القنوات',
+    'ttv.fromChannel': 'الحلقات الرسمية من {channel} على التلفزة التونسية',
 
     'ttv.digest.title': 'جديد التلفزة التونسية',
     'ttv.digest.episode': 'الحلقة {n}',
@@ -224,6 +227,7 @@ export const tunisianTv = defineStrings({
     'ttv.door.ramadanText': 'مسلسلات كل رمضان، والعدّان للجاي',
     'ttv.door.liveLabel': 'فما قناة تبثّ مباشر توّا',
     'ttv.ramadan.watch': 'تفرّج على التلفزة التونسية',
+    'ttv.fromChannel': 'الحلقات الرسمية متاع {channel} على التلفزة التونسية',
     'ttv.ramadan.rowNow': 'على التلفزة التونسية في رمضان هذا',
     'ttv.digest.title': 'الجديد في التلفزة التونسية',
   },
@@ -310,6 +314,7 @@ export const tunisianTv = defineStrings({
     'ttv.ramadan.rowNow': 'Sur la TV tunisienne ce ramadan',
     'ttv.ramadan.rowOf': 'Le ramadan {year} sur la TV tunisienne',
     'ttv.ramadan.rowNote': 'Des épisodes complets, depuis les chaînes',
+    'ttv.fromChannel': 'Les épisodes officiels de {channel}, sur la TV tunisienne',
 
     'ttv.digest.title': 'Nouveau sur la TV tunisienne',
     'ttv.digest.episode': 'Épisode {n}',

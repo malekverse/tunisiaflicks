@@ -1,4 +1,6 @@
 import { JSDOM } from 'jsdom'
+import { matchTvSeries, partOf } from '@/src/lib/tunisian-match'
+import type { TvDramaEntry, TvEpisode } from '@/src/lib/tunisian-tv/read'
 
 // The Tunisian catalogue comes from the source site's public Blogger JSON feed. Unlike scraping
 // its HTML, the feed has a stable, documented shape, so a redesign of the site's pages won't break it.
@@ -8,6 +10,9 @@ import { JSDOM } from 'jsdom'
 // dialog, and only titles with something to watch are listed (the source keeps "put the link here"
 // placeholders for what isn't out yet). The last good feed is kept in the database, so the
 // catalogue stays up when the source is slow or down.
+//
+// A series the source never added episodes to plays its official uploads instead, when Tunisian TV
+// (lib/tunisian-tv) holds the same series (lib/tunisian-match: confident matches only).
 const SOURCE = new URL('https://www.tunigazelle-news.xyz')
 const FEED_URL = `${SOURCE.origin}/feeds/posts/default?alt=json&max-results=200`
 const REVALIDATE = 1800
@@ -42,6 +47,8 @@ export type TunisianDetail = TunisianTitle & {
   seasons: TunisianSeason[]
   /** What a film plays (null: nothing to watch yet). */
   media: TunisianMedia | null
+  /** The series' episodes are its official uploads, from this Tunisian TV series. */
+  tv: { channel: string, seriesId: string } | null
 }
 
 type FeedEntry = {
@@ -214,12 +221,72 @@ async function fetchEntries(): Promise<FeedEntry[] | null> {
 export async function getTunisianTitles(): Promise<TunisianTitle[] | null> {
   const entries = await fetchEntries()
   if (!entries) return null
-  return entries
-    .map((entry) => {
-      const title = toTitle(entry)
-      return title && isPlayable(title.kind, entry.content?.$t ?? '') ? title : null
-    })
-    .filter((title): title is TunisianTitle => title !== null)
+  const titles = entries.flatMap((entry) => {
+    const title = toTitle(entry)
+    return title ? [{ title, playable: isPlayable(title.kind, entry.content?.$t ?? '') }] : []
+  })
+  // A series without episodes on the source is listed when Tunisian TV has it.
+  const onTv = titles.some((item) => !item.playable && item.title.kind === 'series') ? await tvMatcher() : null
+  return titles.filter((item) => item.playable || (item.title.kind === 'series' && onTv?.(item.title.title))).map((item) => item.title)
+}
+
+// ---- series the source has no episodes of: their official uploads ------------------------------
+
+/** Finds a series' official one on Tunisian TV; finds nothing when Tunisian TV can't be read. */
+async function tvMatcher(): Promise<(name: string) => TvDramaEntry | null> {
+  try {
+    const { getTvDramaIndex } = await import('@/src/lib/tunisian-tv/read')
+    const index = await getTvDramaIndex()
+    return (name) => matchTvSeries(name, index)
+  } catch (error) {
+    console.error('Tunisian: reading Tunisian TV failed', error)
+    return () => null
+  }
+}
+
+type TvUpload = Pick<TvEpisode, '_id' | 'title' | 'episode' | 'part' | 'season' | 'subtitle' | 'publishedAt'>
+
+/**
+ * A series' uploads as seasons of episodes that play in the video dialog: by season (unnumbered:
+ * 1), in episode and part order, each episode and part once (the latest upload of it).
+ */
+export function tvSeasons(uploads: TvUpload[]): TunisianSeason[] {
+  const latest = new Map<string, TvUpload>()
+  for (const upload of uploads) {
+    const key = upload.episode === null ? upload._id : `${upload.season ?? 1}:${upload.episode}:${upload.part ?? 0}`
+    const seen = latest.get(key)
+    if (!seen || seen.publishedAt < upload.publishedAt) latest.set(key, upload)
+  }
+  const bySeason = new Map<number, TvUpload[]>()
+  for (const upload of Array.from(latest.values())) bySeason.set(upload.season ?? 1, [...(bySeason.get(upload.season ?? 1) ?? []), upload])
+  return Array.from(bySeason.entries())
+    .sort(([a], [b]) => a - b)
+    .map(([season, items]) => ({
+      season,
+      episodes: items
+        .sort((a, b) => (a.episode ?? Infinity) - (b.episode ?? Infinity) || (a.part ?? 0) - (b.part ?? 0) || a.publishedAt.localeCompare(b.publishedAt))
+        .map((upload) => ({
+          // Labelled like the source's episodes.
+          label: upload.episode === null ? upload.subtitle ?? upload.title : `الحلقة ${upload.episode}${upload.part ? ` · الجزء ${upload.part}` : ''}`,
+          url: `https://www.youtube.com/watch?v=${upload._id}`,
+          media: { type: 'youtube', id: upload._id },
+        })),
+    }))
+}
+
+/** A series' episodes from its official series on Tunisian TV (only the part its name asks for). */
+async function tvEpisodes(name: string): Promise<{ seasons: TunisianSeason[], tv: TunisianDetail['tv'] } | null> {
+  const series = (await tvMatcher())(name)
+  if (!series) return null
+  try {
+    const { getTvSeriesEpisodes } = await import('@/src/lib/tunisian-tv/read')
+    const part = partOf(name)
+    const seasons = tvSeasons((await getTvSeriesEpisodes(series.id)).filter((upload) => part === null || (upload.season ?? 1) === part))
+    return seasons.length > 0 ? { seasons, tv: { channel: series.channel, seriesId: series.id } } : null
+  } catch (error) {
+    console.error('Tunisian: reading a Tunisian TV series failed', error)
+    return null
+  }
 }
 
 // ---- episodes ----------------------------------------------------------------------------------
@@ -283,13 +350,16 @@ export async function getTunisianDetail(slug: string): Promise<TunisianDetail | 
     if (text) badges.push(text)
   })
 
+  const tv = base.kind === 'series' && seasons.length === 0 ? await tvEpisodes(base.title) : null
+
   return {
     ...base,
     poster: resizePoster(document.querySelector('.detail-poster img')?.getAttribute('src') ?? base.poster, 600),
     description: document.querySelector('.detail-description')?.textContent?.trim() ?? '',
     badges,
     backdrop: resizePoster(backdropStyle.match(/url\(['"]?([^'")]+)/)?.[1], 1280),
-    seasons: base.kind === 'series' ? await withMedia(seasons) : seasons,
+    seasons: tv ? tv.seasons : base.kind === 'series' ? await withMedia(seasons) : seasons,
     media: base.kind === 'movie' ? await resolveMedia(document.querySelector('.player-container, .player-wrapper')?.innerHTML ?? entry.content?.$t) : null,
+    tv: tv?.tv ?? null,
   }
 }
