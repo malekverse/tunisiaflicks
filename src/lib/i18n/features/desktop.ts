@@ -80,8 +80,9 @@ export const desktop = defineStrings({
     'desktop.spotlight.title': 'TunisiaFlicks for Windows is here',
     'desktop.spotlight.text': 'Its own player, no ads, no pop-ups.',
 
-    'desktop.offer.text': 'The desktop app, with its own player: films and series with no ads.',
-    'desktop.offer.cta': 'Discover it',
+    'desktop.offer.title': 'Zero ads, on Windows',
+    'desktop.offer.text': 'Its own ad-free player, and no pop-ups on any source.',
+    'desktop.offer.cta': 'Get it',
     'desktop.footer': 'Windows app',
   },
   fr: {
@@ -157,8 +158,9 @@ export const desktop = defineStrings({
     'desktop.spotlight.title': 'TunisiaFlicks pour Windows est là',
     'desktop.spotlight.text': 'Son propre lecteur, sans pub, sans pop-up.',
 
-    'desktop.offer.text': 'L’app pour ordinateur, avec son propre lecteur' + NBSP + ': films et séries sans pub.',
-    'desktop.offer.cta': 'La découvrir',
+    'desktop.offer.title': 'Zéro pub, sur Windows',
+    'desktop.offer.text': 'Son propre lecteur sans pub, et aucun pop-up sur les autres sources.',
+    'desktop.offer.cta': 'L’obtenir',
     'desktop.footer': 'App Windows',
   },
   ar: {
@@ -234,8 +236,9 @@ export const desktop = defineStrings({
     'desktop.spotlight.title': 'TunisiaFlicks على ويندوز وصل',
     'desktop.spotlight.text': 'مشغّله الخاص، دون إعلانات ودون نوافذ منبثقة.',
 
-    'desktop.offer.text': 'تطبيق الحاسوب بمشغّله الخاص: أفلام ومسلسلات دون إعلانات.',
-    'desktop.offer.cta': 'اكتشفه',
+    'desktop.offer.title': 'بلا إعلانات، على ويندوز',
+    'desktop.offer.text': 'مشغّله الخاص بلا إعلانات، ولا نوافذ منبثقة من أي مصدر.',
+    'desktop.offer.cta': 'احصل عليه',
     'desktop.footer': 'تطبيق ويندوز',
   },
 })

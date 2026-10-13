@@ -3,7 +3,7 @@
 // Which strings go to the browser (see clientMessages in ./index.ts): the root layout sends every
 // key that is in neither list below (the shell), a <ClientMessages scope> adds its scope's keys to
 // the pages under it, and the server-only keys never leave the server.
-// 613 of 2809 keys on every page, 1610 in 31 scopes, 586 server-only.
+// 616 of 2813 keys on every page, 1610 in 31 scopes, 587 server-only.
 
 export type MessageScope =
   | 'activate/layout'
@@ -555,6 +555,7 @@ export const SERVER_ONLY_KEYS: readonly string[] = [
   'ttv.episodes',
   'ttv.footer.note',
   'ttv.footer.updated',
+  'ttv.fromChannel',
   'ttv.ramadan.rowNote',
   'ttv.ramadan.rowNow',
   'ttv.ramadan.rowOf',

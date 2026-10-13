@@ -10,7 +10,7 @@
 // Never pushy: only from a second visit or a third page, a few seconds after the page settles,
 // never on /app, sign-in or download pages, never inside an app, and not while the e-mail reminder
 // shows. "Not now" quiets it for 3 weeks (6 months after three times); a download or an install for
-// 4 months. The TV-mode offer (TvModeOffer) covers TV browsers outside TV mode, so the two never meet.
+// 4 months; "Don't show again" for good on this device (the apps stay on /app). The TV-mode offer (TvModeOffer) covers TV browsers outside TV mode, so the two never meet.
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -145,6 +145,10 @@ export default function AppOffer({ apps }: { apps: OfferedApps }): JSX.Element |
     writeState({ dismissals, until: Date.now() + (dismissals >= 3 ? SNOOZE_LONG : SNOOZE) })
     setClosed(true)
   }
+  const never = () => {
+    writeState({ ...readState(), until: Number.MAX_SAFE_INTEGER })
+    setClosed(true)
+  }
   const gotIt = () => writeState({ ...readState(), until: Date.now() + AFTER_GETTING_IT })
   const installNow = async () => {
     const outcome = await install()
@@ -159,7 +163,8 @@ export default function AppOffer({ apps }: { apps: OfferedApps }): JSX.Element |
       : variant === 'pwa' ? 'apps.offer.pwa.title'
         : variant === 'tv' ? 'apps.offer.tv.title'
           : variant === 'ios' ? 'apps.offer.ios.title'
-            : COMPUTER_TITLE[device.platform] ?? 'apps.offer.computer.windows'
+            : variant === 'desktop' ? 'desktop.offer.title'
+              : COMPUTER_TITLE[device.platform] ?? 'apps.offer.computer.windows'
   const text: TKey =
     variant === 'android' ? (step === 'downloaded' ? 'apps.offer.android.next' : 'apps.offer.android.text')
       : variant === 'pwa' ? 'apps.offer.pwa.text'
@@ -259,6 +264,12 @@ export default function AppOffer({ apps }: { apps: OfferedApps }): JSX.Element |
             </Button>
           )}
         </div>
+
+        {step === 'offer' && (
+          <button type="button" onClick={never} className={`mt-2 block text-white/45 underline decoration-white/20 underline-offset-4 outline-none hover:text-white focus-visible:ring-2 focus-visible:ring-red-500 ${variant === 'tv' ? 'text-[15px]' : 'text-[12.5px]'}`}>
+            {t('apps.offer.never')}
+          </button>
+        )}
 
         {variant === 'android' && step === 'offer' && canInstall && (
           <button type="button" onClick={installNow} className="mt-2 text-[12.5px] text-white/55 underline decoration-white/25 underline-offset-4 outline-none hover:text-white focus-visible:ring-2 focus-visible:ring-red-500">

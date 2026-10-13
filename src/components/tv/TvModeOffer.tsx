@@ -1,7 +1,8 @@
 "use client"
 // A one-time suggestion on devices that look like a TV (useLikelyTv), outside TV mode: "Watching on
 // a TV? Switch to TV mode". A floating card at the bottom end, like VerifyEmailBanner, and never at
-// the same time: it waits while that banner shows. "Not now" hides it for 30 days on this device.
+// the same time: it waits while that banner shows. "Not now" hides it for 30 days on this device,
+// "Don't show again" for good (TV mode stays in Settings).
 // Mounted in the root layout after VerifyEmailBanner (not in TV mode).
 import { useEffect, useRef, useState } from 'react'
 import { TvMinimal } from 'lucide-react'
@@ -17,7 +18,9 @@ const VERIFY_DISMISSED_KEY = 'tf-verify-banner-dismissed'
 
 function dismissedRecently(): boolean {
   try {
-    const at = Number(localStorage.getItem(DISMISSED_KEY))
+    const value = localStorage.getItem(DISMISSED_KEY)
+    if (value === 'never') return true
+    const at = Number(value)
     return Number.isFinite(at) && at > 0 && Date.now() - at < QUIET_MS
   } catch {
     return true
@@ -64,6 +67,11 @@ export default function TvModeOffer(): JSX.Element | null {
     try { localStorage.setItem(DISMISSED_KEY, String(Date.now())) } catch { /* private mode */ }
   }
 
+  const never = () => {
+    setQuiet(true)
+    try { localStorage.setItem(DISMISSED_KEY, 'never') } catch { /* private mode */ }
+  }
+
   const switchOn = async () => {
     setBusy(true)
     const response = await fetch('/api/tv-mode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ on: true }) }).catch(() => null)
@@ -88,6 +96,9 @@ export default function TvModeOffer(): JSX.Element | null {
           <Button ref={switchRef} size="sm" onClick={switchOn} disabled={busy} className="h-10">{t('tvMode.offer.switch')}</Button>
           <Button variant="ghost" size="sm" onClick={later} className="h-10 text-white/70">{t('tvMode.offer.notNow')}</Button>
         </div>
+        <button type="button" onClick={never} className="mt-2 text-[12.5px] text-white/45 underline decoration-white/20 underline-offset-4 outline-none hover:text-white focus-visible:ring-2 focus-visible:ring-red-500">
+          {t('tvMode.offer.never')}
+        </button>
       </div>
     </div>
   )
