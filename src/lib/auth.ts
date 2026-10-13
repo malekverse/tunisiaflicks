@@ -3,8 +3,8 @@ import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import { ObjectId } from 'mongodb';
-import { MongoDBAdapter } from '@next-auth/mongodb-adapter';
 import clientPromise from '@/src/lib/mongodb';
+import { lazyAdapter } from '@/src/lib/auth-adapter';
 import { compare } from 'bcrypt';
 import { clientIp, normalizeEmail, rateLimitAll } from '@/src/lib/rate-limit';
 import { findUserByEmail } from '@/src/lib/users';
@@ -95,7 +95,7 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
-  adapter: MongoDBAdapter(clientPromise),
+  adapter: lazyAdapter(),
   session: { strategy: 'jwt' }, // Use JWT strategy
   // Errors (e.g. a cancelled Google sign-in) come back to the login page, which explains them.
   pages: { signIn: '/login', error: '/login' },
