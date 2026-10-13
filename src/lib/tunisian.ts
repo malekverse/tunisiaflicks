@@ -1,6 +1,7 @@
 import { JSDOM } from 'jsdom'
 import { tmdbFetchSafe } from '@/src/lib/tmdb'
 import { matchTvSeries, partOf } from '@/src/lib/tunisian-match'
+import { curatedFilmSource, legalWatchLink, matchFilmUpload, normalizeLegalLink, type LegalPlatform } from '@/src/lib/tunisian-film'
 import type { TvDramaEntry, TvEpisode } from '@/src/lib/tunisian-tv/read'
 
 // The Tunisian catalogue comes from the source site's public Blogger JSON feed. Unlike scraping
@@ -51,6 +52,12 @@ export type TunisianDetail = TunisianTitle & {
   /** The film on TMDB (matched by title + Tunisian origin): the full film plays through the normal
    *  movie sources (third-party players + the download/torrent player). `media` is then its trailer. */
   tmdb: { id: string, imdb: string | null } | null
+  /**
+   * Where the full film can actually be watched (lib/tunisian-film), best first: a trusted channel's
+   * full upload, played here; or a legal Tunisian platform to watch it on, linked out to. Null: only
+   * the trailer (`media`) exists, the full film isn't online yet.
+   */
+  film: { type: 'youtube', id: string, channel: string } | { type: 'external', platform: LegalPlatform, url: string } | null
   /** The series' episodes are its official uploads, from this Tunisian TV series. */
   tv: { channel: string, seriesId: string } | null
 }
@@ -322,7 +329,7 @@ async function withMedia(seasons: TunisianSeason[]): Promise<TunisianSeason[]> {
 
 // ---- matching a film to TMDB (so the full film plays through the normal movie sources) ----------
 
-type TmdbMatch = { id: string, imdb: string | null }
+type TmdbMatch = { id: string, imdb: string | null, title?: string | null, original?: string | null, year?: number | null }
 type TmdbCache = { _id: string, match: TmdbMatch | null, at: Date }
 /** A film with no match is tried again after this long (it may be added to TMDB later). */
 const TMDB_RETRY_MS = 14 * 86400_000
@@ -343,11 +350,17 @@ async function searchTunisianMovie(query: string): Promise<TmdbMatch | null> {
   if (query.length < 2) return null
   const results = (await tmdbFetchSafe<{ results?: { id: number }[] }>('search/movie', { query, include_adult: false }, 86400, { shared: true }))?.results ?? []
   for (const hit of results.slice(0, 8)) {
-    const movie = await tmdbFetchSafe<{ id: number, imdb_id?: string | null, origin_country?: string[], production_countries?: { iso_3166_1: string }[], external_ids?: { imdb_id?: string | null } }>(
+    const movie = await tmdbFetchSafe<{ id: number, title?: string, original_title?: string, release_date?: string, imdb_id?: string | null, origin_country?: string[], production_countries?: { iso_3166_1: string }[], external_ids?: { imdb_id?: string | null } }>(
       `movie/${hit.id}`, { append_to_response: 'external_ids' }, 604800, { shared: true })
     if (!movie) continue
     const countries = [...(movie.origin_country ?? []), ...(movie.production_countries ?? []).map((c) => c.iso_3166_1)]
-    if (countries.includes('TN')) return { id: String(movie.id), imdb: movie.imdb_id || movie.external_ids?.imdb_id || null }
+    if (countries.includes('TN')) return {
+      id: String(movie.id),
+      imdb: movie.imdb_id || movie.external_ids?.imdb_id || null,
+      title: movie.title || null,
+      original: movie.original_title || null,
+      year: movie.release_date ? Number(movie.release_date.slice(0, 4)) || null : null,
+    }
   }
   return null
 }
@@ -370,6 +383,36 @@ async function matchFilmToTmdb(slug: string, title: string): Promise<TmdbMatch |
     // No database (or TMDB down): fall back to the blog clip; the match is tried again next time.
     return null
   }
+}
+
+// ---- where a film plays in full (trusted channel upload, else a legal platform) ----------------
+
+/**
+ * A film's best watchable source (lib/tunisian-film): a verified or matched full upload on a trusted
+ * channel, else a legal platform to watch it on. The title is tried in every spelling we have (the
+ * blog's, and TMDB's canonical and original titles), and only an allowlisted channel's long upload
+ * can match. Null when the full film isn't online yet.
+ */
+async function filmSource(slug: string, blogTitle: string, tmdb: TmdbMatch | null): Promise<TunisianDetail['film']> {
+  const keys = [tmdb ? `tmdb:${tmdb.id}` : null, `slug:${slug}`].filter((key): key is string => key !== null)
+  try {
+    // 1. A hand-verified upload wins (checked by a human; never a guess).
+    const curated = curatedFilmSource(keys)
+    if (curated?.youtube) return { type: 'youtube', id: curated.youtube.id, channel: curated.youtube.channel }
+
+    // 1b. Else a full-length upload on a trusted channel, matched by title + duration (never a blind search).
+    const titles = Array.from(new Set([blogTitle, tmdb?.title, tmdb?.original].filter((title): title is string => !!title && title.trim().length > 0)))
+    const { getFilmUploadIndex } = await import('@/src/lib/tunisian-tv/read')
+    const matched = matchFilmUpload({ titles, year: tmdb?.year ?? null }, await getFilmUploadIndex())
+    if (matched) return { type: 'youtube', id: matched.id, channel: matched.channel }
+
+    // 2. Else an honest outbound link to a legal platform, when a verified entry says it's there.
+    const legal = legalWatchLink(keys) ?? normalizeLegalLink(curated?.legal)
+    if (legal) return { type: 'external', platform: legal.platform, url: legal.url }
+  } catch (error) {
+    console.error('Tunisian: resolving the film source failed', error)
+  }
+  return null
 }
 
 /** One title with its description and, for series, its seasons and episodes. */
@@ -407,6 +450,7 @@ export async function getTunisianDetail(slug: string): Promise<TunisianDetail | 
   })
 
   const tv = base.kind === 'series' && seasons.length === 0 ? await tvEpisodes(base.title) : null
+  const tmdb = base.kind === 'movie' ? await matchFilmToTmdb(base.slug, base.title) : null
 
   return {
     ...base,
@@ -416,7 +460,8 @@ export async function getTunisianDetail(slug: string): Promise<TunisianDetail | 
     backdrop: resizePoster(backdropStyle.match(/url\(['"]?([^'")]+)/)?.[1], 1280),
     seasons: tv ? tv.seasons : base.kind === 'series' ? await withMedia(seasons) : seasons,
     media: base.kind === 'movie' ? await resolveMedia(document.querySelector('.player-container, .player-wrapper')?.innerHTML ?? entry.content?.$t) : null,
-    tmdb: base.kind === 'movie' ? await matchFilmToTmdb(base.slug, base.title) : null,
+    tmdb: tmdb && { id: tmdb.id, imdb: tmdb.imdb },
+    film: base.kind === 'movie' ? await filmSource(base.slug, base.title, tmdb) : null,
     tv: tv?.tv ?? null,
   }
 }

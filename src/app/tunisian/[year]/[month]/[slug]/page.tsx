@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Clock, Tv } from 'lucide-react'
+import { Clock, ExternalLink, Tv } from 'lucide-react'
 import TunisianSeasons from '@/src/components/detail/TunisianSeasons'
 import TunisianPlay from '@/src/components/detail/TunisianPlay'
 import StreamSection from '@/src/components/detail/StreamSection'
@@ -15,6 +15,7 @@ import { getKidsMode } from '@/src/lib/profiles'
 import { getProviderTemplates } from '@/src/lib/stream-providers'
 import { fillProviders } from '@/src/lib/media-assets'
 import { getTunisianDetail, getTunisianTitles } from '@/src/lib/tunisian'
+import { LEGAL_PLATFORM_NAMES } from '@/src/lib/tunisian-film'
 import { getLocale, getT } from '@/src/lib/i18n/server'
 import { isArabicScript } from '@/src/lib/i18n/locales'
 import { channelBySlug } from '@/src/lib/tunisian-tv/channels'
@@ -93,18 +94,33 @@ export default async function TunisianDetailPage({ params }: Props) {
             {detail.description && (
               <p className="mt-5 max-w-[62ch] animate-focus-in text-center text-[15px] leading-relaxed text-white/70 [animation-delay:140ms] md:text-start">{detail.description}</p>
             )}
-            {/* A matched film plays in full below (normal movie sources); the blog clip is its trailer.
-                With no match, only the trailer exists, and the full film isn't online yet. */}
+            {/* The full film, best source first: a trusted channel's full upload plays here; else a legal
+                Tunisian platform to watch it on; else the TMDB sources below. The blog clip is the trailer.
+                With nothing to watch in full, only the trailer exists, and the full film isn't online yet. */}
             {detail.kind === 'movie' && (
               <div className="mt-7 flex flex-wrap items-center justify-center gap-3 md:justify-start">
-                {detail.tmdb && detail.media && <TunisianPlay media={detail.media} title={detail.title} trailer />}
-                {!detail.tmdb && (detail.media
-                  ? <TunisianPlay media={detail.media} title={detail.title} trailer />
-                  : null)}
-                {!detail.tmdb && (
-                  <p dir="auto" className="inline-flex items-center gap-2 rounded-full bg-white/[0.07] px-4 py-2.5 text-[14px] text-white/70 ring-1 ring-inset ring-white/10">
-                    <Clock aria-hidden className="h-4 w-4" />{t('tunisian.notYet')}
-                  </p>
+                {detail.film?.type === 'youtube' && <TunisianPlay media={{ type: 'youtube', id: detail.film.id }} title={detail.title} />}
+                {detail.film?.type === 'external' && (
+                  <a
+                    href={detail.film.url}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow"
+                    className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-[15px] font-semibold text-black transition-colors duration-200 hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                  >
+                    {t('tunisian.watchOn', { platform: LEGAL_PLATFORM_NAMES[detail.film.platform] })}
+                    <ExternalLink aria-hidden className="h-4 w-4" />
+                  </a>
+                )}
+                {/* The blog clip is the trailer when the full film plays in full somewhere (here, a platform, or the TMDB sources). */}
+                {detail.media && (detail.film || detail.tmdb) && <TunisianPlay media={detail.media} title={detail.title} trailer />}
+                {/* Nothing plays in full yet: the trailer (if any), then "not online yet". */}
+                {!detail.film && !detail.tmdb && (
+                  <>
+                    {detail.media && <TunisianPlay media={detail.media} title={detail.title} trailer />}
+                    <p dir="auto" className="inline-flex items-center gap-2 rounded-full bg-white/[0.07] px-4 py-2.5 text-[14px] text-white/70 ring-1 ring-inset ring-white/10">
+                      <Clock aria-hidden className="h-4 w-4" />{t('tunisian.notYet')}
+                    </p>
+                  </>
                 )}
               </div>
             )}

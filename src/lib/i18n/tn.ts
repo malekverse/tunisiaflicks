@@ -271,6 +271,7 @@ export const tn: Partial<Record<TKey, string>> = {
   'tunisian.more': 'زيد عناوين تونسية',
   'tunisian.season': 'الموسم {number}',
   'tunisian.notYet': 'مازال موش متاح. إرجع بعد شوية.',
+  'tunisian.watchOn': 'شوف على {platform}',
   'tnCinema.title': 'السينما التونسية',
   'tnCinema.badge': 'تحت الضو',
   'tnCinema.intro': 'من كلاسيكيات الزمن الجميل لين أفلام المهرجانات متاع توّا: أفلامنا، مسلسلاتنا ووجوهنا.',

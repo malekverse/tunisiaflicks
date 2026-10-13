@@ -228,6 +228,7 @@ export const en = {
   'tunisian.watchOnSource': 'Watch on source site',
   'tunisian.noEpisodes': 'No episodes are available yet.',
   'tunisian.notYet': 'Not online yet. Check back soon.',
+  'tunisian.watchOn': 'Watch on {platform}',
   'tunisian.more': 'More Tunisian titles',
   'tunisian.season': 'Season {number}',
   'tunisian.sourceNote': 'Episodes marked with an arrow open on the source site, in a new tab.',

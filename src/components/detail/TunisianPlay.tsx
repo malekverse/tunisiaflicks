@@ -17,7 +17,7 @@ export default function TunisianPlay({ media, title, trailer = false }: { media:
   const [open, setOpen] = useState(false)
   return (
     <>
-      <Button size="lg" variant={trailer ? 'secondary' : 'default'} className={trailer ? undefined : 'mt-7'} onClick={() => setOpen(true)}>
+      <Button size="lg" variant={trailer ? 'secondary' : 'default'} onClick={() => setOpen(true)}>
         {trailer
           ? <Clapperboard aria-hidden className="h-5 w-5" />
           : <Play aria-hidden className="h-5 w-5 fill-current rtl:-scale-x-100" />}
