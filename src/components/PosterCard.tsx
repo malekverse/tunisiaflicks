@@ -1,5 +1,5 @@
 "use client"
-import React from 'react'
+import React, { useState } from 'react'
 import Link from 'next/link'
 import { Star } from 'lucide-react'
 import { cn } from '@/src/lib/utils'
@@ -7,6 +7,7 @@ import { Skeleton } from './ui/skeleton'
 import { MediaContextMenu } from './MediaActions'
 import { useT } from './I18nProvider'
 import TmdbImage from './TmdbImage'
+import TitleArtwork from './TitleArtwork'
 import FollowButton from './FollowButton'
 import { usePeekTrigger } from '@/src/hooks/use-peek-trigger'
 import { useMediaQuery } from '@/src/hooks/use-media-query'
@@ -43,7 +44,6 @@ export type PosterCardProps = {
     className?: string
 }
 
-const FALLBACK_POSTER = '/404.png'
 // Cards are ~130-220px wide (rows and grids).
 const POSTER_SIZES = '(min-width: 1536px) 220px, (min-width: 640px) 180px, 140px'
 
@@ -63,6 +63,8 @@ export default function PosterCard({
     const year = releaseDate ? releaseDate.substring(0, 4) : ''
     const peekable = allowPeek && actions && !externalImg && /^\d+$/.test(itemId)
     const coarse = useMediaQuery('(hover: none)')
+    // An outside poster (the Tunisian catalogue) that fails to load gets the title placeholder too.
+    const [externalFailed, setExternalFailed] = useState(false)
     const peek = usePeekTrigger(peekable ? {
         id: itemId, kind: mediaType, title, poster: posterImg, backdrop: backdropImg,
         rating: Number.isFinite(rating) ? rating : undefined, date: releaseDate, genreIds, overview,
@@ -81,20 +83,22 @@ export default function PosterCard({
         >
             <div className="relative aspect-[2/3] w-full overflow-hidden rounded-poster bg-white/[0.05] ring-1 ring-inset ring-white/[0.07] transition-[transform,box-shadow] duration-300 ease-out group-hover/card:-translate-y-1 group-hover/card:shadow-[0_18px_40px_-14px_rgb(0_0_0/0.9)] group-focus-visible/card:ring-2 group-focus-visible/card:ring-red-500 group-active/card:scale-[0.98]">
                 {externalImg ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                        src={posterImg || FALLBACK_POSTER}
-                        alt={title}
-                        loading="lazy"
-                        decoding="async"
-                        draggable={false}
-                        className="absolute inset-0 h-full w-full object-cover"
-                    />
+                    posterImg && !externalFailed ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                            src={posterImg}
+                            alt={title}
+                            loading="lazy"
+                            decoding="async"
+                            draggable={false}
+                            onError={() => setExternalFailed(true)}
+                            className="absolute inset-0 h-full w-full object-cover"
+                        />
+                    ) : <TitleArtwork title={title} />
                 ) : (
                     <TmdbImage
                         kind="poster"
                         path={posterImg}
-                        fallback={FALLBACK_POSTER}
                         alt={title}
                         fill
                         sizes={POSTER_SIZES}

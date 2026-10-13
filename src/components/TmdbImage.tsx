@@ -4,6 +4,7 @@ import Image, { type ImageLoader, type ImageProps } from 'next/image'
 import { cn } from '@/src/lib/utils'
 import { TMDB_IMAGE_BASE, tmdbImageUrl, type TmdbImageKind } from '@/src/lib/tmdb-image'
 import PersonInitials from '@/src/components/PersonInitials'
+import TitleArtwork from '@/src/components/TitleArtwork'
 
 // One stable loader per kind: next/image builds the srcset from it, picking a TMDB size per width.
 const loaders = Object.fromEntries(
@@ -14,11 +15,15 @@ const loaders = Object.fromEntries(
 ) as Record<TmdbImageKind, ImageLoader>
 
 type TmdbImageProps = Omit<ImageProps, 'src' | 'loader' | 'placeholder'> & {
-    /** TMDB file path, e.g. "/abc.jpg". Missing or broken images show `fallback`. */
+    /**
+     * TMDB file path, e.g. "/abc.jpg". A missing or broken image shows, with `fill`: a person's
+     * initials (profile + `name`), the title set like a poster (poster/backdrop/still: `name`, else
+     * `alt`), or nothing (a logo: the page shows the title as text). `fallback` overrides that.
+     */
     path?: string | null
     kind: TmdbImageKind
     fallback?: string
-    /** A person's name (`fill` only): a missing or broken photo shows their initials instead of `fallback`. */
+    /** Whose picture: a person's name (their initials), or a title (set on the placeholder). */
     name?: string
     /** `fill` only: a tiny TMDB size (e.g. "w92") shown blurred right away, under the real image. */
     preview?: string
@@ -40,7 +45,7 @@ type TmdbImageProps = Omit<ImageProps, 'src' | 'loader' | 'placeholder'> & {
  * a picture the browser has already drawn.
  */
 export default function TmdbImage({
-    path, kind, alt, fallback = '/404.png', name, preview, shimmer = true, fill, className, onLoad, onError, onReady, ...rest
+    path, kind, alt, fallback, name, preview, shimmer = true, fill, className, onLoad, onError, onReady, ...rest
 }: TmdbImageProps) {
     const ref = useRef<HTMLImageElement>(null)
     const [state, setState] = useState<'initial' | 'loading' | 'loaded' | 'error'>('initial')
@@ -70,8 +75,10 @@ export default function TmdbImage({
     }, [path])
 
     if (!path || state === 'error') {
-        if (name && fill) return <PersonInitials name={name} />
-        return <Image src={fallback} alt={alt} unoptimized fill={fill} className={className} {...rest} />
+        if (fallback) return <Image src={fallback} alt={alt} unoptimized fill={fill} className={className} {...rest} />
+        if (kind === 'logo') return null
+        if (kind === 'profile') return name && fill ? <PersonInitials name={name} /> : <TitleArtwork />
+        return <TitleArtwork title={name ?? (typeof alt === 'string' ? alt : undefined)} wide={kind !== 'poster'} />
     }
 
     const pending = state !== 'loaded'
