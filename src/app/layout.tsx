@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Alexandria, Bricolage_Grotesque, Readex_Pro } from 'next/font/google';
 import NextTopLoader from 'nextjs-toploader';
+import Script from 'next/script';
 import "./globals.css";
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from '@vercel/analytics/react';
@@ -42,6 +43,9 @@ import { SITE_DESCRIPTION, SITE_URL, siteMetadata } from "@/src/lib/seo";
 import { cookies, headers } from "next/headers";
 
 import type { Viewport } from 'next'
+
+/** Google Analytics 4 measurement id. */
+const GA_ID = 'G-G0653BCYB5';
 
 // Type: Readex Pro for the interface (it covers Latin and Arabic, so every language reads alike),
 // Bricolage Grotesque, condensed, for Latin titles, and Alexandria for Arabic titles. The Arabic
@@ -237,6 +241,14 @@ export default async function RootLayout({
         <div aria-hidden className="tf-grain" />
         <SpeedInsights />
         <Analytics />
+        {/* Google Analytics (gtag.js), loaded once the page is interactive. */}
+        <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', '${GA_ID}');`}
+        </Script>
         <ServiceWorkerRegister />
         <DailyPushTrigger />
         <ErrorReporter />
