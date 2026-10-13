@@ -13,6 +13,7 @@ const COLUMNS: { heading: TKey, links: FooterLink[] }[] = [
     links: [
       { href: '/', label: 'nav.movies' },
       { href: '/tv', label: 'nav.tvShows' },
+      { href: '/anime', label: 'anime.nav' },
       { href: '/discover', label: 'nav.discover' },
       { href: '/tunisian', label: 'nav.tunisian' },
       { href: '/upcoming', label: 'nav.comingSoon' },

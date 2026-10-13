@@ -41,6 +41,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     entry('/', 1, 'daily'),
     entry('/tv', 0.9, 'daily'),
+    entry('/anime', 0.9, 'daily'),
+    entry('/anime/schedule', 0.7, 'daily'),
+    entry('/anime/browse', 0.7, 'weekly'),
     entry('/tunisian', 0.9, 'daily'),
     entry('/dramas', 0.8, 'daily'),
     entry('/dramas/turkish', 0.8, 'daily'),
