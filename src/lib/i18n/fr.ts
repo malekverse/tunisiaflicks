@@ -451,6 +451,9 @@ export const fr: Record<CoreKey, string> = {
 
   // Viewer profiles and Kids mode
   'profiles.whoIsWatching': 'Qui regarde\u202f?',
+  'profiles.noneTitle': 'Aucun profil trouvé',
+  'profiles.noneText': 'Nous n’avons trouvé aucun profil pour ce compte ici. Reconnectez-vous pour continuer.',
+  'profiles.signInAgain': 'Se reconnecter',
   'profiles.addProfile': 'Ajouter un profil',
   'profiles.addAProfile': 'Ajouter un profil',
   'profiles.manage': 'Gérer les profils',

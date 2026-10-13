@@ -324,6 +324,9 @@ export const tn: Partial<Record<TKey, string>> = {
 
   // Profiles
   'profiles.whoIsWatching': 'شكون باش يتفرّج؟',
+  'profiles.noneTitle': 'ما فماش بروفيل',
+  'profiles.noneText': 'ما لقيناش بروفيل للحساب هذا هنا. أدخل من جديد باش تكمّل.',
+  'profiles.signInAgain': 'أدخل من جديد',
   'profiles.addProfile': 'زيد بروفيل',
   'profiles.manage': 'نظّم البروفيلات',
   'profiles.kidsBadge': 'صغار',

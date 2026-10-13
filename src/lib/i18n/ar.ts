@@ -439,6 +439,9 @@ export const ar: Record<CoreKey, string> = {
 
   // Viewer profiles and Kids mode
   'profiles.whoIsWatching': 'من يشاهد؟',
+  'profiles.noneTitle': 'لا يوجد ملف شخصي',
+  'profiles.noneText': 'لم نجد ملفًا شخصيًا لهذا الحساب هنا. سجّل الدخول من جديد للمتابعة.',
+  'profiles.signInAgain': 'سجّل الدخول من جديد',
   'profiles.addProfile': 'إضافة ملف',
   'profiles.addAProfile': 'إضافة ملف شخصي',
   'profiles.manage': 'إدارة الملفات الشخصية',

@@ -438,6 +438,9 @@ export const en = {
 
   // Viewer profiles and Kids mode
   'profiles.whoIsWatching': "Who's watching?",
+  'profiles.noneTitle': 'No profile found',
+  'profiles.noneText': 'We couldn’t find a profile for this account here. Sign in again to continue.',
+  'profiles.signInAgain': 'Sign in again',
   'profiles.addProfile': 'Add profile',
   'profiles.addAProfile': 'Add a profile',
   'profiles.manage': 'Manage profiles',

@@ -1,5 +1,6 @@
 "use client"
 import { useCallback, useEffect, useState } from 'react'
+import { signOut } from 'next-auth/react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Lock, Plus, Settings2 } from 'lucide-react'
@@ -61,6 +62,22 @@ export default function ProfilePicker({ initial, ownerImage, next }: { initial: 
       <div role="status" className="fixed inset-0 z-[55] grid place-items-center bg-black">
         <BrandLoader tone="brand" className="h-9 w-9" />
         <span className="sr-only">{t('common.loading')}</span>
+      </div>
+    )
+  }
+
+  // No profile on this account in the current database (e.g. a session left over from another
+  // database, or the account's profiles couldn't be read): never trap the viewer on a blank
+  // picker — offer a way back to signing in.
+  if (profiles.length === 0) {
+    return (
+      <div className="fixed inset-0 z-[55] grid place-items-center overflow-y-auto bg-black px-6 py-10 text-center">
+        <div className="flex max-w-sm flex-col items-center">
+          <Image src="/A.svg" alt="" width={40} height={34} priority className="h-9 w-auto" />
+          <h1 className="mt-7 font-display text-[clamp(26px,4vw,40px)] font-extrabold leading-tight text-white">{t('profiles.noneTitle')}</h1>
+          <p className="mt-3 text-[15px] leading-relaxed text-white/60">{t('profiles.noneText')}</p>
+          <Button size="lg" className="mt-7" onClick={() => signOut({ callbackUrl: '/login' })}>{t('profiles.signInAgain')}</Button>
+        </div>
       </div>
     )
   }
