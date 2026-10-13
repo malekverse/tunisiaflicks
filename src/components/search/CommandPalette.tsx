@@ -250,7 +250,7 @@ export default function CommandPalette() {
                                 return (
                                     <Command.Item key={`person-${item.id}`} value={`person-${item.id}`} onSelect={() => go(hrefFor(item))} className={row}>
                                         <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-white/5">
-                                            <TmdbImage kind="profile" path={item.profile_path} fallback="/actor.png" alt="" fill sizes="40px" className="object-cover" />
+                                            <TmdbImage kind="profile" path={item.profile_path} name={item.name} alt="" fill sizes="40px" className="object-cover" />
                                         </span>
                                         <span className="min-w-0 flex-1">
                                             <bdi dir="auto" className="block truncate text-start text-[15px]">{item.name}</bdi>

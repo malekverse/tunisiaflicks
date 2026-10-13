@@ -171,7 +171,7 @@ export default async function PersonPage({ params }: Props) {
               <TmdbImage
                 kind="profile"
                 path={person.profile_path}
-                fallback="/actor.png"
+                name={person.name}
                 alt={person.name}
                 fill
                 sizes="(min-width: 768px) 256px, 224px"

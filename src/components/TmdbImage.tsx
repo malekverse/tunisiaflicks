@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import Image, { type ImageLoader, type ImageProps } from 'next/image'
 import { cn } from '@/src/lib/utils'
 import { TMDB_IMAGE_BASE, tmdbImageUrl, type TmdbImageKind } from '@/src/lib/tmdb-image'
+import PersonInitials from '@/src/components/PersonInitials'
 
 // One stable loader per kind: next/image builds the srcset from it, picking a TMDB size per width.
 const loaders = Object.fromEntries(
@@ -17,6 +18,8 @@ type TmdbImageProps = Omit<ImageProps, 'src' | 'loader' | 'placeholder'> & {
     path?: string | null
     kind: TmdbImageKind
     fallback?: string
+    /** A person's name (`fill` only): a missing or broken photo shows their initials instead of `fallback`. */
+    name?: string
     /** `fill` only: a tiny TMDB size (e.g. "w92") shown blurred right away, under the real image. */
     preview?: string
     /** `fill` only: animated placeholder until the image has loaded (on by default). */
@@ -37,7 +40,7 @@ type TmdbImageProps = Omit<ImageProps, 'src' | 'loader' | 'placeholder'> & {
  * a picture the browser has already drawn.
  */
 export default function TmdbImage({
-    path, kind, alt, fallback = '/404.png', preview, shimmer = true, fill, className, onLoad, onError, onReady, ...rest
+    path, kind, alt, fallback = '/404.png', name, preview, shimmer = true, fill, className, onLoad, onError, onReady, ...rest
 }: TmdbImageProps) {
     const ref = useRef<HTMLImageElement>(null)
     const [state, setState] = useState<'initial' | 'loading' | 'loaded' | 'error'>('initial')
@@ -67,6 +70,7 @@ export default function TmdbImage({
     }, [path])
 
     if (!path || state === 'error') {
+        if (name && fill) return <PersonInitials name={name} />
         return <Image src={fallback} alt={alt} unoptimized fill={fill} className={className} {...rest} />
     }
 

@@ -53,7 +53,7 @@ export function CastRow({ cast, id, mediaType, mediaId, signedIn }: { cast: any[
                         <div key={person.credit_id ?? person.id} className="group/cast relative">
                             <Link href={`/person/${person.id}`} className="group/person block text-center outline-none">
                                 <span className="relative mx-auto block aspect-square w-full overflow-hidden rounded-full bg-white/[0.06] ring-1 ring-white/10 transition-[transform,box-shadow] duration-300 ease-out group-hover/person:-translate-y-1 group-hover/person:ring-white/40 group-focus-visible/person:ring-2 group-focus-visible/person:ring-red-500 group-active/person:scale-[0.97]">
-                                    <TmdbImage kind="profile" path={person.profile_path} fallback="/actor.png" alt="" fill sizes="118px" className="object-cover object-[50%_25%]" />
+                                    <TmdbImage kind="profile" path={person.profile_path} name={person.name} alt="" fill sizes="118px" className="object-cover object-[50%_25%]" />
                                 </span>
                                 <span className="mt-2.5 block truncate text-[13px] font-medium text-white/90"><bdi>{person.name}</bdi></span>
                                 {person.character && <span className="block truncate text-[12px] text-white/50"><bdi>{person.character}</bdi></span>}
