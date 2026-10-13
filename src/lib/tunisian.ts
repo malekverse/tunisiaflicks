@@ -1,4 +1,5 @@
 import { JSDOM } from 'jsdom'
+import { tmdbFetchSafe } from '@/src/lib/tmdb'
 import { matchTvSeries, partOf } from '@/src/lib/tunisian-match'
 import type { TvDramaEntry, TvEpisode } from '@/src/lib/tunisian-tv/read'
 
@@ -47,6 +48,9 @@ export type TunisianDetail = TunisianTitle & {
   seasons: TunisianSeason[]
   /** What a film plays (null: nothing to watch yet). */
   media: TunisianMedia | null
+  /** The film on TMDB (matched by title + Tunisian origin): the full film plays through the normal
+   *  movie sources (third-party players + the download/torrent player). `media` is then its trailer. */
+  tmdb: { id: string, imdb: string | null } | null
   /** The series' episodes are its official uploads, from this Tunisian TV series. */
   tv: { channel: string, seriesId: string } | null
 }
@@ -316,6 +320,58 @@ async function withMedia(seasons: TunisianSeason[]): Promise<TunisianSeason[]> {
   return seasons.map((season) => ({ ...season, episodes: season.episodes.map((episode) => ({ ...episode, media: media.get(episode.url) ?? null })) }))
 }
 
+// ---- matching a film to TMDB (so the full film plays through the normal movie sources) ----------
+
+type TmdbMatch = { id: string, imdb: string | null }
+type TmdbCache = { _id: string, match: TmdbMatch | null, at: Date }
+/** A film with no match is tried again after this long (it may be added to TMDB later). */
+const TMDB_RETRY_MS = 14 * 86400_000
+
+/** A title cleaned to its Latin words (drops Arabic, "film", "complet"...), for a TMDB search. */
+function latinQuery(title: string): string {
+  return title.replace(/[؀-ۿ]+/g, ' ').replace(/\b(film|movie|complet|complete|kamel|full|hd|le|la)\b/gi, ' ')
+    .replace(/[–\-|:()[\]]/g, ' ').replace(/\s+/g, ' ').trim()
+}
+/** A title cleaned to its Arabic words (drops "watch", "film", "full"...). */
+function arabicQuery(title: string): string {
+  const arabic = (title.match(/[؀-ۿ]+/g) ?? []).join(' ')
+  return arabic.replace(/(?:مشاهدة|فيلم|كامل|تونسي)/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
+/** A TMDB movie search whose hit is Tunisian (origin or production country TN). Null when none is. */
+async function searchTunisianMovie(query: string): Promise<TmdbMatch | null> {
+  if (query.length < 2) return null
+  const results = (await tmdbFetchSafe<{ results?: { id: number }[] }>('search/movie', { query, include_adult: false }, 86400, { shared: true }))?.results ?? []
+  for (const hit of results.slice(0, 8)) {
+    const movie = await tmdbFetchSafe<{ id: number, imdb_id?: string | null, origin_country?: string[], production_countries?: { iso_3166_1: string }[], external_ids?: { imdb_id?: string | null } }>(
+      `movie/${hit.id}`, { append_to_response: 'external_ids' }, 604800, { shared: true })
+    if (!movie) continue
+    const countries = [...(movie.origin_country ?? []), ...(movie.production_countries ?? []).map((c) => c.iso_3166_1)]
+    if (countries.includes('TN')) return { id: String(movie.id), imdb: movie.imdb_id || movie.external_ids?.imdb_id || null }
+  }
+  return null
+}
+
+async function tmdbCacheCollection() {
+  const { default: clientPromise } = await import('@/src/lib/mongodb')
+  return (await clientPromise).db().collection<TmdbCache>('tunisianTmdb')
+}
+
+/** The film's TMDB match, found once and remembered (misses retried after TMDB_RETRY_MS). */
+async function matchFilmToTmdb(slug: string, title: string): Promise<TmdbMatch | null> {
+  try {
+    const col = await tmdbCacheCollection()
+    const cached = await col.findOne({ _id: slug })
+    if (cached && (cached.match || Date.now() - new Date(cached.at).getTime() < TMDB_RETRY_MS)) return cached.match
+    const match = (await searchTunisianMovie(latinQuery(title))) ?? (await searchTunisianMovie(arabicQuery(title)))
+    await col.updateOne({ _id: slug }, { $set: { match, at: new Date() } }, { upsert: true })
+    return match
+  } catch {
+    // No database (or TMDB down): fall back to the blog clip; the match is tried again next time.
+    return null
+  }
+}
+
 /** One title with its description and, for series, its seasons and episodes. */
 export async function getTunisianDetail(slug: string): Promise<TunisianDetail | null | undefined> {
   const entries = await fetchEntries()
@@ -360,6 +416,7 @@ export async function getTunisianDetail(slug: string): Promise<TunisianDetail | 
     backdrop: resizePoster(backdropStyle.match(/url\(['"]?([^'")]+)/)?.[1], 1280),
     seasons: tv ? tv.seasons : base.kind === 'series' ? await withMedia(seasons) : seasons,
     media: base.kind === 'movie' ? await resolveMedia(document.querySelector('.player-container, .player-wrapper')?.innerHTML ?? entry.content?.$t) : null,
+    tmdb: base.kind === 'movie' ? await matchFilmToTmdb(base.slug, base.title) : null,
     tv: tv?.tv ?? null,
   }
 }

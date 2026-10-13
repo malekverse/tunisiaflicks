@@ -4,12 +4,16 @@ import { notFound } from 'next/navigation'
 import { Clock, Tv } from 'lucide-react'
 import TunisianSeasons from '@/src/components/detail/TunisianSeasons'
 import TunisianPlay from '@/src/components/detail/TunisianPlay'
+import StreamSection from '@/src/components/detail/StreamSection'
+import DownloadDialog from '@/src/components/detail/DownloadDialog'
 import PosterCard from '@/src/components/PosterCard'
 import { EmptyState, GRID_CLASS } from '@/src/components/MediaGrid'
 import KidsBlocked from '@/src/components/profiles/KidsBlocked'
 import RoomTint from '@/src/components/shell/RoomTint'
 import { Button } from '@/src/components/ui/button'
 import { getKidsMode } from '@/src/lib/profiles'
+import { getProviderTemplates } from '@/src/lib/stream-providers'
+import { fillProviders } from '@/src/lib/media-assets'
 import { getTunisianDetail, getTunisianTitles } from '@/src/lib/tunisian'
 import { getLocale, getT } from '@/src/lib/i18n/server'
 import { isArabicScript } from '@/src/lib/i18n/locales'
@@ -89,14 +93,21 @@ export default async function TunisianDetailPage({ params }: Props) {
             {detail.description && (
               <p className="mt-5 max-w-[62ch] animate-focus-in text-center text-[15px] leading-relaxed text-white/70 [animation-delay:140ms] md:text-start">{detail.description}</p>
             )}
-            {/* The film plays here; one the source hasn't put online yet says so (no dead button). */}
-            {detail.kind === 'movie' && (detail.media
-              ? <TunisianPlay media={detail.media} title={detail.title} />
-              : (
-                <p dir="auto" className="mt-7 inline-flex items-center gap-2 rounded-full bg-white/[0.07] px-4 py-2.5 text-[14px] text-white/70 ring-1 ring-inset ring-white/10">
-                  <Clock aria-hidden className="h-4 w-4" />{t('tunisian.notYet')}
-                </p>
-              ))}
+            {/* A matched film plays in full below (normal movie sources); the blog clip is its trailer.
+                With no match, only the trailer exists, and the full film isn't online yet. */}
+            {detail.kind === 'movie' && (
+              <div className="mt-7 flex flex-wrap items-center justify-center gap-3 md:justify-start">
+                {detail.tmdb && detail.media && <TunisianPlay media={detail.media} title={detail.title} trailer />}
+                {!detail.tmdb && (detail.media
+                  ? <TunisianPlay media={detail.media} title={detail.title} trailer />
+                  : null)}
+                {!detail.tmdb && (
+                  <p dir="auto" className="inline-flex items-center gap-2 rounded-full bg-white/[0.07] px-4 py-2.5 text-[14px] text-white/70 ring-1 ring-inset ring-white/10">
+                    <Clock aria-hidden className="h-4 w-4" />{t('tunisian.notYet')}
+                  </p>
+                )}
+              </div>
+            )}
             {detail.tv && tvChannel && (
               <Link
                 href={tvSeriesHref(detail.tv.channel, detail.tv.seriesId)}
@@ -109,6 +120,14 @@ export default async function TunisianDetailPage({ params }: Props) {
           </div>
         </div>
       </section>
+
+      {detail.kind === 'movie' && detail.tmdb && (
+        <StreamSection
+          services={fillProviders(getProviderTemplates(), 'movie', detail.tmdb.id)}
+          media={{ type: 'movie', id: detail.tmdb.id }}
+          downloadSlot={detail.tmdb.imdb ? <DownloadDialog type="movie" imdbId={detail.tmdb.imdb} title={detail.title} /> : undefined}
+        />
+      )}
 
       {detail.kind === 'series' && (
         <div className="page-x">
