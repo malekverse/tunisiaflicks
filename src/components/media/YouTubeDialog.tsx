@@ -9,7 +9,12 @@ import { htmlLang } from '@/src/lib/i18n/locales'
 import { youtubeChannelLiveUrl, youtubeEmbedUrl, youtubeLiveEmbedUrl, youtubeWatchUrl } from '@/src/lib/youtube'
 import { cn } from '@/src/lib/utils'
 
-export type DialogVideo = { key: string, title: string, subtitle?: string, liveChannelId?: string, blocked?: boolean }
+/**
+ * A video to play. YouTube by default (`key`); `file` plays a video file in the browser's own player
+ * instead, and `embed` another site's player (both from the Tunisian catalogue's sources, which
+ * check where they point: lib/tunisian). Neither has a "Watch on YouTube".
+ */
+export type DialogVideo = { key: string, title: string, subtitle?: string, liveChannelId?: string, blocked?: boolean, file?: string, embed?: string }
 
 const NAV_BUTTON = 'pressable glass grid h-11 w-11 shrink-0 place-items-center rounded-full text-white outline-none transition-[transform,opacity,background-color] duration-150 hover:bg-white/[0.14] focus-visible:ring-2 focus-visible:ring-red-500 disabled:pointer-events-none disabled:opacity-30'
 
@@ -51,6 +56,7 @@ export default function YouTubeDialog({ open, onOpenChange, videos, index, onInd
     go(forward ? 1 : -1)
   }
 
+  const youtube = !!video && !video.file && !video.embed
   const watchUrl = video ? (video.liveChannelId ? youtubeChannelLiveUrl(video.liveChannelId) : youtubeWatchUrl(video.key)) : ''
   const src = video ? (video.liveChannelId ? youtubeLiveEmbedUrl(video.liveChannelId, { hl }) : youtubeEmbedUrl(video.key, { autoplay: true, hl })) : ''
 
@@ -91,7 +97,7 @@ export default function YouTubeDialog({ open, onOpenChange, videos, index, onInd
               </div>
             )}
 
-            {external && !video.blocked && (
+            {external && youtube && !video.blocked && (
               <a
                 href={watchUrl}
                 target="_blank"
@@ -109,7 +115,29 @@ export default function YouTubeDialog({ open, onOpenChange, videos, index, onInd
           </div>
         )}
         <div className="relative aspect-video w-full bg-black">
-          {open && video && !video.blocked && (
+          {open && video?.file && (
+            <video
+              key={video.file}
+              src={video.file}
+              title={video.title}
+              controls
+              autoPlay
+              playsInline
+              className="absolute inset-0 h-full w-full bg-black"
+            />
+          )}
+          {open && video?.embed && (
+            <iframe
+              key={video.embed}
+              src={video.embed}
+              title={video.title}
+              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+              allowFullScreen
+              referrerPolicy="strict-origin-when-cross-origin"
+              className="absolute inset-0 h-full w-full border-0"
+            />
+          )}
+          {open && video && youtube && !video.blocked && (
             <iframe
               key={video.liveChannelId ?? video.key}
               src={src}

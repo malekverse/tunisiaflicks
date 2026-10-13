@@ -240,9 +240,10 @@ export const fr: Record<CoreKey, string> = {
   'tunisian.back': 'Retour aux titres tunisiens',
   'tunisian.watchOnSource': 'Regarder sur le site source',
   'tunisian.noEpisodes': 'Aucun épisode n’est encore disponible.',
+  'tunisian.notYet': 'Pas encore en ligne. Revenez bientôt.',
   'tunisian.more': 'Plus de titres tunisiens',
   'tunisian.season': 'Saison {number}',
-  'tunisian.sourceNote': 'Les épisodes s’ouvrent sur le site source, dans un nouvel onglet.',
+  'tunisian.sourceNote': 'Les épisodes marqués d’une flèche s’ouvrent sur le site source, dans un nouvel onglet.',
 
   // Person
   'person.knownFor': 'Domaine',

@@ -3,7 +3,7 @@
 // Which strings go to the browser (see clientMessages in ./index.ts): the root layout sends every
 // key that is in neither list below (the shell), a <ClientMessages scope> adds its scope's keys to
 // the pages under it, and the server-only keys never leave the server.
-// 613 of 2808 keys on every page, 1610 in 31 scopes, 585 server-only.
+// 613 of 2809 keys on every page, 1610 in 31 scopes, 586 server-only.
 
 export type MessageScope =
   | 'activate/layout'
@@ -584,6 +584,7 @@ export const SERVER_ONLY_KEYS: readonly string[] = [
   'tunisian.metaTitle',
   'tunisian.more',
   'tunisian.noEpisodes',
+  'tunisian.notYet',
   'tunisian.subtitle',
   'tunisian.title',
   'tunisian.typeSwitch',
@@ -2519,6 +2520,7 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'swipe.yourName',
   ],
   'tunisian/layout': [
+    'stream.player',
     'ttv.cadence.daily',
     'ttv.cadence.days',
     'ttv.cadence.weekdays',

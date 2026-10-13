@@ -229,9 +229,10 @@ export const ar: Record<CoreKey, string> = {
   'tunisian.back': 'العودة إلى المحتوى التونسي',
   'tunisian.watchOnSource': 'شاهد على الموقع المصدر',
   'tunisian.noEpisodes': 'لا توجد حلقات متاحة بعد.',
+  'tunisian.notYet': 'غير متاح بعد. عُد قريبًا.',
   'tunisian.more': 'المزيد من الأعمال التونسية',
   'tunisian.season': 'الموسم {number}',
-  'tunisian.sourceNote': 'تُفتح الحلقات على الموقع المصدر في علامة تبويب جديدة.',
+  'tunisian.sourceNote': 'الحلقات التي تحمل سهمًا تُفتح على الموقع المصدر في علامة تبويب جديدة.',
 
   // Person
   'person.knownFor': 'مجال الشهرة',

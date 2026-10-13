@@ -2,9 +2,18 @@ import { JSDOM } from 'jsdom'
 
 // The Tunisian catalogue comes from the source site's public Blogger JSON feed. Unlike scraping
 // its HTML, the feed has a stable, documented shape, so a redesign of the site's pages won't break it.
+//
+// The films and episodes themselves are videos the source embeds (mostly YouTube; some video files
+// behind iframely, some VK Video): they're read here so they play on TunisiaFlicks, in the video
+// dialog, and only titles with something to watch are listed (the source keeps "put the link here"
+// placeholders for what isn't out yet). The last good feed is kept in the database, so the
+// catalogue stays up when the source is slow or down.
 const SOURCE = new URL('https://www.tunigazelle-news.xyz')
 const FEED_URL = `${SOURCE.origin}/feeds/posts/default?alt=json&max-results=200`
 const REVALIDATE = 1800
+/** An episode's page (and its video) changes rarely. */
+const EPISODE_REVALIDATE = 86400
+const FETCH_TIMEOUT_MS = 10_000
 
 export type TunisianKind = 'movie' | 'series'
 
@@ -19,7 +28,11 @@ export type TunisianTitle = {
   published: string
 }
 
-export type TunisianEpisode = { label: string, url: string }
+/** What plays: a YouTube video, a video file (browser's own player), or VK Video's player. */
+export type TunisianMedia = { type: 'youtube', id: string } | { type: 'file', url: string } | { type: 'embed', url: string }
+
+/** `media`: what the episode plays (null when its page couldn't be read: it then opens on the source). */
+export type TunisianEpisode = { label: string, url: string, media?: TunisianMedia | null }
 export type TunisianSeason = { season: number, episodes: TunisianEpisode[] }
 
 export type TunisianDetail = TunisianTitle & {
@@ -27,6 +40,8 @@ export type TunisianDetail = TunisianTitle & {
   badges: string[]
   backdrop: string | null
   seasons: TunisianSeason[]
+  /** What a film plays (null: nothing to watch yet). */
+  media: TunisianMedia | null
 }
 
 type FeedEntry = {
@@ -49,6 +64,73 @@ export function toSourceUrl(href: string | null | undefined): string | null {
   } catch {
     return null
   }
+}
+
+/** The first YouTube video a page embeds or links to (its id), or null. */
+export function youtubeIdIn(html: string | null | undefined): string | null {
+  const match = /(?:youtube(?:-nocookie)?\.com\/(?:embed\/|watch\?v=|shorts\/)|youtu\.be\/)([\w-]{11})(?![\w-])/.exec(html ?? '')
+  return match ? match[1] : null
+}
+
+/** Episode links that are real (the source fills unfinished ones with placeholder text). */
+export function episodeLinks(html: string): string[] {
+  const links: string[] = []
+  for (const anchor of html.matchAll(/<a\b[^>]*>/gi)) {
+    const tag = anchor[0]
+    if (!/class=["'][^"']*\bepisode-item\b/i.test(tag)) continue
+    const url = toSourceUrl(/href=["']([^"']*)["']/i.exec(tag)?.[1])
+    if (url) links.push(url)
+  }
+  return links
+}
+
+/** Players the source uses besides YouTube, whose embeds are safe to show as they are. */
+const EMBED_HOSTS = /^(?:www\.)?(?:vkvideo\.ru|vk\.com|vk\.ru)$/
+const IFRAMELY = /^(?:www\.)?iframely\.net$/
+
+/**
+ * The player a page embeds: YouTube (by id), VK Video (its embed), or an iframely link (a video file
+ * behind it, read by resolveMedia). Repairs the source's typos ("ttps://"). Null: nothing playable.
+ */
+export function playerIn(html: string | null | undefined): TunisianMedia | { type: 'iframely', url: string } | null {
+  const youtube = youtubeIdIn(html)
+  if (youtube) return { type: 'youtube', id: youtube }
+  for (const match of (html ?? '').matchAll(/<iframe\b[^>]*\bsrc=["']([^"']+)["']/gi)) {
+    const raw = match[1].trim().replace(/&amp;/g, '&').replace(/^ttps:\/\//i, 'https://').replace(/^\/\//, 'https://')
+    let url: URL
+    try { url = new URL(raw) } catch { continue }
+    if (!/^https?:$/.test(url.protocol)) continue
+    url.protocol = 'https:'
+    if (EMBED_HOSTS.test(url.hostname) && url.pathname === '/video_ext.php') return { type: 'embed', url: url.toString() }
+    if (IFRAMELY.test(url.hostname)) return { type: 'iframely', url: url.toString() }
+  }
+  return null
+}
+
+/** Whether a post has something to watch: a film's player, or at least one real episode. */
+export function isPlayable(kind: TunisianKind, html: string): boolean {
+  return kind === 'movie' ? playerIn(html) !== null : episodeLinks(html).length > 0
+}
+
+/** The video file an iframely page plays (its canonical https .mp4), cached a day. */
+async function iframelyFile(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, { next: { revalidate: EPISODE_REVALIDATE }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+    if (!res.ok) return null
+    const canonical = /<meta\s+name=["']canonical["']\s+content=["']([^"']+)["']/i.exec(await res.text())?.[1]?.replace(/&amp;/g, '&')
+    return canonical && /^https:\/\/[^\s"'<>]+\.mp4(?:\?[^\s"'<>]*)?$/i.test(canonical) ? canonical : null
+  } catch {
+    return null
+  }
+}
+
+/** A page's player as something the dialog can play (iframely links resolved to their file). */
+async function resolveMedia(html: string | null | undefined): Promise<TunisianMedia | null> {
+  const player = playerIn(html)
+  if (!player) return null
+  if (player.type !== 'iframely') return player
+  const file = await iframelyFile(player.url)
+  return file ? { type: 'file', url: file } : null
 }
 
 // Blogger image URLs carry their size in the path (`/s72-c/`, `/s1600/`): ask for a card-sized one.
@@ -77,23 +159,94 @@ function toTitle(entry: FeedEntry): TunisianTitle | null {
   }
 }
 
-async function fetchEntries(): Promise<FeedEntry[] | null> {
+// ---- the feed, and the last good copy of it ----------------------------------------------------
+
+type Snapshot = { _id: string, entries: FeedEntry[], signature: string, savedAt: Date }
+
+/** Changes whenever a post is added, removed or edited. */
+const signatureOf = (entries: FeedEntry[]) =>
+  `${entries.length}:${entries.map((entry) => `${entry.published.$t}|${entry.title.$t}|${(entry.content?.$t ?? '').length}`).join(',')}`
+
+async function snapshots() {
+  const { default: clientPromise } = await import('@/src/lib/mongodb')
+  return (await clientPromise).db().collection<Snapshot>('tunisianFeed')
+}
+
+/** Keeps a good feed for the days the source is down (only when it changed: it's ~300 kB). */
+async function saveSnapshot(entries: FeedEntry[]) {
   try {
-    const res = await fetch(FEED_URL, { next: { revalidate: REVALIDATE } })
-    if (!res.ok) throw new Error(`Source feed responded with ${res.status}`)
-    const json = await res.json()
-    return json?.feed?.entry ?? []
+    const signature = signatureOf(entries)
+    const col = await snapshots()
+    const saved = await col.findOne({ _id: 'feed' }, { projection: { signature: 1 } })
+    if (saved?.signature !== signature) await col.updateOne({ _id: 'feed' }, { $set: { entries, signature, savedAt: new Date() } }, { upsert: true })
   } catch (error) {
-    console.error('Error loading the Tunisian feed:', error)
+    console.error('Tunisian feed: saving the copy failed', error)
+  }
+}
+
+async function readSnapshot(): Promise<FeedEntry[] | null> {
+  try {
+    return (await (await snapshots()).findOne({ _id: 'feed' }))?.entries ?? null
+  } catch {
     return null
   }
 }
 
-/** All series and movies, newest first. `null` when the source can't be reached. */
+/** The feed's posts: from the source (cached half an hour), else the last good copy. */
+async function fetchEntries(): Promise<FeedEntry[] | null> {
+  try {
+    const res = await fetch(FEED_URL, { next: { revalidate: REVALIDATE }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+    if (!res.ok) throw new Error(`Source feed responded with ${res.status}`)
+    const json = await res.json()
+    const entries: FeedEntry[] = Array.isArray(json?.feed?.entry) ? json.feed.entry : []
+    if (entries.length > 0) {
+      void saveSnapshot(entries)
+      return entries
+    }
+    return (await readSnapshot()) ?? entries
+  } catch (error) {
+    console.error('Error loading the Tunisian feed (using the last good copy):', error)
+    return readSnapshot()
+  }
+}
+
+/** All series and movies with something to watch, newest first. `null` when the source can't be reached. */
 export async function getTunisianTitles(): Promise<TunisianTitle[] | null> {
   const entries = await fetchEntries()
   if (!entries) return null
-  return entries.map(toTitle).filter((title): title is TunisianTitle => title !== null)
+  return entries
+    .map((entry) => {
+      const title = toTitle(entry)
+      return title && isPlayable(title.kind, entry.content?.$t ?? '') ? title : null
+    })
+    .filter((title): title is TunisianTitle => title !== null)
+}
+
+// ---- episodes ----------------------------------------------------------------------------------
+
+/** What an episode page plays (cached a day); null when the page can't be read. */
+async function episodeMedia(url: string): Promise<TunisianMedia | null> {
+  try {
+    const res = await fetch(url, { next: { revalidate: EPISODE_REVALIDATE }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+    if (!res.ok) return null
+    return await resolveMedia(await res.text())
+  } catch {
+    return null
+  }
+}
+
+/** Reads what every episode plays, a few pages at a time (the source is a small blog). */
+async function withMedia(seasons: TunisianSeason[]): Promise<TunisianSeason[]> {
+  const urls = Array.from(new Set(seasons.flatMap((season) => season.episodes.map((episode) => episode.url))))
+  const media = new Map<string, TunisianMedia | null>()
+  let next = 0
+  await Promise.all(Array.from({ length: Math.min(6, urls.length) }, async () => {
+    while (next < urls.length) {
+      const url = urls[next++]
+      media.set(url, await episodeMedia(url))
+    }
+  }))
+  return seasons.map((season) => ({ ...season, episodes: season.episodes.map((episode) => ({ ...episode, media: media.get(episode.url) ?? null })) }))
 }
 
 /** One title with its description and, for series, its seasons and episodes. */
@@ -136,6 +289,7 @@ export async function getTunisianDetail(slug: string): Promise<TunisianDetail | 
     description: document.querySelector('.detail-description')?.textContent?.trim() ?? '',
     badges,
     backdrop: resizePoster(backdropStyle.match(/url\(['"]?([^'")]+)/)?.[1], 1280),
-    seasons,
+    seasons: base.kind === 'series' ? await withMedia(seasons) : seasons,
+    media: base.kind === 'movie' ? await resolveMedia(document.querySelector('.player-container, .player-wrapper')?.innerHTML ?? entry.content?.$t) : null,
   }
 }

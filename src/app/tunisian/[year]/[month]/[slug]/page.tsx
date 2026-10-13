@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ExternalLink, Play } from 'lucide-react'
+import { Clock } from 'lucide-react'
 import TunisianSeasons from '@/src/components/detail/TunisianSeasons'
+import TunisianPlay from '@/src/components/detail/TunisianPlay'
 import PosterCard from '@/src/components/PosterCard'
 import { EmptyState, GRID_CLASS } from '@/src/components/MediaGrid'
 import KidsBlocked from '@/src/components/profiles/KidsBlocked'
@@ -83,22 +84,21 @@ export default async function TunisianDetailPage({ params }: Props) {
             {detail.description && (
               <p className="mt-5 max-w-[62ch] animate-focus-in text-center text-[15px] leading-relaxed text-white/70 [animation-delay:140ms] md:text-start">{detail.description}</p>
             )}
-            {detail.kind === 'movie' && (
-              <Button asChild size="lg" className="mt-7">
-                <a href={detail.url} target="_blank" rel="noopener noreferrer">
-                  <Play aria-hidden className="h-5 w-5 fill-current rtl:-scale-x-100" />
-                  {t('tunisian.watchOnSource')}
-                  <ExternalLink aria-hidden className="h-4 w-4 opacity-70" />
-                </a>
-              </Button>
-            )}
+            {/* The film plays here; one the source hasn't put online yet says so (no dead button). */}
+            {detail.kind === 'movie' && (detail.media
+              ? <TunisianPlay media={detail.media} title={detail.title} />
+              : (
+                <p dir="auto" className="mt-7 inline-flex items-center gap-2 rounded-full bg-white/[0.07] px-4 py-2.5 text-[14px] text-white/70 ring-1 ring-inset ring-white/10">
+                  <Clock aria-hidden className="h-4 w-4" />{t('tunisian.notYet')}
+                </p>
+              ))}
           </div>
         </div>
       </section>
 
       {detail.kind === 'series' && (
         <div className="page-x">
-          {detail.seasons.length > 0 ? <TunisianSeasons seasons={detail.seasons} /> : <EmptyState>{t('tunisian.noEpisodes')}</EmptyState>}
+          {detail.seasons.length > 0 ? <TunisianSeasons seasons={detail.seasons} title={detail.title} picture={detail.backdrop ?? detail.poster} /> : <EmptyState>{t('tunisian.noEpisodes')}</EmptyState>}
         </div>
       )}
 
