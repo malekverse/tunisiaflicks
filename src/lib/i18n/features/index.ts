@@ -18,8 +18,9 @@ import { apps } from './apps'
 import { desktop } from './desktop'
 import { halal } from './halal'
 import { mail } from './mail'
+import { anime } from './anime'
 
-const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop, halal, mail]
+const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop, halal, mail, anime]
 
 export type FeatureKey =
   | keyof typeof aiSearch.en
@@ -40,6 +41,7 @@ export type FeatureKey =
   | keyof typeof desktop.en
   | keyof typeof halal.en
   | keyof typeof mail.en
+  | keyof typeof anime.en
 
 type Language = 'en' | 'ar' | 'tn' | 'fr'
 
