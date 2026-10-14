@@ -27,7 +27,9 @@ type I18nContextValue = {
 
 const I18nContext = createContext<I18nContextValue | null>(null)
 
-const ONE_YEAR = 60 * 60 * 24 * 365
+/** How long the language cookie lives: the most browsers allow (400 days), renewed on every visit,
+ *  so a chosen language stays for good. */
+const KEEP_SECONDS = 60 * 60 * 24 * 400
 /** The page dims while it re-renders in the new language; it never stays dim longer than this. */
 const MAX_DIM_MS = 4000
 const PENDING_ATTRIBUTE = 'data-locale-pending'
@@ -54,7 +56,7 @@ function translator(messages: Record<string, string>): Translate {
 
 function writeCookie(locale: Locale) {
   const secure = location.protocol === 'https:' ? '; secure' : ''
-  document.cookie = `${LOCALE_COOKIE}=${locale}; path=/; max-age=${ONE_YEAR}; samesite=lax${secure}`
+  document.cookie = `${LOCALE_COOKIE}=${locale}; path=/; max-age=${KEEP_SECONDS}; samesite=lax${secure}`
 }
 
 /**
@@ -106,6 +108,12 @@ export function I18nProvider({ locale, messages, children }: {
       setAnnouncement(tRef.current('languages.switched', { language: LOCALE_META[locale].endonym }))
     }
   }, [locale, lift])
+
+  // A chosen language stays for good: its cookie's 400 days start again on every visit. (No cookie:
+  // the visitor never chose, and the site stays in English.)
+  useEffect(() => {
+    if (document.cookie.split(';').some((part) => part.trim().startsWith(`${LOCALE_COOKIE}=`))) writeCookie(locale)
+  }, [locale])
 
   useEffect(() => () => {
     clearTimeout(dimTimer.current)

@@ -33,7 +33,7 @@ import { INSTALL_PROMPT_SCRIPT } from "@/src/lib/install-prompt-script";
 import { LAUNCH_SCRIPT } from "@/src/lib/launch-script";
 import AppLaunch from "@/src/components/brand/AppLaunch";
 import { withTimeout } from "@/src/lib/with-timeout";
-import { clientMessages, dirOf, htmlLang } from "@/src/lib/i18n";
+import { LOCALE_COOKIE, clientMessages, dirOf, htmlLang, suggestLocales } from "@/src/lib/i18n";
 import { getLocale, getT } from "@/src/lib/i18n/server";
 import { getKidsMode } from "@/src/lib/profiles";
 import { SEASONS_TODAY_COOKIE, getSeasonalNav, getSeasonSkin, seasonClock } from "@/src/lib/seasons";
@@ -156,6 +156,9 @@ export default async function RootLayout({
   // The search pill offers Ask (AI search) too: never for Kids or in TV mode.
   const ask = aiSearchEnabled() && !kids && !tv;
   const inApp = (headers().get('user-agent') ?? '').includes('TunisiaFlicksTV/');
+  // Everyone starts in English; a visitor who never chose a language is offered, once, the ones
+  // spoken where they are (and in their browser). See LanguageHint.
+  const suggestedLocales = cookies().get(LOCALE_COOKIE) ? [] : suggestLocales(headers().get('x-vercel-ip-country'), headers().get('accept-language'));
   // The apps with a release (cached for 10 minutes; see src/lib/app-releases.ts), for the offer.
   const [releases, desktopRelease] = await Promise.all([
     withTimeout(getAppReleases(), 1500, null),
@@ -235,7 +238,7 @@ export default async function RootLayout({
               </MotionProvider>
             </SessionProvider>
             <Toaster />
-            <LanguageHint />
+            <LanguageHint suggested={suggestedLocales} />
           </TvModeProvider>
         </I18nProvider>
         <div aria-hidden className="tf-grain" />

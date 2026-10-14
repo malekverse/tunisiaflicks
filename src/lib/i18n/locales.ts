@@ -84,10 +84,41 @@ export function negotiateLocale(acceptLanguage: string | null | undefined): Loca
 }
 
 /**
- * The UI language of a request: the tf-locale cookie (the visitor's choice) wins; before any
- * choice, the browser's languages (negotiateLocale); English otherwise.
+ * The UI language of a request: the tf-locale cookie (the visitor's choice, kept for good) wins;
+ * before any choice, English for everyone. The browser's languages and the visitor's country only
+ * decide what the one-time language hint suggests (suggestLocales), never the language itself.
  */
-export function resolveLocale(cookieValue: string | null | undefined, acceptLanguage: string | null | undefined): Locale {
-  if (isLocale(cookieValue)) return cookieValue
-  return negotiateLocale(acceptLanguage) ?? DEFAULT_LOCALE
+export function resolveLocale(cookieValue: string | null | undefined, _acceptLanguage?: string | null): Locale {
+  return isLocale(cookieValue) ? cookieValue : DEFAULT_LOCALE
+}
+
+/** The languages spoken in a country, by ISO 3166 code, as the site's locales (English left out). */
+const COUNTRY_LOCALES: Record<string, readonly Locale[]> = {
+  // Tunisia: Arabic, then French, and Derja (the site's own Tunisian).
+  TN: ['ar', 'fr', 'tn'],
+  // The rest of the Maghreb, Lebanon, Djibouti and the Comoros: Arabic and French.
+  DZ: ['ar', 'fr'], MA: ['ar', 'fr'], MR: ['ar', 'fr'], LB: ['ar', 'fr'], DJ: ['fr', 'ar'], KM: ['fr', 'ar'],
+  // The other Arab countries.
+  LY: ['ar'], EG: ['ar'], SD: ['ar'], SA: ['ar'], AE: ['ar'], QA: ['ar'], KW: ['ar'], BH: ['ar'], OM: ['ar'],
+  YE: ['ar'], JO: ['ar'], SY: ['ar'], IQ: ['ar'], PS: ['ar'], SO: ['ar'],
+  // French-speaking countries and territories.
+  FR: ['fr'], BE: ['fr'], CH: ['fr'], LU: ['fr'], MC: ['fr'], SN: ['fr'], CI: ['fr'], CM: ['fr'], ML: ['fr'],
+  BF: ['fr'], NE: ['fr'], TG: ['fr'], BJ: ['fr'], GA: ['fr'], CG: ['fr'], CD: ['fr'], MG: ['fr'], HT: ['fr'],
+  GN: ['fr'], RW: ['fr'], BI: ['fr'], CF: ['fr'], TD: ['fr'], SC: ['fr'], MU: ['fr'], NC: ['fr'], PF: ['fr'],
+  RE: ['fr'], GP: ['fr'], MQ: ['fr'], GF: ['fr'], YT: ['fr'], PM: ['fr'], WF: ['fr'], BL: ['fr'], MF: ['fr'],
+}
+
+/**
+ * The languages the one-time hint suggests to a visitor who never chose one: their country's
+ * (from Vercel's x-vercel-ip-country), then their browser's (Accept-Language), English left out, at
+ * most three. Empty when there's nothing to suggest (an English speaker in an English country).
+ */
+export function suggestLocales(country: string | null | undefined, acceptLanguage: string | null | undefined): Locale[] {
+  const fromCountry = COUNTRY_LOCALES[(country ?? '').trim().toUpperCase()] ?? []
+  const fromBrowser: Locale[] = []
+  for (const part of (acceptLanguage ?? '').split(',').slice(0, 20)) {
+    const language = negotiateLocale(part)
+    if (language) fromBrowser.push(language)
+  }
+  return Array.from(new Set([...fromCountry, ...fromBrowser])).filter((locale) => locale !== DEFAULT_LOCALE).slice(0, 3)
 }

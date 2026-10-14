@@ -1,4 +1,5 @@
-// Strings for: Interface languages, the language switch, the one-time language hint and the
+// Strings for: Interface languages, the language switch, the one-time language hint (the
+// languages spoken where the visitor is, offered on a first visit) and the
 // Settings "Language and display" section (#display).
 import { defineStrings } from '../define'
 
@@ -8,8 +9,9 @@ export const languages = defineStrings({
     'languages.settings.desc': 'On this device.',
     'languages.site.label': 'Site language',
     'languages.site.hint': 'Menus and buttons, and the catalogue where a translation exists.',
-    'languages.hint.title': 'TunisiaFlicks speaks French',
-    'languages.hint.text': 'You can change the language at any time from the menu.',
+    'languages.hint.title': 'TunisiaFlicks speaks your language',
+    'languages.hint.text': 'Pick one, or keep this one. You can change it any time from the menu.',
+    'languages.hint.keep': 'Keep {language}',
     'languages.hint.others': 'Other languages',
     'languages.switched': 'Language: {language}',
     'languages.offline': 'You’re offline. The language will change as soon as you’re back online.',
@@ -22,8 +24,9 @@ export const languages = defineStrings({
     'languages.settings.desc': 'على هذا الجهاز.',
     'languages.site.label': 'لغة الموقع',
     'languages.site.hint': 'القوائم والأزرار، والكتالوج عندما تتوفّر ترجمة.',
-    'languages.hint.title': 'TunisiaFlicks يتحدث الفرنسية',
-    'languages.hint.text': 'يمكنك تغيير اللغة في أي وقت من القائمة.',
+    'languages.hint.title': 'TunisiaFlicks يتحدث لغتك',
+    'languages.hint.text': 'اختر لغة، أو أبقِ هذه. يمكنك تغييرها في أي وقت من القائمة.',
+    'languages.hint.keep': 'إبقاء {language}',
     'languages.hint.others': 'لغات أخرى',
     'languages.switched': 'اللغة: {language}',
     'languages.offline': 'أنت غير متصل بالإنترنت. ستتغيّر اللغة فور عودة الاتصال.',
@@ -35,8 +38,9 @@ export const languages = defineStrings({
     'languages.settings.desc': 'على الجهاز هذا.',
     'languages.site.label': 'لغة السيت',
     'languages.site.hint': 'المنيوات والبوتونات، والكتالوڨ كي تكون فما ترجمة.',
-    'languages.hint.title': 'TunisiaFlicks يحكي بالفرنساوي',
-    'languages.hint.text': 'تنجم تبدّل اللغة وقت ما تحب من المنيو.',
+    'languages.hint.title': 'TunisiaFlicks يحكي بلغتك',
+    'languages.hint.text': 'إختار لغة، ولا خلّي هاذي. تنجم تبدّلها وقت ما تحب من المنيو.',
+    'languages.hint.keep': 'خلّي {language}',
     'languages.hint.others': 'لغات أخرين',
     'languages.switched': 'اللغة: {language}',
     'languages.offline': 'ماكش متصل بالإنترنت. اللغة تتبدّل كي يرجع الإنترنت.',
@@ -48,8 +52,9 @@ export const languages = defineStrings({
     'languages.settings.desc': 'Sur cet appareil.',
     'languages.site.label': 'Langue du site',
     'languages.site.hint': 'Les menus, les boutons, et le catalogue quand une traduction existe.',
-    'languages.hint.title': 'TunisiaFlicks parle français',
-    'languages.hint.text': 'Vous pouvez changer de langue à tout moment depuis le menu.',
+    'languages.hint.title': 'TunisiaFlicks parle votre langue',
+    'languages.hint.text': 'Choisissez-en une, ou gardez celle-ci. Vous pouvez la changer à tout moment depuis le menu.',
+    'languages.hint.keep': 'Garder {language}',
     'languages.hint.others': 'Autres langues',
     'languages.switched': 'Langue\u00a0: {language}',
     'languages.offline': 'Vous êtes hors ligne. La langue changera dès le retour de la connexion.',

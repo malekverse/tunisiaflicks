@@ -3,7 +3,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  LOCALES, LOCALE_META, dateLocale, dirOf, htmlLang, isArabicScript, isLocale, negotiateLocale, ogAlternates, ogLocale, resolveLocale,
+  LOCALES, LOCALE_META, dateLocale, dirOf, htmlLang, isArabicScript, isLocale, negotiateLocale, ogAlternates, ogLocale, resolveLocale, suggestLocales,
 } from '@/src/lib/i18n/locales'
 import { formatDate, languageName, quote, regionName } from '@/src/lib/i18n/format'
 import { en } from '@/src/lib/i18n/en'
@@ -56,14 +56,28 @@ test('negotiation: the first of en, fr, ar in the browser\'s order, never Derja'
   assert.equal(negotiateLocale('tn,ar-TN'), 'ar')
 })
 
-test('resolveLocale: the cookie wins, then the browser, then English', () => {
-  assert.equal(resolveLocale(undefined, 'fr-FR,fr;q=0.9'), 'fr')
+test("resolveLocale: the visitor's choice (the cookie), else English, whatever the browser", () => {
+  assert.equal(resolveLocale(undefined, 'fr-FR,fr;q=0.9'), 'en', 'a French browser still opens in English')
   assert.equal(resolveLocale(undefined, 'de'), 'en')
-  assert.equal(resolveLocale('en', 'fr-FR,fr;q=0.9'), 'en', 'an English cookie beats a French browser')
+  assert.equal(resolveLocale('en', 'fr-FR,fr;q=0.9'), 'en')
+  assert.equal(resolveLocale('fr', 'en-US'), 'fr', 'a chosen language wins')
   assert.equal(resolveLocale('tn', 'fr-FR'), 'tn')
   assert.equal(htmlLang(resolveLocale('tn', null)), 'ar-TN')
   assert.equal(dirOf(resolveLocale('tn', null)), 'rtl')
-  assert.equal(resolveLocale('xx', 'ar'), 'ar', 'a broken cookie is ignored')
+  assert.equal(resolveLocale('xx', 'ar'), 'en', 'a broken cookie is ignored')
+})
+
+test("suggestLocales: the country's languages, then the browser's, English left out, at most three", () => {
+  assert.deepEqual(suggestLocales('TN', 'en-US,en;q=0.9'), ['ar', 'fr', 'tn'], 'Tunisia: Arabic, French and Derja')
+  assert.deepEqual(suggestLocales('tn', null), ['ar', 'fr', 'tn'])
+  assert.deepEqual(suggestLocales('DZ', 'en'), ['ar', 'fr'])
+  assert.deepEqual(suggestLocales('EG', 'en'), ['ar'])
+  assert.deepEqual(suggestLocales('FR', 'en-GB'), ['fr'])
+  assert.deepEqual(suggestLocales('US', 'en-US,en;q=0.9'), [], 'nothing to suggest to an English speaker')
+  assert.deepEqual(suggestLocales('US', 'fr-CA,en;q=0.8'), ['fr'], 'a French browser abroad')
+  assert.deepEqual(suggestLocales('DE', 'de-DE,ar;q=0.7,fr;q=0.5'), ['ar', 'fr'])
+  assert.deepEqual(suggestLocales('FR', 'ar,fr'), ['fr', 'ar'], 'the country first, then the browser, no repeats')
+  assert.deepEqual(suggestLocales(null, null), [])
 })
 
 test('formatDate: calendar days at noon UTC, French headlines capitalized', () => {

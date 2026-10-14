@@ -40,13 +40,12 @@ test('French cookie: /privacy has no Arabic', async () => {
   assert.match(content, /Politique de confidentialité/)
 })
 
-test('negotiation: Accept-Language without a cookie', async () => {
+test('language: English until the visitor chooses, whatever the browser or the country', async () => {
   const lang = async (headers) => htmlTag(await html('/about', headers)).match(/lang="([^"]+)" dir="([^"]+)"/)?.slice(1).join(' ')
-  assert.equal(await lang({ 'accept-language': 'fr-FR,fr;q=0.9' }), 'fr ltr')
-  assert.equal(await lang({ 'accept-language': 'ar-TN,fr;q=0.8' }), 'ar rtl')
-  assert.equal(await lang({ 'accept-language': 'de-DE,fr;q=0.5' }), 'fr ltr')
+  assert.equal(await lang({ 'accept-language': 'fr-FR,fr;q=0.9' }), 'en ltr')
+  assert.equal(await lang({ 'accept-language': 'ar-TN,fr;q=0.8', 'x-vercel-ip-country': 'TN' }), 'en ltr')
   assert.equal(await lang({ 'accept-language': 'de' }), 'en ltr')
-  assert.equal(await lang({ 'accept-language': 'fr-FR', cookie: 'tf-locale=en' }), 'en ltr')
+  assert.equal(await lang({ 'accept-language': 'en-US', cookie: 'tf-locale=fr' }), 'fr ltr', 'the choice wins')
   assert.equal(await lang({ cookie: 'tf-locale=tn' }), 'ar-TN rtl')
 })
 

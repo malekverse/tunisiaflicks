@@ -1,9 +1,12 @@
-// A one-time toast that offers the other languages to a visitor who never picked one. Mounted in
-// the root layout beside the Toaster.
+// A one-time toast that offers a visitor who never picked a language the ones spoken where they
+// are. Mounted in the root layout beside the Toaster.
 //
-// The site guessed French from the browser (no tf-locale cookie yet): say so once per device, a
-// moment after the page settles, with Arabic and English one tap away. Never on the profile picker
-// (it is a full-screen choice of its own).
+// The site always opens in English until the visitor chooses (lib/i18n/locales resolveLocale). On
+// the first visit, a moment after the page settles, this suggests the languages of the visitor's
+// country and browser (suggestLocales, worked out by the layout): Arabic and French in Tunisia,
+// French in France... each a tap away, or the visitor keeps English or simply closes it. Either way
+// it never shows again on this device; a chosen language stays for good (the tf-locale cookie).
+// Never on the profile picker (a full-screen choice of its own).
 "use client"
 import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
@@ -13,25 +16,25 @@ import { LOCALE_COOKIE, LOCALE_META, htmlLang, type Locale } from '@/src/lib/i18
 
 const SEEN_KEY = 'tf-lang-hint'
 const DELAY_MS = 1200
-const DURATION_MS = 9000
-/** The languages the hint offers, in this order: the main action first. */
-const OFFERED: Locale[] = ['ar', 'en']
+const DURATION_MS = 12000
 
 const hasLocaleCookie = () => document.cookie.split(';').some((part) => part.trim().startsWith(`${LOCALE_COOKIE}=`))
 
-export default function LanguageHint(): null {
+export default function LanguageHint({ suggested }: { suggested: Locale[] }): null {
   const { locale, setLocale, t } = useI18n()
   const pathname = usePathname()
   const onProfiles = pathname === '/profiles' || pathname.startsWith('/profiles/')
+  const offered = suggested.filter((value) => value !== locale)
 
   useEffect(() => {
-    if (locale !== 'fr' || onProfiles || hasLocaleCookie()) return
+    if (!offered.length || onProfiles || hasLocaleCookie()) return
     try {
       if (localStorage.getItem(SEEN_KEY)) return
     } catch {
       return // No storage, no way to show it only once: don't show it.
     }
     const timer = setTimeout(() => {
+      // Seen once it shows: closed, ignored or answered, it never comes back.
       try {
         localStorage.setItem(SEEN_KEY, '1')
       } catch {
@@ -43,9 +46,10 @@ export default function LanguageHint(): null {
           <>
             <span className="block">{t('languages.hint.text')}</span>
             {/* Real 44px buttons under the text (Sonner's own action buttons are small and sit
-                beside it): Arabic first, then English, each named in its own language. */}
-            <span role="group" aria-label={t('languages.hint.others')} className="mt-3 flex gap-2">
-              {OFFERED.map((value, index) => (
+                beside it): the suggested languages, each named in its own language, the first one
+                as the main action; then keeping English. */}
+            <span role="group" aria-label={t('languages.hint.others')} className="mt-3 flex flex-wrap gap-2">
+              {offered.map((value, index) => (
                 <button
                   key={value}
                   type="button"
@@ -65,6 +69,13 @@ export default function LanguageHint(): null {
                   {LOCALE_META[value].label}
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => toast.dismiss(id)}
+                className="pressable h-11 rounded-full px-3 text-[14px] font-medium text-white/60 outline-none transition-colors hover:text-white focus-visible:ring-2 focus-visible:ring-red-500"
+              >
+                {t('languages.hint.keep', { language: LOCALE_META[locale].label })}
+              </button>
             </span>
           </>
         ),
@@ -73,7 +84,7 @@ export default function LanguageHint(): null {
     return () => clearTimeout(timer)
     // Once per page view; the translator changing must not show it again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locale, onProfiles])
+  }, [onProfiles])
 
   return null
 }
