@@ -59,6 +59,7 @@ describe('share image store', { skip: !LOCAL && 'needs MONGODB_URI on a local Mo
     const first = await store.keptShareImage('movie/603', draw, { budgetMs: 2000 })
     assert.equal(await body(first), 'movie 603')
     assert.match(first.headers.get('cache-control') ?? '', /s-maxage=86400/)
+    assert.equal(first.headers.get('content-length'), String('movie 603'.length), 'its exact size, not streamed in chunks (Meta skips those)')
     const second = await store.keptShareImage('movie/603', draw, { budgetMs: 2000 })
     assert.equal(await body(second), 'movie 603')
     assert.equal(draws, 1, 'the second ask is answered from the database')

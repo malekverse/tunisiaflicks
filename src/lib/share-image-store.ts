@@ -118,6 +118,15 @@ function drawAndKeep(key: string, draw: () => Promise<Response>): Promise<Card> 
   return pending
 }
 
+/**
+ * An image response with its exact size (Content-Length). Without it the answer is streamed in
+ * chunks, and Meta's image fetcher (WhatsApp, Instagram, Messenger, Facebook) skips an image whose
+ * size it can't check: the preview then shows no picture even when the card is there and fast.
+ */
+function imageResponse(data: Uint8Array, type: string, cacheControl: string): Response {
+  return new Response(data, { headers: { 'Content-Type': type, 'Content-Length': String(data.byteLength), 'Cache-Control': cacheControl } })
+}
+
 function answer(card: Card, personal: boolean): Response {
   // Vercel's edge keeps it (s-maxage); browsers and crawlers for an hour. The brand card standing in
   // for something missing only briefly (it may exist soon: a list made public, a new title).
@@ -126,7 +135,7 @@ function answer(card: Card, personal: boolean): Response {
     : personal
     ? 'public, max-age=300, s-maxage=300'
     : 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800'
-  return new Response(card.data, { headers: { 'Content-Type': card.type, 'Cache-Control': cache } })
+  return imageResponse(card.data, card.type, cache)
 }
 
 let brandBytes: Promise<Uint8Array | null> | null = null
@@ -136,12 +145,12 @@ async function brandCard(): Promise<Response> {
   // From disk (next.config.js ships it with the functions); over the network if it isn't there.
   brandBytes ??= readFile(path.join(process.cwd(), 'public', BRAND_CARD_PATH.slice(1))).then((data) => new Uint8Array(data), () => null)
   const bytes = await brandBytes
-  if (bytes) return new Response(bytes, { headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'no-store' } })
+  if (bytes) return imageResponse(bytes, 'image/jpeg', 'no-store')
   const url = `${SITE_URL}${BRAND_CARD_PATH}`
   try {
     const response = await fetch(url, { signal: AbortSignal.timeout(2000) })
     if (response.ok) {
-      return new Response(await response.arrayBuffer(), { headers: { 'Content-Type': response.headers.get('content-type') ?? 'image/jpeg', 'Cache-Control': 'no-store' } })
+      return imageResponse(new Uint8Array(await response.arrayBuffer()), response.headers.get('content-type') ?? 'image/jpeg', 'no-store')
     }
   } catch { /* the redirect below */ }
   return new Response(null, { status: 307, headers: { Location: url, 'Cache-Control': 'no-store' } })

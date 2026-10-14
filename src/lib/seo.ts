@@ -77,7 +77,8 @@ export function pageMetadata({ title, description, path, card = 'home', openGrap
   noIndex?: boolean
 }): Metadata {
   const text = clampDescription(description)
-  const images = card ? [{ url: `/og/${card}`, width: 1200, height: 630, alt: title }] : undefined
+  // The type is stated like the title cards' (their routes say image/jpeg): Meta reads it.
+  const images = card ? [{ url: `/og/${card}`, width: 1200, height: 630, alt: title, type: 'image/jpeg' }] : undefined
   const locale = requestLocale()
   return {
     title: `${title} | ${SITE_NAME}`,
