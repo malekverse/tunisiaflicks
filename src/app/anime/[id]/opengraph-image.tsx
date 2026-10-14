@@ -1,11 +1,12 @@
 import { OG_SIZE, renderFallbackCard, renderTitleCard } from '@/src/lib/og'
 import { getAnimeDetail } from '@/src/lib/anime/server'
+import { keptShareImage } from '@/src/lib/share-image-store'
 
 // Share card for /anime/:id (what Facebook, WhatsApp, Messenger, X and Telegram show): the anime's
 // cover beside its title, like a movie's card without a backdrop (AniList's banners are short and
 // wide, and blur when stretched over the card). Shared by everyone, so it reads AniList with no
 // viewer; a title the site never shows (adult) gets the plain TunisiaFlicks card.
-export const revalidate = 86400
+export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 export const alt = 'Anime on TunisiaFlicks'
 export const size = OG_SIZE
@@ -19,7 +20,7 @@ const glowOf = (hex: string | null) => {
   return match ? match.slice(1).map((part) => parseInt(part, 16)).join(' ') : null
 }
 
-export default async function Image({ params }: { params: { id: string } }) {
+async function draw({ params }: { params: { id: string } }) {
   const id = /^\d{1,9}$/.test(params.id) ? Number(params.id) : 0
   const detail = id ? await getAnimeDetail(id, { kids: false, halal: false, language: 'english' }) : null
   if (!detail || detail.hidden) return renderFallbackCard()
@@ -35,4 +36,9 @@ export default async function Image({ params }: { params: { id: string } }) {
     line: card.description,
     cta: card.status === 'NOT_YET_RELEASED' ? 'Watch the trailer' : 'Watch now',
   })
+}
+
+/** Kept once drawn, so a crawler never waits (lib/share-image-store). */
+export default function Image({ params }: { params: { id: string } }) {
+  return keptShareImage(`anime/${params.id}`, () => draw({ params }))
 }

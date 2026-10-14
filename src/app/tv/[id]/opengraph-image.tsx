@@ -1,14 +1,15 @@
 import { OG_SIZE, posterGlow, renderFallbackCard, renderTitleCard, shareLogo, tmdbImage } from '@/src/lib/og'
 import { tmdbFetchSafe } from '@/src/lib/tmdb'
+import { keptShareImage } from '@/src/lib/share-image-store'
 
 // Share card for /tv/:id (what Facebook, WhatsApp, Messenger, X and Telegram show).
-export const revalidate = 86400
+export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 export const alt = 'TV series on TunisiaFlicks'
 export const size = OG_SIZE
 export const contentType = 'image/jpeg'
 
-export default async function Image({ params }: { params: { id: string } }) {
+async function draw({ params }: { params: { id: string } }) {
   const show = /^\d+$/.test(params.id)
     ? await tmdbFetchSafe(`tv/${params.id}`, { append_to_response: 'images', include_image_language: 'en,null' }, 86400)
     : null
@@ -30,4 +31,9 @@ export default async function Image({ params }: { params: { id: string } }) {
     line: show.tagline || show.overview,
     cta: 'Watch now',
   })
+}
+
+/** Kept once drawn, so a crawler never waits (lib/share-image-store). */
+export default function Image({ params }: { params: { id: string } }) {
+  return keptShareImage(`tv/${params.id}`, () => draw({ params }))
 }

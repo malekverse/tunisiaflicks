@@ -1,8 +1,9 @@
 import { OG_SIZE, posterGlow, renderFallbackCard, renderPersonCard, tmdbImage } from '@/src/lib/og'
 import { tmdbFetchSafe } from '@/src/lib/tmdb'
+import { keptShareImage } from '@/src/lib/share-image-store'
 
 // Share card for /person/:id: portrait, name, and a strip of their best-known titles.
-export const revalidate = 86400
+export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 export const alt = 'Actor on TunisiaFlicks'
 export const size = OG_SIZE
@@ -10,7 +11,7 @@ export const contentType = 'image/jpeg'
 
 const ROLES: Record<string, string> = { Acting: 'Actor', Directing: 'Director', Writing: 'Writer', Production: 'Producer' }
 
-export default async function Image({ params }: { params: { id: string } }) {
+async function draw({ params }: { params: { id: string } }) {
   const person = /^\d+$/.test(params.id) ? await tmdbFetchSafe(`person/${params.id}`, { append_to_response: 'combined_credits' }, 86400, { shared: true }) : null
   if (!person) return renderFallbackCard()
 
@@ -33,4 +34,9 @@ export default async function Image({ params }: { params: { id: string } }) {
     glow: await posterGlow(knownFor[0]?.poster_path),
     cta: 'See their films',
   })
+}
+
+/** Kept once drawn, so a crawler never waits (lib/share-image-store). */
+export default function Image({ params }: { params: { id: string } }) {
+  return keptShareImage(`person/${params.id}`, () => draw({ params }))
 }

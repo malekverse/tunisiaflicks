@@ -3,16 +3,17 @@ import { getNight } from '@/src/lib/movie-night'
 import { firstName, isNightId } from '@/src/lib/movie-night-rules'
 import { nightDay, nightTime } from '@/src/lib/movie-night-format'
 import { avatarPerson } from '@/src/lib/social/identity'
+import { keptShareImage } from '@/src/lib/share-image-store'
 
 // What people see when a night's link is pasted into WhatsApp or Messenger: the host's first name,
 // the date and the posters. Never who else is coming, the place or the note.
-export const revalidate = 300
+export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 export const alt = 'A movie night on TunisiaFlicks'
 export const size = OG_SIZE
 export const contentType = 'image/jpeg'
 
-export default async function Image({ params }: { params: { id: string } }) {
+async function draw({ params }: { params: { id: string } }) {
   const night = isNightId(params.id) ? await getNight(params.id).catch(() => null) : null
   if (!night) return renderFallbackCard()
   const host = await avatarPerson(night.host).catch(() => null)
@@ -25,4 +26,9 @@ export default async function Image({ params }: { params: { id: string } }) {
     posters,
     cancelled: night.status === 'cancelled',
   })
+}
+
+/** Kept once drawn, so a crawler never waits (lib/share-image-store). */
+export default function Image({ params }: { params: { id: string } }) {
+  return keptShareImage(`movie-night/${params.id}`, () => draw({ params }), { personal: true })
 }

@@ -33,6 +33,11 @@ const nextConfig = {
   experimental: {
     // Next 14: enables src/instrumentation.ts (server-side error monitoring setup).
     instrumentationHook: true,
+    // The share cards' fonts are read from disk (src/lib/og.tsx), so they must ship with every
+    // function that may draw a card.
+    outputFileTracingIncludes: {
+      '/**': ['./src/lib/og-fonts/*.ttf'],
+    },
   },
   async headers() {
     // Pages whose URL carries a secret (a signed unsubscribe link, a TV pairing code) send no

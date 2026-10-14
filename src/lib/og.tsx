@@ -3,13 +3,14 @@
 // "My year" story. They speak the site's visual language: a black room lit by the picture, the
 // backdrop fading in from the right, a glow in the poster's own colour, the title logo, condensed
 // display type, and the red Play pill as the one signal colour.
-import { mkdir, writeFile } from 'fs/promises'
+import { mkdir, readFile, writeFile } from 'fs/promises'
 import os from 'os'
 import path from 'path'
 import { ImageResponse } from 'next/og'
 import { dominantColor } from '@/src/lib/ambient'
 import { SITE_HOST } from '@/src/lib/seo'
 import { MARK_PATH, MARK_TRANSFORM, MARK_VIEWBOX, WORDMARK_RATIO, WORDMARK_URI } from '@/src/lib/brand-assets'
+import { FALLBACK_HEADER } from '@/src/lib/share-image-store'
 
 export const OG_SIZE = { width: 1200, height: 630 }
 
@@ -22,9 +23,11 @@ const FLAG_RED = '231 0 19'
 const GOLD = '245 190 80'
 
 // ---------------------------------------------------------------------------------------------
-// Fonts: the site's own faces, as static TTF instances from Google Fonts (Satori can't read woff2
-// or variable fonts; without a browser User-Agent, Google serves instanced TTF). Fetched once per
-// server instance; a Google Fonts outage degrades to the built-in font instead of failing.
+// Fonts: the site's own faces, as static TTF instances (Satori can't read woff2 or variable fonts).
+// They ship with the site (src/lib/og-fonts, the same files Google Fonts serves without a browser
+// User-Agent), so a card never waits on the network for them: a fresh server instance used to spend
+// most of a second fetching them, and a crawler gives up on a slow card. Google Fonts stays the
+// backup; an outage of both degrades to the built-in font instead of failing.
 
 type Weight = 400 | 600 | 700 | 800
 // Readex Pro covers Arabic too, but Satori crashes on its Arabic tables: only its Latin glyphs are
@@ -42,12 +45,34 @@ const FONT_FILES: { name: string, query: string, weight: Weight }[] = [
   // Satori's fallback for stray Arabic letters; Arabic text proper is set by Pango (below).
   { name: 'Arabic', query: ALEXANDRIA_700, weight: 700 },
 ]
+/** The bundled file of each Google Fonts query above. */
+const FONT_FILE_NAMES: Record<string, string> = {
+  [FONT_FILES[0].query]: 'bricolage-grotesque-display-800.ttf',
+  [FONT_FILES[1].query]: 'readex-pro-400-latin.ttf',
+  [FONT_FILES[2].query]: 'readex-pro-600-latin.ttf',
+  [ALEXANDRIA_400]: 'alexandria-400.ttf',
+  [ALEXANDRIA_700]: 'alexandria-700.ttf',
+}
 const fontCache = new Map<string, Promise<ArrayBuffer | null>>()
+
+/** A bundled font file, or null (not shipped with this deployment). */
+async function bundledFont(query: string): Promise<ArrayBuffer | null> {
+  const file = FONT_FILE_NAMES[query]
+  if (!file) return null
+  try {
+    const data = await readFile(path.join(process.cwd(), 'src', 'lib', 'og-fonts', file))
+    return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer
+  } catch {
+    return null
+  }
+}
 
 function loadFont(query: string) {
   let pending = fontCache.get(query)
   if (!pending) {
     pending = (async () => {
+      const bundled = await bundledFont(query)
+      if (bundled) return bundled
       try {
         const css = await fetch(`https://fonts.googleapis.com/css2?family=${query}`).then((res) => res.text())
         const url = css.match(/src: url\((.+?)\) format\('(?:opentype|truetype)'\)/)?.[1]
@@ -167,29 +192,30 @@ function Text({ run, box, type }: { run: TextRun, box?: React.CSSProperties, typ
 // Cached by Vercel's CDN for a day (crawlers get it at once), refreshed in the background after.
 const CACHE_CONTROL = 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800'
 
-async function asJpeg(image: ImageResponse, quality = 82): Promise<Response> {
+/** `fallback`: the brand card standing in for a card that couldn't be drawn (see FALLBACK_HEADER). */
+async function asJpeg(image: ImageResponse, quality = 82, fallback = false): Promise<Response> {
   // Rendering errors surface here: the stream can only be read once.
   const png = new Uint8Array(await image.arrayBuffer())
-  const cacheControl = CACHE_CONTROL
+  const headers = (type: string): Record<string, string> => ({ 'Content-Type': type, 'Cache-Control': CACHE_CONTROL, ...(fallback ? { [FALLBACK_HEADER]: 'fallback' } : {}) })
   try {
     const sharp = (await import('sharp')).default
     const jpeg = await sharp(png).jpeg({ quality, mozjpeg: true, chromaSubsampling: '4:4:4' }).toBuffer()
-    return new Response(new Uint8Array(jpeg), { headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': cacheControl } })
+    return new Response(new Uint8Array(jpeg), { headers: headers('image/jpeg') })
   } catch (error) {
     console.error('Share cards: JPEG encoding failed, serving PNG:', error)
-    return new Response(png, { headers: { 'Content-Type': 'image/png', 'Cache-Control': cacheControl } })
+    return new Response(png, { headers: headers('image/png') })
   }
 }
 
-async function render(element: React.ReactElement, size: { width: number, height: number } = OG_SIZE): Promise<Response> {
+async function render(element: React.ReactElement, size: { width: number, height: number } = OG_SIZE, { fallback = false }: { fallback?: boolean } = {}): Promise<Response> {
   const fonts = await loadFonts()
   const options = { ...size, fonts: fonts.length ? fonts : undefined }
   try {
-    return await asJpeg(new ImageResponse(element, options))
+    return await asJpeg(new ImageResponse(element, options), 82, fallback)
   } catch (error) {
     // A glyph or a picture Satori can't handle: the brand card beats a link with no preview.
     console.error('Share cards: card failed, serving the brand card:', error)
-    return asJpeg(new ImageResponse(<BrandCard />, { ...options, ...OG_SIZE }))
+    return asJpeg(new ImageResponse(<BrandCard />, { ...options, ...OG_SIZE }), 82, true)
   }
 }
 
@@ -785,7 +811,7 @@ function BrandCard() {
       <div style={{ position: 'absolute', top: -40, right: -60, display: 'flex' }}><Mark size={620} color="rgba(255,36,20,0.1)" /></div>
       <Column width={760} wordmark={30}>
         <div style={{ display: 'flex', ...TITLE_TYPE, fontSize: 96, lineHeight: 0.93 }}>Movies, TV and Tunisian series</div>
-        <div style={{ display: 'flex', marginTop: 22, ...LINE_TYPE, fontSize: 28 }}>Trailers, a daily Top 10, Ramadan series and release alerts, in English and Arabic.</div>
+        <div style={{ display: 'flex', marginTop: 22, ...LINE_TYPE, fontSize: 28 }}>Trailers, a daily Top 10, Ramadan series and release alerts, in English, French and Arabic.</div>
         <div style={{ display: 'flex', marginTop: 36 }}>
           <Footer cta="Start watching" />
         </div>
@@ -796,7 +822,7 @@ function BrandCard() {
 
 /** The brand card, for anything that can't be loaded. */
 export function renderFallbackCard() {
-  return render(<BrandCard />)
+  return render(<BrandCard />, OG_SIZE, { fallback: true })
 }
 
 // ---------------------------------------------------------------------------------------------

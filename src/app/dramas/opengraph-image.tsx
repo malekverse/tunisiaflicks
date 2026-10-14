@@ -1,5 +1,6 @@
 import { OG_SIZE, renderSectionCard } from '@/src/lib/og'
 import { dramaShareSection } from '@/src/lib/dramas'
+import { keptShareImage } from '@/src/lib/share-image-store'
 
 // Share card for /dramas: both hubs' most popular posters this week. Drawn on request (never at
 // build time, where next/og can't run on Windows) and kept by the CDN for a day (see lib/og).
@@ -9,7 +10,12 @@ export const alt = 'Turkish and Korean dramas on TunisiaFlicks'
 export const size = OG_SIZE
 export const contentType = 'image/jpeg'
 
-export default async function Image() {
+async function draw() {
   const { posters, ...section } = dramaShareSection('index')
   return renderSectionCard({ ...section, posters: await posters().catch(() => []) })
+}
+
+/** Kept once drawn, so a crawler never waits (lib/share-image-store). */
+export default function Image() {
+  return keptShareImage('dramas', draw)
 }
