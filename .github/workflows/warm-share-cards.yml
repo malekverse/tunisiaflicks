@@ -1,0 +1,44 @@
+# Warms the share cards right after each production deployment.
+#
+# Every deployment starts with an empty edge cache, and the first link shared after it would wait
+# for its card. The cards themselves are kept in the database (src/lib/share-image-store.ts), so
+# this only has to ask for them once: each main page is read like a crawler reads it (its og:image),
+# then that image is fetched, which puts it at Vercel's edge for everyone after.
+#
+# Triggered by the deployment statuses Vercel reports to GitHub; nothing to configure. SITE_URL
+# (the repository secret the cron workflow uses) overrides the address.
+name: Warm share cards
+
+on:
+  deployment_status:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: warm-share-cards
+  cancel-in-progress: true
+
+jobs:
+  warm:
+    if: github.event_name == 'workflow_dispatch' || (github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Ask for each main page's card
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+        run: |
+          set -u
+          SITE="${SITE_URL:-https://tunisiaflicks.vercel.app}"
+          SITE="${SITE%/}"
+          UA='facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'
+          # Give the new deployment a moment to take the domain.
+          sleep 20
+          for page in / /tv /discover /top-rated /upcoming /search /clips /swipe /ramadan /wrapped \
+                      /tunisian /tunisian/cinema /tunisian/tv /dramas /dramas/turkish /dramas/korean \
+                      /arab-cinema /anime /anime/browse /anime/schedule; do
+            image=$(curl -s -A "$UA" --max-time 30 "$SITE$page" | grep -oE '<meta property="og:image" content="[^"]+"' | head -1 | sed -E 's/.*content="([^"]+)"/\1/; s/&amp;/\&/g')
+            if [ -z "$image" ]; then echo "::warning::$page has no og:image"; continue; fi
+            curl -s -o /dev/null -A "$UA" --max-time 40 -w "$page -> %{http_code} %{content_type} %{size_download}B %{time_total}s\n" "$image" || echo "::warning::$page: $image failed"
+          done
