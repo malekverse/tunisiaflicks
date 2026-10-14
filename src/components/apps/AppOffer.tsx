@@ -24,6 +24,7 @@ import { useTvMode } from '@/src/hooks/use-tv-mode'
 import { isMacSafari, type DevicePlatform } from '@/src/lib/device-platform'
 import type { TKey } from '@/src/lib/i18n'
 import { useDevice } from './use-device'
+import { HINT_OPEN_ATTRIBUTE } from '@/src/components/shell/LanguageHint'
 
 /** Sizes in MB of the apps there's a release of (null: none yet). From the root layout. */
 export type OfferedApps = { android: number | null, tv: number | null, desktop: number | null }
@@ -129,8 +130,17 @@ export default function AppOffer({ apps }: { apps: OfferedApps }): JSX.Element |
     return () => window.clearInterval(timer)
   }, [verifyPending])
 
+  // The one-time language card (shell/LanguageHint) goes first: the same corner.
+  const [languageHint, setLanguageHint] = useState(false)
+  useEffect(() => {
+    const check = () => setLanguageHint(document.documentElement.hasAttribute(HINT_OPEN_ATTRIBUTE))
+    check()
+    const timer = window.setInterval(check, 1000)
+    return () => window.clearInterval(timer)
+  }, [])
+
   const variant = device && !device.inApp && !installed ? variantFor(device.platform, apps, canInstall, tv, device.userAgent) : null
-  const open = ready && !closed && !quietPath && !verifyShowing && variant !== null
+  const open = ready && !closed && !quietPath && !verifyShowing && !languageHint && variant !== null
 
   // A remote has no pointer: the focus goes to the card's answer.
   useEffect(() => {
