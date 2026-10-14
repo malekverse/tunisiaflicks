@@ -1,7 +1,6 @@
-import { OG_SIZE, renderFallbackCard, renderListCard } from '@/src/lib/og'
 import { getListBySlug } from '@/src/lib/lists-db'
 import { visibilityOf } from '@/src/lib/shared-lists/rules'
-import { keptShareImage } from '@/src/lib/share-image-store'
+import { SHARE_CARD_SIZE, keptShareImage } from '@/src/lib/share-image-store'
 
 // Share card for a list: title, owner and a poster collage, only for a list anyone with the link
 // may see. A private or friends-only list (and a missing one) gets the site's plain card, so its
@@ -9,10 +8,12 @@ import { keptShareImage } from '@/src/lib/share-image-store'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 export const alt = 'A list on TunisiaFlicks'
-export const size = OG_SIZE
+export const size = SHARE_CARD_SIZE
 export const contentType = 'image/jpeg'
 
 async function draw({ params }: { params: { slug: string } }) {
+  // The drawing code loads only when a card has to be drawn (a kept card never needs it).
+  const { renderFallbackCard, renderListCard } = await import('@/src/lib/og')
   const list = await getListBySlug(params.slug)
   if (!list || visibilityOf(list) !== 'link') return renderFallbackCard()
   return renderListCard({

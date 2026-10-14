@@ -35,10 +35,21 @@ jobs:
           UA='facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'
           # Give the new deployment a moment to take the domain.
           sleep 20
-          for page in / /tv /discover /top-rated /upcoming /search /clips /swipe /ramadan /wrapped \
-                      /tunisian /tunisian/cinema /tunisian/tv /dramas /dramas/turkish /dramas/korean \
-                      /arab-cinema /anime /anime/browse /anime/schedule; do
+          pages="/ /tv /discover /top-rated /upcoming /search /clips /swipe /ramadan /wrapped
+                 /tunisian /tunisian/cinema /tunisian/tv /dramas /dramas/turkish /dramas/korean
+                 /arab-cinema /anime"
+          images=""
+          for page in $pages; do
             image=$(curl -s -A "$UA" --max-time 30 "$SITE$page" | grep -oE '<meta property="og:image" content="[^"]+"' | head -1 | sed -E 's/.*content="([^"]+)"/\1/; s/&amp;/\&/g')
             if [ -z "$image" ]; then echo "::warning::$page has no og:image"; continue; fi
-            curl -s -o /dev/null -A "$UA" --max-time 40 -w "$page -> %{http_code} %{content_type} %{size_download}B %{time_total}s\n" "$image" || echo "::warning::$page: $image failed"
+            images="$images $image"
+          done
+          # Two rounds: the first may get the brand card while a card is drawn (and kept); the
+          # second gets the real cards, and Vercel's edge keeps them for everyone after.
+          for round in 1 2; do
+            echo "Round $round"
+            for image in $images; do
+              curl -s -o /dev/null -A "$UA" --max-time 40 -w "  %{http_code} %{content_type} %{size_download}B %{time_total}s  $image\n" "$image" || echo "::warning::$image failed"
+            done
+            if [ "$round" = 1 ]; then sleep 45; fi
           done

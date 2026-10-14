@@ -10,16 +10,22 @@
 // served from there instantly, across deployments:
 // - a kept card is always answered at once; past its freshness it's redrawn in the background
 //   (Vercel's waitUntil), and the next share gets the new one;
-// - a card never drawn before is drawn while the crawler waits, but only for DRAW_BUDGET_MS: past
-//   that it gets the TunisiaFlicks brand card (public/share-card.jpg, a static file) and the real
-//   one is finished and kept in the background;
+// - a card never drawn before is drawn while the crawler waits, but the whole answer takes at most
+//   ANSWER_BUDGET_MS: past that the crawler gets the TunisiaFlicks brand card (public/share-card.jpg,
+//   read from disk) and the real one is finished and kept in the background;
 // - personal cards (a list, a movie night, a page, a year) are kept briefly and never served past
 //   PERSONAL_MAX_AGE_MS, so a list turned private stops showing within the hour.
 // A card expires 45 days after it was last drawn (TTL on expiresAt; a card in use is redrawn far
 // sooner), and at most maxKept() are kept. The brand card standing in for something that doesn't
 // exist (og.tsx marks it, FALLBACK_HEADER) is never kept, so made-up links can't fill the database.
+import { readFile } from 'fs/promises'
+import path from 'path'
 import { Binary } from 'mongodb'
 import { SITE_URL } from '@/src/lib/seo'
+
+/** Every share card's size (Open Graph's 1.91:1). Here, not in lib/og, so a route can say its size
+ *  without loading the drawing code (which only loads when a card has to be drawn). */
+export const SHARE_CARD_SIZE = { width: 1200, height: 630 }
 
 /**
  * Marks the brand card standing in for a card that couldn't be drawn (no such title, a list that
@@ -29,10 +35,12 @@ import { SITE_URL } from '@/src/lib/seo'
 export const FALLBACK_HEADER = 'X-Share-Card'
 
 const COLLECTION = 'shareImages'
-/** How long a crawler may wait for a card that was never drawn (Meta's crawler gives up soon after). */
-export const DRAW_BUDGET_MS = 3000
-/** How long reading a kept card may take before it's drawn instead (a slow database). */
+/** The longest a crawler waits for an answer (Meta's crawler gives up a few seconds in). */
+export const ANSWER_BUDGET_MS = 2200
+/** How long reading a kept card may take (a cold connection to the database takes most of a second). */
 const READ_BUDGET_MS = 1500
+/** A card being drawn gets at least this long, even when reading took most of the budget. */
+const MIN_DRAW_MS = 400
 const CATALOGUE_FRESH_MS = 12 * 3600_000
 const PERSONAL_FRESH_MS = 5 * 60_000
 const PERSONAL_MAX_AGE_MS = 60 * 60_000
@@ -121,8 +129,14 @@ function answer(card: Card, personal: boolean): Response {
   return new Response(card.data, { headers: { 'Content-Type': card.type, 'Cache-Control': cache } })
 }
 
+let brandBytes: Promise<Uint8Array | null> | null = null
+
 /** The brand card, for a crawler that can't wait: never cached, so the next ask gets the real card. */
 async function brandCard(): Promise<Response> {
+  // From disk (next.config.js ships it with the functions); over the network if it isn't there.
+  brandBytes ??= readFile(path.join(process.cwd(), 'public', BRAND_CARD_PATH.slice(1))).then((data) => new Uint8Array(data), () => null)
+  const bytes = await brandBytes
+  if (bytes) return new Response(bytes, { headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'no-store' } })
   const url = `${SITE_URL}${BRAND_CARD_PATH}`
   try {
     const response = await fetch(url, { signal: AbortSignal.timeout(2000) })
@@ -133,14 +147,24 @@ async function brandCard(): Promise<Response> {
   return new Response(null, { status: 307, headers: { Location: url, 'Cache-Control': 'no-store' } })
 }
 
+/** Which of these keys have a card kept (for the job that draws trending titles' cards ahead). */
+export async function keptKeys(keys: string[]): Promise<Set<string>> {
+  if (!keys.length) return new Set()
+  const col = await collection()
+  return new Set((await col.find({ _id: { $in: keys } }, { projection: { _id: 1 } }).toArray()).map((doc) => doc._id))
+}
+
 /**
- * The share image `key` ('movie/603', 'og/home'…): kept if there is one, else drawn by `draw`
- * within DRAW_BUDGET_MS, else the brand card while it's drawn in the background. `personal`: the
- * card shows someone's own content (see the top of this file). Never throws.
+ * The share image `key` ('movie/603', 'og/home'…): kept if there is one, else drawn by `draw`, the
+ * whole answer within `budgetMs` (ANSWER_BUDGET_MS), else the brand card while it's drawn and kept
+ * in the background. `personal`: the card shows someone's own content (see the top of this file).
+ * Never throws.
  */
-export async function keptShareImage(key: string, draw: () => Promise<Response>, { personal = false, budgetMs = DRAW_BUDGET_MS }: { personal?: boolean, budgetMs?: number } = {}): Promise<Response> {
+export async function keptShareImage(key: string, draw: () => Promise<Response>, { personal = false, budgetMs = ANSWER_BUDGET_MS }: { personal?: boolean, budgetMs?: number } = {}): Promise<Response> {
+  const started = Date.now()
   const fresh = personal ? PERSONAL_FRESH_MS : CATALOGUE_FRESH_MS
-  const doc = await within(collection().then((col) => col.findOne({ _id: key })), READ_BUDGET_MS)
+  const read = collection().then((col) => col.findOne({ _id: key }))
+  const doc = await within(read, Math.min(READ_BUDGET_MS, budgetMs))
   if (doc?.data) {
     const age = Date.now() - new Date(doc.renderedAt).getTime()
     if (!personal || age <= PERSONAL_MAX_AGE_MS) {
@@ -148,9 +172,15 @@ export async function keptShareImage(key: string, draw: () => Promise<Response>,
       return answer({ data: new Uint8Array(doc.data.buffer), type: doc.type }, personal)
     }
   }
+  if (doc === null && Date.now() - started >= Math.min(READ_BUDGET_MS, budgetMs)) {
+    // The database didn't answer in time: the brand card now; in the background, the card is drawn
+    // only if it turns out there's none kept.
+    inBackground(read.then((late) => (late?.data ? null : drawAndKeep(key, draw))))
+    return brandCard()
+  }
 
   const job = drawAndKeep(key, draw)
-  const card = await within(job, budgetMs)
+  const card = await within(job, Math.max(MIN_DRAW_MS, budgetMs - (Date.now() - started)))
   if (card) return answer(card, personal)
   inBackground(job)
   return brandCard()

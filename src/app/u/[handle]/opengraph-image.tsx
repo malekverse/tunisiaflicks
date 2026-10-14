@@ -3,16 +3,15 @@
 // poster, never anything watched or rated, whoever asks. Kids profiles and unknown handles get
 // the general card.
 import { ObjectId } from 'mongodb'
-import { OG_SIZE, renderFallbackCard, renderProfileCard } from '@/src/lib/og'
 import { socialDb } from '@/src/lib/social/db'
 import { resolveHandle } from '@/src/lib/social/identity'
 import { profileIsKids } from '@/src/app/friends/_lib/viewer'
-import { keptShareImage } from '@/src/lib/share-image-store'
+import { SHARE_CARD_SIZE, keptShareImage } from '@/src/lib/share-image-store'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 export const alt = 'A page on TunisiaFlicks'
-export const size = OG_SIZE
+export const size = SHARE_CARD_SIZE
 export const contentType = 'image/jpeg'
 
 const GOOGLE_PHOTO = /^https:\/\/lh3\.googleusercontent\.com\//
@@ -31,6 +30,8 @@ async function accountPhoto(userId: string, profileId: string): Promise<string |
 }
 
 async function draw({ params }: { params: { handle: string } }) {
+  // The drawing code loads only when a card has to be drawn (a kept card never needs it).
+  const { renderFallbackCard, renderProfileCard } = await import('@/src/lib/og')
   const target = await resolveHandle(params.handle).catch(() => null)
   if (!target || (await profileIsKids(target).catch(() => true))) return renderFallbackCard()
   const { identity } = target

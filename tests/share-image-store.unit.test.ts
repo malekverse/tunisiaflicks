@@ -6,6 +6,7 @@
 //   MONGODB_URI=mongodb://127.0.0.1:27017/x npm run test:unit
 import { after, before, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 
 const LOCAL = (() => {
   if (!process.env.MONGODB_URI) return false
@@ -24,6 +25,14 @@ const card = (text: string, headers: Record<string, string> = {}) =>
   new Response(new TextEncoder().encode(text), { headers: { 'Content-Type': 'image/jpeg', ...headers } })
 const body = async (response: Response) => new TextDecoder().decode(await response.arrayBuffer())
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+/** Waits (up to 3 s) for background work to show: a busy test run makes it slower. */
+async function eventually(check: () => Promise<boolean>) {
+  for (let waited = 0; waited < 3000; waited += 100) {
+    if (await check()) return true
+    await sleep(100)
+  }
+  return false
+}
 
 describe('share image store', { skip: !LOCAL && 'needs MONGODB_URI on a local MongoDB' }, () => {
   let store: typeof import('@/src/lib/share-image-store')
@@ -33,9 +42,9 @@ describe('share image store', { skip: !LOCAL && 'needs MONGODB_URI on a local Mo
   before(async () => {
     store = await import('@/src/lib/share-image-store')
     db = (await (await import('@/src/lib/mongodb')).default).db()
-    // The brand card is a static file on the site: answered here instead of going online.
+    // The brand card is read from public/; if it ever went online for it, it'd get this instead.
     realFetch = globalThis.fetch
-    globalThis.fetch = (async (url: any) => (String(url).endsWith(store.BRAND_CARD_PATH) ? card('brand') : realFetch(url))) as typeof fetch
+    globalThis.fetch = (async (url: any) => (String(url).endsWith(store.BRAND_CARD_PATH) ? card('brand from the network') : realFetch(url))) as typeof fetch
   })
 
   after(async () => {
@@ -57,12 +66,14 @@ describe('share image store', { skip: !LOCAL && 'needs MONGODB_URI on a local Mo
   })
 
   test('too slow: the brand card now, the real card kept for the next ask', async () => {
-    const slow = async () => { await sleep(300); return card('tv 1399') }
+    // Slower than the budget, and than the least a drawing is given (0.4 s).
+    const slow = async () => { await sleep(900); return card('tv 1399') }
     const first = await store.keptShareImage('tv/1399', slow, { budgetMs: 50 })
-    assert.equal(await body(first), 'brand')
+    const brand = readFileSync('public/share-card.jpg')
+    assert.deepEqual(Buffer.from(await first.arrayBuffer()), brand, 'the brand card, from disk')
     assert.equal(first.headers.get('cache-control'), 'no-store', 'the stand-in is never cached')
-    await sleep(500)
-    const next = await store.keptShareImage('tv/1399', async () => card('not drawn again'), { budgetMs: 50 })
+    assert.ok(await eventually(async () => (await db.collection('shareImages').countDocuments({ _id: 'tv/1399' })) === 1), 'kept in the background')
+    const next = await store.keptShareImage('tv/1399', async () => card('not drawn again'), { budgetMs: 2000 })
     assert.equal(await body(next), 'tv 1399')
   })
 
@@ -91,8 +102,19 @@ describe('share image store', { skip: !LOCAL && 'needs MONGODB_URI on a local Mo
     })
     const response = await store.keptShareImage('og/home', async () => card('today'), { budgetMs: 2000 })
     assert.equal(await body(response), 'yesterday', 'no waiting for the redraw')
-    await sleep(200)
-    const doc = await db.collection('shareImages').findOne({ _id: 'og/home' })
-    assert.equal(new TextDecoder().decode(doc.data.buffer), 'today')
+    const redrawn = async () => new TextDecoder().decode((await db.collection('shareImages').findOne({ _id: 'og/home' })).data.buffer) === 'today'
+    assert.ok(await eventually(redrawn), 'redrawn in the background')
+  })
+})
+
+describe('share-cards job', () => {
+  test('titleKeys: movie and TV keys from the lists, in order, no repeats, no people', async () => {
+    const { titleKeys } = await import('@/src/lib/share-cards-cron')
+    assert.deepEqual(titleKeys([
+      { path: 'trending/movie/day', json: { results: [{ id: 603 }, { id: 550 }] } },
+      { path: 'trending/tv/week', json: { results: [{ id: 1399 }, { id: 603, media_type: 'movie' }] } },
+      { path: 'tv/popular', json: { results: [{ id: 66732 }, { id: 287, media_type: 'person' }, { id: 'x' }] } },
+      { path: 'movie/popular', json: null },
+    ]), ['movie/603', 'movie/550', 'tv/1399', 'tv/66732'])
   })
 })

@@ -1,6 +1,5 @@
-import { OG_SIZE, renderFallbackCard, renderTitleCard } from '@/src/lib/og'
 import { getAnimeDetail } from '@/src/lib/anime/server'
-import { keptShareImage } from '@/src/lib/share-image-store'
+import { SHARE_CARD_SIZE, keptShareImage } from '@/src/lib/share-image-store'
 
 // Share card for /anime/:id (what Facebook, WhatsApp, Messenger, X and Telegram show): the anime's
 // cover beside its title, like a movie's card without a backdrop (AniList's banners are short and
@@ -9,7 +8,7 @@ import { keptShareImage } from '@/src/lib/share-image-store'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 export const alt = 'Anime on TunisiaFlicks'
-export const size = OG_SIZE
+export const size = SHARE_CARD_SIZE
 export const contentType = 'image/jpeg'
 
 const FORMAT: Record<string, string> = { TV: 'TV', TV_SHORT: 'TV short', MOVIE: 'Movie', SPECIAL: 'Special', OVA: 'OVA', ONA: 'ONA', MUSIC: 'Music' }
@@ -21,6 +20,8 @@ const glowOf = (hex: string | null) => {
 }
 
 async function draw({ params }: { params: { id: string } }) {
+  // The drawing code loads only when a card has to be drawn (a kept card never needs it).
+  const { renderFallbackCard, renderTitleCard } = await import('@/src/lib/og')
   const id = /^\d{1,9}$/.test(params.id) ? Number(params.id) : 0
   const detail = id ? await getAnimeDetail(id, { kids: false, halal: false, language: 'english' }) : null
   if (!detail || detail.hidden) return renderFallbackCard()

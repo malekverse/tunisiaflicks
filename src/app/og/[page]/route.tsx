@@ -1,4 +1,3 @@
-import { isShareSection, renderSection } from '@/src/lib/share-sections'
 import { keptShareImage } from '@/src/lib/share-image-store'
 
 // /og/home, /og/discover, /og/ramadan...: the share image of each section (see pageMetadata).
@@ -9,7 +8,11 @@ export const maxDuration = 30
 
 export async function GET(_request: Request, { params }: { params: { page: string } }) {
   const name = params.page.replace(/\.(jpe?g|png)$/, '')
-  if (!isShareSection(name)) return new Response('Not found', { status: 404 })
+  if (!/^[a-z][a-z-]{0,39}$/.test(name)) return new Response('Not found', { status: 404 })
   // Kept once drawn, so a crawler never waits (lib/share-image-store); redrawn as the trends move.
-  return keptShareImage(`og/${name}`, () => renderSection(name))
+  // The sections (and the drawing code) load only when a card has to be drawn.
+  return keptShareImage(`og/${name}`, async () => {
+    const { isShareSection, renderSection } = await import('@/src/lib/share-sections')
+    return isShareSection(name) ? renderSection(name) : new Response('Not found', { status: 404 })
+  })
 }

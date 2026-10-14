@@ -1,18 +1,19 @@
-import { OG_SIZE, posterGlow, renderFallbackCard, renderTitleCard, shareLogo, tmdbImage } from '@/src/lib/og'
 import { tmdbFetchSafe } from '@/src/lib/tmdb'
-import { keptShareImage } from '@/src/lib/share-image-store'
+import { SHARE_CARD_SIZE, keptShareImage } from '@/src/lib/share-image-store'
 
 // Share card for /movie/:id (what Facebook, WhatsApp, Messenger, X and Telegram show).
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 export const alt = 'Movie on TunisiaFlicks'
-export const size = OG_SIZE
+export const size = SHARE_CARD_SIZE
 export const contentType = 'image/jpeg'
 
 const runtime = (minutes?: number) =>
   minutes ? `${Math.floor(minutes / 60) ? `${Math.floor(minutes / 60)}h ` : ''}${minutes % 60}m` : null
 
 async function draw({ params }: { params: { id: string } }) {
+  // The drawing code loads only when a card has to be drawn (a kept card never needs it).
+  const { posterGlow, renderFallbackCard, renderTitleCard, shareLogo, tmdbImage } = await import('@/src/lib/og')
   const movie = /^\d+$/.test(params.id)
     ? await tmdbFetchSafe(`movie/${params.id}`, { append_to_response: 'images', include_image_language: 'en,null' }, 86400)
     : null

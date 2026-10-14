@@ -1,17 +1,18 @@
-import { OG_SIZE, posterGlow, renderFallbackCard, renderPersonCard, tmdbImage } from '@/src/lib/og'
 import { tmdbFetchSafe } from '@/src/lib/tmdb'
-import { keptShareImage } from '@/src/lib/share-image-store'
+import { SHARE_CARD_SIZE, keptShareImage } from '@/src/lib/share-image-store'
 
 // Share card for /person/:id: portrait, name, and a strip of their best-known titles.
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 export const alt = 'Actor on TunisiaFlicks'
-export const size = OG_SIZE
+export const size = SHARE_CARD_SIZE
 export const contentType = 'image/jpeg'
 
 const ROLES: Record<string, string> = { Acting: 'Actor', Directing: 'Director', Writing: 'Writer', Production: 'Producer' }
 
 async function draw({ params }: { params: { id: string } }) {
+  // The drawing code loads only when a card has to be drawn (a kept card never needs it).
+  const { posterGlow, renderFallbackCard, renderPersonCard, tmdbImage } = await import('@/src/lib/og')
   const person = /^\d+$/.test(params.id) ? await tmdbFetchSafe(`person/${params.id}`, { append_to_response: 'combined_credits' }, 86400, { shared: true }) : null
   if (!person) return renderFallbackCard()
 

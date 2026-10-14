@@ -67,6 +67,7 @@ Recommended schedules (Africa/Tunis):
 | `/api/cron/badges` | daily at 03:10 | Badges and streaks: profiles that played in the last 2 days or have a level to announce, 50 per call (`more: true` when there are more). GitHub fallback: `10 2 * * *`. |
 | `/api/cron/tunisian-tv` | every 30 minutes | Tunisian TV: the official channels' new videos (`?scope=full` rereads every playlist). GitHub fallback: `23 */3 * * *`. |
 | `/api/cron/halal` | every 6 hours | Halal mode: grades the titles of the main lists (trending, popular, top rated, now playing) that have no AI grades yet, 20 per model call within the day's budget (`HALAL_AI_DAILY_CALLS`, default 400). Idle without `GROQ_API_KEY`. GitHub fallback: `47 */6 * * *`. |
+| `/api/cron/share-cards` | twice a day | Share cards: draws ahead the cards of this week's trending and popular films and series that have none kept (src/lib/share-cards-cron.ts), 3 at a time until the time budget (`more: true` when titles are left), so the first link shared to one shows its card at once. GitHub: `29 5,17 * * *`. |
 
 ## GitHub Actions (fallback)
 

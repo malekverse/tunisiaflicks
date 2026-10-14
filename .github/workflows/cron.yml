@@ -19,6 +19,7 @@ on:
     - cron: '10 2 * * *'     # badges: 03:10 Tunis
     - cron: '23 */3 * * *'   # tunisian-tv: the channels' new videos
     - cron: '47 */6 * * *'   # halal: grade the main lists' new titles for Halal mode
+    - cron: '29 5,17 * * *'  # share-cards: draw this week's trending titles' share cards ahead
   workflow_dispatch:
     inputs:
       job:
@@ -32,6 +33,7 @@ on:
           - badges
           - tunisian-tv
           - halal
+          - share-cards
 
 permissions: {}
 
@@ -57,11 +59,12 @@ jobs:
             '10 2 * * *') JOB=badges ;;
             '23 */3 * * *') JOB=tunisian-tv ;;
             '47 */6 * * *') JOB=halal ;;
+            '29 5,17 * * *') JOB=share-cards ;;
             '') JOB="$INPUT_JOB" ;;
             *) echo "::error::No job for the schedule '$SCHEDULE'"; exit 1 ;;
           esac
           case "$JOB" in
-            digest|nights|badges|tunisian-tv|halal) ;;
+            digest|nights|badges|tunisian-tv|halal|share-cards) ;;
             *) echo "::error::Unknown job"; exit 1 ;;
           esac
           echo "job=$JOB" >> "$GITHUB_OUTPUT"
