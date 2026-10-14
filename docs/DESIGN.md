@@ -74,6 +74,16 @@ fills. Surfaces are white at low alpha so they take the tint of the room light b
   real hover devices). One orchestrated moment per page at most (`animate-focus-in`). Don't animate
   keyboard-driven or very frequent actions. Reduced motion is respected globally.
 
+## The landing page (/about)
+
+`/about` is the one page allowed to be a show: it introduces the site to newcomers, played like a
+film (`src/components/landing`, data in `src/lib/landing.ts`). Pinned, scroll-driven sections
+(framer `useScroll`), a three.js opening shot (`hero-scene.ts`, loaded only on capable devices, a
+flat fallback elsewhere), kinetic type on the display face's width axis, hand-drawn art from
+`public/landing/art` used as masks, and a room that changes colour per section (`Stage.tsx`).
+The rest of this guide still applies: red stays the signal, sentence case, no eyebrow labels, and
+every section has a calm layout for reduced motion. Don't carry its motion into the app's pages.
+
 ## Mobile, RTL, languages
 
 - Touch targets ≥ 44px; the floating tab bar sits at the bottom (page padding handles it). Secondary

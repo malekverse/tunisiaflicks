@@ -1,0 +1,256 @@
+/*
+  The landing page's own motion. Everything here eases out (cubic-bezier(0.23, 1, 0.32, 1), the
+  site's EASE_OUT) and collapses to a plain fade for people who ask for less motion.
+*/
+
+/* ---- kinetic type: letters arrive thin and wide, then settle heavy and condensed ---------------- */
+
+.glyph {
+  display: inline-block;
+  animation: glyph-in 1100ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation-delay: calc(var(--d, 0ms) + var(--i, 0) * 26ms);
+  will-change: transform, opacity;
+}
+
+@keyframes glyph-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.32em);
+    font-stretch: 100%;
+    font-weight: 200;
+    filter: blur(8px);
+  }
+  55% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    font-stretch: 80%;
+    font-weight: 800;
+    filter: blur(0);
+  }
+}
+
+/* Arabic letters join: the word moves as one, and only its weight changes. */
+.word-ar {
+  display: inline-block;
+  animation: word-ar-in 1100ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation-delay: calc(var(--d, 0ms) + var(--i, 0) * 90ms);
+}
+
+@keyframes word-ar-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.3em);
+    font-weight: 200;
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    font-weight: 800;
+    filter: blur(0);
+  }
+}
+
+/* After the entrance: letters breathe under the pointer (Hero sets --s / --w per glyph). */
+.settled {
+  display: inline-block;
+  font-stretch: var(--s, 80%);
+  font-weight: var(--w, 800);
+  transition: font-stretch 420ms cubic-bezier(0.23, 1, 0.32, 1), font-weight 420ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.fade-up {
+  animation: fade-up 900ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---- hand-drawn marks: drawn on, left to right (right to left in Arabic) ------------------------ */
+
+.draw {
+  animation: draw 900ms cubic-bezier(0.65, 0, 0.35, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+@keyframes draw {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+:global([dir='rtl']) .draw {
+  animation-name: draw-rtl;
+}
+
+@keyframes draw-rtl {
+  from {
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* ---- the scroll cue: a strip of film running down ----------------------------------------------- */
+
+.film {
+  background-image: linear-gradient(to bottom, rgb(255 255 255 / 0.55) 0 6px, transparent 6px 14px);
+  background-size: 100% 14px;
+  animation: film 1.2s linear infinite;
+}
+
+@keyframes film {
+  to {
+    background-position: 0 14px;
+  }
+}
+
+/* ---- the exit sign at the end: a slow, warm pulse ----------------------------------------------- */
+
+.exit-sign {
+  animation: exit-sign 3.2s ease-in-out infinite;
+}
+
+@keyframes exit-sign {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 18px rgb(255 16 0 / 0.55)) drop-shadow(0 0 60px rgb(255 16 0 / 0.25));
+  }
+  50% {
+    filter: drop-shadow(0 0 26px rgb(255 16 0 / 0.75)) drop-shadow(0 0 90px rgb(255 16 0 / 0.4));
+  }
+}
+
+/* ---- the live dot, the bell -------------------------------------------------------------------- */
+
+.live {
+  animation: live 1.6s ease-out infinite;
+}
+
+@keyframes live {
+  0% {
+    box-shadow: 0 0 0 0 rgb(255 36 20 / 0.6);
+  }
+  100% {
+    box-shadow: 0 0 0 10px rgb(255 36 20 / 0);
+  }
+}
+
+.ring {
+  transform-origin: 50% 8%;
+}
+
+.ring-now {
+  animation: ring 900ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes ring {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  15% {
+    transform: rotate(16deg);
+  }
+  30% {
+    transform: rotate(-14deg);
+  }
+  45% {
+    transform: rotate(10deg);
+  }
+  60% {
+    transform: rotate(-6deg);
+  }
+  75% {
+    transform: rotate(3deg);
+  }
+}
+
+/* ---- glass tiles: a specular edge that follows the pointer (--x, --y set by the tile) ----------- */
+
+.glass-tile {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(420px circle at var(--x, 50%) var(--y, 0%), rgb(255 255 255 / 0.07), transparent 45%),
+    linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.025));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    inset 0 -1px 0 rgb(255 255 255 / 0.03),
+    0 30px 60px -40px rgb(0 0 0 / 0.9);
+}
+
+.glass-tile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: radial-gradient(260px circle at var(--x, 50%) var(--y, 0%), rgb(255 255 255 / 0.5), rgb(255 255 255 / 0.08) 60%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  pointer-events: none;
+  z-index: 2;
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-tile {
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    backdrop-filter: blur(18px) saturate(150%);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass-tile {
+    background: rgb(20 20 22);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* ---- less motion: everything simply appears ----------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .glyph,
+  .word-ar,
+  .fade-up {
+    animation: plain-in 400ms ease-out both;
+    animation-delay: 0ms;
+  }
+  .draw {
+    animation: none;
+  }
+  .film,
+  .exit-sign,
+  .live,
+  .ring-now {
+    animation: none;
+  }
+}
+
+@keyframes plain-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

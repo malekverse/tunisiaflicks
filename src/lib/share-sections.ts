@@ -113,6 +113,12 @@ export const SHARE_SECTIONS = {
     posters: async () => ((await getAnimeRow('trending', { kids: false, halal: false, language: 'english' })) ?? [])
       .flatMap((card) => (card.cover ? [card.cover] : [])).slice(0, 12),
   },
+  about: {
+    title: 'What is TunisiaFlicks?',
+    subtitle: 'Films, series and anime from everywhere, plus every Tunisian series, Ramadan and Arab cinema. Free, in your language.',
+    cta: 'Take the tour',
+    posters: () => list('trending/all/day', { page: 2 }),
+  },
   search: {
     title: 'Find anything',
     subtitle: 'Every movie, show and actor, in English, French and Arabic.',
