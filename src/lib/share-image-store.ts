@@ -13,6 +13,8 @@
 // - a card never drawn before is drawn while the crawler waits, but the whole answer takes at most
 //   ANSWER_BUDGET_MS: past that the crawler gets the TunisiaFlicks brand card (public/share-card.jpg,
 //   read from disk) and the real one is finished and kept in the background;
+// - the section cards (app/og/[page]) are built with each deployment and served as static files,
+//   so the links shared most never reach this code at all;
 // - personal cards (a list, a movie night, a page, a year) are kept briefly and never served past
 //   PERSONAL_MAX_AGE_MS, so a list turned private stops showing within the hour.
 // A card expires 45 days after it was last drawn (TTL on expiresAt; a card in use is redrawn far
@@ -35,12 +37,16 @@ export const SHARE_CARD_SIZE = { width: 1200, height: 630 }
 export const FALLBACK_HEADER = 'X-Share-Card'
 
 const COLLECTION = 'shareImages'
-/** The longest a crawler waits for an answer (Meta's crawler gives up a few seconds in). */
-export const ANSWER_BUDGET_MS = 2200
-/** How long reading a kept card may take (a cold connection to the database takes most of a second). */
-const READ_BUDGET_MS = 1500
+/**
+ * The longest a crawler waits for an answer. Meta keeps whatever picture it gets for a link, the
+ * brand card included, so the real card is worth a few seconds: most are kept (the share-cards job
+ * draws the trending titles' ahead), and a fresh server needs a moment to reach the database.
+ */
+export const ANSWER_BUDGET_MS = 4000
+/** How long reading a kept card may take (a fresh server's first connection to the database). */
+const READ_BUDGET_MS = 3500
 /** A card being drawn gets at least this long, even when reading took most of the budget. */
-const MIN_DRAW_MS = 400
+const MIN_DRAW_MS = 500
 const CATALOGUE_FRESH_MS = 12 * 3600_000
 const PERSONAL_FRESH_MS = 5 * 60_000
 const PERSONAL_MAX_AGE_MS = 60 * 60_000
