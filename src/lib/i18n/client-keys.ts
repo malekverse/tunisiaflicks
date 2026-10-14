@@ -3,7 +3,7 @@
 // Which strings go to the browser (see clientMessages in ./index.ts): the root layout sends every
 // key that is in neither list below (the shell), a <ClientMessages scope> adds its scope's keys to
 // the pages under it, and the server-only keys never leave the server.
-// 620 of 2935 keys on every page, 1723 in 32 scopes, 592 server-only.
+// 620 of 2938 keys on every page, 1726 in 32 scopes, 592 server-only.
 
 export type MessageScope =
   | 'about/layout'
@@ -2091,6 +2091,9 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'social.push.friendsLabel',
     'social.push.nightsHint',
     'social.push.onThisDevice',
+    'welcome.strip.aria',
+    'welcome.strip.new',
+    'welcome.strip.see',
   ],
   'person/[id]/layout': [
     'common.readMore',

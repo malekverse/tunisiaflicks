@@ -34,7 +34,8 @@ export default function TopBar({ ask = false }: TopBarProps = {}) {
       )}
     >
       <div aria-hidden className={cn('glass-strong absolute inset-0 border-x-0 border-t-0 transition-opacity duration-300', scrolled ? 'opacity-100' : 'opacity-0')} />
-      <div aria-hidden className={cn('absolute inset-x-0 top-0 h-[150%] bg-gradient-to-b from-black/75 via-black/30 to-transparent transition-opacity duration-300', scrolled && 'opacity-0')} />
+      {/* The fade reaches below the bar: it must not catch taps meant for what's under it. */}
+      <div aria-hidden className={cn('pointer-events-none absolute inset-x-0 top-0 h-[150%] bg-gradient-to-b from-black/75 via-black/30 to-transparent transition-opacity duration-300', scrolled && 'opacity-0')} />
 
       <div className="page-x relative flex items-center gap-3 pt-[env(safe-area-inset-top)]" style={{ height: 'calc(var(--topbar) + env(safe-area-inset-top, 0px))' }}>
         {/* Phones and tablets: the wordmark (the desktop rail carries the logo). */}

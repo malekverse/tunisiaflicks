@@ -20,8 +20,9 @@ import { halal } from './halal'
 import { mail } from './mail'
 import { anime } from './anime'
 import { landing } from './landing'
+import { welcome } from './welcome'
 
-const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop, halal, mail, anime, landing]
+const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop, halal, mail, anime, landing, welcome]
 
 export type FeatureKey =
   | keyof typeof aiSearch.en
@@ -44,6 +45,7 @@ export type FeatureKey =
   | keyof typeof mail.en
   | keyof typeof anime.en
   | keyof typeof landing.en
+  | keyof typeof welcome.en
 
 type Language = 'en' | 'ar' | 'tn' | 'fr'
 

@@ -13,6 +13,7 @@ import Billboard from '@/src/components/home/Billboard'
 import ChipRail from '@/src/components/home/ChipRail'
 import Top10Row from '@/src/components/home/Top10Row'
 import { AnniversaryRow, SeasonRows, SequelRow } from '@/src/components/home/MomentRows'
+import WelcomeStrip from '@/src/components/home/WelcomeStrip'
 import getMovies from './(movies)/actions'
 import { getLocale, getT } from '@/src/lib/i18n/server'
 import { getKidsMode } from '@/src/lib/profiles'
@@ -54,8 +55,10 @@ export default async function MainPage() {
 
   return (
     <ClientMessages scope="page">
-      <div className="pb-6">
+      <div className="relative pb-6">
         <JsonLd data={websiteJsonLd()} />
+        {/* A first visit only: "New here?", a link to /about over the top of the billboard. */}
+        {!kids && !tv && billboard.length > 0 && <WelcomeStrip />}
         {/* 1 */}
         <Billboard items={billboard} />
         {/* On desktop the first rows rise into the billboard's fade. */}
