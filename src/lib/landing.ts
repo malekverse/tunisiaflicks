@@ -20,7 +20,7 @@ import { withTimeout } from '@/src/lib/with-timeout'
 import type { Locale } from '@/src/lib/i18n/locales'
 import type { LandingData, Pic, ReelId } from '@/src/lib/landing-model'
 
-const BUDGET_MS = 3500
+const BUDGET_MS = 2500
 
 type Item = Record<string, any>
 
@@ -41,6 +41,27 @@ function pics(items: Item[] | null | undefined, count: number): Pic[] {
 
 const results = (json: { results?: Item[] } | null | undefined) => json?.results ?? []
 
+/**
+ * Halal mode's demo: a row of this week's titles, and which of them it hides (what's stored and
+ * TMDB's facts; no AI call while the page waits). A viewer in Halal mode already gets the row
+ * filtered, so nothing is left to hide there; Kids rows are kid-safe.
+ */
+async function halalDemo(movies: Item[], shows: Item[], { kids, halal }: { kids: boolean, halal: boolean }): Promise<LandingData['halal']['row']> {
+  const pool: Item[] = [
+    ...movies.slice(0, 10).map((item): Item => ({ ...item, media_type: 'movie' })),
+    ...shows.slice(0, 10).map((item): Item => ({ ...item, media_type: 'tv' })),
+  ].filter((item) => item.poster_path)
+  const refs = pool.flatMap((item) => { const ref = titleRef(item, item.media_type === 'tv' ? 'tv' : 'movie'); return ref ? [ref] : [] })
+  const hidden = halal || kids ? new Set<string>() : await withTimeout(hiddenTitles(refs, { grade: false }), 2500, new Set<string>())
+  const isHidden = (item: Item) => hidden.has(`${item.media_type}:${item.id}`)
+  const hiddenItems = pool.filter(isHidden).slice(0, 3)
+  const keptItems = pool.filter((item) => !isHidden(item)).slice(0, 8 - hiddenItems.length)
+  // Hidden ones spread through the row, so switching it on visibly closes gaps.
+  const row = keptItems.map((item) => ({ ...pics([item], 1)[0], hidden: false }))
+  hiddenItems.forEach((item, index) => row.splice(Math.min(row.length, 1 + index * 3), 0, { ...pics([item], 1)[0], hidden: true }))
+  return row
+}
+
 /** The landing page's pictures for this viewer. Never throws. */
 export async function getLandingData({ locale, kids, halal }: { locale: Locale, kids: boolean, halal: boolean }): Promise<LandingData> {
   const language = tmdbLanguage(locale)
@@ -49,15 +70,20 @@ export async function getLandingData({ locale, kids, halal }: { locale: Locale, 
   const latestRamadan = ramadanSeasons(new Date(), 1)[0] ?? null
   const status = ramadanStatus()
 
+  const weekMovies = bounded(fetchList('movie', 'trending', kids, 'trending/movie/week', language).then(results), [] as Item[])
+  const weekShows = bounded(fetchList('tv', 'trending', kids, 'trending/tv/week', language).then(results), [] as Item[])
+  // Halal mode's demo row starts as soon as this week's lists are in, alongside everything else.
+  const halalRow = Promise.all([weekMovies, weekShows]).then(([movies, shows]) => halalDemo(movies, shows, { kids, halal }))
+
   const [
     trendingMovies, trendingShows, trendingWeekMovies, trendingWeekShows, popular2,
     tunisian, cinema, ramadanTn, ramadanArab, turkish, korean, arabIndex, anime, tvHub,
-    inception, feelGood,
+    inception, feelGood, halalRowDone,
   ] = await Promise.all([
     bounded(fetchList('movie', 'trending', kids, 'trending/movie/day', language).then(results), [] as Item[]),
     bounded(fetchList('tv', 'trending', kids, 'trending/tv/day', language).then(results), [] as Item[]),
-    bounded(fetchList('movie', 'trending', kids, 'trending/movie/week', language).then(results), [] as Item[]),
-    bounded(fetchList('tv', 'trending', kids, 'trending/tv/week', language).then(results), [] as Item[]),
+    weekMovies,
+    weekShows,
     bounded(kids ? Promise.resolve([] as Item[]) : tmdbFetchSafe<{ results: Item[] }>('movie/popular', { page: 2, language }).then(results), [] as Item[]),
     bounded(getTunisianTitles().then((titles) => titles ?? []), []),
     bounded(tmdbFetchSafe<{ results: Item[] }>('discover/movie', { with_origin_country: 'TN', sort_by: 'popularity.desc', language }, 86400).then(results), [] as Item[]),
@@ -73,6 +99,7 @@ export async function getLandingData({ locale, kids, halal }: { locale: Locale, 
       with_genres: '35', without_genres: '27,53,80,10752', 'vote_count.gte': 3000, sort_by: 'vote_average.desc', language,
       ...(kids ? { certification_country: 'US', 'certification.lte': 'PG' } : {}),
     }, 86400).then(results), [] as Item[]),
+    halalRow,
   ])
 
   // The hero's wall: films and series, alternating, so neither kind takes a whole side.
@@ -102,22 +129,6 @@ export async function getLandingData({ locale, kids, halal }: { locale: Locale, 
     { id: 'tunisian' as const, pics: tunisianPics.slice(0, 12) },
   ].filter((reel) => reel.pics.length >= 4)
 
-  // Halal mode's demo: a row of this week's titles, and which of them it hides (what's stored and
-  // TMDB's facts; no AI call while the page waits). A viewer in Halal mode already gets the row
-  // filtered, so nothing is left to hide there; Kids rows are kid-safe.
-  const halalPool: Item[] = [
-    ...trendingWeekMovies.slice(0, 10).map((item): Item => ({ ...item, media_type: 'movie' })),
-    ...trendingWeekShows.slice(0, 10).map((item): Item => ({ ...item, media_type: 'tv' })),
-  ].filter((item) => item.poster_path)
-  const refs = halalPool.flatMap((item) => { const ref = titleRef(item, item.media_type === 'tv' ? 'tv' : 'movie'); return ref ? [ref] : [] })
-  const hidden = halal || kids ? new Set<string>() : await withTimeout(hiddenTitles(refs, { grade: false }), 2500, new Set<string>())
-  const isHidden = (item: Item) => hidden.has(`${item.media_type}:${item.id}`)
-  const hiddenItems = halalPool.filter(isHidden).slice(0, 3)
-  const keptItems = halalPool.filter((item) => !isHidden(item)).slice(0, 8 - hiddenItems.length)
-  // Hidden ones spread through the row, so switching it on visibly closes gaps.
-  const halalRow = keptItems.map((item) => ({ ...pics([item], 1)[0], hidden: false }))
-  hiddenItems.forEach((item, index) => halalRow.splice(Math.min(halalRow.length, 1 + index * 3), 0, { ...pics([item], 1)[0], hidden: true }))
-
   const tvShows = (tvHub?.onAir?.length ? tvHub.onAir : tvHub?.complete ?? [])
     .flatMap((series) => {
       const cover = series.coverId ?? series.latest?.id ?? null
@@ -145,7 +156,7 @@ export async function getLandingData({ locale, kids, halal }: { locale: Locale, 
         : { phase: 'during', day: status.day, year: status.year },
       countries,
     },
-    halal: { row: halalRow, viewerOn: halal },
+    halal: { row: halalRowDone, viewerOn: halal },
     swipe: pics(popular2.length ? popular2 : trendingWeekMovies, 8),
     ask: [
       { query: 'landing.ask.q1' as const, pics: pics(inception, 4) },

@@ -10,7 +10,7 @@ import type { LandingData, Pic } from '@/src/lib/landing-model'
 import type { TKey } from '@/src/lib/i18n'
 import { cn } from '@/src/lib/utils'
 import LiveDot from '@/src/components/ui/live-dot'
-import { Art, PicImg, type ArtName, useCalm } from './parts'
+import { Art, PicImg, type ArtName, useCalm, PicturesWhenNear } from './parts'
 import { LOOKS, useStageLook } from './Stage'
 
 type Tunisia = LandingData['tunisia']
@@ -63,9 +63,13 @@ export default function TunisiaTrack({ data }: { data: Tunisia }) {
   })
   useStageLook(section, active === 'ramadan' ? LOOKS.ramadan : LOOKS.tunisia)
 
-  const content = panels.map((id, index) => (
-    <Panel key={id} id={id} data={data} index={index} count={panels.length} progress={scrollYProgress} still={reduced} />
-  ))
+  const content = (
+    <PicturesWhenNear section={section}>
+      {panels.map((id, index) => (
+        <Panel key={id} id={id} data={data} index={index} count={panels.length} progress={scrollYProgress} still={reduced} />
+      ))}
+    </PicturesWhenNear>
+  )
 
   if (reduced) {
     return (

@@ -14,9 +14,15 @@ import { LOOKS, useStageLook } from './Stage'
 import type { HeroQuality, HeroScene } from './hero-scene'
 import styles from './landing.module.css'
 
+/** The hero's posters, flat and in 3D: one size, so the 3D wall reuses what the flat one loaded. */
+const WALL_WIDTH = 185
+
 /** What this device can draw: the 3D scene (and how finely), or the flat picture. */
 function sceneQuality(): HeroQuality | null {
   try {
+    // Data saver: the poster wall stays flat (three.js alone is ~150 KB). Not the browser's
+    // connection estimate (effectiveType): it swings from 4g to slow-2g on the same line, and the
+    // flat wall is on screen meanwhile anyway, so a slow 3D only means a later fade.
     const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
     if (connection?.saveData) return null
     const probe = document.createElement('canvas')
@@ -51,6 +57,7 @@ export default function Hero({ wall }: { wall: Pic[] }) {
   const [mode, setMode] = useState<'pending' | '3d' | 'flat'>('pending')
   const [shown, setShown] = useState(false)
   const [settled, setSettled] = useState(false)
+  const [flatGone, setFlatGone] = useState(false)
 
   useStageLook(section, LOOKS.dark)
 
@@ -73,7 +80,8 @@ export default function Hero({ wall }: { wall: Pic[] }) {
       .then(({ createHeroScene }) => {
         if (cancelled || !canvas.current) return
         created = createHeroScene(canvas.current, {
-          posters: wall.map((pic) => picUrl(pic, quality === 'high' ? 342 : 185)),
+          // The flat wall's own pictures (same size, fetched with CORS): mostly from the cache.
+          posters: wall.map((pic) => picUrl(pic, WALL_WIDTH)),
           quality,
           // Read here, not from the hook: this runs once, right at hydration.
           still: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
@@ -97,7 +105,11 @@ export default function Hero({ wall }: { wall: Pic[] }) {
 
   useEffect(() => {
     if (mode === 'flat') setShown(true)
-  }, [mode])
+    // Once the scene has faded in over it, the flat wall leaves the page (one layer less to paint).
+    if (mode !== '3d' || !shown) return
+    const timer = window.setTimeout(() => setFlatGone(true), 1800)
+    return () => window.clearTimeout(timer)
+  }, [mode, shown])
 
   useMotionValueEvent(scrollYProgress, 'change', (value) => scene.current?.setProgress(value))
 
@@ -180,13 +192,17 @@ export default function Hero({ wall }: { wall: Pic[] }) {
   return (
     <section ref={section} aria-labelledby="landing-hero-title" className={cn('relative', reduced ? 'h-[100svh]' : 'h-[190svh]')}>
       <div ref={stage} className="sticky top-0 h-[100svh] overflow-hidden">
-        {/* The flat composition: under the canvas while it loads, or instead of it. */}
-        <div
-          aria-hidden
-          className={cn('absolute inset-0 transition-opacity duration-1000 ease-out', mode === 'flat' && shown ? 'opacity-100' : 'opacity-0')}
-        >
-          {mode === 'flat' && <FlatWall wall={wall} />}
-        </div>
+        {/* The flat wall is in the page's HTML, so the room has its posters at once; the 3D
+            scene fades in over it when it's ready (or never, where it can't run). */}
+        {!flatGone && (
+          <div
+            aria-hidden
+            data-hero-picture=""
+            className={cn('absolute inset-0 transition-opacity duration-[1400ms] ease-out', mode === '3d' && shown ? 'opacity-0' : 'opacity-100')}
+          >
+            <FlatWall wall={wall} />
+          </div>
+        )}
 
         <canvas
           ref={canvas}
@@ -250,7 +266,8 @@ function FlatWall({ wall }: { wall: Pic[] }) {
     <div className="absolute inset-0 overflow-hidden [perspective:1200px]">
       <div className="absolute inset-[-20%] grid grid-cols-6 gap-3 opacity-45 [transform:rotateY(-18deg)_rotateX(8deg)_scale(1.05)] sm:grid-cols-8 lg:grid-cols-10">
         {wall.slice(0, 40).map((pic, index) => (
-          <PicImg key={index} pic={pic} width={154} className="aspect-[2/3] w-full rounded-poster" />
+          // The first rows are what's on screen: asked for first.
+          <PicImg key={index} pic={pic} width={WALL_WIDTH} eager priority={index < 20} className="aspect-[2/3] w-full rounded-poster" />
         ))}
       </div>
       <div className="absolute inset-0 bg-[radial-gradient(60%_50%_at_60%_40%,transparent,black_80%)]" />

@@ -1,8 +1,8 @@
 "use client"
 // Small pieces the landing page's sections share: kinetic type, the hand-drawn art, pictures,
 // the magnetic pull on the main buttons.
-import { forwardRef, useEffect, useRef, useState } from 'react'
-import { m, useMotionValue, useReducedMotion, useSpring } from 'framer-motion'
+import { createContext, forwardRef, useContext, useEffect, useRef, useState, type RefObject } from 'react'
+import { m, useInView, useMotionValue, useReducedMotion, useSpring } from 'framer-motion'
 import { cn } from '@/src/lib/utils'
 import { picUrl, type Pic } from '@/src/lib/landing-model'
 import styles from './landing.module.css'
@@ -99,22 +99,46 @@ export function Art({ name, className, style, draw = false, delay = 0 }: {
   )
 }
 
-/** A poster (or cover, or thumbnail) as a plain image: decorative unless given `alt`. */
-export function PicImg({ pic, width, className, alt = '', eager = false }: {
+/**
+ * Pictures under it wait (an empty frame, no request) while this is true. The pinned sections
+ * further down the page hold theirs until the visitor nears them, so they don't compete with the
+ * first screen; their pictures are eager once released (they sit in clipped, transformed tracks
+ * where the browser's own lazy loading would never start them).
+ */
+const HoldPictures = createContext(false)
+
+/** Holds the pictures inside until `section` is within half a screen of the viewport. */
+export function PicturesWhenNear({ section, children }: { section: RefObject<Element>, children: React.ReactNode }) {
+  const near = useInView(section, { once: true, margin: '50% 0px 50% 0px' })
+  return <HoldPictures.Provider value={!near}>{children}</HoldPictures.Provider>
+}
+
+/**
+ * A poster (or cover, or thumbnail) as a plain image: decorative unless given `alt`. TMDB pictures
+ * are always fetched with CORS: the hero's 3D wall draws the same files into a canvas, and a copy
+ * cached without CORS would taint it (TMDB's CDN doesn't vary on Origin).
+ */
+export function PicImg({ pic, width, className, alt = '', eager = false, priority = false }: {
   pic: Pic
   width: number
   className?: string
   alt?: string
   eager?: boolean
+  /** Fetched before the page's other pictures (the first screen). */
+  priority?: boolean
 }) {
   const [failed, setFailed] = useState(false)
-  if (failed) return <span aria-hidden className={cn('block bg-white/[0.06]', className)} />
+  const hold = useContext(HoldPictures)
+  if (failed || hold) return <span aria-hidden className={cn('block bg-white/[0.04]', className)} />
   return (
     // eslint-disable-next-line @next/next/no-img-element -- TMDB's CDN sizes these itself (see lib/tmdb-image)
     <img
       src={picUrl(pic, width)}
       alt={alt}
-      loading={eager ? 'eager' : 'lazy'}
+      crossOrigin={pic.tmdb ? 'anonymous' : undefined}
+      loading={eager || priority ? 'eager' : 'lazy'}
+      // Lowercase: React 18 passes it to the DOM as is.
+      {...(priority ? { fetchpriority: 'high' } : {})}
       decoding="async"
       draggable={false}
       onError={() => setFailed(true)}

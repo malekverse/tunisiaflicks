@@ -8,7 +8,7 @@ import { isArabicScript } from '@/src/lib/i18n/locales'
 import { REELS, type Pic, type ReelId } from '@/src/lib/landing-model'
 import type { TKey } from '@/src/lib/i18n'
 import { cn } from '@/src/lib/utils'
-import { PicImg, useCalm } from './parts'
+import { PicImg, useCalm, PicturesWhenNear } from './parts'
 import { useStageLook } from './Stage'
 
 type Reel = { id: ReelId, pics: Pic[] }
@@ -64,9 +64,11 @@ export default function Catalogue({ reels }: { reels: Reel[] }) {
       </ul>
 
       <div aria-hidden className="sticky top-0 h-[100svh] overflow-hidden">
-        {reels.map((reel, index) => Math.abs(index - active) <= 1 && (
-          <PosterField key={reel.id} reel={reel} index={index} count={count} progress={scrollYProgress} visible={index === active} />
-        ))}
+        <PicturesWhenNear section={section}>
+          {reels.map((reel, index) => Math.abs(index - active) <= 1 && (
+            <PosterField key={reel.id} reel={reel} index={index} count={count} progress={scrollYProgress} visible={index === active} />
+          ))}
+        </PicturesWhenNear>
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(70%_60%_at_50%_50%,rgb(0_0_0/0.15),rgb(0_0_0/0.85)_75%)]" />
 
         <div className="absolute inset-x-0 bottom-[22svh] top-0 flex items-center justify-center px-[var(--gutter)] lg:ps-[calc(var(--rail)+var(--gutter))]">

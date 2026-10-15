@@ -45,6 +45,10 @@ const GAP = 0.24
 const ROWS = 5
 const ATLAS_COLS = 8
 const ATLAS_ROWS = 5
+/** The wall shows after this long even if few posters have arrived (they fill in on screen). */
+const READY_AFTER_MS = 1500
+/** New posters are uploaded to the GPU at most this often (each upload is the whole atlas). */
+const UPLOAD_EVERY_MS = 250
 
 const WALL_VERTEX = /* glsl */ `
   attribute vec2 aCell;
@@ -121,8 +125,13 @@ const WALL_FRAGMENT = /* glsl */ `
   }
 `
 
-/** The wall's posters on one texture: cells of 2:3 in a grid, read by each instance's aCell. */
-async function buildAtlas(urls: string[], quality: HeroQuality, signal: AbortSignal): Promise<THREE.CanvasTexture> {
+/**
+ * The wall's posters on one texture: cells of 2:3 in a grid, read by each instance's aCell. The
+ * texture exists at once (dark frames) and each poster is drawn in as it arrives, so the wall never
+ * waits for the slowest one. The addresses are the ones the page's flat wall already loaded with
+ * CORS (PicImg asks TMDB with crossorigin), so they usually come straight from the cache.
+ */
+function buildAtlas(urls: string[], quality: HeroQuality, signal: AbortSignal) {
   const cellW = quality === 'high' ? 256 : 176
   const cellH = Math.round(cellW * 1.5)
   const canvas = document.createElement('canvas')
@@ -132,30 +141,54 @@ async function buildAtlas(urls: string[], quality: HeroQuality, signal: AbortSig
   context.fillStyle = '#0a0a0a'
   context.fillRect(0, 0, canvas.width, canvas.height)
 
-  await Promise.all(urls.slice(0, ATLAS_COLS * ATLAS_ROWS).map(async (url, index) => {
-    const image = new Image()
-    image.crossOrigin = 'anonymous'
-    image.decoding = 'async'
-    // Its own address: the same picture already shown on the page was fetched without CORS, and
-    // TMDB doesn't vary on Origin, so that cached copy would taint the canvas.
-    image.src = `${url}${url.includes('?') ? '&' : '?'}gl`
-    try {
-      await image.decode()
-    } catch {
-      return // A poster that won't load stays a dark frame.
-    }
-    if (signal.aborted) return
-    const x = (index % ATLAS_COLS) * cellW
-    const y = Math.floor(index / ATLAS_COLS) * cellH
-    context.drawImage(image, x, y, cellW, cellH)
-  }))
-
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
   texture.generateMipmaps = true
   texture.minFilter = THREE.LinearMipmapLinearFilter
   texture.anisotropy = 4
-  return texture
+
+  const wanted = urls.slice(0, ATLAS_COLS * ATLAS_ROWS)
+  let drawn = 0
+  let dirty = false
+  // Resolves once enough of the wall is up to be worth showing (half of it), or after a moment
+  // whatever has arrived: the rest keeps filling in on screen.
+  let resolveReady: () => void = () => {}
+  const ready = new Promise<void>((resolve) => { resolveReady = resolve })
+  const enough = Math.max(1, Math.ceil(wanted.length / 2))
+  const timer = window.setTimeout(() => resolveReady(), READY_AFTER_MS)
+  signal.addEventListener('abort', () => window.clearTimeout(timer))
+
+  wanted.forEach((url, index) => {
+    const image = new Image()
+    image.crossOrigin = 'anonymous'
+    image.decoding = 'async'
+    image.onload = () => {
+      if (signal.aborted) return
+      const x = (index % ATLAS_COLS) * cellW
+      const y = Math.floor(index / ATLAS_COLS) * cellH
+      try {
+        context.drawImage(image, x, y, cellW, cellH)
+      } catch {
+        return // A poster that can't be drawn stays a dark frame.
+      }
+      dirty = true
+      drawn++
+      if (drawn >= enough) resolveReady()
+    }
+    image.src = url
+  })
+
+  return {
+    texture,
+    ready,
+    /** Uploads the posters drawn since the last call; true when something changed. */
+    flush() {
+      if (!dirty) return false
+      dirty = false
+      texture.needsUpdate = true
+      return true
+    },
+  }
 }
 
 function buildWall(count: number) {
@@ -352,12 +385,11 @@ export function createHeroScene(canvas: HTMLCanvasElement, { posters, quality, s
   let markDistance = 7
 
   const abort = new AbortController()
-  const ready = buildAtlas(posters, quality, abort.signal).then((texture) => {
-    if (disposed) {
-      texture.dispose()
-      return
-    }
-    wall.material.uniforms.uAtlas.value = texture
+  const atlas = buildAtlas(posters, quality, abort.signal)
+  wall.material.uniforms.uAtlas.value = atlas.texture
+  let uploadedAt = -Infinity
+  const ready = atlas.ready.then(() => {
+    if (disposed) return
     readyAt = elapsed
     needsFrame = true
     kick()
@@ -449,12 +481,15 @@ export function createHeroScene(canvas: HTMLCanvasElement, { posters, quality, s
     // Where the glass is, as the wall's shader sees it (angle around the ring, height).
     uniforms.uGlass.value.set(Math.atan2(pivot.position.x, -pivot.position.z), (pivot.position.y * RING_RADIUS) / Math.max(1, -pivot.position.z))
 
+    // Posters that arrived since the last upload (batched: each upload is the whole atlas).
+    if (now - uploadedAt > UPLOAD_EVERY_MS && atlas.flush()) uploadedAt = now
+
     renderer.render(scene, camera)
     needsFrame = false
 
     // Keep going while something moves; in still mode only on demand.
     if (active && !still) frame = requestAnimationFrame(render)
-    else if (active && still && (!loaded || needsFrame)) frame = requestAnimationFrame(render)
+    else if (active && still && (!loaded || needsFrame || since < 12)) frame = requestAnimationFrame(render)
   }
 
   function kick() {
@@ -505,7 +540,7 @@ export function createHeroScene(canvas: HTMLCanvasElement, { posters, quality, s
       abort.abort()
       if (frame) cancelAnimationFrame(frame)
       canvas.removeEventListener('webglcontextlost', onContextLost)
-      ;(wall.material.uniforms.uAtlas.value as THREE.Texture | null)?.dispose()
+      atlas.texture.dispose()
       wall.geometry.dispose()
       wall.material.dispose()
       mark.strokes.forEach((stroke) => stroke.geometry.dispose())
