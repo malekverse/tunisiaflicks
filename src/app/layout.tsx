@@ -4,7 +4,7 @@ import NextTopLoader from 'nextjs-toploader';
 import Script from 'next/script';
 import "./globals.css";
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import { Analytics } from '@vercel/analytics/react';
+import { Analytics } from '@vercel/analytics/next';
 import Footer from "@/src/components/Footer";
 import Rail from "@/src/components/shell/Rail";
 import TopBar from "@/src/components/shell/TopBar";
