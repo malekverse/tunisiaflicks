@@ -1,4 +1,4 @@
-// A link to the site's page for a show (https://tunisiaflicks.vercel.app/tv/123) opens it in the app.
+// A link to the site's page for a show (https://tunisiaflicks.app/tv/123) opens it in the app.
 import { Redirect, useLocalSearchParams } from 'expo-router'
 
 export default function TvLink() {

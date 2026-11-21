@@ -18,7 +18,7 @@ const YTS_TRACKERS = [
 const YTS_MIRRORS = ['https://yts.mx', 'https://yts.lt', 'https://yts.am']
 const EZTV_HOST = 'https://eztvx.to'
 const TMDB = 'https://api.themoviedb.org/3'
-const SITE_URL = (process.env.SITE_URL || 'https://tunisiaflicks.vercel.app').replace(/\/+$/, '')
+const SITE_URL = (process.env.SITE_URL || 'https://tunisiaflicks.app').replace(/\/+$/, '')
 const TMDB_KEY = process.env.TMDB_API_KEY || ''
 
 const normalizeImdb = (imdbId) => (/^tt?\d+$/.test(String(imdbId)) ? String(imdbId).replace(/^tt/, '') : null)

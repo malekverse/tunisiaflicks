@@ -9,7 +9,7 @@ const TV = process.env.EXPO_TV === '1'
 const VERSION = process.env.TF_VERSION_NAME || '2.0.0'
 const VERSION_CODE = Number(process.env.TF_VERSION_CODE || '20000')
 // The site the app talks to (its /api/app/v1); a development build can point elsewhere.
-const API = process.env.TF_API_URL || 'https://tunisiaflicks.vercel.app'
+const API = process.env.TF_API_URL || 'https://tunisiaflicks.app'
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
@@ -36,8 +36,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         autoVerify: true,
         category: ['BROWSABLE', 'DEFAULT'],
         data: [
-          { scheme: 'https', host: 'tunisiaflicks.vercel.app', pathPrefix: '/movie/' },
-          { scheme: 'https', host: 'tunisiaflicks.vercel.app', pathPrefix: '/tv/' },
+          { scheme: 'https', host: 'tunisiaflicks.app', pathPrefix: '/movie/' },
+          { scheme: 'https', host: 'tunisiaflicks.app', pathPrefix: '/tv/' },
         ],
       },
     ],

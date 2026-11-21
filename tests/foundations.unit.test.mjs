@@ -70,7 +70,7 @@ test('withTimeout: the fallback when the task fails, without rejecting', async (
 
 test('scrubUrl: removes invite, t, code, device and k, keeps the rest', () => {
   assert.equal(scrubUrl('/u/x?invite=abc'), '/u/x')
-  assert.equal(scrubUrl('https://tunisiaflicks.vercel.app/u/x?invite=abc&tab=lists#ratings'), 'https://tunisiaflicks.vercel.app/u/x?tab=lists#ratings')
+  assert.equal(scrubUrl('https://tunisiaflicks.app/u/x?invite=abc&tab=lists#ratings'), 'https://tunisiaflicks.app/u/x?tab=lists#ratings')
   assert.equal(scrubUrl('/unsubscribe?t=SIGNED.value'), '/unsubscribe')
   assert.equal(scrubUrl('/activate?code=ABC123&device=tv1'), '/activate')
   assert.equal(scrubUrl('/u/amine?k=key123&ref=share'), '/u/amine?ref=share')

@@ -274,7 +274,7 @@ const event = {
   summary: 'Movie night: Dune; Part Two, the long one',
   description: 'Line one\nLine two \\ back',
   location: 'Chez Sami, La Marsa',
-  url: 'https://tunisiaflicks.vercel.app/movie-night/ABCDEFGHJK',
+  url: 'https://tunisiaflicks.app/movie-night/ABCDEFGHJK',
   alarmMinutes: 60,
   stamp: new Date('2026-10-08T10:00:00Z'),
 }

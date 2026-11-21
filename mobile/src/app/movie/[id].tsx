@@ -1,4 +1,4 @@
-// A link to the site's page for a film (https://tunisiaflicks.vercel.app/movie/123) opens it in the app.
+// A link to the site's page for a film (https://tunisiaflicks.app/movie/123) opens it in the app.
 import { Redirect, useLocalSearchParams } from 'expo-router'
 
 export default function MovieLink() {

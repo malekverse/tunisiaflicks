@@ -107,7 +107,7 @@ FILES: see ownership 'tv-mode'.
 
 8. ANDROID (android-tv/, Kotlin, one Activity with a WebView)
 - JS, DOM storage, media without a gesture, third-party cookies.
-- UA suffix ' TunisiaFlicksTV/1.0'. Start URL https://tunisiaflicks.vercel.app/?tv=1.
+- UA suffix ' TunisiaFlicksTV/1.0'. Start URL https://tunisiaflicks.app/?tv=1.
 - Hardening:
   - top-level navigations allowed only when the host EXACTLY equals BuildConfig.SITE_HOST; everything else is cancelled
   - setSupportMultipleWindows(false); window.open blocked
@@ -198,7 +198,7 @@ ACCEPTANCE
 
 Restore the GOOGLE PLAY APP prep for PHONES (the owner asked: "wrap the PWA as a Play Store app (Trusted Web Activity), no separate codebase"). The TV-box APK stays as planned (TV boxes often lack Chrome); the TWA targets phones, where Chrome is present.
 - `/.well-known/assetlinks.json` route (app/.well-known/assetlinks.json/route.ts): built from env `ANDROID_TWA_PACKAGE` and `ANDROID_TWA_SHA256` (comma-separated fingerprints); 404 when unset. Cache 1h.
-- `android/twa/twa-manifest.json` for Bubblewrap (packageId from the same name, host tunisiaflicks.vercel.app, start url '/', theme/background #000000, icon from /icons, maskable icon, splash, shortcuts Search / Tunisian / Library, fallback to Custom Tabs, display standalone, orientation default, enableNotifications true).
+- `android/twa/twa-manifest.json` for Bubblewrap (packageId from the same name, host tunisiaflicks.app, start url '/', theme/background #000000, icon from /icons, maskable icon, splash, shortcuts Search / Tunisian / Library, fallback to Custom Tabs, display standalone, orientation default, enableNotifications true).
 - Manifest quality check in src/app/manifest.ts (maskable icons, id, scope, shortcuts, screenshots if available): request changes from integration if the file isn't yours.
 - docs/play-store.md: step-by-step for the owner (Bubblewrap init/build, keystore safety, Play Console one-time fee, Data safety form answers, content rating, privacy policy URL /privacy, testing track), and how to get the SHA-256 for ANDROID_TWA_SHA256 (Play App Signing).
 - /app page: 'Get it on Google Play' when NEXT_PUBLIC_PLAY_STORE_URL is set (official badge text, no image hotlinking), alongside the TV APK panel.

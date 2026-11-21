@@ -117,8 +117,8 @@ own time; subtitles are drawn by the page on that clock.
 | --- | --- | --- |
 | `HOST` | `127.0.0.1` | loopback only; don't change unless you know why |
 | `PORT` | `8080` | |
-| `ALLOWED_ORIGINS` | `http://localhost:3000,https://tunisiaflicks.vercel.app` | web origins allowed to drive it (loopback origins are always allowed) |
-| `SITE_URL` | `https://tunisiaflicks.vercel.app` | the TunisiaFlicks site the player asks for title details (TMDB id → IMDB id, names, year) and the browse feed (`/api/player/title`, `/api/player/browse`); the desktop app passes the site it shows. `http://localhost:3000` to use a local site |
+| `ALLOWED_ORIGINS` | `http://localhost:3000,https://tunisiaflicks.app` | web origins allowed to drive it (loopback origins are always allowed) |
+| `SITE_URL` | `https://tunisiaflicks.app` | the TunisiaFlicks site the player asks for title details (TMDB id → IMDB id, names, year) and the browse feed (`/api/player/title`, `/api/player/browse`); the desktop app passes the site it shows. `http://localhost:3000` to use a local site |
 | `TMDB_API_KEY` | none | local-dev override: ask TMDB directly with this key instead of the site. Never set it in a build you ship |
 | `DOWNLOAD_DIR` | OS temp `/tunisiaflicks-stream` | scratch space for pieces |
 | `MAX_TORRENTS` | `12` | concurrent swarms kept alive |

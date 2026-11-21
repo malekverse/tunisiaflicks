@@ -58,7 +58,7 @@ export type Genres = { movie: { id: number, name: string }[], tv: { id: number, 
 export type Version = { version: string | null, android: { url: string, size: number } | null, tv: { url: string, size: number } | null }
 export type Health = Record<string, { ok: number, broken: number, status: 'good' | 'down' | 'unknown' }>
 
-export const SITE: string = (Constants.expoConfig?.extra?.api as string | undefined) ?? 'https://tunisiaflicks.vercel.app'
+export const SITE: string = (Constants.expoConfig?.extra?.api as string | undefined) ?? 'https://tunisiaflicks.app'
 
 /** An API error the screens can tell apart (not found, Kids mode, offline...). */
 export class ApiError extends Error {

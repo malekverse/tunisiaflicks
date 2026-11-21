@@ -1,6 +1,6 @@
 // TunisiaFlicks desktop — the TunisiaFlicks site in its own window, plus the ad-free local player.
 //
-// The window loads the real site (TF_SITE_URL, default https://tunisiaflicks.vercel.app), so the
+// The window loads the real site (TF_SITE_URL, default https://tunisiaflicks.app), so the
 // desktop app is the same TunisiaFlicks — the same UI, account, lists, profiles, everything — and
 // it never drifts from the web. What the desktop adds:
 //
@@ -23,7 +23,7 @@ const http = require('node:http')
 const { spawn } = require('node:child_process')
 const { setupUpdates } = require('./updater')
 
-const SITE_URL = process.env.TF_SITE_URL || 'https://tunisiaflicks.vercel.app'
+const SITE_URL = process.env.TF_SITE_URL || 'https://tunisiaflicks.app'
 const SITE_ORIGIN = new URL(SITE_URL).origin
 
 // In a packaged app the service is unpacked under resources/player-service; in dev it's a sibling.
@@ -87,7 +87,7 @@ function spawnService() {
       // Where the player keeps the viewer's add-ons, next to the app's own settings.
       DATA_DIR: path.join(app.getPath('userData'), 'player'),
       // The site the window shows may frame the player and drive it.
-      ALLOWED_ORIGINS: [process.env.ALLOWED_ORIGINS, 'https://tunisiaflicks.vercel.app', 'http://localhost:3000', SITE_ORIGIN].filter(Boolean).join(','),
+      ALLOWED_ORIGINS: [process.env.ALLOWED_ORIGINS, 'https://tunisiaflicks.app', 'http://localhost:3000', SITE_ORIGIN].filter(Boolean).join(','),
       // The player looks titles up through this site (it holds the TMDB key; the app carries none).
       SITE_URL: SITE_ORIGIN,
     },

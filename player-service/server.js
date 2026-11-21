@@ -48,7 +48,7 @@ const DATA_DIR = process.env.DATA_DIR || path.join(os.homedir(), '.tunisiaflicks
 
 // Web origins allowed to drive the service (CORS + Origin check). The app's own origins + dev.
 const ALLOWED_ORIGINS = new Set(
-  (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,https://tunisiaflicks.vercel.app')
+  (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,https://tunisiaflicks.app')
     .split(',').map((s) => s.trim()).filter(Boolean)
 )
 
