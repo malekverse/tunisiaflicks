@@ -192,7 +192,7 @@ function Text({ run, box, type }: { run: TextRun, box?: React.CSSProperties, typ
 // Cached by Vercel's CDN for a day (crawlers get it at once), refreshed in the background after.
 const CACHE_CONTROL = 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800'
 
-/** `fallback`: the brand card standing in for a card that couldn't be drawn (see FALLBACK_HEADER). */
+/** `fallback`: a card not worth keeping (the brand card standing in for one that could not be drawn, or a section card without its posters; see FALLBACK_HEADER). */
 async function asJpeg(image: ImageResponse, quality = 82, fallback = false): Promise<Response> {
   // Rendering errors surface here: the stream can only be read once.
   const png = new Uint8Array(await image.arrayBuffer())
@@ -578,7 +578,10 @@ export async function renderSectionCard(card: SectionCard) {
           <Footer cta={card.cta} />
         </div>
       </Column>
-    </div>
+    </div>,
+    OG_SIZE,
+    // No poster wall (the list or every picture failed): fine to show now, not worth keeping.
+    { fallback: posters.length === 0 },
   )
 }
 

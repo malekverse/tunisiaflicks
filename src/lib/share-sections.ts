@@ -133,5 +133,12 @@ export const isShareSection = (value: string): value is ShareSection => Object.p
 
 export async function renderSection(name: ShareSection) {
   const { posters: load, ...section }: Section = SHARE_SECTIONS[name]
-  return renderSectionCard({ ...section, posters: await load().catch(() => []) })
+  // A list that fails (AniList or TMDB busy, often during a deployment's build) gets a second try:
+  // a card without its poster wall is served but never kept (lib/og), so it'd be drawn again anyway.
+  let posters = await load().catch(() => [] as string[])
+  if (!posters.length) {
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+    posters = await load().catch(() => [] as string[])
+  }
+  return renderSectionCard({ ...section, posters })
 }
