@@ -1,5 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": {
+    "deploymentEnabled": {
+      "**": false,
+      "main": true
+    }
+  },
+  "ignoreCommand": "git diff --quiet ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^} HEAD -- . ':(exclude)desktop' ':(exclude)mobile' ':(exclude)player-service' ':(exclude)docs' ':(exclude)tests' ':(exclude).github' ':(exclude)README.md'",
   "crons": [
     {
       "path": "/api/cron/notify",
