@@ -8,7 +8,7 @@ import { getT } from '@/src/lib/i18n/server'
 import { calendarOf, getNight } from '@/src/lib/movie-night'
 import { isNightId, roleOf } from '@/src/lib/movie-night-rules'
 import { requireSocial } from '@/src/lib/social/session'
-import { SITE_URL } from '@/src/lib/seo'
+import { linkBase } from '@/src/lib/seo'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,7 +24,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
   const t = getT()
   const event = calendarOf(night)
-  const origin = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin || SITE_URL
+  const origin = linkBase()
   const url = `${origin}/movie-night/${night._id}`
   const name = event.title || t('movieNight.defaultTitle')
   const summary = event.film ? t('movieNight.ics.summaryFilm', { title: event.film }) : name

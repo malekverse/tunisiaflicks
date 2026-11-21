@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { tmdbFetchSafe } from '@/src/lib/tmdb'
 import { buildIcs, upcomingRelease } from '@/src/lib/calendar'
+import { linkBase } from '@/src/lib/seo'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
   const event = data ? upcomingRelease(type, data) : null
   if (!event) return NextResponse.json({ error: 'No upcoming release' }, { status: 404 })
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin
+  const appUrl = linkBase()
   const slug = event.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'release'
   return new NextResponse(buildIcs(event, appUrl), {
     headers: {

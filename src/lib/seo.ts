@@ -10,6 +10,15 @@ type OpenGraph = NonNullable<Metadata['openGraph']>
 export const SITE_HOST = 'tunisiaflicks.app'
 export const SITE_URL = `https://${SITE_HOST}`
 export const SITE_NAME = 'TunisiaFlicks'
+/**
+ * The address links in e-mails, digests and calendar files point to: always the site's own, whichever
+ * deployment sends them (the old tunisiaflicks.vercel.app one runs the same jobs for the installed
+ * apps). A local NEXT_PUBLIC_APP_URL (localhost) wins while developing.
+ */
+export function linkBase(): string {
+  const local = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, '')
+  return local && /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(local) ? local : SITE_URL
+}
 export const SITE_DESCRIPTION = "Movies, TV shows and Tunisian series in one place: what's trending today, trailers, a daily Top 10, Ramadan series and release alerts, in English, French and Arabic."
 
 /** What people search for, in the three languages the site speaks (the root layout's keywords). */

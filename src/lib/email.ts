@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import type Mail from 'nodemailer/lib/mailer';
 import clientPromise from '@/src/lib/mongodb';
+import { linkBase } from '@/src/lib/seo';
 import type { Locale } from '@/src/lib/i18n/locales';
 import { contactEmail, passwordResetEmail, releaseAlertsEmail, verificationEmail, type ContactMessage, type ReleaseAlert } from '@/src/lib/account-emails';
 
@@ -164,7 +165,7 @@ export function requireEmailEnv() {
     throw new Error('Email configuration error');
   }
 
-  return { from: `"TunisiaFlicks" <${process.env.FROM_EMAIL}>`, appUrl: process.env.NEXT_PUBLIC_APP_URL };
+  return { from: `"TunisiaFlicks" <${process.env.FROM_EMAIL}>`, appUrl: linkBase() };
 }
 
 // ---- The account e-mails (content and layout: lib/account-emails, lib/email-kit) ---------------
