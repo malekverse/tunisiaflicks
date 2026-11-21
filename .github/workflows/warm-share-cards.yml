@@ -30,7 +30,7 @@ jobs:
           SITE_URL: ${{ secrets.SITE_URL }}
         run: |
           set -u
-          SITE="${SITE_URL:-https://tunisiaflicks.vercel.app}"
+          SITE="${SITE_URL:-https://tunisiaflicks.app}"
           SITE="${SITE%/}"
           UA='facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'
           # Give the new deployment a moment to take the domain.

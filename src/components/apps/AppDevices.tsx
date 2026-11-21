@@ -116,7 +116,7 @@ export default function AppDevices({ releases, desktop, tv }: { releases: AppRel
   useEffect(() => setDesktopApp(isDesktopApp()), [])
   // The address to type on a TV: this site's own host, known in the browser only (the server and
   // the first render use the production one, so they agree).
-  const [host, setHost] = useState('tunisiaflicks.vercel.app')
+  const [host, setHost] = useState('tunisiaflicks.app')
   useEffect(() => setHost(window.location.host), [])
 
   const mine = device ? cardFor(device.platform) : null

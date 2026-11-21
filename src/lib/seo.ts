@@ -7,7 +7,7 @@ import type { Translate } from '@/src/lib/i18n/translate'
 
 type OpenGraph = NonNullable<Metadata['openGraph']>
 
-export const SITE_HOST = 'tunisiaflicks.vercel.app'
+export const SITE_HOST = 'tunisiaflicks.app'
 export const SITE_URL = `https://${SITE_HOST}`
 export const SITE_NAME = 'TunisiaFlicks'
 export const SITE_DESCRIPTION = "Movies, TV shows and Tunisian series in one place: what's trending today, trailers, a daily Top 10, Ramadan series and release alerts, in English, French and Arabic."

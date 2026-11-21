@@ -98,7 +98,7 @@ jobs:
           cat > notes.md <<EOF
           TunisiaFlicks for Windows, version $NAME: the whole site in its own window, with its own ad-free player.
 
-          Download and details: https://tunisiaflicks.vercel.app/desktop
+          Download and details: https://tunisiaflicks.app/desktop
 
           - TunisiaFlicks-Setup.exe SHA-256: \`$sha\`
           EOF

@@ -25,7 +25,7 @@ export const digestDailyLimit = () => positiveInt(process.env.DIGEST_DAILY_LIMIT
 export const digestConfigured = () => emailTokensConfigured() && emailConfigured() && process.env.DIGEST_ENABLED !== 'false'
 
 /** The site's address, without a trailing slash. */
-export const siteUrl = () => (process.env.NEXT_PUBLIC_APP_URL || 'https://tunisiaflicks.vercel.app').replace(/\/+$/, '')
+export const siteUrl = () => (process.env.NEXT_PUBLIC_APP_URL || 'https://tunisiaflicks.app').replace(/\/+$/, '')
 
 /** One slot of the digest's daily allowance and one of the shared bulk budget; false when either is spent. */
 export async function reserveDigestSend(): Promise<boolean> {

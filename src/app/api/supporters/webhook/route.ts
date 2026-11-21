@@ -1,5 +1,5 @@
 // POST /api/supporters/webhook: Ko-fi's call for every coffee (a form post with a JSON `data`
-// field). Register https://tunisiaflicks.vercel.app/api/supporters/webhook in Ko-fi's settings.
+// field). Register https://tunisiaflicks.app/api/supporters/webhook in Ko-fi's settings.
 //
 // 404 until KOFI_VERIFICATION_TOKEN and SUPPORT_HASH_SECRET are both set; 429 past 120 calls a
 // minute from one IP; 400 for a bad or oversized (64KB) body; 401 when the token doesn't match.

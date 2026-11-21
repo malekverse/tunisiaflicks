@@ -126,7 +126,7 @@ jobs:
           cat > "$RUNNER_TEMP/notes.md" <<EOF
           TunisiaFlicks for Android phones and for Android TV / TV boxes, version $NAME.
 
-          Install: https://tunisiaflicks.vercel.app/app
+          Install: https://tunisiaflicks.app/app
 
           - tunisiaflicks-android.apk SHA-256: \`$ANDROID_SHA\`
           - tunisiaflicks-tv.apk SHA-256: \`$TV_SHA\`

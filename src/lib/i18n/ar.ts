@@ -529,7 +529,7 @@ export const ar: Record<CoreKey, string> = {
   'dmca.work': 'العمل المحمي بحقوق النشر',
   'dmca.workPlaceholder': 'عنوان العمل وحقوقك فيه',
   'dmca.urls': 'عنوان أو عناوين صفحات TunisiaFlicks',
-  'dmca.urlsHelp': 'عنوان واحد في كل سطر، مثال: https://tunisiaflicks.vercel.app/movie/123',
+  'dmca.urlsHelp': 'عنوان واحد في كل سطر، مثال: https://tunisiaflicks.app/movie/123',
   'dmca.details': 'التفاصيل',
   'dmca.signature': 'التوقيع (اكتب اسمك الكامل)',
   'dmca.goodFaith': 'أعتقد بحسن نية أن هذا الاستخدام غير مرخص من صاحب الحقوق أو وكيله أو القانون.',

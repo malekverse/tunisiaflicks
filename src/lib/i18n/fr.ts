@@ -541,7 +541,7 @@ export const fr: Record<CoreKey, string> = {
   'dmca.work': 'Œuvre protégée',
   'dmca.workPlaceholder': 'Titre de l’œuvre et vos droits sur celle-ci',
   'dmca.urls': 'Adresse(s) des pages TunisiaFlicks',
-  'dmca.urlsHelp': 'Une adresse par ligne, par exemple https://tunisiaflicks.vercel.app/movie/123',
+  'dmca.urlsHelp': 'Une adresse par ligne, par exemple https://tunisiaflicks.app/movie/123',
   'dmca.details': 'Détails',
   'dmca.signature': 'Signature (saisissez votre nom complet)',
   'dmca.goodFaith': 'Je crois de bonne foi que cette utilisation n’est autorisée ni par le titulaire des droits, ni par son représentant, ni par la loi.',
