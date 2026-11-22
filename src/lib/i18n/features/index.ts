@@ -22,8 +22,9 @@ import { anime } from './anime'
 import { landing } from './landing'
 import { welcome } from './welcome'
 import { decide } from './decide'
+import { guess } from './guess'
 
-const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop, halal, mail, anime, landing, welcome, decide]
+const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop, halal, mail, anime, landing, welcome, decide, guess]
 
 export type FeatureKey =
   | keyof typeof aiSearch.en
@@ -48,6 +49,7 @@ export type FeatureKey =
   | keyof typeof landing.en
   | keyof typeof welcome.en
   | keyof typeof decide.en
+  | keyof typeof guess.en
 
 type Language = 'en' | 'ar' | 'tn' | 'fr'
 

@@ -66,6 +66,12 @@ export const SHARE_SECTIONS = {
     cta: 'Start deciding',
     posters: () => list('trending/movie/week'),
   },
+  guess: {
+    title: 'Guess the film',
+    subtitle: 'A new film every day, the same for everyone. One still, six tries: how fast can you name it?',
+    cta: "Play today's film",
+    posters: () => list('movie/top_rated', { page: 2 }),
+  },
   tunisian: {
     title: 'Tunisian Vibes',
     subtitle: 'Series and films made in Tunisia, from Ramadan favourites to the latest releases.',

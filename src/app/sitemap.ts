@@ -58,6 +58,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry('/upcoming', 0.7, 'daily'),
     entry('/ramadan', 0.7, 'weekly'),
     entry('/decide', 0.5, 'monthly'),
+    entry('/guess', 0.6, 'daily'),
     entry('/app', 0.4, 'monthly'),
     entry('/desktop', 0.5, 'monthly'),
     ...(supportUrl() ? [entry('/support', 0.3, 'monthly')] : []),

@@ -19,7 +19,7 @@ const PIECES = Array.from({ length: 18 }, (_, index) => {
   return { x: Math.cos(angle) * distance, y: Math.sin(angle) * distance * 0.9, rotate: (index % 2 ? 1 : -1) * (90 + index * 21), red: index % 3 !== 0, round: index % 4 === 0 }
 })
 
-function Burst() {
+export function Burst() {
   return (
     <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 h-0 w-0">
       <m.span
