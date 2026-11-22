@@ -6,7 +6,6 @@ import { defineStrings } from '../define'
 export const play = defineStrings({
   en: {
     'play.new': 'New',
-    'play.menu': 'Pick a film',
     'play.title': 'Can’t pick a film?',
     'play.subtitle': 'Ways to choose, alone or with friends.',
     'play.more': 'More ways to pick',
@@ -26,7 +25,6 @@ export const play = defineStrings({
   },
   ar: {
     'play.new': 'جديد',
-    'play.menu': 'اختر فيلمًا',
     'play.title': 'محتار في اختيار فيلم؟',
     'play.subtitle': 'طرق للاختيار، وحدك أو مع أصدقائك.',
     'play.more': 'طرق أخرى للاختيار',
@@ -45,7 +43,6 @@ export const play = defineStrings({
     'play.guess.keywords': 'خمن تخمين لعبة لغز مسابقة يومي guess quiz game puzzle',
   },
   tn: {
-    'play.menu': 'اختار فيلم',
     'play.title': 'محتار شنوّة تتفرّج؟',
     'play.subtitle': 'طرق باش تختار، وحدك ولا مع صحابك.',
     'play.more': 'طرق أخرى باش تختار',
@@ -60,7 +57,6 @@ export const play = defineStrings({
   },
   fr: {
     'play.new': 'Nouveau',
-    'play.menu': 'Choisir un film',
     'play.title': 'Vous n’arrivez pas à choisir ?',
     'play.subtitle': 'Des façons de choisir, seul ou entre amis.',
     'play.more': 'D’autres façons de choisir',

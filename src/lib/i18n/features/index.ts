@@ -27,8 +27,9 @@ import { taste } from './taste'
 import { shows } from './shows'
 import { blindDate } from './blind-date'
 import { play } from './play'
+import { rail } from './rail'
 
-const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop, halal, mail, anime, landing, welcome, decide, guess, taste, shows, blindDate, play]
+const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop, halal, mail, anime, landing, welcome, decide, guess, taste, shows, blindDate, play, rail]
 
 export type FeatureKey =
   | keyof typeof aiSearch.en
@@ -58,6 +59,7 @@ export type FeatureKey =
   | keyof typeof shows.en
   | keyof typeof blindDate.en
   | keyof typeof play.en
+  | keyof typeof rail.en
 
 type Language = 'en' | 'ar' | 'tn' | 'fr'
 

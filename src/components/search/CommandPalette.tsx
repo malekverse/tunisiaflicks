@@ -119,7 +119,7 @@ export default function CommandPalette() {
         ? PLAY_TOOLS.filter((tool) => toolMatches(trimmed, `${t(tool.label)} ${t(tool.keywords)}`))
         : PLAY_TOOLS
     const toolsGroup = tools.length > 0 && (
-        <Command.Group heading={t('play.menu')}>
+        <Command.Group heading={t('nav.group.play')}>
             {tools.map((tool) => {
                 const Icon = tool.icon
                 return (
