@@ -4,7 +4,7 @@
 import {
   Drama,
   Bookmark, CalendarClock, CalendarHeart, Clapperboard, Compass, Dices, Flag, Heart, HeartHandshake, History, House,
-  Library, ListVideo, Map as MapIcon, MoonStar, Popcorn, Search, Swords, Trophy, Tv, UsersRound, type LucideIcon,
+  Library, ListVideo, Map as MapIcon, MonitorPlay, MoonStar, Popcorn, Search, Swords, Trophy, Tv, UsersRound, type LucideIcon,
 } from 'lucide-react'
 import TunisiaMark from '@/src/components/tunisian/TunisiaMark'
 import type { TKey } from '@/src/lib/i18n'
@@ -61,13 +61,15 @@ export const LIBRARY: NavItem[] = [
   { href: '/lists', label: 'nav.myLists', icon: ListVideo },
 ]
 
-/** What's yours: Friends, Movie night (Kids: Swipe), Library. Your year lives on /me. */
+/** What's yours: Friends, Movie night (Kids: Swipe), My shows, Library. Your year lives on /me. */
 export const YOURS: NavItem[] = [
   { href: '/friends', label: 'social.nav', icon: UsersRound, grownUp: true },
   {
     href: '/movie-night', label: 'movieNight.nav', icon: Popcorn, grownUp: true,
     kidsAlt: { href: '/swipe', label: 'swipe.title', icon: HeartHandshake },
   },
+  // Where you are in every series you watch, and what's next.
+  { href: '/shows', label: 'shows.nav', icon: MonitorPlay },
   { href: '/saved', label: 'nav.library', icon: Library, match: ['/favorites', '/history', '/lists'] },
 ]
 

@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import BecauseYouWatched from '@/src/components/BecauseYouWatched'
 import ContinueWatching from '@/src/components/ContinueWatching'
+import NewEpisodesRow from '@/src/components/shows/NewEpisodesRow'
 import PickOfTheDay from '@/src/components/PickOfTheDay'
 import SeasonalBanner from '@/src/components/seasons/SeasonalBanner'
 import UpcomingNightCard from '@/src/components/movie-night/UpcomingNightCard'
@@ -70,6 +71,8 @@ export default async function MainPage() {
           <Suspense fallback={null}><SeasonalBanner kids={kids} /></Suspense>
           {/* 4. Signed-in users only; renders nothing for guests. */}
           <ContinueWatching />
+          {/* 4b. Signed-in: a new episode of a show you're nearly caught up on (My shows). */}
+          <NewEpisodesRow />
           {/* 5. A grown-up's movie night in the next 7 days. */}
           {!kids && !tv && <Suspense fallback={null}><UpcomingNightCard /></Suspense>}
           {/* 6 */}

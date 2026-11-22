@@ -24,8 +24,9 @@ import { welcome } from './welcome'
 import { decide } from './decide'
 import { guess } from './guess'
 import { taste } from './taste'
+import { shows } from './shows'
 
-const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop, halal, mail, anime, landing, welcome, decide, guess, taste]
+const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop, halal, mail, anime, landing, welcome, decide, guess, taste, shows]
 
 export type FeatureKey =
   | keyof typeof aiSearch.en
@@ -52,6 +53,7 @@ export type FeatureKey =
   | keyof typeof decide.en
   | keyof typeof guess.en
   | keyof typeof taste.en
+  | keyof typeof shows.en
 
 type Language = 'en' | 'ar' | 'tn' | 'fr'
 

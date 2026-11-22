@@ -3,7 +3,7 @@
 // Which strings go to the browser (see clientMessages in ./index.ts): the root layout sends every
 // key that is in neither list below (the shell), a <ClientMessages scope> adds its scope's keys to
 // the pages under it, and the server-only keys never leave the server.
-// 623 of 3162 keys on every page, 1937 in 34 scopes, 602 server-only.
+// 624 of 3201 keys on every page, 1975 in 35 scopes, 602 server-only.
 
 export type MessageScope =
   | 'about/layout'
@@ -34,6 +34,7 @@ export type MessageScope =
   | 'ramadan/layout'
   | 'saved/layout'
   | 'search/layout'
+  | 'shows/layout'
   | 'signup/layout'
   | 'swipe/layout'
   | 'tunisian/layout'
@@ -2324,6 +2325,9 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'push.unavailable',
     'push.unsupported',
     'settings.notifications',
+    'shows.new',
+    'shows.newRow',
+    'shows.playAria',
     'social.push.friendsHint',
     'social.push.friendsLabel',
     'social.push.nightsHint',
@@ -2813,6 +2817,45 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'search.placeholderPeople',
     'search.resultsCount',
     'search.unavailable',
+  ],
+  'shows/layout': [
+    'shows.bell',
+    'shows.bellAria',
+    'shows.bellOn',
+    'shows.bellOnAria',
+    'shows.browse',
+    'shows.completed',
+    'shows.emptyText',
+    'shows.emptyTitle',
+    'shows.failed',
+    'shows.failedText',
+    'shows.finished',
+    'shows.inDays',
+    'shows.left',
+    'shows.new',
+    'shows.note',
+    'shows.playAria',
+    'shows.progressAria',
+    'shows.remove',
+    'shows.removeAria',
+    'shows.removeFailed',
+    'shows.removed',
+    'shows.removedText',
+    'shows.retry',
+    'shows.runtime',
+    'shows.signInText',
+    'shows.signInTitle',
+    'shows.soon',
+    'shows.subtitle',
+    'shows.title',
+    'shows.toCatchUp',
+    'shows.today',
+    'shows.tomorrow',
+    'shows.upNext',
+    'shows.upToDate',
+    'shows.waiting',
+    'shows.waitingText',
+    'shows.watching',
   ],
   'signup/layout': [
     'auth.continueWithGoogle',
