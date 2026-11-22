@@ -44,5 +44,12 @@ export async function verifyEmailToken(token: string): Promise<VerifyResult> {
     { _id: user._id },
     { $set: { emailVerified: user.emailVerified ?? new Date() }, $unset: { verifyTokenHash: '', verifyTokenExpiry: '' } }
   )
+  // Joined through a friend's invite: it counts for them now (lib/plus), best effort.
+  try {
+    const { qualifyReferral } = await import('@/src/lib/plus')
+    await qualifyReferral(String(user._id))
+  } catch (error) {
+    console.error('verify: counting the invite failed', error)
+  }
   return user.emailVerified ? 'already' : 'verified'
 }

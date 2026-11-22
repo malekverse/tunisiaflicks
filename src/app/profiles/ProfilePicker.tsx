@@ -82,7 +82,7 @@ export default function ProfilePicker({ initial, ownerImage, next }: { initial: 
     )
   }
 
-  const canAdd = canManage && profiles.length < MAX_PROFILES
+  const canAdd = canManage && profiles.length < (initial.maxProfiles ?? MAX_PROFILES)
 
   return (
     <div className="fixed inset-0 z-[55] overflow-y-auto overscroll-contain bg-black">

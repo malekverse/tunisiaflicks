@@ -5,6 +5,8 @@ import clientPromise from '@/src/lib/mongodb'
 import { getActiveProfile, toProfilesResponse } from '@/src/lib/profiles'
 import { getT } from '@/src/lib/i18n/server'
 import ProfilePicker from './ProfilePicker'
+import { isPlus } from '@/src/lib/plus'
+import { limitFor } from '@/src/lib/plus-rules'
 
 export const dynamic = 'force-dynamic'
 export const generateMetadata = () => ({ title: `${getT()('profiles.whoIsWatching')} | TunisiaFlicks` })
@@ -17,5 +19,5 @@ export default async function ProfilesPage({ searchParams }: { searchParams: { n
   const client = await clientPromise
   const user = await client.db().collection('users').findOne({ _id: new ObjectId(active.userId) }, { projection: { image: 1 } })
 
-  return <ProfilePicker initial={toProfilesResponse(active)} ownerImage={user?.image ?? null} next={searchParams.next} />
+  return <ProfilePicker initial={{ ...toProfilesResponse(active), maxProfiles: limitFor('profiles', await isPlus(active.userId).catch(() => false)) }} ownerImage={user?.image ?? null} next={searchParams.next} />
 }

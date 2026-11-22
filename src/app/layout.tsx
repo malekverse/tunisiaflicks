@@ -38,6 +38,9 @@ import { getLocale, getT } from "@/src/lib/i18n/server";
 import { getKidsMode } from "@/src/lib/profiles";
 import { SEASONS_TODAY_COOKIE, getSeasonalNav, getSeasonSkin, seasonClock } from "@/src/lib/seasons";
 import { isTvMode } from "@/src/lib/tv-mode";
+import { ACCENT_COOKIE, isAccent } from "@/src/lib/plus-rules";
+import PlusSync from "@/src/components/plus/PlusSync";
+import ReferralCapture from "@/src/components/plus/ReferralCapture";
 import { aiSearchEnabled } from "@/src/lib/ai-search/config";
 import { SITE_DESCRIPTION, SITE_URL, siteMetadata } from "@/src/lib/seo";
 import { cookies, headers } from "next/headers";
@@ -170,6 +173,9 @@ export default async function RootLayout({
   const { today: seasonDay } = seasonClock(cookies().get(SEASONS_TODAY_COOKIE)?.value);
   const seasonal = getSeasonalNav(kids, seasonDay);
   const skin = getSeasonSkin(kids, seasonDay);
+  // A TunisiaFlicks+ accent (a cookie set from /plus, cleared by PlusSync once Plus has ended).
+  const accentCookie = cookies().get(ACCENT_COOKIE)?.value;
+  const accent = isAccent(accentCookie) && accentCookie !== 'red' && !kids ? accentCookie : undefined;
   const seasonStyle = skin
     ? ({ '--season-light': skin.light, ...(skin.glow ? { '--season-glow': skin.glow } : {}) } as React.CSSProperties)
     : undefined;
@@ -194,6 +200,7 @@ export default async function RootLayout({
       className={`dark ${text.variable} ${display.variable} ${displayArabic.variable}`}
       data-tv={tv ? '1' : undefined}
       data-season={skin?.id}
+      data-accent={accent}
       style={seasonStyle}
       suppressHydrationWarning
     >
@@ -236,6 +243,9 @@ export default async function RootLayout({
                   </>
                 )}
               </MotionProvider>
+              {/* TunisiaFlicks+: keeps the accent in step with Plus; remembers and claims a friend's invite. */}
+              <PlusSync />
+              <ReferralCapture />
             </SessionProvider>
             <Toaster />
             <LanguageHint suggested={suggestedLocales} />

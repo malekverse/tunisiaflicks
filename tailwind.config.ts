@@ -24,19 +24,21 @@ const config = {
     },
     extend: {
       colors: {
-        // The logo red (#FF1000 family). Every `red-*` in the codebase uses this scale.
+        // The logo red (#FF1000 family).
+        // Every `red-*` reads these variables: the logo red by default, or a TunisiaFlicks+ accent
+        // (data-accent on <html>, see globals.css and lib/plus-rules).
         red: {
-          50: '#FFF1F0',
-          100: '#FFE0DD',
-          200: '#FFC4BF',
-          300: '#FF9A91',
-          400: '#FF5E52',
-          500: '#FF2414',
-          600: '#E50F05',
-          700: '#BD0C04',
-          800: '#9A0E08',
-          900: '#7F120E',
-          950: '#460502',
+          50: 'rgb(var(--red-50) / <alpha-value>)',
+          100: 'rgb(var(--red-100) / <alpha-value>)',
+          200: 'rgb(var(--red-200) / <alpha-value>)',
+          300: 'rgb(var(--red-300) / <alpha-value>)',
+          400: 'rgb(var(--red-400) / <alpha-value>)',
+          500: 'rgb(var(--red-500) / <alpha-value>)',
+          600: 'rgb(var(--red-600) / <alpha-value>)',
+          700: 'rgb(var(--red-700) / <alpha-value>)',
+          800: 'rgb(var(--red-800) / <alpha-value>)',
+          900: 'rgb(var(--red-900) / <alpha-value>)',
+          950: 'rgb(var(--red-950) / <alpha-value>)',
         },
         star: '#FFC53D',
         border: "rgb(255 255 255 / 0.09)",

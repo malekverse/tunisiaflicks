@@ -23,8 +23,8 @@ const API_ERRORS: Record<string, TKey> = {
   'Profile names need 1 to 20 characters': 'profiles.badName',
   [`An account can have up to ${MAX_PROFILES} profiles`]: 'profiles.tooMany',
 }
-const errorText = (t: Translate, error: unknown) =>
-  t(API_ERRORS[(error as Error)?.message] ?? 'profiles.genericError', { max: MAX_PROFILES })
+const errorText = (t: Translate, error: unknown, max: number = MAX_PROFILES) =>
+  t(API_ERRORS[(error as Error)?.message] ?? 'profiles.genericError', { max })
 
 async function send(url: string, method: string, body?: unknown) {
   const response = await fetch(url, {
@@ -176,7 +176,7 @@ export default function ProfileManager() {
   const t = useT()
 
   const section = (children: React.ReactNode) => (
-    <SettingsSection id="profiles" title={t('profiles.title')} description={t('profiles.intro', { max: MAX_PROFILES })}>
+    <SettingsSection id="profiles" title={t('profiles.title')} description={t('profiles.intro', { max: data?.maxProfiles ?? MAX_PROFILES })}>
       {children}
     </SettingsSection>
   )
@@ -257,7 +257,7 @@ export default function ProfileManager() {
           />
         ))}
 
-        {profiles.length < MAX_PROFILES && (
+        {profiles.length < (data.maxProfiles ?? MAX_PROFILES) && (
           <li className="rounded-[20px] border border-dashed border-white/15 p-4 sm:p-5">
             <form onSubmit={create} className="space-y-4">
               <h3 className="text-[15px] font-semibold text-white">{t('profiles.addAProfile')}</h3>

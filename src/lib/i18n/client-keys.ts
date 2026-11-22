@@ -3,7 +3,7 @@
 // Which strings go to the browser (see clientMessages in ./index.ts): the root layout sends every
 // key that is in neither list below (the shell), a <ClientMessages scope> adds its scope's keys to
 // the pages under it, and the server-only keys never leave the server.
-// 636 of 3290 keys on every page, 2049 in 36 scopes, 605 server-only.
+// 644 of 3341 keys on every page, 2092 in 37 scopes, 605 server-only.
 
 export type MessageScope =
   | 'about/layout'
@@ -31,6 +31,7 @@ export type MessageScope =
   | 'movie/[id]/layout'
   | 'page'
   | 'person/[id]/layout'
+  | 'plus/layout'
   | 'profile/layout'
   | 'ramadan/layout'
   | 'saved/layout'
@@ -2438,6 +2439,53 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'seen.invite.text',
     'seen.invite.title',
     'seen.watched',
+  ],
+  'plus/layout': [
+    'calendarFeed.copied',
+    'calendarFeed.copyFailed',
+    'plus.accent.emerald',
+    'plus.accent.gold',
+    'plus.accent.ocean',
+    'plus.accent.red',
+    'plus.accent.rose',
+    'plus.accent.violet',
+    'plus.badgeSwitch',
+    'plus.badgeSwitchText',
+    'plus.get',
+    'plus.getMore',
+    'plus.invite.copy',
+    'plus.invite.joined',
+    'plus.invite.maxed',
+    'plus.invite.message',
+    'plus.invite.months',
+    'plus.invite.progress',
+    'plus.invite.rules',
+    'plus.invite.share',
+    'plus.invite.text',
+    'plus.invite.title',
+    'plus.invite.waiting',
+    'plus.kofi.button',
+    'plus.kofi.soon',
+    'plus.kofi.text',
+    'plus.kofi.title',
+    'plus.locked',
+    'plus.perk.accent',
+    'plus.perk.accentText',
+    'plus.perk.badge',
+    'plus.perk.badgeText',
+    'plus.perk.lists',
+    'plus.perk.listsText',
+    'plus.perk.profiles',
+    'plus.perk.profilesText',
+    'plus.perks',
+    'plus.saveFailed',
+    'plus.signInText',
+    'plus.signInTitle',
+    'plus.status.membership',
+    'plus.status.off',
+    'plus.status.until',
+    'plus.subtitle',
+    'plus.yours',
   ],
   'profile/layout': [
     'account.changePassword',

@@ -36,4 +36,6 @@ export type ProfilesResponse = {
   needsPick: boolean
   /** Leaving the current state for a grown-up profile needs the account password (see canSwitchFreely). */
   locked: boolean
+  /** How many profiles this account may have (more with TunisiaFlicks+). */
+  maxProfiles?: number
 }

@@ -1,6 +1,6 @@
 "use client"
 import Link from 'next/link'
-import { ChevronRight, LogOut, MonitorSmartphone, Settings, TvMinimal } from 'lucide-react'
+import { ChevronRight, Crown, LogOut, MonitorSmartphone, Settings, TvMinimal } from 'lucide-react'
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/src/components/ui/drawer'
 import { Button } from '@/src/components/ui/button'
 import ProfileAvatar, { KidsBadge } from '@/src/components/profiles/ProfileAvatar'
@@ -178,6 +178,17 @@ export default function MenuSheet({ open, onOpenChange, account, kids: kidsProp,
                                 <span className="flex-1">{t('social.menu.tvMode')}</span>
                                 <ChevronRight aria-hidden className="h-4 w-4 text-white/35 rtl:rotate-180" />
                             </a>
+                        )}
+
+                        {!kids && (
+                            <Link href="/plus" onClick={close} className="pressable mt-6 flex min-h-[60px] items-center gap-3 rounded-2xl bg-gradient-to-r from-red-600/20 to-white/[0.04] px-4 py-2.5 outline-none ring-1 ring-inset ring-red-500/20 focus-visible:ring-2 focus-visible:ring-red-500 rtl:bg-gradient-to-l">
+                                <Crown aria-hidden className="h-5 w-5 text-red-400" strokeWidth={1.8} />
+                                <span className="min-w-0 flex-1">
+                                    <span className="block text-[15px] font-semibold">{t('plus.menu')}</span>
+                                    <span className="block truncate text-[12.5px] text-white/60">{t('plus.menuText')}</span>
+                                </span>
+                                <ChevronRight aria-hidden className="h-4 w-4 text-white/35 rtl:rotate-180" />
+                            </Link>
                         )}
 
                         <Link href="/app" onClick={close} className="pressable mt-6 flex h-[52px] items-center gap-3 rounded-2xl bg-white/[0.05] px-4 text-[15px] outline-none focus-visible:ring-2 focus-visible:ring-red-500">

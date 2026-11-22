@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Ban, Check, ChevronDown, Clock3, MoreHorizontal, Pencil, Share2, UserMinus, UserPlus, X } from 'lucide-react'
+import { Ban, Check, ChevronDown, Clock3, Crown, MoreHorizontal, Pencil, Share2, UserMinus, UserPlus, X } from 'lucide-react'
 import { useI18n } from '@/src/components/I18nProvider'
 import { Button } from '@/src/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/src/components/ui/dialog'
@@ -23,7 +23,7 @@ import { socialErrorText } from './use-social-self'
 
 const UNDO_MS = 5000
 
-export default function ProfileHeader({ person, bio, isOwner, viewer, relationship: initial, requestId, friendsSince, requestsOff, shareUrl, loginHref, badges, belowBanner, invitePending }: {
+export default function ProfileHeader({ person, bio, isOwner, viewer, relationship: initial, requestId, friendsSince, requestsOff, shareUrl, loginHref, badges, belowBanner, invitePending, plus = false }: {
   person: PublicIdentity
   bio: string
   isOwner: boolean
@@ -44,6 +44,8 @@ export default function ProfileHeader({ person, bio, isOwner, viewer, relationsh
   belowBanner?: boolean
   /** That banner offers to become friends: no second 'Add friend' beside it. */
   invitePending?: boolean
+  /** A TunisiaFlicks+ member who chose to show it (/plus). */
+  plus?: boolean
 }) {
   const { t } = useI18n()
   const router = useRouter()
@@ -278,6 +280,11 @@ export default function ProfileHeader({ person, bio, isOwner, viewer, relationsh
           <h1 className="break-words font-display text-[clamp(34px,5vw,64px)] font-extrabold leading-[0.95] text-white"><bdi dir="auto">{person.name}</bdi></h1>
           <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[15px]">
             <bdi dir="ltr" className="text-white/55">@{person.handle}</bdi>
+            {plus && (
+              <a href="/plus" className="inline-flex items-center gap-1 rounded-full bg-red-600/15 px-2.5 py-0.5 text-[13px] font-semibold text-red-300 ring-1 ring-inset ring-red-500/30 outline-none hover:bg-red-600/25 focus-visible:ring-2 focus-visible:ring-red-500">
+                <Crown aria-hidden className="h-3.5 w-3.5" />TunisiaFlicks+
+              </a>
+            )}
             {friendsSince && relation === 'friends' && <span className="text-white/70">{t('social.page.friendsSince', { date: friendsSince })}</span>}
           </p>
           {bio && <p dir="auto" className="mt-4 max-w-[60ch] whitespace-pre-line text-pretty text-[15px] leading-relaxed text-white/75">{bio}</p>}

@@ -89,16 +89,19 @@ export async function deleteBadgeData(userId: string, profileId?: string): Promi
     await Promise.all([badges.deleteMany({ _id: profileId, userId }), activity.deleteMany({ profileId, userId })])
     return
   }
-  await Promise.all([badges.deleteMany({ userId }), activity.deleteMany({ userId }), deleteSupportData(userId)])
+  const { deletePlusData } = await import('@/src/lib/plus')
+  await Promise.all([badges.deleteMany({ userId }), activity.deleteMany({ userId }), deleteSupportData(userId), deletePlusData(userId)])
 }
 
 /** For "download my data": each profile's badges and daily log, and the supporter record. */
 export async function exportBadgeData(userId: string): Promise<unknown> {
   const { badges, activity } = await badgesDb()
-  const [docs, months, supporter] = await Promise.all([
+  const { exportPlusData } = await import('@/src/lib/plus')
+  const [docs, months, supporter, plus] = await Promise.all([
     badges.find({ userId }).toArray(),
     activity.find({ userId }, { projection: { userId: 0, expireAt: 0 } }).sort({ month: 1 }).toArray(),
     exportSupportData(userId),
+    exportPlusData(userId),
   ])
   return {
     badges: docs.map((doc) => ({
@@ -109,6 +112,7 @@ export async function exportBadgeData(userId: string): Promise<unknown> {
     })),
     dailyLog: months.map((month) => ({ profileId: month.profileId, month: month.month, days: month.days })),
     supporter,
+    plus,
   }
 }
 

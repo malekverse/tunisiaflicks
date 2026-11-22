@@ -35,6 +35,19 @@
     /* Room left at the bottom of the page for the floating mobile tab bar. */
     --tabbar-space: calc(96px + env(safe-area-inset-bottom, 0px));
 
+    /* The signal colour's scale (tailwind `red-*`): the logo red. */
+    --red-50: 255 241 240;
+    --red-100: 255 224 221;
+    --red-200: 255 196 191;
+    --red-300: 255 154 145;
+    --red-400: 255 94 82;
+    --red-500: 255 36 20;
+    --red-600: 229 15 5;
+    --red-700: 189 12 4;
+    --red-800: 154 14 8;
+    --red-900: 127 18 14;
+    --red-950: 70 5 2;
+
     color-scheme: dark;
   }
 
@@ -339,6 +352,75 @@ html[data-locale-pending] {
 /* Taste match: the score ring fills up from empty (lib/taste, components/social/TasteMatch). */
 @keyframes taste-ring {
   from { stroke-dasharray: 0 var(--taste-length); }
+}
+
+/* TunisiaFlicks+ accents: the signal colour, chosen on /plus (lib/plus-rules ACCENTS). */
+@layer base {
+  :root[data-accent="gold"] {
+    --red-50: 255 251 235;
+    --red-100: 254 243 199;
+    --red-200: 253 230 138;
+    --red-300: 252 211 77;
+    --red-400: 251 191 36;
+    --red-500: 245 158 11;
+    --red-600: 217 119 6;
+    --red-700: 180 83 9;
+    --red-800: 146 64 14;
+    --red-900: 120 53 15;
+    --red-950: 69 26 3;
+  }
+  :root[data-accent="emerald"] {
+    --red-50: 236 253 245;
+    --red-100: 209 250 229;
+    --red-200: 167 243 208;
+    --red-300: 110 231 183;
+    --red-400: 52 211 153;
+    --red-500: 16 185 129;
+    --red-600: 5 150 105;
+    --red-700: 4 120 87;
+    --red-800: 6 95 70;
+    --red-900: 6 78 59;
+    --red-950: 2 44 34;
+  }
+  :root[data-accent="ocean"] {
+    --red-50: 240 249 255;
+    --red-100: 224 242 254;
+    --red-200: 186 230 253;
+    --red-300: 125 211 252;
+    --red-400: 56 189 248;
+    --red-500: 14 165 233;
+    --red-600: 2 132 199;
+    --red-700: 3 105 161;
+    --red-800: 7 89 133;
+    --red-900: 12 74 110;
+    --red-950: 8 47 73;
+  }
+  :root[data-accent="violet"] {
+    --red-50: 245 243 255;
+    --red-100: 237 233 254;
+    --red-200: 221 214 254;
+    --red-300: 196 181 253;
+    --red-400: 167 139 250;
+    --red-500: 139 92 246;
+    --red-600: 124 58 237;
+    --red-700: 109 40 217;
+    --red-800: 91 33 182;
+    --red-900: 76 29 149;
+    --red-950: 46 16 101;
+  }
+  :root[data-accent="rose"] {
+    --red-50: 253 242 248;
+    --red-100: 252 231 243;
+    --red-200: 251 207 232;
+    --red-300: 249 168 212;
+    --red-400: 244 114 182;
+    --red-500: 236 72 153;
+    --red-600: 219 39 119;
+    --red-700: 190 24 93;
+    --red-800: 157 23 77;
+    --red-900: 131 24 67;
+    --red-950: 80 7 36;
+  }
 }
 
 /* Route progress bar (nextjs-toploader) with a little glow. */

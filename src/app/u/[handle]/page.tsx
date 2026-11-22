@@ -20,6 +20,7 @@ import { getLocale, getT } from '@/src/lib/i18n/server'
 import { pageMetadata } from '@/src/lib/seo'
 import { getRecentActivity } from '@/src/lib/social/activity'
 import { getRecentRatings } from '@/src/lib/social/ratings'
+import { getPlus } from '@/src/lib/plus'
 import { withTimeout } from '@/src/lib/with-timeout'
 import { rgbTriplet } from '@/src/app/friends/_lib/feed'
 import { pathWithQuery } from '@/src/app/friends/_lib/gates'
@@ -63,9 +64,10 @@ export default async function ProfilePage({ params, searchParams }: Props) {
   const { owner, identity, page, privacy, viewer, viewerRef, isOwner } = view
   const path = `/u/${identity.handle}`
 
-  const [activity, ratings] = await Promise.all([
+  const [activity, ratings, plus] = await Promise.all([
     view.can.activity ? withTimeout(getRecentActivity(owner, viewerRef, 20, locale), 8000, []).catch(() => []) : [],
     view.can.ratings ? withTimeout(getRecentRatings(owner, viewerRef, { shareKey: key, limit: 30, locale }), 8000, []).catch(() => []) : [],
+    withTimeout(getPlus(owner.userId), 3000, null).catch(() => null),
   ])
 
   // ?invite=: a friend invitation to this page (not on your own page).
@@ -118,6 +120,7 @@ export default async function ProfilePage({ params, searchParams }: Props) {
         badges={showBadges ? <ProfileBadges owner={owner} view={isOwner ? 'owner' : 'public'} /> : undefined}
         belowBanner={!!token && !isOwner}
         invitePending={!!token && !isOwner && !unavailable}
+        plus={!!plus?.showBadge}
       />
       <div className="mt-10 space-y-10 sm:mt-12 sm:space-y-12">
         {/* How close your taste is to theirs: only for a visitor who may see their ratings. */}

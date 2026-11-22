@@ -5,7 +5,7 @@
 // src/app/profile/page.tsx for grown-ups.
 import { useEffect, useId, useState } from 'react'
 import Link from 'next/link'
-import { Check, ChevronRight, RotateCw } from 'lucide-react'
+import { Check, ChevronRight, Crown, RotateCw } from 'lucide-react'
 import SettingsSection, { SettingsGroup } from '@/src/components/profile/SettingsSection'
 import BadgeArt from '@/src/components/badges/BadgeArt'
 import { Button } from '@/src/components/ui/button'
@@ -84,6 +84,15 @@ export default function SupporterSettings(): JSX.Element | null {
 
   return (
     <SettingsSection id="supporter" title={t('badges.supporter.title')} description={t('support.settings.desc')}>
+      {/* Coffees and invites add up to TunisiaFlicks+: its perks and settings live on /plus. */}
+      <Link href="/plus" className="pressable mb-4 flex items-center gap-3 rounded-[16px] bg-gradient-to-r from-red-600/15 to-white/[0.03] px-4 py-3 outline-none ring-1 ring-inset ring-red-500/20 focus-visible:ring-2 focus-visible:ring-red-500 rtl:bg-gradient-to-l">
+        <Crown aria-hidden className="h-5 w-5 text-red-400" />
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-semibold text-white">{t('plus.menu')}</span>
+          <span className="block text-[13px] text-white/60">{t('plus.menuText')}</span>
+        </span>
+        <ChevronRight aria-hidden className="h-4 w-4 text-white/40 rtl:rotate-180" />
+      </Link>
       {status === 'loading' && (
         <SettingsGroup aria-busy>
           <div className="flex items-center gap-4 py-4">

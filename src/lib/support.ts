@@ -81,8 +81,11 @@ const transactionId = (payload: KofiPayload): string | null => {
   return /^[A-Za-z0-9_-]{1,100}$/.test(id) ? id : null
 }
 
-/** Records one more coffee for an account and makes sure the badge gets announced. */
-async function credit(userId: string, at: Date): Promise<void> {
+/**
+ * Records one more coffee for an account, adds its month of TunisiaFlicks+ (lib/plus), and makes
+ * sure the badge gets announced.
+ */
+async function credit(userId: string, at: Date, membership = false): Promise<void> {
   const { supporters } = await supportDb()
   await supporters.updateOne(
     { _id: userId },
@@ -97,6 +100,13 @@ async function credit(userId: string, at: Date): Promise<void> {
     if (!isDuplicateKey(error)) throw error
     await supporters.updateOne({ _id: userId }, { $min: { since: at }, $max: { lastAt: at }, $inc: { count: 1 } })
   })
+  // A month of TunisiaFlicks+ from when it was paid (a membership's payment: the next month).
+  try {
+    const { creditKofi } = await import('@/src/lib/plus')
+    await creditKofi(userId, at, membership)
+  } catch (error) {
+    console.error('support: adding Plus time failed', error)
+  }
   // The thank-you badge, in the inbox of the account's first grown-up profile (best effort).
   try {
     const { announceSupporter } = await import('@/src/lib/badges/announce')
@@ -148,7 +158,7 @@ export async function processKofi(payload: KofiPayload, hashSecret: string, now:
     throw error
   }
   if (!userId) return 'pending'
-  await credit(userId, at)
+  await credit(userId, at, payload.is_subscription_payment === true)
   return 'linked'
 }
 

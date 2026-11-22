@@ -26,6 +26,8 @@ import {
   pushActivity, resolveAccess, UNKNOWN_PERSON, type ListViewer,
 } from '@/src/lib/shared-lists/server'
 import type { ListCollaborators } from '@/src/lib/shared-lists/types'
+import { isPlus } from '@/src/lib/plus'
+import { limitFor } from '@/src/lib/plus-rules'
 
 export const dynamic = 'force-dynamic'
 
@@ -273,7 +275,7 @@ export async function PATCH(request: Request, { params }: Params) {
     if (found.access !== 'owner') return ownerOnly()
     const target = list.members?.find((entry) => entry.id === body.member && entry.role === 'editor')
     if (!target) return listNotFound()
-    if (await collection.countDocuments({ userId: target.userId }) >= MAX_OWNED) return listError(409, 'limit_owned', LIMIT_MESSAGES.owned)
+    if (await collection.countDocuments({ userId: target.userId }) >= limitFor('lists', await isPlus(target.userId).catch(() => false))) return listError(409, 'limit_owned', LIMIT_MESSAGES.owned)
     const ownerName = (await nameOf({ userId: target.userId, profileId: target.profileId })) || list.ownerName
     const previous = found.ownerProfileId
     const result = await collection.updateOne(

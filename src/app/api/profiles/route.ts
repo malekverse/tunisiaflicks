@@ -5,6 +5,8 @@ import clientPromise from '@/src/lib/mongodb'
 import { getActiveProfile, newProfile, profileCookieOptions, requireGrownUpProfile, toProfilesResponse, type ActiveProfile } from '@/src/lib/profiles'
 import { MAX_PROFILES, PROFILE_COLORS, PROFILE_COOKIE, cleanProfileName } from '@/src/lib/models/Profile'
 import { denyLimitedSession } from '@/src/lib/session-scope'
+import { isPlus } from '@/src/lib/plus'
+import { limitFor } from '@/src/lib/plus-rules'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,8 +24,9 @@ export async function GET() {
   if (!active) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  const maxProfiles = limitFor('profiles', await isPlus(active.userId).catch(() => false))
   return pinImplicitProfile(
-    NextResponse.json(toProfilesResponse(active), { headers: { 'Cache-Control': 'private, no-store' } }),
+    NextResponse.json({ ...toProfilesResponse(active), maxProfiles }, { headers: { 'Cache-Control': 'private, no-store' } }),
     active
   )
 }
@@ -48,14 +51,15 @@ export async function POST(request: NextRequest) {
   const color = PROFILE_COLORS.includes(body?.color) ? body.color : PROFILE_COLORS[active.profiles.length % PROFILE_COLORS.length]
   const profile = newProfile(name, color, body?.kids === true)
 
-  // The size condition makes the limit hold even for concurrent requests.
+  // The size condition makes the limit hold even for concurrent requests (TunisiaFlicks+: more).
+  const max = limitFor('profiles', await isPlus(userId).catch(() => false))
   const client = await clientPromise
   const update = await client.db().collection('users').updateOne(
-    { _id: new ObjectId(userId), [`profiles.${MAX_PROFILES - 1}`]: { $exists: false } },
+    { _id: new ObjectId(userId), [`profiles.${max - 1}`]: { $exists: false } },
     { $push: { profiles: profile } } as any
   )
   if (update.modifiedCount === 0) {
-    return NextResponse.json({ error: `An account can have up to ${MAX_PROFILES} profiles` }, { status: 400 })
+    return NextResponse.json({ error: `An account can have up to ${MAX_PROFILES} profiles`, code: 'too_many', max }, { status: 400 })
   }
 
   const { createdAt, ...created } = profile

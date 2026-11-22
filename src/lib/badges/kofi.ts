@@ -50,6 +50,8 @@ export type KofiPayload = {
   type?: unknown
   message?: unknown
   email?: unknown
+  /** A Ko-fi monthly membership's payment (each month while it runs). */
+  is_subscription_payment?: unknown
 }
 
 /**

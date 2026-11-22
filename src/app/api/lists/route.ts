@@ -14,6 +14,8 @@ import { LIMIT_MESSAGES, listError, listJson, unauthorized } from '@/src/lib/sha
 import { myLists } from '@/src/lib/shared-lists/queries'
 import { MAX_OWNED, isItemKey, isVisibility } from '@/src/lib/shared-lists/rules'
 import { loadListViewer, nameOf, ownerProfileOf, toListView } from '@/src/lib/shared-lists/server'
+import { isPlus } from '@/src/lib/plus'
+import { limitFor } from '@/src/lib/plus-rules'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,7 +46,9 @@ export async function POST(request: Request) {
 
   try {
     const collection = await listsCollection()
-    if (await collection.countDocuments({ userId: viewer.userId }) >= MAX_OWNED) {
+    // TunisiaFlicks+ accounts may own more lists (lib/plus-rules LIMITS).
+    const maxOwned = limitFor('lists', await isPlus(viewer.userId).catch(() => false))
+    if (await collection.countDocuments({ userId: viewer.userId }) >= maxOwned) {
       return listError(400, 'limit_owned', LIMIT_MESSAGES.owned)
     }
     const ownerProfileId = viewer.profileId ?? (await ownerProfileOf({ userId: viewer.userId }))
