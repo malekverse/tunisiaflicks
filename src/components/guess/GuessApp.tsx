@@ -22,6 +22,7 @@ import { Clues, StageBar, Still } from './Board'
 import GuessInput from './GuessInput'
 import { Entries, Finished, StatsBlock } from './Result'
 import { findGame, loadGames, saveGame } from './storage'
+import MoreWays from '@/src/components/play/MoreWays'
 
 const INTRO_KEY = 'tf-guess:intro'
 
@@ -182,6 +183,8 @@ export default function GuessApp() {
               )}
             </div>
           </div>
+
+          <MoreWays current="/guess" />
         </div>
       </div>
 

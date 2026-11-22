@@ -11,7 +11,7 @@ import { useT } from '@/src/components/I18nProvider'
 import { useLikelyTv } from '@/src/hooks/use-tv-mode'
 import { cn } from '@/src/lib/utils'
 import type { SeasonalNav } from '@/src/lib/seasons'
-import { BROWSE, LIBRARY, TABS, WORLD, YOURS, seasonalItem, visibleItems, type NavItem } from './nav'
+import { BROWSE, LIBRARY, PLAY, TABS, WORLD, YOURS, seasonalItem, visibleItems, type NavItem } from './nav'
 import AccountAvatar from './AccountAvatar'
 import LanguageSwitch from './LanguageSwitch'
 import type { useShellAccount } from './use-shell-account'
@@ -21,7 +21,8 @@ const TILE_HREFS = ['/friends', '/movie-night']
 
 /**
  * Phones: the "You" sheet. Account and profiles on top, the Together tiles (friends, movie night),
- * then every place that isn't a tab, the library, the language and signing out.
+ * the ways to pick a film, then every place that isn't a tab, the library, the language and
+ * signing out.
  */
 export default function MenuSheet({ open, onOpenChange, account, kids: kidsProp, seasonal }: {
     open: boolean
@@ -42,11 +43,13 @@ export default function MenuSheet({ open, onOpenChange, account, kids: kidsProp,
     const browseRest = visibleItems(BROWSE.filter((item) => !TABS.some((tab) => tab.href === item.href)), kids)
     // Everything that isn't a tab: TV Shows, the world's hubs, Coming Soon, Top Rated, Surprise,
     // whatever of YOURS has no tile and isn't the library, then the season's place.
+    // The ways to pick a film get their own row (never repeated among the places).
+    const play = visibleItems(PLAY, kids)
     const places: NavItem[] = [
         ...browseRest.slice(0, 1),
         ...visibleItems(WORLD, kids),
         ...browseRest.slice(1),
-        ...visibleItems(YOURS, kids).filter((item) => !TILE_HREFS.includes(item.href) && item.href !== '/saved'),
+        ...visibleItems(YOURS, kids).filter((item) => !TILE_HREFS.includes(item.href) && item.href !== '/saved' && !play.some((tool) => tool.href === item.href)),
         ...(seasonal && (!seasonal.signedInOnly || account.signedIn) ? [seasonalItem(seasonal)] : []),
     ]
 
@@ -137,6 +140,11 @@ export default function MenuSheet({ open, onOpenChange, account, kids: kidsProp,
                                 </div>
                             </div>
                         )}
+
+                        <p className="mb-2 mt-6 text-xs font-medium text-white/50">{t('play.menu')}</p>
+                        <div className="grid grid-cols-4 gap-x-2 gap-y-4">
+                            {play.map(place)}
+                        </div>
 
                         <div className="mt-6 grid grid-cols-4 gap-x-2 gap-y-4">
                             {places.map(place)}

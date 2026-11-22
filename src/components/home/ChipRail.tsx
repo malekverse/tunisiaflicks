@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import {
-  Baby, CalendarPlus, Camera, Clapperboard, Dices, Drama, Eye, Flag, Ghost, Gift, GraduationCap, Heart, HeartHandshake, Landmark, Laugh, Mic2, MoonStar,
-  Mountain, Music, Newspaper, Palette, PartyPopper, Popcorn, Rocket, Shield, ShipWheel, Siren, Skull, Snowflake, Sun, Swords, Timer, Trophy, Tv,
+  Baby, CalendarPlus, Camera, Dices, Drama, Eye, Flag, Ghost, Gift, GraduationCap, Heart, HeartHandshake, Landmark, Laugh, Mic2, MoonStar,
+  Mountain, Music, Newspaper, Palette, PartyPopper, Popcorn, Puzzle, Rocket, Shield, ShipWheel, Siren, Skull, Snowflake, Sun, Swords, Timer, Trophy, Tv,
   Users, Video, Wand2, Zap,
   type LucideIcon,
 } from 'lucide-react'
@@ -56,7 +56,7 @@ const MOODS: Mood[] = [
   { href: '/swipe', icon: HeartHandshake, label: 'mood.swipe', fit: ({ slot, weekend }) => (slot === 'evening' && weekend ? 5 : slot === 'evening' ? 3 : 1) },
   { href: '/decide', icon: ShipWheel, label: 'decide.chip', fit: ({ slot, weekend }) => (slot === 'evening' && weekend ? 5 : slot === 'evening' || slot === 'late' ? 3 : 1) },
   // The daily film to guess: a coffee-break game, so it leads in the morning.
-  { href: '/guess', icon: Clapperboard, label: 'guess.chip', fit: ({ slot }) => (slot === 'morning' ? 5 : slot === 'afternoon' ? 3 : 2) },
+  { href: '/guess', icon: Puzzle, label: 'guess.chip', fit: ({ slot }) => (slot === 'morning' ? 5 : slot === 'afternoon' ? 3 : 2) },
   // Three wrapped films, hints only: an evening thing.
   { href: '/blind-date', icon: Gift, label: 'blindDate.chip', fit: ({ slot, weekend }) => (slot === 'evening' ? (weekend ? 4 : 3) : slot === 'late' ? 3 : 1) },
   { href: '/genres/10749', icon: Heart, label: 'mood.dateNight', movieOnly: true, grownUp: true, fit: ({ slot, weekend }) => (slot === 'evening' && weekend ? 4 : slot === 'evening' ? 1 : 0) },

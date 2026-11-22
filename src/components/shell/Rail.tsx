@@ -10,7 +10,7 @@ import { spring } from '@/src/lib/motion'
 import { useSession } from 'next-auth/react'
 import { useI18n } from '@/src/components/I18nProvider'
 import { useProfiles } from '@/src/hooks/use-profiles'
-import { BROWSE, WORLD, YOURS, activeHref, seasonalItem, visibleItems, type NavItem } from './nav'
+import { BROWSE, PLAY, WORLD, YOURS, activeHref, seasonalItem, visibleItems, type NavItem } from './nav'
 import type { SeasonalNav } from '@/src/lib/seasons'
 
 const SETTINGS: NavItem = { href: '/profile', label: 'nav.settings', icon: Settings }
@@ -47,7 +47,9 @@ export default function Rail({ kids: kidsProp, seasonal }: RailProps = {}) {
         ...(seasonal && (!seasonal.signedInOnly || status === 'authenticated') ? [seasonalItem(seasonal)] : []),
     ]
     const yours = visibleItems(YOURS, kids)
-    const lit = activeHref(pathname, [...browse, ...world, ...yours, SETTINGS])
+    // A Kids profile already has Swipe among its own places.
+    const play = visibleItems(PLAY, kids).filter((entry) => !yours.some((own) => own.href === entry.href))
+    const lit = activeHref(pathname, [...browse, ...world, ...play, ...yours, SETTINGS])
     const timer = useRef<ReturnType<typeof setTimeout>>()
 
     const schedule = (next: boolean) => {
@@ -152,6 +154,8 @@ export default function Rail({ kids: kidsProp, seasonal }: RailProps = {}) {
                     {group(browse)}
                     <div aria-hidden className="mx-5 my-3 h-px bg-white/[0.08]" />
                     {group(world)}
+                    <div aria-hidden className="mx-5 my-3 h-px bg-white/[0.08]" />
+                    {group(play)}
                     <div aria-hidden className="mx-5 my-3 h-px bg-white/[0.08]" />
                     {group(yours)}
                 </nav>

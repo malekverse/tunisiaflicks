@@ -25,6 +25,7 @@ import { genreNames } from '@/src/lib/genres'
 import type { TKey } from '@/src/lib/i18n'
 import { EASE_OUT, haptic, spring, tween } from '@/src/lib/motion'
 import { cn } from '@/src/lib/utils'
+import MoreWays from '@/src/components/play/MoreWays'
 
 const WISHES_KEY = 'tf-blind-date:wishes'
 const panel = 'rounded-[22px] bg-white/[0.04] p-5 ring-1 ring-inset ring-white/[0.07] sm:p-6'
@@ -394,6 +395,8 @@ export default function BlindDateApp() {
               </div>
             ))}
           </div>
+
+          <MoreWays current="/blind-date" />
         </div>
       </div>
     </div>

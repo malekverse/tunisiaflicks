@@ -3,7 +3,7 @@
 // Which strings go to the browser (see clientMessages in ./index.ts): the root layout sends every
 // key that is in neither list below (the shell), a <ClientMessages scope> adds its scope's keys to
 // the pages under it, and the server-only keys never leave the server.
-// 625 of 3249 keys on every page, 2022 in 36 scopes, 602 server-only.
+// 635 of 3267 keys on every page, 2030 in 36 scopes, 602 server-only.
 
 export type MessageScope =
   | 'about/layout'
@@ -1127,6 +1127,7 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'decide.winner.one',
     'guess.clue.hidden',
     'hero.watchNow',
+    'play.more',
   ],
   'clips/layout': [
     'clips.backToTop',
@@ -1317,6 +1318,7 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'movieNight.picker.search',
     'movieNight.picker.title',
     'movieNight.picker.trending',
+    'play.more',
   ],
   'desktop/layout': [
     'apps.android.alt',
@@ -1705,6 +1707,7 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'guess.won.text',
     'guess.won.title',
     'hero.watchNow',
+    'play.more',
   ],
   'history/layout': [
     'library.browse',
@@ -2346,6 +2349,7 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'billboard.slideOf',
     'decide.chip',
     'guess.chip',
+    'guess.number',
     'home.becauseYouWatched',
     'home.continueBadge',
     'home.continueRemoveAria',
@@ -2370,6 +2374,13 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'pick.oneSeason',
     'pick.runtime',
     'pick.seasons',
+    'play.decide.nights',
+    'play.guess.found',
+    'play.guess.missed',
+    'play.guess.notYet',
+    'play.guess.started',
+    'play.subtitle',
+    'play.title',
     'push.alertsHint',
     'push.alertsLabel',
     'push.denied',
@@ -2943,6 +2954,7 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'movieNight.swipe.pickingFor',
     'movieNight.swipe.planLater',
     'movieNight.swipe.planLaterText',
+    'play.more',
     'swipe.anyGenre',
     'swipe.badCode',
     'swipe.both',

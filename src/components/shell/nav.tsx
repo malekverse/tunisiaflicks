@@ -7,6 +7,7 @@ import {
   Library, ListVideo, Map as MapIcon, MonitorPlay, MoonStar, Popcorn, Search, Swords, Trophy, Tv, UsersRound, type LucideIcon,
 } from 'lucide-react'
 import TunisiaMark from '@/src/components/tunisian/TunisiaMark'
+import { PLAY_TOOLS, isNewTool } from '@/src/components/play/tools'
 import type { TKey } from '@/src/lib/i18n'
 import type { SeasonalIconKey, SeasonalNav } from '@/src/lib/seasons'
 
@@ -60,6 +61,14 @@ export const LIBRARY: NavItem[] = [
   { href: '/history', label: 'nav.recent', icon: History },
   { href: '/lists', label: 'nav.myLists', icon: ListVideo },
 ]
+
+/** Ways to pick a film: Decide together, Swipe, Blind date, Guess the film ("New" for a while). */
+export const PLAY: NavItem[] = PLAY_TOOLS.map((tool) => ({
+  href: tool.href,
+  label: tool.label,
+  icon: tool.icon,
+  ...(isNewTool(tool) ? { badge: 'play.new' as TKey } : {}),
+}))
 
 /** What's yours: Friends, Movie night (Kids: Swipe), My shows, Library. Your year lives on /me. */
 export const YOURS: NavItem[] = [

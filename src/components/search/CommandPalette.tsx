@@ -17,6 +17,7 @@ import { useProfiles } from '@/src/hooks/use-profiles'
 import { useTvMode } from '@/src/hooks/use-tv-mode'
 import { useSearchPalette } from '@/src/store/search-palette'
 import { BrandLoader } from '@/src/components/brand/BrandMark'
+import { PLAY_TOOLS, isNewTool, toolMatches } from '@/src/components/play/tools'
 
 const MAX_RESULTS = 8
 
@@ -112,6 +113,30 @@ export default function CommandPalette() {
     const prompts = useMemo(() => (open ? hourlyPrompts(2) : []), [open])
 
     const row = 'group flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 outline-none data-[selected=true]:bg-white/[0.09]'
+    // The ways to pick a film: all of them before anything is typed, and the ones a word names
+    // ("roulette", "vote", "quiz"...). Not on a TV: they're phone things.
+    const tools = tv ? [] : trimmed
+        ? PLAY_TOOLS.filter((tool) => toolMatches(trimmed, `${t(tool.label)} ${t(tool.keywords)}`))
+        : PLAY_TOOLS
+    const toolsGroup = tools.length > 0 && (
+        <Command.Group heading={t('play.menu')}>
+            {tools.map((tool) => {
+                const Icon = tool.icon
+                return (
+                    <Command.Item key={tool.href} value={`tool-${tool.href}`} onSelect={() => go(tool.href, '')} className={row}>
+                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/[0.07]"><Icon aria-hidden className="h-4 w-4 text-white/85" /></span>
+                        <span className="min-w-0 flex-1">
+                            <span className="flex items-center gap-2">
+                                <span className="truncate text-[15px]">{t(tool.label)}</span>
+                                {isNewTool(tool) && <span className="shrink-0 rounded-full bg-red-500/15 px-1.5 py-0.5 text-[10.5px] font-semibold text-red-300">{t('play.new')}</span>}
+                            </span>
+                            <span className="block truncate text-xs text-white/50">{t(tool.text)}</span>
+                        </span>
+                    </Command.Item>
+                )
+            })}
+        </Command.Group>
+    )
     const heading = '[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-white/50'
 
     // Same metrics as a title row: a 36x54 slot, the mark centred in it.
@@ -167,7 +192,7 @@ export default function CommandPalette() {
                 </div>
 
                 <Command.List className={`no-scrollbar max-h-[min(60vh,520px)] overflow-y-auto overscroll-contain p-2 ${heading}`}>
-                    {trimmed && !loading && results.length === 0 && !askFirst && !askLast && (
+                    {trimmed && !loading && results.length === 0 && tools.length === 0 && !askFirst && !askLast && (
                         <Command.Empty className="px-3 py-10 text-center text-sm text-white/55">{t('search.noResultsFor', { query: trimmed })}</Command.Empty>
                     )}
 
@@ -206,6 +231,8 @@ export default function CommandPalette() {
                         </Command.Group>
                     )}
 
+                    {trimmed && toolsGroup}
+
                     {!trimmed && trending.length > 0 && (
                         <Command.Group heading={t('search.trendingNow')}>
                             {trending.map((item) => (
@@ -222,6 +249,8 @@ export default function CommandPalette() {
                             ))}
                         </Command.Group>
                     )}
+
+                    {!trimmed && toolsGroup}
 
                     {titles.length > 0 && (
                         <Command.Group heading={t('search.titles')}>

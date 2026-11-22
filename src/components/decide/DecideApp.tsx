@@ -19,6 +19,7 @@ import { cn } from '@/src/lib/utils'
 import { Avatar, Poster, Segmented, Stage } from './parts'
 import { EMPTY_STATE, PERSON_COLORS, loadNights, loadState, newId, saveNights, saveState, type DecidePerson, type DecideState } from './storage'
 import { NightsSection, RatePrompt } from './Nights'
+import MoreWays from '@/src/components/play/MoreWays'
 import Wheel from './Wheel'
 import Vote from './Vote'
 import Knockout from './Knockout'
@@ -442,6 +443,8 @@ export default function DecideApp() {
               />
             </div>
           )}
+
+          <MoreWays current="/decide" />
         </div>
       </div>
 

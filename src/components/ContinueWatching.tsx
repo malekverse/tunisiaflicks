@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
-import { Play, X } from 'lucide-react'
+import { MonitorPlay, Play, X } from 'lucide-react'
 import TmdbImage from '@/src/components/TmdbImage'
 import { Row, ROW_WIDTH, SectionHeader } from '@/src/components/rows/Row'
 import { getWatchHistory, removeFromWatchHistory } from '@/src/lib/user-content'
@@ -65,7 +65,15 @@ export default function ContinueWatching() {
 
   return (
     <section aria-label={t('home.continueWatching')}>
-      <SectionHeader title={t('home.continueWatching')} />
+      <SectionHeader
+        title={t('home.continueWatching')}
+        // Watching a series: where you are in each of them, on My shows.
+        end={items.some((item) => item.media_type === 'tv') ? (
+          <Link href="/shows" className="pressable inline-flex h-9 items-center gap-1.5 rounded-full bg-white/[0.06] px-3.5 text-[13px] font-medium text-white/80 outline-none transition-colors hover:bg-white/[0.1] hover:text-white focus-visible:ring-2 focus-visible:ring-red-500">
+            <MonitorPlay aria-hidden className="h-4 w-4" />{t('shows.nav')}
+          </Link>
+        ) : undefined}
+      />
       <Row itemClassName={ROW_WIDTH.landscape}>
         {items.map((item) => {
           const backdrop = art[`${item.media_type}:${item.id}`]

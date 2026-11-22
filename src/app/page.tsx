@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import BecauseYouWatched from '@/src/components/BecauseYouWatched'
 import ContinueWatching from '@/src/components/ContinueWatching'
 import NewEpisodesRow from '@/src/components/shows/NewEpisodesRow'
+import PlayShelf from '@/src/components/play/PlayShelf'
 import PickOfTheDay from '@/src/components/PickOfTheDay'
 import SeasonalBanner from '@/src/components/seasons/SeasonalBanner'
 import UpcomingNightCard from '@/src/components/movie-night/UpcomingNightCard'
@@ -77,6 +78,8 @@ export default async function MainPage() {
           {!kids && !tv && <Suspense fallback={null}><UpcomingNightCard /></Suspense>}
           {/* 6 */}
           <Top10Row top10={top10} />
+          {/* 6b. Can't pick a film? Every way to choose, alone or together (not on a TV: they're phone things). */}
+          {!tv && <PlayShelf />}
           {/* 7. What friends are watching (grown-ups whose friends share it). */}
           {!kids && !tv && <Suspense fallback={null}><FriendsRow /></Suspense>}
           {/* 8. Whatever the calendar says is on (Halloween, Eid, summer...): streamed in. */}

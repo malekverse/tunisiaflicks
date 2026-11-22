@@ -16,6 +16,7 @@ import { cn } from '@/src/lib/utils'
 import CodeInput from './CodeInput'
 import PosterFan from './PosterFan'
 import { getSavedName, listRooms, saveCredentials, saveName, type SavedRoom } from './storage'
+import MoreWays from '@/src/components/play/MoreWays'
 
 type Kind = 'movie' | 'tv' | 'both'
 const KINDS: Kind[] = ['movie', 'tv', 'both']
@@ -250,6 +251,7 @@ export default function SwipeLobby({ genres, posters }: { genres: { id: number, 
             ))}
           </ol>
         </div>
+        <MoreWays current="/swipe" />
       </div>
     </div>
   )
