@@ -20,6 +20,7 @@ import { useRoom } from '@/src/store/room'
 import { appendUnique, groupByDay, tunisToday, type DayGroup } from '@/src/app/friends/_lib/feed'
 import ActivityRow from './ActivityRow'
 import { UserAvatar } from './Avatar'
+import TasteStrip, { type TasteStripItem } from './TasteStrip'
 
 type Feed = { items: ActivityItem[]; next: string | null }
 
@@ -121,7 +122,7 @@ function FriendsAside({ people, total }: { people: PublicIdentity[]; total: numb
   )
 }
 
-export default function FriendsFeed({ initial, today: serverToday, hasFriends, activityPrivate, friends }: {
+export default function FriendsFeed({ initial, today: serverToday, hasFriends, activityPrivate, friends, matches = [] }: {
   /** The first page, rendered on the server (null when it didn't come back in time: loaded here). */
   initial: Feed | null
   /** Today in Tunis as the server saw it (the browser agrees on first render, then keeps it current). */
@@ -131,6 +132,8 @@ export default function FriendsFeed({ initial, today: serverToday, hasFriends, a
   activityPrivate: boolean
   /** A few friends (most recently active first) and how many there are, for the side panel. */
   friends: { people: PublicIdentity[]; total: number }
+  /** Your closest friends by taste (scores only), best first. */
+  matches?: TasteStripItem[]
 }) {
   const { t } = useI18n()
   const still = useReducedMotion()
@@ -235,6 +238,8 @@ export default function FriendsFeed({ initial, today: serverToday, hasFriends, a
     <div ref={root} className="page-x xl:grid xl:grid-cols-[minmax(0,760px)_320px] xl:items-start xl:gap-12 2xl:gap-16">
       <div className="max-w-[760px] space-y-8 sm:space-y-10">
         {activityPrivate && <PrivacyNudge />}
+
+        <TasteStrip matches={matches} />
 
         {firstLoad && <FeedSkeleton />}
 

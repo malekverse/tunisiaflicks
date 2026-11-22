@@ -2,6 +2,7 @@
 // you (recently watched, ratings, lists). ?k= is the page's private link: it opens what they set to
 // 'Anyone with the link' (never echoed into a link here). ?invite= is a friend invitation: the
 // banner on top answers it (and survives signing in, picking a profile and creating a page).
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { notFound, permanentRedirect } from 'next/navigation'
 import ProfileBadges from '@/src/components/badges/ProfileBadges'
@@ -11,6 +12,7 @@ import InviteBanner from '@/src/components/share/InviteBanner'
 import RoomTint from '@/src/components/shell/RoomTint'
 import ProfileHeader from '@/src/components/social/ProfileHeader'
 import ProfileSections from '@/src/components/social/ProfileSections'
+import TasteMatch from '@/src/components/social/TasteMatch'
 import { withCallback } from '@/src/components/auth/links'
 import { isInviteToken, readInvite } from '@/src/lib/invites'
 import { dateLocale } from '@/src/lib/i18n/locales'
@@ -118,6 +120,12 @@ export default async function ProfilePage({ params, searchParams }: Props) {
         invitePending={!!token && !isOwner && !unavailable}
       />
       <div className="mt-10 space-y-10 sm:mt-12 sm:space-y-12">
+        {/* How close your taste is to theirs: only for a visitor who may see their ratings. */}
+        {!isOwner && viewerRef && view.can.ratings && (
+          <Suspense fallback={null}>
+            <TasteMatch viewer={viewerRef} owner={owner} person={identity} shareKey={key} />
+          </Suspense>
+        )}
         <ProfileSections
           isOwner={isOwner}
           privacy={privacy}

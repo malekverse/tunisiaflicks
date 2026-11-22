@@ -10,6 +10,7 @@ import { getFriendsActivity } from '@/src/lib/social/activity'
 import { friendRows, otherSide } from '@/src/lib/social/friends'
 import { getIdentities } from '@/src/lib/social/identity'
 import { normalizePrivacy } from '@/src/lib/social/privacy'
+import { bestMatches } from '@/src/lib/social/taste'
 import { withTimeout } from '@/src/lib/with-timeout'
 import { tunisToday } from './_lib/feed'
 import { SocialGate } from './_lib/gates'
@@ -45,9 +46,10 @@ export default async function FriendsPage() {
     )
   }
 
-  const [feed, rows] = await Promise.all([
+  const [feed, rows, matches] = await Promise.all([
     withTimeout(getFriendsActivity(viewer.ref, { limit: 20, locale: getLocale() }), 8000, null).catch(() => null),
     friendRows(viewer.ref.profileId).catch(() => null),
+    withTimeout(bestMatches(viewer.ref), 5000, []).catch(() => []),
   ])
   // The most recently active few, for the side panel on wide screens.
   const ids = (rows ?? []).slice(0, 6).map((row) => otherSide(row, viewer.ref.profileId).profileId)
@@ -61,6 +63,7 @@ export default async function FriendsPage() {
       hasFriends={rows === null || rows.length > 0}
       friends={{ people: friends, total: rows?.length ?? friends.length }}
       activityPrivate={privacy.activity === 'private' || privacy.paused}
+      matches={matches}
     />
   )
 }

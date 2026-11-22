@@ -3,7 +3,7 @@
 // Which strings go to the browser (see clientMessages in ./index.ts): the root layout sends every
 // key that is in neither list below (the shell), a <ClientMessages scope> adds its scope's keys to
 // the pages under it, and the server-only keys never leave the server.
-// 623 of 3112 keys on every page, 1898 in 34 scopes, 591 server-only.
+// 623 of 3131 keys on every page, 1906 in 34 scopes, 602 server-only.
 
 export type MessageScope =
   | 'about/layout'
@@ -515,6 +515,17 @@ export const SERVER_ONLY_KEYS: readonly string[] = [
   'support.title',
   'support.why.text',
   'support.why.title',
+  'taste.bothLoved',
+  'taste.common',
+  'taste.disagree',
+  'taste.needMore',
+  'taste.noRatings',
+  'taste.startHere',
+  'taste.theyLoved',
+  'taste.title',
+  'taste.verdict.unknown',
+  'taste.you',
+  'taste.youLoved',
   'tnCinema.badge',
   'tnCinema.catalogue',
   'tnCinema.classics',
@@ -1520,6 +1531,10 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'social.nudge.dismiss',
     'social.nudge.text',
     'social.privacy.loadFailed',
+    'taste.strip.aria',
+    'taste.strip.common',
+    'taste.strip.text',
+    'taste.strip.title',
   ],
   'guess/layout': [
     'decide.winner.again',
@@ -3198,6 +3213,10 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'social.page.setupToAdd',
     'social.page.share',
     'social.page.shareText',
+    'taste.verdict.common',
+    'taste.verdict.great',
+    'taste.verdict.opposites',
+    'taste.verdict.twins',
   ],
   'wrapped/layout': [
     'wrapped.cards',

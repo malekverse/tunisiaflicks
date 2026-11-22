@@ -336,6 +336,11 @@ html[data-locale-pending] {
   }
 }
 
+/* Taste match: the score ring fills up from empty (lib/taste, components/social/TasteMatch). */
+@keyframes taste-ring {
+  from { stroke-dasharray: 0 var(--taste-length); }
+}
+
 /* Route progress bar (nextjs-toploader) with a little glow. */
 #nprogress .bar {
   box-shadow: 0 0 10px rgb(255 36 20 / 0.8);
