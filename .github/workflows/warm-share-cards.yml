@@ -37,7 +37,7 @@ jobs:
           sleep 20
           pages="/ /tv /discover /top-rated /upcoming /search /clips /swipe /ramadan /wrapped
                  /tunisian /tunisian/cinema /tunisian/tv /dramas /dramas/turkish /dramas/korean
-                 /arab-cinema /anime /decide /guess"
+                 /arab-cinema /anime /decide /guess /blind-date"
           images=""
           for page in $pages; do
             image=$(curl -s -A "$UA" --max-time 30 "$SITE$page" | grep -oE '<meta property="og:image" content="[^"]+"' | head -1 | sed -E 's/.*content="([^"]+)"/\1/; s/&amp;/\&/g')

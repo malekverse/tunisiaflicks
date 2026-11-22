@@ -72,6 +72,12 @@ export const SHARE_SECTIONS = {
     cta: "Play today's film",
     posters: () => list('movie/top_rated', { page: 2 }),
   },
+  'blind-date': {
+    title: 'Blind date with a film',
+    subtitle: "Three films arrive wrapped, with their hints only. Pick one by its hints, and it's unwrapped.",
+    cta: 'Unwrap a film',
+    posters: () => list('movie/top_rated', { page: 4 }),
+  },
   tunisian: {
     title: 'Tunisian Vibes',
     subtitle: 'Series and films made in Tunisia, from Ramadan favourites to the latest releases.',

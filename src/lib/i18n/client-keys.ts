@@ -3,7 +3,7 @@
 // Which strings go to the browser (see clientMessages in ./index.ts): the root layout sends every
 // key that is in neither list below (the shell), a <ClientMessages scope> adds its scope's keys to
 // the pages under it, and the server-only keys never leave the server.
-// 624 of 3201 keys on every page, 1975 in 35 scopes, 602 server-only.
+// 625 of 3249 keys on every page, 2022 in 36 scopes, 602 server-only.
 
 export type MessageScope =
   | 'about/layout'
@@ -12,6 +12,7 @@ export type MessageScope =
   | 'app/layout'
   | 'arab-cinema/layout'
   | 'auth/layout'
+  | 'blind-date/layout'
   | 'clips/layout'
   | 'contact/layout'
   | 'decide/layout'
@@ -1067,6 +1068,65 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'verify.invalidTitle',
     'verify.successDesc',
     'verify.successTitle',
+  ],
+  'blind-date/layout': [
+    'blindDate.again',
+    'blindDate.back',
+    'blindDate.bring',
+    'blindDate.bringAgain',
+    'blindDate.cardLabel',
+    'blindDate.choose',
+    'blindDate.empty',
+    'blindDate.era',
+    'blindDate.era.any',
+    'blindDate.era.classic',
+    'blindDate.era.modern',
+    'blindDate.era.recent',
+    'blindDate.failed',
+    'blindDate.itsA',
+    'blindDate.length',
+    'blindDate.length.any',
+    'blindDate.length.long',
+    'blindDate.length.short',
+    'blindDate.minutes',
+    'blindDate.mood',
+    'blindDate.mood.any',
+    'blindDate.mood.cosy',
+    'blindDate.mood.escape',
+    'blindDate.mood.feel',
+    'blindDate.mood.laugh',
+    'blindDate.mood.love',
+    'blindDate.mood.scared',
+    'blindDate.mood.think',
+    'blindDate.mood.thrill',
+    'blindDate.origin',
+    'blindDate.origin.any',
+    'blindDate.origin.arab',
+    'blindDate.origin.asia',
+    'blindDate.origin.europe',
+    'blindDate.origin.latin',
+    'blindDate.passedOn',
+    'blindDate.peek',
+    'blindDate.rating',
+    'blindDate.retry',
+    'blindDate.runtime',
+    'blindDate.subtitle',
+    'blindDate.swap',
+    'blindDate.table',
+    'blindDate.tableText',
+    'blindDate.title',
+    'blindDate.wishes',
+    'blindDate.wishesText',
+    'decide.nights.save',
+    'decide.nights.saved',
+    'decide.winner.again',
+    'decide.winner.back',
+    'decide.winner.by',
+    'decide.winner.chosenBy',
+    'decide.winner.many',
+    'decide.winner.one',
+    'guess.clue.hidden',
+    'hero.watchNow',
   ],
   'clips/layout': [
     'clips.backToTop',

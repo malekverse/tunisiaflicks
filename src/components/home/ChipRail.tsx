@@ -57,6 +57,8 @@ const MOODS: Mood[] = [
   { href: '/decide', icon: ShipWheel, label: 'decide.chip', fit: ({ slot, weekend }) => (slot === 'evening' && weekend ? 5 : slot === 'evening' || slot === 'late' ? 3 : 1) },
   // The daily film to guess: a coffee-break game, so it leads in the morning.
   { href: '/guess', icon: Clapperboard, label: 'guess.chip', fit: ({ slot }) => (slot === 'morning' ? 5 : slot === 'afternoon' ? 3 : 2) },
+  // Three wrapped films, hints only: an evening thing.
+  { href: '/blind-date', icon: Gift, label: 'blindDate.chip', fit: ({ slot, weekend }) => (slot === 'evening' ? (weekend ? 4 : 3) : slot === 'late' ? 3 : 1) },
   { href: '/genres/10749', icon: Heart, label: 'mood.dateNight', movieOnly: true, grownUp: true, fit: ({ slot, weekend }) => (slot === 'evening' && weekend ? 4 : slot === 'evening' ? 1 : 0) },
   { href: '/genres/27', icon: Skull, label: 'mood.scary', movieOnly: true, grownUp: true, fit: ({ slot, weekend }) => (slot === 'late' ? (weekend ? 5 : 3) : slot === 'evening' ? 1 : 0) },
   // A route handler: plain <a> so every click is a fresh random pick.

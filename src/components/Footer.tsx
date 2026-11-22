@@ -26,6 +26,7 @@ const COLUMNS: { heading: TKey, links: FooterLink[] }[] = [
       { href: '/swipe', label: 'swipe.title' },
       { href: '/decide', label: 'decide.title' },
       { href: '/guess', label: 'guess.title' },
+      { href: '/blind-date', label: 'blindDate.chip' },
       { href: '/movie-night', label: 'movieNight.nav', grownUp: true },
       { href: '/tunisian/cinema', label: 'tnCinema.title' },
       { href: '/tunisian/tv', label: 'ttv.title', grownUp: true },
