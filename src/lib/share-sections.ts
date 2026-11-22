@@ -60,6 +60,12 @@ export const SHARE_SECTIONS = {
     cta: 'Start a room',
     posters: () => list('movie/popular', { page: 2 }),
   },
+  decide: {
+    title: 'Decide together',
+    subtitle: 'Everyone throws in a pick, then spin the wheel, vote, knock films out, or let luck say who chooses.',
+    cta: 'Start deciding',
+    posters: () => list('trending/movie/week'),
+  },
   tunisian: {
     title: 'Tunisian Vibes',
     subtitle: 'Series and films made in Tunisia, from Ramadan favourites to the latest releases.',

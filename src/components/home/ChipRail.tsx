@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import {
   Baby, CalendarPlus, Camera, Dices, Drama, Eye, Flag, Ghost, Gift, GraduationCap, Heart, HeartHandshake, Landmark, Laugh, Mic2, MoonStar,
-  Mountain, Music, Newspaper, Palette, PartyPopper, Popcorn, Rocket, Shield, Siren, Skull, Snowflake, Sun, Swords, Timer, Trophy, Tv,
+  Mountain, Music, Newspaper, Palette, PartyPopper, Popcorn, Rocket, Shield, ShipWheel, Siren, Skull, Snowflake, Sun, Swords, Timer, Trophy, Tv,
   Users, Video, Wand2, Zap,
   type LucideIcon,
 } from 'lucide-react'
@@ -54,6 +54,7 @@ const MOODS: Mood[] = [
   { href: '/discover?type=tv&runtime=90&sort=top', icon: Tv, label: 'mood.bingeable', fit: ({ slot, weekend }) => (slot === 'late' ? 5 : !weekend ? 4 : 2) },
   { href: '/genres/35', icon: Laugh, label: 'mood.laugh', fit: ({ slot, weekend }) => (slot === 'late' || (slot === 'evening' && !weekend) ? 4 : 2) },
   { href: '/swipe', icon: HeartHandshake, label: 'mood.swipe', fit: ({ slot, weekend }) => (slot === 'evening' && weekend ? 5 : slot === 'evening' ? 3 : 1) },
+  { href: '/decide', icon: ShipWheel, label: 'decide.chip', fit: ({ slot, weekend }) => (slot === 'evening' && weekend ? 5 : slot === 'evening' || slot === 'late' ? 3 : 1) },
   { href: '/genres/10749', icon: Heart, label: 'mood.dateNight', movieOnly: true, grownUp: true, fit: ({ slot, weekend }) => (slot === 'evening' && weekend ? 4 : slot === 'evening' ? 1 : 0) },
   { href: '/genres/27', icon: Skull, label: 'mood.scary', movieOnly: true, grownUp: true, fit: ({ slot, weekend }) => (slot === 'late' ? (weekend ? 5 : 3) : slot === 'evening' ? 1 : 0) },
   // A route handler: plain <a> so every click is a fresh random pick.

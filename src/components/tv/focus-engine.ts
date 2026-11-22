@@ -113,7 +113,7 @@ export function rowDelta(row: { left: number; right: number }, item: { left: num
 }
 
 /** Where the TV can't go (phone things): clips, swipe, friends, movie nights. */
-export const TV_UNAVAILABLE = ['/clips', '/swipe', '/friends', '/movie-night']
+export const TV_UNAVAILABLE = ['/clips', '/swipe', '/decide', '/friends', '/movie-night']
 
 export const isTvUnavailable = (pathname: string) =>
   TV_UNAVAILABLE.some((path) => pathname === path || pathname.startsWith(`${path}/`))

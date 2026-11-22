@@ -5,6 +5,7 @@
 // what's shown here is only for choosing.
 import { useEffect, useMemo, useState } from 'react'
 import { Command } from 'cmdk'
+import { useSession } from 'next-auth/react'
 import { Bookmark, Check, Search, TrendingUp } from 'lucide-react'
 import TmdbImage from '@/src/components/TmdbImage'
 import { useI18n } from '@/src/components/I18nProvider'
@@ -57,6 +58,9 @@ export default function TitlePicker({ open, onOpenChange, onPick, picked, full =
 }) {
   const { t, dir } = useI18n()
   const wide = useWide()
+  // Your list needs an account (Decide together is open to everyone): no asking for it signed out.
+  const { status } = useSession()
+  const signedIn = status === 'authenticated'
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Row[]>([])
   const [loading, setLoading] = useState(false)
@@ -72,6 +76,7 @@ export default function TitlePicker({ open, onOpenChange, onPick, picked, full =
       return []
     })
     trendingCache.then(setTrending)
+    if (!signedIn) return
     let cancelled = false
     fetch('/api/user-content?type=saved', { cache: 'no-store' })
       .then((response) => (response.ok ? response.json() : { items: [] }))
@@ -82,7 +87,7 @@ export default function TitlePicker({ open, onOpenChange, onPick, picked, full =
       })
       .catch(() => undefined)
     return () => { cancelled = true }
-  }, [open])
+  }, [open, signedIn])
 
   // Debounced search; answers to an older query are dropped.
   useEffect(() => {

@@ -24,6 +24,7 @@ const COLUMNS: { heading: TKey, links: FooterLink[] }[] = [
     links: [
       { href: '/clips', label: 'nav.clips' },
       { href: '/swipe', label: 'swipe.title' },
+      { href: '/decide', label: 'decide.title' },
       { href: '/movie-night', label: 'movieNight.nav', grownUp: true },
       { href: '/tunisian/cinema', label: 'tnCinema.title' },
       { href: '/tunisian/tv', label: 'ttv.title', grownUp: true },

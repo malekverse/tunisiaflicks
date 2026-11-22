@@ -3,7 +3,7 @@ import React, { useEffect, useId, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { m } from 'framer-motion'
-import { CalendarPlus, ChevronRight, Popcorn } from 'lucide-react'
+import { CalendarPlus, ChevronRight, Popcorn, ShipWheel } from 'lucide-react'
 import { Button } from '@/src/components/ui/button'
 import { Input } from '@/src/components/ui/input'
 import { Label } from '@/src/components/ui/label'
@@ -211,6 +211,19 @@ export default function SwipeLobby({ genres, posters }: { genres: { id: number, 
               </div>
               {joinError && <p id={`${ids}-join-error`} role="alert" className={errorText}>{joinError}</p>}
             </form>
+
+            {/* All in the same room? One phone for everyone: /decide. */}
+            <Link
+              href="/decide"
+              className="group pressable flex min-h-[64px] items-center gap-4 rounded-[22px] px-5 py-4 outline-none ring-1 ring-inset ring-white/[0.07] transition-colors duration-150 hover:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-red-500 sm:px-6"
+            >
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/[0.07]"><ShipWheel aria-hidden className="h-5 w-5 text-white/85" /></span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-semibold text-white">{t('decide.entry.title')}</span>
+                <span className="mt-0.5 block text-[13px] text-white/60">{t('decide.entry.text')}</span>
+              </span>
+              <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-white/45 transition-transform duration-200 ease-out group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" />
+            </Link>
 
             {/* Not tonight? A movie night: a date, friends, and a vote on the film. */}
             {!active?.kids && (
