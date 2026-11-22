@@ -2,20 +2,23 @@
 // /decide: friends in the same room settle on tonight's film from one phone. Everyone's name, then
 // everyone's picks (any film or series, from search, their list or what's trending), then one of
 // five ways to decide, played full screen: the wheel, a vote, a knockout, duels, or luck naming
-// who gets to choose. All of it lives in this browser (./storage); only the title search and the
-// trending suggestions ask the server.
+// who gets to choose. A night can be saved, and later everyone says how the film was (./Nights).
+// All of it lives in this browser (./storage); only the title search and the trending suggestions
+// ask the server.
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, m } from 'framer-motion'
-import { Crown, Flame, Plus, RotateCcw, ShipWheel, Swords, Trash2, UserPlus, Vote as VoteIcon, X, XCircle, type LucideIcon } from 'lucide-react'
+import { Crown, Flame, History, Plus, RotateCcw, ShipWheel, Swords, Trash2, UserPlus, Vote as VoteIcon, X, XCircle, type LucideIcon } from 'lucide-react'
 import { Button } from '@/src/components/ui/button'
 import { useI18n } from '@/src/components/I18nProvider'
 import TitlePicker, { type PickedFilm } from '@/src/components/movie-night/TitlePicker'
 import { getTrendingSuggestions } from '@/src/app/search/actions'
 import { COUNT_MAX, PEOPLE_MAX, PICKS_MAX, cleanName, sameName, shuffle, type Method, type Pick } from '@/src/lib/decide'
+import { nightToRate, watchedTogether, type Feeling, type Night } from '@/src/lib/decide-nights'
 import { haptic, spring, tween } from '@/src/lib/motion'
 import { cn } from '@/src/lib/utils'
 import { Avatar, Poster, Segmented, Stage } from './parts'
-import { EMPTY_STATE, PERSON_COLORS, loadState, newId, saveState, type DecidePerson, type DecideState } from './storage'
+import { EMPTY_STATE, PERSON_COLORS, loadNights, loadState, newId, saveNights, saveState, type DecidePerson, type DecideState } from './storage'
+import { NightsSection, RatePrompt } from './Nights'
 import Wheel from './Wheel'
 import Vote from './Vote'
 import Knockout from './Knockout'
@@ -35,7 +38,7 @@ const METHOD_INFO: Record<Method, { icon: LucideIcon, name: string, desc: string
 const METHOD_ORDER: Method[] = ['wheel', 'vote', 'knockout', 'duel', 'chooser']
 
 type Result = { picks: Pick[], chooser: DecidePerson | null }
-type Session = { id: number, method: Method, result: Result | null }
+type Session = { id: number, method: Method, result: Result | null, saved?: boolean }
 
 const fromFilm = (film: PickedFilm, by: string | null): Pick => ({
   key: film.key,
@@ -61,7 +64,7 @@ const fromTrending = (item: any): Pick | null => {
 }
 
 export default function DecideApp() {
-  const { t } = useI18n()
+  const { t, dateLocale } = useI18n()
   const ids = useId()
   const [state, setState] = useState<DecideState>(EMPTY_STATE)
   const [ready, setReady] = useState(false)
@@ -72,15 +75,19 @@ export default function DecideApp() {
   const [trendingError, setTrendingError] = useState(false)
   const [clearArmed, setClearArmed] = useState(false)
   const [session, setSession] = useState<Session | null>(null)
+  const [nights, setNights] = useState<Night[]>([])
+  const [openedAt] = useState(() => Date.now())
   const sessionCount = useRef(0)
   const howRef = useRef<HTMLElement>(null)
   const picksRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     setState(loadState())
+    setNights(loadNights())
     setReady(true)
   }, [])
   useEffect(() => { if (ready) saveState(state) }, [ready, state])
+  useEffect(() => { if (ready) saveNights(nights) }, [ready, nights])
   useEffect(() => {
     if (!clearArmed) return
     const timer = setTimeout(() => setClearArmed(false), 3500)
@@ -162,6 +169,40 @@ export default function DecideApp() {
     update((current) => ({ ...current, lastChooser: chooser.name }))
     setSession((current) => (current ? { ...current, result: { picks: [pick], chooser } } : current))
   }
+  // ---- the room's nights ----
+  const saveTonight = () => {
+    const result = session?.result
+    if (!session || !result || session.saved) return
+    const night: Night = {
+      id: newId(),
+      at: Date.now(),
+      method: session.method,
+      films: result.picks.map((pick) => ({
+        key: pick.key, media_type: pick.media_type, id: pick.id, title: pick.title, poster_path: pick.poster_path, year: pick.year,
+        by: (result.chooser ?? personOf(pick))?.name ?? null,
+      })),
+      people: people.map((person) => person.name),
+      chooser: result.chooser?.name ?? null,
+      feelings: null,
+    }
+    // Written right away too: "Watch now" leaves the page straight after.
+    setNights((current) => {
+      const next = [night, ...current]
+      saveNights(next)
+      return next
+    })
+    setSession((current) => (current ? { ...current, saved: true } : current))
+    haptic(12)
+  }
+  const rateNight = (id: string, feelings: Record<string, Feeling>) => {
+    setNights((current) => current.map((night) => (night.id === id ? { ...night, feelings } : night)))
+    haptic(12)
+  }
+  const skipNight = (id: string) => setNights((current) => current.map((night) => (night.id === id ? { ...night, skipped: true } : night)))
+  const toRate = ready && !session ? nightToRate(nights, openedAt) : null
+  const seen = useMemo(() => watchedTogether(nights), [nights])
+  const seenOn = (at: number) => new Date(at).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short' })
+
   const again = () => {
     setSession(null)
     setTimeout(() => howRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60)
@@ -185,6 +226,16 @@ export default function DecideApp() {
             </div>
             <DecorWheel picks={picks} />
           </header>
+
+          <AnimatePresence>
+            {toRate && (
+              <m.div key={toRate.id} initial={false} exit={{ height: 0, opacity: 0, transition: tween.base }} className="overflow-hidden">
+                <div className="pt-8">
+                  <RatePrompt night={toRate} onRate={(feelings) => rateNight(toRate.id, feelings)} onSkip={() => skipNight(toRate.id)} />
+                </div>
+              </m.div>
+            )}
+          </AnimatePresence>
 
           <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:grid-rows-[auto_1fr] lg:items-start lg:gap-6">
             {/* Who's watching */}
@@ -291,6 +342,12 @@ export default function DecideApp() {
                       return (
                         <m.li key={pick.key} layout initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.85 }} transition={spring.ui} className="relative min-w-0">
                           <Poster pick={pick} sizes="(min-width: 1024px) 140px, 30vw">
+                            {seen.has(pick.key) && (
+                              <span title={t('decide.nights.seenOn', { date: seenOn(seen.get(pick.key)!) })} className="glass absolute start-1.5 top-1.5 inline-flex h-6 items-center gap-1 rounded-full px-1.5 text-[11px] font-semibold text-white">
+                                <History aria-hidden className="h-3.5 w-3.5" /><span aria-hidden className="max-sm:hidden">{seenOn(seen.get(pick.key)!)}</span>
+                                <span className="sr-only">{t('decide.nights.seenOn', { date: seenOn(seen.get(pick.key)!) })}</span>
+                              </span>
+                            )}
                             {person && (
                               <span className="absolute bottom-1.5 start-1.5" title={t('decide.picks.by', { name: person.name })}>
                                 <Avatar person={person} size={26} className="ring-2 ring-black" />
@@ -374,6 +431,17 @@ export default function DecideApp() {
               </ul>
             </section>
           </div>
+
+          {ready && nights.length > 0 && (
+            <div className="mt-6">
+              <NightsSection
+                nights={nights}
+                onRate={rateNight}
+                onRemove={(id) => setNights((current) => current.filter((night) => night.id !== id))}
+                onClear={() => setNights([])}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -395,7 +463,7 @@ export default function DecideApp() {
             glow={glow}
           >
             {session.result ? (
-              <Winners picks={session.result.picks} people={people} chooser={session.result.chooser} onAgain={again} onBack={back} />
+              <Winners picks={session.result.picks} people={people} chooser={session.result.chooser} saved={!!session.saved} onSave={saveTonight} onAgain={again} onBack={back} />
             ) : session.method === 'wheel' ? (
               <Wheel picks={picks} people={people} count={count} fair={state.fair} onFair={(fair) => update((current) => ({ ...current, fair }))} onDone={finish} />
             ) : session.method === 'vote' ? (
@@ -405,7 +473,7 @@ export default function DecideApp() {
             ) : session.method === 'duel' ? (
               <Duel picks={picks} people={people} onDone={finish} />
             ) : (
-              <Chooser picks={picks} people={people} lastChooser={state.lastChooser} fair={state.fair} onFair={(fair) => update((current) => ({ ...current, fair }))} onChosen={chosen} />
+              <Chooser picks={picks} people={people} nights={nights} lastChooser={state.lastChooser} fair={state.fair} onFair={(fair) => update((current) => ({ ...current, fair }))} onChosen={chosen} />
             )}
           </Stage>
         )}

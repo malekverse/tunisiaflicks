@@ -1,6 +1,6 @@
 "use client"
-// Who chooses? Luck draws one person (fair: not whoever chose last time on this phone), names
-// flicking past like a slot machine. That person then chooses: one of the picks, or anything at
+// Who chooses? Luck draws one person (fair: whoever has chosen least in the room's saved nights,
+// and never whoever chose last time), names flicking past like a slot machine. That person then chooses: one of the picks, or anything at
 // all from search.
 import React, { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion'
@@ -9,7 +9,8 @@ import { Button } from '@/src/components/ui/button'
 import { Switch } from '@/src/components/ui/switch'
 import { useT } from '@/src/components/I18nProvider'
 import TitlePicker, { type PickedFilm } from '@/src/components/movie-night/TitlePicker'
-import { drawChooser, sameName, type Pick } from '@/src/lib/decide'
+import { cryptoInt, sameName, type Pick } from '@/src/lib/decide'
+import { fairChoosers, type Night } from '@/src/lib/decide-nights'
 import { haptic, spring, tween } from '@/src/lib/motion'
 import { cn } from '@/src/lib/utils'
 import { Avatar, Poster } from './parts'
@@ -18,9 +19,11 @@ import type { DecidePerson } from './storage'
 /** The pauses between names: fast, then slowing down onto the one drawn. */
 const STEPS = [55, 55, 60, 60, 65, 70, 80, 90, 105, 125, 150, 185, 230, 290, 370]
 
-export default function Chooser({ picks, people, lastChooser, fair, onFair, onChosen }: {
+export default function Chooser({ picks, people, nights, lastChooser, fair, onFair, onChosen }: {
   picks: Pick[]
   people: DecidePerson[]
+  /** The room's saved nights: who chose, lately. */
+  nights: Night[]
   lastChooser: string | null
   fair: boolean
   onFair: (fair: boolean) => void
@@ -38,10 +41,13 @@ export default function Chooser({ picks, people, lastChooser, fair, onFair, onCh
   useEffect(() => () => timers.current.forEach(clearTimeout), [])
 
   const lastHere = lastChooser && people.some((person) => sameName(person.name, lastChooser)) ? lastChooser : null
+  // Fairness only means something once someone here has had a turn.
+  const hadTurns = !!lastHere || nights.some((night) => night.chooser && people.some((person) => sameName(person.name, night.chooser!)))
 
   const draw = () => {
-    const winner = drawChooser(people, lastHere, fair)
-    if (!winner || drawing) return
+    if (!people.length || drawing) return
+    const pool = fair ? fairChoosers(people, nights, lastHere) : people
+    const winner = pool[cryptoInt(pool.length)]
     setChooser(null)
     setView(null)
     setDrawing(true)
@@ -121,11 +127,11 @@ export default function Chooser({ picks, people, lastChooser, fair, onFair, onCh
           <Button type="button" size="lg" className="w-full" onClick={draw} disabled={drawing}>
             <Shuffle aria-hidden className="h-5 w-5" />{drawing ? t('decide.chooser.drawing') : t('decide.chooser.draw')}
           </Button>
-          {lastHere && (
+          {hadTurns && (
             <label className="mt-5 flex cursor-pointer items-center gap-3 rounded-[16px] bg-white/[0.05] p-4 text-start">
               <span className="min-w-0 flex-1">
                 <span className="block text-[15px] font-semibold text-white">{t('decide.chooser.fair')}</span>
-                <span className="mt-0.5 block text-[13px] text-white/60">{t('decide.chooser.last', { name: lastHere })}</span>
+                <span className="mt-0.5 block text-[13px] text-white/60">{lastHere ? t('decide.chooser.last', { name: lastHere }) : t('decide.chooser.fairText')}</span>
               </span>
               <Switch checked={fair} onCheckedChange={onFair} disabled={drawing} aria-label={t('decide.chooser.fair')} />
             </label>

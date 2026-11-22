@@ -3,7 +3,7 @@
 // Which strings go to the browser (see clientMessages in ./index.ts): the root layout sends every
 // key that is in neither list below (the shell), a <ClientMessages scope> adds its scope's keys to
 // the pages under it, and the server-only keys never leave the server.
-// 623 of 3131 keys on every page, 1906 in 34 scopes, 602 server-only.
+// 623 of 3162 keys on every page, 1937 in 34 scopes, 602 server-only.
 
 export type MessageScope =
   | 'about/layout'
@@ -1119,6 +1119,7 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'decide.chooser.draw',
     'decide.chooser.drawing',
     'decide.chooser.fair',
+    'decide.chooser.fairText',
     'decide.chooser.fromList',
     'decide.chooser.last',
     'decide.chooser.name',
@@ -1150,6 +1151,36 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'decide.knockout.turnGroup',
     'decide.knockout.undo',
     'decide.knockout.until',
+    'decide.nights.all',
+    'decide.nights.askMany',
+    'decide.nights.askOne',
+    'decide.nights.askText',
+    'decide.nights.bestTaste',
+    'decide.nights.change',
+    'decide.nights.clear',
+    'decide.nights.clearSure',
+    'decide.nights.down',
+    'decide.nights.fewer',
+    'decide.nights.films',
+    'decide.nights.liked',
+    'decide.nights.meh',
+    'decide.nights.method',
+    'decide.nights.nightsCount',
+    'decide.nights.notNow',
+    'decide.nights.private',
+    'decide.nights.rate',
+    'decide.nights.remove',
+    'decide.nights.removeSure',
+    'decide.nights.room',
+    'decide.nights.save',
+    'decide.nights.saved',
+    'decide.nights.seenOn',
+    'decide.nights.send',
+    'decide.nights.streak',
+    'decide.nights.title',
+    'decide.nights.topPicker',
+    'decide.nights.up',
+    'decide.nights.wins',
     'decide.people.add',
     'decide.people.full',
     'decide.people.hint',
@@ -1537,6 +1568,8 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'taste.strip.title',
   ],
   'guess/layout': [
+    'decide.nights.save',
+    'decide.nights.saved',
     'decide.winner.again',
     'decide.winner.back',
     'decide.winner.by',

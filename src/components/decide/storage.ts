@@ -1,6 +1,8 @@
 // Decide together keeps its table on this phone only (localStorage): the names, the picks and the
-// settings survive a reload or a locked screen, and nothing is ever sent to the server.
+// settings survive a reload or a locked screen, and so do the room's saved nights. Nothing is ever
+// sent to the server.
 import { COUNT_MAX, NAME_MAX, PEOPLE_MAX, PICKS_MAX, cleanName, type Person, type Pick } from '@/src/lib/decide'
+import { cleanNights, NIGHTS_MAX, type Night } from '@/src/lib/decide-nights'
 
 export type DecidePerson = Person & { color: number }
 export type VoteMode = 'secret' | 'hands'
@@ -66,3 +68,19 @@ export function saveState(state: DecideState) {
 
 /** A short random id for a person (only has to be unique on this phone). */
 export const newId = () => Math.random().toString(36).slice(2, 10)
+
+// ---- the room's nights (lib/decide-nights) ----
+
+const NIGHTS_KEY = 'tf-decide:nights:v1'
+
+export function loadNights(): Night[] {
+  try {
+    return cleanNights(JSON.parse(localStorage.getItem(NIGHTS_KEY) ?? '[]'))
+  } catch {
+    return []
+  }
+}
+
+export function saveNights(nights: Night[]) {
+  try { localStorage.setItem(NIGHTS_KEY, JSON.stringify(nights.slice(0, NIGHTS_MAX))) } catch { /* private mode: this visit only */ }
+}

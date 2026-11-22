@@ -4,7 +4,7 @@
 import React, { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { m, useReducedMotion } from 'framer-motion'
-import { ArrowLeft, Info, Play, RotateCcw } from 'lucide-react'
+import { ArrowLeft, BookmarkCheck, BookmarkPlus, Info, Play, RotateCcw } from 'lucide-react'
 import { Button } from '@/src/components/ui/button'
 import { useT } from '@/src/components/I18nProvider'
 import { EASE_OUT, haptic, spring, tween } from '@/src/lib/motion'
@@ -41,11 +41,14 @@ export function Burst() {
   )
 }
 
-export default function Winners({ picks, people, chooser, onAgain, onBack }: {
+export default function Winners({ picks, people, chooser, saved, onSave, onAgain, onBack }: {
   picks: Pick[]
   people: DecidePerson[]
   /** Who got to choose ("Who chooses?"). */
   chooser?: DecidePerson | null
+  /** Tonight is in the room's nights (saved here, or on the way to watching it). */
+  saved: boolean
+  onSave: () => void
   onAgain: () => void
   onBack: () => void
 }) {
@@ -121,7 +124,7 @@ export default function Winners({ picks, people, chooser, onAgain, onBack }: {
                   <bdi dir="auto" className="block truncate text-[15px] font-semibold text-white">{pick.title}</bdi>
                   {owner(pick) && <span className="block truncate text-[12.5px] text-white/55">{t('decide.winner.by', { name: owner(pick)!.name })}</span>}
                 </span>
-                <Link href={`${href(pick)}#streamSection`} aria-label={`${t('hero.watchNow')}: ${pick.title}`} className="pressable grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-black outline-none focus-visible:ring-2 focus-visible:ring-red-500">
+                <Link href={`${href(pick)}#streamSection`} onClick={onSave} aria-label={`${t('hero.watchNow')}: ${pick.title}`} className="pressable grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-black outline-none focus-visible:ring-2 focus-visible:ring-red-500">
                   <Play aria-hidden className="h-4 w-4 fill-current" />
                 </Link>
               </li>
@@ -131,13 +134,17 @@ export default function Winners({ picks, people, chooser, onAgain, onBack }: {
 
         <div className="mt-7 flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
           <Button asChild size="lg" className="px-8">
-            <Link ref={primary} href={`${href(first)}#streamSection`}><Play aria-hidden className="h-5 w-5 fill-current" />{t('hero.watchNow')}{single ? '' : ` · ${first.title}`}</Link>
+            <Link ref={primary} href={`${href(first)}#streamSection`} onClick={onSave}><Play aria-hidden className="h-5 w-5 fill-current" />{t('hero.watchNow')}</Link>
           </Button>
           {single && (
             <Button asChild size="lg" variant="secondary">
               <Link href={href(first)}><Info aria-hidden className="h-5 w-5" />{t('pick.moreInfo')}</Link>
             </Button>
           )}
+          <Button type="button" size="lg" variant="secondary" onClick={onSave} disabled={saved} aria-live="polite">
+            {saved ? <BookmarkCheck aria-hidden className="h-5 w-5 text-emerald-300" /> : <BookmarkPlus aria-hidden className="h-5 w-5" />}
+            {saved ? t('decide.nights.saved') : t('decide.nights.save')}
+          </Button>
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
           <Button type="button" variant="ghost" onClick={onAgain}><RotateCcw aria-hidden className="h-4 w-4" />{t('decide.winner.again')}</Button>
@@ -156,7 +163,7 @@ function Credits({ pick, owner, chooser }: { pick: Pick, owner: DecidePerson | n
     <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/[0.07] py-1 pe-3.5 ps-1 text-[14px] text-white/80">
       <Avatar person={person} size={26} />
       {chooser ? t('decide.winner.chosenBy', { name: chooser.name }) : t('decide.winner.by', { name: person.name })}
-      {pick.year && <span className="text-white/45">· {pick.year}</span>}
+      {pick.year && <span className="ms-1 text-white/50">{pick.year}</span>}
     </p>
   )
 }
