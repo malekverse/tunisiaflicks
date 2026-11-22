@@ -3,7 +3,7 @@
 // Which strings go to the browser (see clientMessages in ./index.ts): the root layout sends every
 // key that is in neither list below (the shell), a <ClientMessages scope> adds its scope's keys to
 // the pages under it, and the server-only keys never leave the server.
-// 636 of 3268 keys on every page, 2030 in 36 scopes, 602 server-only.
+// 636 of 3271 keys on every page, 2033 in 36 scopes, 602 server-only.
 
 export type MessageScope =
   | 'about/layout'
@@ -937,6 +937,9 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'stream.player',
     'stream.reported',
     'stream.sourceAria',
+    'stream.startedHere',
+    'stream.titleDown',
+    'stream.titleGood',
     'tvMode.player.backAgain',
     'tvMode.player.hint',
     'tvMode.player.leave',
@@ -2325,6 +2328,9 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'stream.player',
     'stream.reported',
     'stream.sourceAria',
+    'stream.startedHere',
+    'stream.titleDown',
+    'stream.titleGood',
     'tv.episodes',
     'tvMode.player.backAgain',
     'tvMode.player.hint',
@@ -3025,6 +3031,9 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'stream.player',
     'stream.reported',
     'stream.sourceAria',
+    'stream.startedHere',
+    'stream.titleDown',
+    'stream.titleGood',
     'ttv.cadence.daily',
     'ttv.cadence.days',
     'ttv.cadence.weekdays',
@@ -3247,6 +3256,9 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'stream.player',
     'stream.reported',
     'stream.sourceAria',
+    'stream.startedHere',
+    'stream.titleDown',
+    'stream.titleGood',
     'tv.downloadTitle',
     'tv.episodeCount',
     'tv.episodes',

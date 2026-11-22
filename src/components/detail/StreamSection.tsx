@@ -69,7 +69,9 @@ export default function StreamSection({ services: providerServices, media, downl
     const [lightsOff, setLightsOff] = useState(false)
     const sectionRef = useRef<HTMLElement>(null)
     const services = useWithLocalPlayer(providerServices, media)
-    const source = useStreamSource(services, { playing: enabled && !isLoading })
+    // Sources are learned title by title (a show as a whole): see lib/source-rank.
+    const titleKey = media ? `${media.type}:${media.id}` : null
+    const source = useStreamSource(services, { playing: enabled && !isLoading, title: titleKey })
     const url = source.ready ? source.current?.url : undefined
 
     // --- TV mode: the briefing, the start, the Back menu ---
@@ -244,8 +246,20 @@ export default function StreamSection({ services: providerServices, media, downl
 
     const healthLabel = (name: string) => {
         const status = source.health[name]?.status
+        const here = source.titleHealthOf(name)
         if (name === source.remembered) return t('stream.lastWorked')
+        // What viewers say about this very title outranks how the source does in general.
+        if (here?.status === 'good') return t('stream.titleGood', { count: here.plays })
+        if (here?.status === 'down') return t('stream.titleDown')
         return status === 'good' ? t('stream.healthGood') : status === 'down' ? t('stream.healthDown') : undefined
+    }
+    /** Green: works here (for you or others); amber: reported down here or in general. */
+    const signal = (name: string): 'good' | 'down' | null => {
+        const here = source.titleHealthOf(name)?.status
+        if (here === 'good') return 'good'
+        if (here === 'down') return 'down'
+        const status = source.health[name]?.status
+        return status === 'good' || status === 'down' ? status : null
     }
     /** The source bar's tooltip: how the source is doing, and "fewer ads" on a sandboxed one. */
     const sourceTitle = (item: StreamProvider) =>
@@ -423,13 +437,20 @@ export default function StreamSection({ services: providerServices, media, downl
                     )}
                 </div>
 
+                {/* Started on the source other viewers say plays this title: say so, quietly. */}
+                {source.startReason === 'title' && source.current && source.titleHealthOf(source.current.name)?.status === 'good' && (
+                    <p className="mt-3 flex items-center gap-1.5 text-[12.5px] text-white/55">
+                        <Check aria-hidden className="h-3.5 w-3.5 text-emerald-400" />
+                        {t('stream.startedHere', { name: source.current.name })}
+                    </p>
+                )}
                 {/* Controls: sources on the start side, the rest at the end. */}
                 <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center">
                     <div ref={tabsRef} role="tablist" aria-label={t('stream.sourceAria')} className="no-scrollbar -mx-[var(--gutter)] flex min-w-0 flex-1 gap-1 overflow-x-auto overflow-y-hidden px-[var(--gutter)] md:mx-0 md:px-0">
                         <div className="flex shrink-0 gap-1 rounded-full bg-white/[0.06] p-1">
                             {source.ordered.map((item) => {
                                 const active = source.ready && source.current?.name === item.name
-                                const status = source.health[item.name]?.status
+                                const status = signal(item.name)
                                 const remembered = item.name === source.remembered
                                 return (
                                     <button

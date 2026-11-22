@@ -45,3 +45,35 @@ export async function getSourceHealth(): Promise<Record<string, SourceHealth>> {
   ]).toArray()
   return Object.fromEntries(rows.map((row) => [row._id, { ok: row.ok, broken: row.broken, status: classify(row.ok, row.broken) }]))
 }
+
+// ---- per title ----------------------------------------------------------------------------------
+// The same reports, kept per title too ("movie:550", "tv:1399"): a source can play one film and not
+// another. One document per title, counters per source, forgotten 90 days after the last report.
+
+type TitleDoc = { _id: string, sources: Record<string, { ok?: number, broken?: number }>, updatedAt: Date }
+
+/** Source names as field names (no dots or dollars in a MongoDB field). */
+export const fieldOf = (name: string) => name.replace(/[.$]/g, '_')
+
+let titleIndex: Promise<unknown> | null = null
+async function titleCollection() {
+  const collection = (await clientPromise).db().collection<TitleDoc>('streamHealthTitles')
+  titleIndex ??= collection.createIndex({ updatedAt: 1 }, { expireAfterSeconds: 90 * 86400 }).catch(() => { titleIndex = null })
+  await titleIndex
+  return collection
+}
+
+export async function recordTitleReport(title: string, name: string, ok: boolean) {
+  const field = `sources.${fieldOf(name)}.${ok ? 'ok' : 'broken'}`
+  await (await titleCollection()).updateOne({ _id: title }, { $inc: { [field]: 1 }, $set: { updatedAt: new Date() } }, { upsert: true })
+}
+
+/** What viewers reported for one title, by source name (`names`: the known sources). */
+export async function getTitleHealth(title: string, names: readonly string[]): Promise<Record<string, { ok: number, broken: number }>> {
+  const doc = await (await titleCollection()).findOne({ _id: title })
+  if (!doc) return {}
+  return Object.fromEntries(names.flatMap((name) => {
+    const counts = doc.sources?.[fieldOf(name)]
+    return counts ? [[name, { ok: counts.ok ?? 0, broken: counts.broken ?? 0 }]] : []
+  }))
+}
