@@ -3,7 +3,7 @@
 // Which strings go to the browser (see clientMessages in ./index.ts): the root layout sends every
 // key that is in neither list below (the shell), a <ClientMessages scope> adds its scope's keys to
 // the pages under it, and the server-only keys never leave the server.
-// 636 of 3271 keys on every page, 2033 in 36 scopes, 602 server-only.
+// 636 of 3290 keys on every page, 2049 in 36 scopes, 605 server-only.
 
 export type MessageScope =
   | 'about/layout'
@@ -163,6 +163,9 @@ export const SERVER_ONLY_KEYS: readonly string[] = [
   'badges.inbox.badgeTier',
   'badges.open',
   'browse.typeSwitch',
+  'calendarFeed.episode',
+  'calendarFeed.movie',
+  'calendarFeed.name',
   'card.badgeMovie',
   'card.badgeTv',
   'card.copyFailed',
@@ -2496,6 +2499,22 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'badges.setting.loadFailed',
     'badges.setting.offDone',
     'badges.supporter.title',
+    'calendarFeed.apple',
+    'calendarFeed.copied',
+    'calendarFeed.copy',
+    'calendarFeed.copyFailed',
+    'calendarFeed.create',
+    'calendarFeed.failed',
+    'calendarFeed.google',
+    'calendarFeed.off',
+    'calendarFeed.private',
+    'calendarFeed.ready',
+    'calendarFeed.renew',
+    'calendarFeed.renewSure',
+    'calendarFeed.text',
+    'calendarFeed.title',
+    'calendarFeed.turnOff',
+    'calendarFeed.turnOffSure',
     'digest.email.for',
     'digest.email.seeAll',
     'digest.email.title',
@@ -2896,6 +2915,22 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'search.unavailable',
   ],
   'shows/layout': [
+    'calendarFeed.apple',
+    'calendarFeed.copied',
+    'calendarFeed.copy',
+    'calendarFeed.copyFailed',
+    'calendarFeed.create',
+    'calendarFeed.failed',
+    'calendarFeed.google',
+    'calendarFeed.off',
+    'calendarFeed.private',
+    'calendarFeed.ready',
+    'calendarFeed.renew',
+    'calendarFeed.renewSure',
+    'calendarFeed.text',
+    'calendarFeed.title',
+    'calendarFeed.turnOff',
+    'calendarFeed.turnOffSure',
     'shows.bell',
     'shows.bellAria',
     'shows.bellOn',

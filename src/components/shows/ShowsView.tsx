@@ -20,6 +20,7 @@ import { removeFromWatchHistory } from '@/src/lib/user-content'
 import { daysUntil } from '@/src/lib/tracker'
 import type { TrackedShow } from '@/src/lib/tracker-server'
 import { spring } from '@/src/lib/motion'
+import CalendarFeedCard from '@/src/components/calendar/CalendarFeedCard'
 import { cn } from '@/src/lib/utils'
 
 const SECTION_TITLE = 'mb-4 font-display text-[21px] font-bold leading-tight text-white sm:text-[26px]'
@@ -254,6 +255,9 @@ export default function ShowsView({ shows: initial }: { shows: TrackedShow[] | n
         {shows.length > 0 && (
           <p className="flex items-center gap-2 text-[13px] text-white/50"><CalendarClock aria-hidden className="h-4 w-4" />{t('shows.note')}</p>
         )}
+
+        {/* The bells above, in the phone's own calendar. */}
+        {initial !== null && <CalendarFeedCard className="max-w-[880px]" />}
       </div>
     </div>
   )

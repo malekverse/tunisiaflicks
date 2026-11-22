@@ -190,3 +190,49 @@ export function outlookTimedUrl(event: Pick<TimedEvent, 'start' | 'end' | 'summa
   })
   return `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`
 }
+
+// ---------------------------------------------------------------------------------------------
+// A calendar subscription (lib/calendar-feed): every upcoming release a person follows, in one
+// calendar their phone keeps up to date by itself. All-day events, one UID per release so an
+// event moves instead of doubling when TMDB changes a date.
+
+export type FeedLabels = { name: string, movie: string, episode: string }
+
+export const feedUid = (event: ReleaseEvent) => `${event.kind}-${event.id}${event.episode ? `-${event.episode}` : ''}@tunisiaflicks`
+
+export function buildFeed(events: ReleaseEvent[], appUrl: string, labels: FeedLabels, now: Date = new Date()) {
+  const stamp = now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//TunisiaFlicks//Your releases//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    `X-WR-CALNAME:${escapeIcs(labels.name)}`,
+    'X-WR-TIMEZONE:Africa/Tunis',
+    // How often calendar apps should look again (Google decides for itself, about twice a day).
+    'REFRESH-INTERVAL;VALUE=DURATION:PT12H',
+    'X-PUBLISHED-TTL:PT12H',
+  ]
+  const seen = new Set<string>()
+  for (const event of [...events].sort((a, b) => a.date.localeCompare(b.date))) {
+    const uid = feedUid(event)
+    if (seen.has(uid)) continue
+    seen.add(uid)
+    const url = eventPageUrl(event, appUrl)
+    lines.push(
+      'BEGIN:VEVENT',
+      `UID:${uid}`,
+      `DTSTAMP:${stamp}`,
+      `DTSTART;VALUE=DATE:${compact(event.date)}`,
+      `DTEND;VALUE=DATE:${compact(nextDay(event.date))}`,
+      `SUMMARY:${escapeIcs(eventSummary(event))}`,
+      `DESCRIPTION:${escapeIcs(`${event.kind === 'tv' ? labels.episode : labels.movie}: ${url}`)}`,
+      `URL:${url}`,
+      'TRANSP:TRANSPARENT',
+      'END:VEVENT',
+    )
+  }
+  lines.push('END:VCALENDAR')
+  return lines.map(fold).join('\r\n') + '\r\n'
+}

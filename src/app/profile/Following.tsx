@@ -12,6 +12,7 @@ import { toast } from '@/src/hooks/use-toast';
 import { useFollowStore } from '@/src/hooks/use-follow';
 import { useI18n } from '@/src/components/I18nProvider';
 import ReleaseEmailSwitch from '@/src/components/digest/ReleaseEmailSwitch';
+import CalendarFeedCard from '@/src/components/calendar/CalendarFeedCard';
 import { spring, tween } from '@/src/lib/motion';
 import type { Translate } from '@/src/lib/i18n/translate';
 import type { FollowItem } from '@/src/lib/models/Follow';
@@ -86,6 +87,8 @@ export default function Following() {
     >
       {/* "Release alerts by email", for the whole account (disappears when it renders nothing). */}
       <div className="mb-6 empty:hidden"><ReleaseEmailSwitch /></div>
+      {/* Everything followed, in the phone's own calendar (one private link). */}
+      <CalendarFeedCard className="mb-6" />
       {isLoading ? (
         <div aria-busy className="grid gap-3 sm:grid-cols-2">
           {[0, 1].map((key) => <Skeleton key={key} className="h-[104px] rounded-2xl" />)}
