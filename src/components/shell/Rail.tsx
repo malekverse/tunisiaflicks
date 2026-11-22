@@ -1,5 +1,5 @@
 "use client"
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
@@ -10,7 +10,7 @@ import { EASE_OUT, spring } from '@/src/lib/motion'
 import { useSession } from 'next-auth/react'
 import { useI18n } from '@/src/components/I18nProvider'
 import { useProfiles } from '@/src/hooks/use-profiles'
-import { RAIL_GROUPS, RAIL_TOP, activeHref, seasonalItem, visibleItems, type NavGroup, type NavItem } from './nav'
+import { BROWSE, PLAY_GROUP, WORLD, YOURS, activeHref, seasonalItem, visibleItems, type NavGroup, type NavItem } from './nav'
 import type { SeasonalNav } from '@/src/lib/seasons'
 
 const SETTINGS: NavItem = { href: '/profile', label: 'nav.settings', icon: Settings }
@@ -34,11 +34,10 @@ const GROUP_CLOSE_DELAY = 160
  * The panel is always 256px wide and clipped down to the icon column while closed: unfolding is a
  * clip-path transition, which also keeps the hidden part from catching the mouse.
  *
- * A few places are always in view (Home, Tunisian, Discover, Clips, the season's place); the
- * rest sit in four groups (Movies & series, World cinema, Pick & play, Your space). A group is
- * one row: hovering or clicking it opens a second panel beside the rail with its places and a
- * line about each; →/Enter opens it from the keyboard, Esc closes it. The group of the page
- * you're on is lit, and a red dot says when one of its places is new.
+ * Pick & play (the ways to pick a film, and Surprise me) is one row: hovering or clicking it
+ * opens a second panel beside the rail with its places and a line about each; →/Enter opens it
+ * from the keyboard, Esc closes it. It's lit on one of its pages, and a red dot says when one of
+ * its places is new.
  */
 export default function Rail({ kids: kidsProp, seasonal }: RailProps = {}) {
     const pathname = usePathname()
@@ -50,18 +49,18 @@ export default function Rail({ kids: kidsProp, seasonal }: RailProps = {}) {
     const [open, setOpen] = useState(false)
     const [group, setGroup] = useState<{ id: NavGroup['id'], top: number } | null>(null)
 
-    const top = [
-        ...visibleItems(RAIL_TOP, kids),
+    const playGroup = { ...PLAY_GROUP, items: visibleItems(PLAY_GROUP.items, kids) }
+    const inPlay = (item: NavItem) => playGroup.items.some((place) => place.href === item.href)
+    const browse = visibleItems(BROWSE, kids).filter((item) => !inPlay(item))
+    const world = [
+        ...visibleItems(WORLD, kids),
         // The calendar's slot ("Your year" only for people with a year to show).
         ...(seasonal && (!seasonal.signedInOnly || status === 'authenticated') ? [seasonalItem(seasonal)] : []),
     ]
     // Each place once (a Kids profile's Movie night is Swipe, already under Pick & play).
-    const seen = new Set(top.map((item) => item.href))
-    const groups = RAIL_GROUPS.map((entry) => ({
-        ...entry,
-        items: visibleItems(entry.items, kids).filter((item) => !seen.has(item.href) && (seen.add(item.href), true)),
-    })).filter((entry) => entry.items.length > 0)
-    const lit = activeHref(pathname, [...top, ...groups.flatMap((entry) => entry.items), SETTINGS])
+    const yours = visibleItems(YOURS, kids).filter((item) => !inPlay(item))
+    const groups = playGroup.items.length ? [playGroup] : []
+    const lit = activeHref(pathname, [...browse, ...world, ...playGroup.items, ...yours, SETTINGS])
 
     const timer = useRef<ReturnType<typeof setTimeout>>()
     const groupTimer = useRef<ReturnType<typeof setTimeout>>()
@@ -104,6 +103,14 @@ export default function Rail({ kids: kidsProp, seasonal }: RailProps = {}) {
     }, [pathname])
     // The group's panel only lives beside an open rail.
     useEffect(() => { if (!open) setGroup(null) }, [open])
+    // Beside its row, but always whole on screen: measured once it's drawn.
+    useLayoutEffect(() => {
+        const panel = flyout.current
+        if (!panel || !group) return
+        const wanted = group.top - 52
+        const room = window.innerHeight - panel.offsetHeight - 12
+        panel.style.top = `${Math.max(12, Math.min(wanted, room))}px`
+    }, [group])
 
     const collapsedClip = dir === 'rtl' ? 'inset(0 0 0 calc(100% - var(--rail)))' : 'inset(0 calc(100% - var(--rail)) 0 0)'
     const rowClass = 'group relative mx-2 flex h-11 items-center rounded-xl outline-none transition-colors duration-150 hover:bg-white/[0.06] focus-visible:bg-white/[0.08] focus-visible:outline-none'
@@ -241,9 +248,13 @@ export default function Rail({ kids: kidsProp, seasonal }: RailProps = {}) {
                     </Link>
 
                     <nav className="no-scrollbar flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-0">
-                        {top.map((entry) => item(entry, index++))}
+                        {browse.map((entry) => item(entry, index++))}
+                        <div aria-hidden className="mx-5 my-3 h-px bg-white/[0.08]" />
+                        {world.map((entry) => item(entry, index++))}
                         <div aria-hidden className="mx-5 my-3 h-px bg-white/[0.08]" />
                         {groups.map((entry) => groupRow(entry, index++))}
+                        <div aria-hidden className="mx-5 my-3 h-px bg-white/[0.08]" />
+                        {yours.map((entry) => item(entry, index++))}
                     </nav>
 
                     <div className="pt-3">
@@ -282,10 +293,7 @@ export default function Rail({ kids: kidsProp, seasonal }: RailProps = {}) {
                             }
                         }}
                         className="glass-strong fixed z-50 hidden w-[320px] rounded-[22px] p-2 shadow-[0_30px_80px_-20px_rgb(0_0_0/0.95)] lg:block"
-                        style={{
-                            insetInlineStart: 'calc(16rem + 6px)',
-                            top: Math.max(12, Math.min(group.top - 52, (typeof window === 'undefined' ? 800 : window.innerHeight) - 72 - current.items.length * 66)),
-                        }}
+                        style={{ insetInlineStart: 'calc(16rem + 6px)', top: Math.max(12, group.top - 52) }}
                     >
                         <p className="px-3 pb-1.5 pt-2 font-display text-[17px] font-bold text-white">{t(current.label)}</p>
                         <ul>

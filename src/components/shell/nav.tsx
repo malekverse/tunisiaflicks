@@ -4,7 +4,7 @@
 import {
   Drama,
   Bookmark, CalendarClock, CalendarHeart, Clapperboard, Compass, Dices, Flag, Heart, HeartHandshake, History, House,
-  Gamepad2, Globe2, Library, ListVideo, Map as MapIcon, MonitorPlay, MoonStar, Popcorn, Search, Swords, Trophy, Tv, UserRound, UsersRound, type LucideIcon,
+  Gamepad2, Library, ListVideo, Map as MapIcon, MonitorPlay, MoonStar, Popcorn, Search, Swords, Trophy, Tv, UsersRound, type LucideIcon,
 } from 'lucide-react'
 import TunisiaMark from '@/src/components/tunisian/TunisiaMark'
 import { PLAY_TOOLS, isNewTool } from '@/src/components/play/tools'
@@ -86,42 +86,19 @@ export const YOURS: NavItem[] = [
 ]
 
 // ---------------------------------------------------------------------------------------------
-// The desktop rail: a few places always in view, the rest in four groups. A group is one icon;
-// hovering (or clicking) it opens a panel beside the rail with its places (see Rail).
+// Pick & play: the ways to pick a film (and Surprise me) as one group. On the desktop rail it's a
+// single row that opens a panel beside the rail (see Rail); the phone's sheet gives it a row.
 
 const find = (items: NavItem[], href: string, hint?: TKey): NavItem => ({ ...items.find((item) => item.href === href)!, ...(hint ? { hint } : {}) })
 
-/** Always in view: Home, Tunisian (the site's own), Discover, Clips. */
-export const RAIL_TOP: NavItem[] = [find(BROWSE, '/'), find(WORLD, '/tunisian'), find(BROWSE, '/discover'), find(BROWSE, '/clips')]
+export type NavGroup = { id: 'play', label: TKey, icon: LucideIcon, items: NavItem[] }
 
-export type NavGroup = { id: 'watch' | 'world' | 'play' | 'yours', label: TKey, icon: LucideIcon, items: NavItem[] }
-
-export const RAIL_GROUPS: NavGroup[] = [
-  {
-    id: 'watch',
-    label: 'nav.group.watch',
-    icon: Tv,
-    items: [find(BROWSE, '/tv', 'nav.hint.tv'), find(BROWSE, '/upcoming', 'nav.hint.upcoming'), find(BROWSE, '/top-rated', 'nav.hint.topRated')],
-  },
-  {
-    id: 'world',
-    label: 'nav.group.world',
-    icon: Globe2,
-    items: [find(WORLD, '/dramas', 'nav.hint.dramas'), find(WORLD, '/anime', 'nav.hint.anime'), find(WORLD, '/arab-cinema', 'nav.hint.arabCinema')],
-  },
-  {
-    id: 'play',
-    label: 'nav.group.play',
-    icon: Gamepad2,
-    items: [...PLAY, find(BROWSE, '/surprise', 'play.surprise.text')],
-  },
-  {
-    id: 'yours',
-    label: 'nav.group.yours',
-    icon: UserRound,
-    items: [find(YOURS, '/shows', 'nav.hint.shows'), find(YOURS, '/saved', 'nav.hint.library'), find(YOURS, '/friends', 'nav.hint.friends'), find(YOURS, '/movie-night', 'nav.hint.movieNight')],
-  },
-]
+export const PLAY_GROUP: NavGroup = {
+  id: 'play',
+  label: 'nav.group.play',
+  icon: Gamepad2,
+  items: [...PLAY, find(BROWSE, '/surprise', 'play.surprise.text')],
+}
 
 /** The mobile tab bar: the four places people go most, plus "You" (the menu sheet). */
 export const TABS: NavItem[] = [

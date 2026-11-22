@@ -11,7 +11,7 @@ import { useT } from '@/src/components/I18nProvider'
 import { useLikelyTv } from '@/src/hooks/use-tv-mode'
 import { cn } from '@/src/lib/utils'
 import type { SeasonalNav } from '@/src/lib/seasons'
-import { BROWSE, LIBRARY, RAIL_GROUPS, TABS, WORLD, YOURS, seasonalItem, visibleItems, type NavItem } from './nav'
+import { BROWSE, LIBRARY, PLAY_GROUP, TABS, WORLD, YOURS, seasonalItem, visibleItems, type NavItem } from './nav'
 import AccountAvatar from './AccountAvatar'
 import LanguageSwitch from './LanguageSwitch'
 import type { useShellAccount } from './use-shell-account'
@@ -44,7 +44,7 @@ export default function MenuSheet({ open, onOpenChange, account, kids: kidsProp,
     // Everything that isn't a tab: TV Shows, the world's hubs, Coming Soon, Top Rated, Surprise,
     // whatever of YOURS has no tile and isn't the library, then the season's place.
     // Pick & play (the ways to pick a film, and Surprise me) get their own row, never repeated below.
-    const play = visibleItems(RAIL_GROUPS.find((group) => group.id === 'play')!.items, kids)
+    const play = visibleItems(PLAY_GROUP.items, kids)
     const places: NavItem[] = [
         ...browseRest.slice(0, 1),
         ...visibleItems(WORLD, kids),
