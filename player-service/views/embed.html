@@ -820,6 +820,8 @@
   let originalCues = []     // the same before any translation
   let subChoice = null      // { id | 'file', lang, label }
   let subDelay = 0          // seconds; positive shows them later
+  let subScale = 1          // a stretch for a subtitle made at another frame rate (auto-sync)
+  let syncState = null      // null, 'busy', or the last auto-sync's answer
   let translatedTo = null   // 'ar', 'fr'… while a translation is shown
   let translateRun = 0      // bumped to stop a translation in progress
   const TRANSLATE_TO = [['ar', 'Arabic'], ['fr', 'French'], ['en', 'English'], ['es', 'Spanish'], ['de', 'German'], ['it', 'Italian'], ['tr', 'Turkish'], ['pt', 'Portuguese'], ['nl', 'Dutch'], ['ru', 'Russian']]
@@ -983,7 +985,7 @@
 
   let shown = ''
   function renderSubtitles() {
-    const t = now() - subDelay
+    const t = (now() - subDelay) / subScale
     let html = ''
     if (cues.length) {
       // The first cue that may still be on screen, then every one that is.
@@ -1009,6 +1011,10 @@
       const list = parseSubtitles(text)
       if (!list.length) throw new Error('empty')
       subChoice = { id: item.id, lang: item.lang, label: item.language }
+      subDelay = 0
+      subScale = 1
+      syncState = null
+      if (releaseMatch(item) < 0.6) scheduleAutoSync()
       if (translate) setCues(list)
       else { translateRun++; originalCues = cues = list; translatedTo = null }
       if (remember) savePrefs({ subLang: item.lang })
@@ -1039,6 +1045,56 @@
   }
   function renderSubsButton() { $('subsBtn').classList.toggle('on', !!subChoice) }
   const setDelay = (d) => { subDelay = Math.round(d * 10) / 10; osd('captions', `Subtitle delay ${subDelay > 0 ? '+' : ''}${subDelay.toFixed(1)}s`); if (panelView === 'subtitles') renderPanel() }
+
+  /**
+   * Auto-sync (autosync.js on the service): it listens to a few minutes of the film around here,
+   * finds where people speak, and slides the subtitle (stretching it for another frame rate) until
+   * its lines sit on the speech. Quiet: only says something when it fixed the timing.
+   */
+  async function autoSync({ quiet = false } = {}) {
+    if (!current || !originalCues.length || syncState === 'busy') return
+    const film = duration()
+    const from = Math.max(0, Math.min(now() - 30, (film || Infinity) - 300))
+    const length = film ? Math.min(240, Math.max(60, film - from)) : 240
+    // The subtitle's own times of the lines around that part (wide enough for any fix).
+    const window = originalCues.filter((cue) => cue.end > (from - 60) / 1.05 && cue.start < (from + length + 60) * 1.05).map((cue) => [cue.start, cue.end])
+    if (window.length < 8) { if (!quiet) toast('Not enough subtitle lines here to sync. Try again a bit later.'); return }
+    syncState = 'busy'
+    if (panelView === 'subtitles') renderPanel()
+    if (!quiet) osd('captions', 'Syncing subtitles…')
+    try {
+      const body = { audio: audioTrack, from, duration: length, cues: window, current: { offset: subDelay, scale: subScale } }
+      const answer = await send('/autosync', 'POST', current.kind === 'url'
+        ? { ...body, kind: 'url', sourceId: current.sourceId }
+        : { ...body, kind: 'torrent', infoHash: current.infoHash, index: current.index })
+      syncState = answer
+      if (answer.confident) {
+        subScale = answer.scale
+        subDelay = Math.round(answer.offset * 10) / 10
+        const stretched = Math.abs(answer.scale - 1) > 1e-6
+        osd('captions', `Subtitles synced ${subDelay > 0 ? '+' : ''}${subDelay.toFixed(1)}s${stretched ? ', frame rate fixed' : ''}`)
+      } else if (!quiet) {
+        toast(answer.base !== null && answer.base >= 0.5 ? 'They already look in sync.' : 'Couldn’t find a better timing here. Try the buttons, or another version.')
+      }
+    } catch (err) {
+      syncState = null
+      if (!quiet) toast(err.status === 429 ? 'Already syncing…' : 'Couldn’t sync right now. Try again in a moment.')
+    }
+    if (panelView === 'subtitles') renderPanel()
+  }
+
+  // A subtitle not made for this release: sync it once there's something to listen to (20 s in).
+  let syncTimer = null
+  function scheduleAutoSync() {
+    clearTimeout(syncTimer)
+    const started = now()
+    const check = () => {
+      if (!subChoice) return
+      if (!video.paused && now() - started >= 20) return autoSync({ quiet: true })
+      syncTimer = setTimeout(check, 2000)
+    }
+    syncTimer = setTimeout(check, 2000)
+  }
 
   // A file of the viewer's: from the panel, or dropped on the player.
   async function readSubtitleFile(file) {
@@ -1212,10 +1268,11 @@
         <div class="group">Sync</div>
         <div class="row">
           <button class="btn ghost" type="button" data-delay="-0.5" aria-label="Show subtitles earlier">−0.5s</button>
-          <span class="grow" style="text-align:center;font-variant-numeric:tabular-nums">${subDelay > 0 ? '+' : ''}${subDelay.toFixed(1)}s</span>
+          <span class="grow" style="text-align:center;font-variant-numeric:tabular-nums">${subDelay > 0 ? '+' : ''}${subDelay.toFixed(1)}s${Math.abs(subScale - 1) > 1e-6 ? ' (frame rate fixed)' : ''}</span>
           <button class="btn ghost" type="button" data-delay="0.5" aria-label="Show subtitles later">+0.5s</button>
         </div>
-        <p class="note">[ and ] adjust it by 0.1s while you watch.</p>`
+        ${subChoice ? `<div class="row"><button class="btn" type="button" data-autosync ${syncState === 'busy' ? 'disabled aria-busy="true"' : ''} style="flex:1">${syncState === 'busy' ? 'Listening to the film…' : 'Auto-sync with the voices'}</button></div>` : ''}
+        <p class="note">Auto-sync listens to the film around where you are and lines the subtitles up with the voices. [ and ] adjust them by 0.1s while you watch.</p>`
     } else if (panelView === 'subLanguage') {
       const items = subtitlesIn(subLanguage)
       $('panelTitle').textContent = items[0]?.language || 'Subtitles'
@@ -1292,6 +1349,7 @@
     else if (el.dataset.subSize) { savePrefs({ subSize: el.dataset.subSize }); applyPrefs(); renderPanel() }
     else if (el.dataset.subStyle) { savePrefs({ subStyle: el.dataset.subStyle }); applyPrefs(); renderPanel() }
     else if (el.dataset.delay) setDelay(subDelay + Number(el.dataset.delay))
+    else if ('autosync' in el.dataset) autoSync()
     else if (el.dataset.translate) translateTo(el.dataset.translate)
     else if (el.dataset.speed) setSpeed(Number(el.dataset.speed))
     else if (el.dataset.remove) removeAddon(el.dataset.remove)

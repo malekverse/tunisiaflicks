@@ -102,3 +102,60 @@ test('dlna: only home-network addresses count as a LAN, XML is escaped', () => {
   for (const ip of ['8.8.8.8', '172.32.0.1', '127.0.0.1', '192.169.0.1', '1.2.3', 'x.y.z.w']) assert.equal(isPrivateIPv4(ip), false, ip)
   assert.equal(escapeXml(`<a href="x">Tom & Jerry's</a>`), '&lt;a href=&quot;x&quot;&gt;Tom &amp; Jerry&apos;s&lt;/a&gt;')
 })
+
+// ---- subtitle auto-sync (autosync.js) ----------------------------------------------------------------
+import { bestFit, parseSilences, speechFrom } from './autosync.js'
+
+/** A film's dialogue: lines of 1.5 to 3.5 s with gaps, from 600 s to 900 s (deterministic). */
+function dialogue() {
+  const lines = []
+  let t = 600, n = 0
+  while (t < 900) {
+    const length = 1.5 + ((n * 37) % 20) / 10
+    lines.push([t, t + length])
+    t += length + 0.8 + ((n * 53) % 30) / 10
+    n++
+  }
+  return lines
+}
+
+test('auto-sync: finds how late a subtitle is', () => {
+  const speech = dialogue()
+  const cues = speech.map(([a, b]) => [a - 3.4, b - 3.4])
+  const fit = bestFit(cues, speech, { from: 620, to: 880 })
+  assert.equal(fit.scale, 1)
+  assert.ok(Math.abs(fit.offset - 3.4) < 0.11, `offset ${fit.offset}`)
+  assert.ok(fit.confident)
+  assert.ok(fit.score > fit.base)
+})
+
+test('auto-sync: finds a subtitle made for another frame rate', () => {
+  const speech = dialogue()
+  const scale = 25 / 23.976
+  const cues = speech.map(([a, b]) => [a / scale, b / scale])
+  const fit = bestFit(cues, speech, { from: 620, to: 880 })
+  assert.ok(Math.abs(fit.scale - scale) < 1e-9, `scale ${fit.scale}`)
+  assert.ok(Math.abs(fit.offset) < 0.11, `offset ${fit.offset}`)
+  assert.ok(fit.confident)
+})
+
+test('auto-sync: a subtitle already in sync stays as it is', () => {
+  const speech = dialogue()
+  const fit = bestFit(speech, speech, { from: 620, to: 880 })
+  assert.equal(fit.offset, 0)
+  assert.equal(fit.scale, 1)
+  assert.ok(!fit.confident, 'nothing to fix')
+})
+
+test('auto-sync: no speech to go by, no change', () => {
+  const fit = bestFit(dialogue(), [], { from: 620, to: 880 })
+  assert.ok(!fit.confident)
+})
+
+test('auto-sync: silences from ffmpeg’s log, and the speech between them', () => {
+  const log = 'Stream #0:1: Audio: aac\n[silencedetect @ 0x1] silence_start: 0\n[silencedetect @ 0x1] silence_end: 2.5 | silence_duration: 2.5\n[silencedetect @ 0x1] silence_start: 6.1\n[silencedetect @ 0x1] silence_end: 6.4\n[silencedetect @ 0x1] silence_start: 9.9\n'
+  const silences = parseSilences(log, 12)
+  assert.deepEqual(silences, [[0, 2.5], [6.1, 6.4], [9.9, 12]])
+  assert.deepEqual(speechFrom(silences, 12), [[2.5, 6.1], [6.4, 9.9]])
+  assert.equal(parseSilences('nothing here', 10), null)
+})

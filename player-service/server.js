@@ -34,6 +34,7 @@ import { extraBuiltIns, rankForTitle } from './providers.js'
 import { createStateStore, isTitleKey } from './state.js'
 import { MAX_CHARS, MAX_LINES, TARGETS, translateLines } from './translate.js'
 import { builtInSubtitles, downloadSubtitle } from './subtitles.js'
+import { bestFit, speechSegments } from './autosync.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -584,6 +585,46 @@ app.post('/translate', requireAllowedOrigin, async (req, res) => {
     res.json({ lines: await translateLines(lines, to) })
   } catch (err) {
     res.status(502).json({ error: err.message })
+  }
+})
+
+/**
+ * Subtitle auto-sync (autosync.js): { kind: 'torrent', infoHash, index | kind: 'url', sourceId,
+ * audio, from, duration, cues: [[start, end]…], current: { offset, scale } } → the shift and
+ * stretch that line the cues up with the speech in [from, from + duration] of what's playing.
+ * One at a time: it decodes minutes of audio.
+ */
+let syncing = false
+app.post('/autosync', requireAllowedOrigin, async (req, res) => {
+  const body = req.body ?? {}
+  const from = Math.max(0, Number(body.from) || 0)
+  const duration = Math.min(360, Math.max(60, Number(body.duration) || 240))
+  const audio = Math.max(0, Math.floor(Number(body.audio) || 0))
+  const cues = Array.isArray(body.cues) ? body.cues.slice(0, 2000).filter((c) => Array.isArray(c) && Number.isFinite(c[0]) && Number.isFinite(c[1]) && c[1] > c[0]) : []
+  const current = { offset: Number(body.current?.offset) || 0, scale: Number(body.current?.scale) || 1 }
+  if (cues.length < 8) return res.status(400).json({ error: 'Not enough subtitle lines here' })
+
+  let input = null
+  const index = Number(body.index)
+  if (body.kind === 'torrent' && /^[0-9a-f]{40}$/i.test(String(body.infoHash)) && Number.isInteger(index) && index >= 0) {
+    const entry = active.get(String(body.infoHash).toLowerCase())
+    if (!entry) return res.status(404).json({ error: 'Not playing' })
+    touch(entry.torrent.infoHash)
+    input = `http://127.0.0.1:${server.address().port}/stream/${entry.torrent.infoHash}/${index}`
+  } else if (body.kind === 'url') {
+    const source = sources.get(String(body.sourceId))
+    if (!source || source.kind !== 'url') return res.status(404).json({ error: 'Not playing' })
+    input = source.url
+  }
+  if (!input) return res.status(400).json({ error: 'Unknown source' })
+  if (syncing) return res.status(429).json({ error: 'Already syncing' })
+  syncing = true
+  try {
+    const speech = await speechSegments(FFMPEG, input, { from, duration, audio })
+    if (!speech) return res.status(502).json({ error: 'Couldn’t listen to this part' })
+    res.json(bestFit(cues, speech, { from, to: from + duration, current }))
+  } finally {
+    syncing = false
   }
 })
 

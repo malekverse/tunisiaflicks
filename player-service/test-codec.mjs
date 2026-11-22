@@ -7,6 +7,7 @@ import path from 'node:path'
 import fs from 'node:fs'
 import * as ffbin from 'ffmpeg-ffprobe-static'
 import { analyze, ffmpegArgs } from './codec.js'
+import { bestFit, speechSegments } from './autosync.js'
 
 const FFMPEG = ffbin.ffmpegPath
 const FFPROBE = ffbin.ffprobePath
@@ -74,6 +75,25 @@ for (const c of CASES) {
   check(`${c.name}: output video is h264`, outC.video === c.expectVideo, outC.video)
   check(`${c.name}: output audio is aac (browser-playable)`, outC.audio === 'aac', outC.audio)
   check(`${c.name}: output container is mp4`, /mp4|mov/.test(outC.container), outC.container)
+}
+
+// ---- subtitle auto-sync: real ffmpeg listening to a track with "voices" at known times --------------
+{
+  // Bursts of tone (1 kHz, in the voice band) for 1.4 to 3.2 s, gaps of 0.9 to 2.6 s: the "dialogue".
+  const lines = []
+  for (let t = 2, n = 0; t < 115; n++) {
+    const length = 1.4 + ((n * 37) % 19) / 10
+    lines.push([t, t + length])
+    t += length + 0.9 + ((n * 53) % 18) / 10
+  }
+  const speaking = lines.map(([a, b]) => `between(t,${a.toFixed(2)},${b.toFixed(2)})`).join('+')
+  const track = path.join(tmp, 'voices.m4a')
+  await run(FFMPEG, ['-y', '-f', 'lavfi', '-i', 'sine=frequency=1000:sample_rate=16000:duration=120', '-af', `volume=0:enable='not(${speaking})'`, '-c:a', 'aac', track])
+  const speech = await speechSegments(FFMPEG, track, { from: 20, duration: 80 })
+  check('auto-sync: ffmpeg finds the voices', Array.isArray(speech) && speech.length > 15, `${speech?.length} segments`)
+  const late = lines.map(([a, b]) => [a - 2.7, b - 2.7])
+  const fit = bestFit(late, speech ?? [], { from: 20, to: 100 })
+  check('auto-sync: a subtitle 2.7 s early is moved 2.7 s later', fit.confident && fit.scale === 1 && Math.abs(fit.offset - 2.7) <= 0.2, JSON.stringify(fit))
 }
 
 fs.rmSync(tmp, { recursive: true, force: true })

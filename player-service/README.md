@@ -43,6 +43,7 @@ Each file is probed with `ffprobe`, then one of three paths is chosen (see `code
 | `GET /uplay/:id?t=&audio=` | an extension's direct link, converted like `/play` when a browser can't play it as it is |
 | `GET /subtitles?type=…&tmdb=…` · `GET /subtitle/:id` | every subtitle for a title (YIFY Subtitles, SubDL with `SUBDL_API_KEY`, and the extensions'), then one as UTF-8 text, unzipped and decoded (Arabic Windows-1256 too) |
 | `POST /translate` | `{ to, lines }`: a batch of subtitle lines in another language (`translate.js`) |
+| `POST /autosync` | `{ kind, infoHash, index \| sourceId, audio, from, duration, cues, current }`: the shift (and frame-rate stretch) that lines a subtitle up with the voices in that part of what's playing (`autosync.js`: ffmpeg's silence detection on the voice band, then the best fit over ±40 s and 23.976 ↔ 25 fps) |
 | `GET /addons` · `GET /addons/catalog` · `POST /addons` · `DELETE /addons/:id` | the installed extensions, the ready list (`extensions.json`), install one by its `manifest.json` address, remove one |
 | `GET /state?key=movie:550` · `PUT /prefs` · `PUT /progress/:key` | what the player remembers (`state.js`): preferences, and where the viewer stopped |
 | `GET /embed/movie/:tmdb` · `GET /embed/tv/:tmdb/:season/:episode` | the player as an embed, for the TunisiaFlicks site's player frame (desktop app). Only the site's origins and loopback may frame it (`frame-ancestors`). |
@@ -77,7 +78,8 @@ stopped, and Play on TV. Its panels:
   track at the same moment (browsers can't switch tracks themselves). The language picked is
   remembered: the next films start on a copy and a track in it when there's one.
 - **Subtitles** — every language, the version made for the playing release first (matched by name),
-  then the best rated; a file of the viewer's (or dropped on the player); size, style and sync.
+  then the best rated; a file of the viewer's (or dropped on the player); size, style and sync. **Auto-sync** listens to the film around where the viewer is and lines the subtitle up with
+  the voices (it runs by itself, 20 s in, for a version not made for the playing release).
   The site's language (`?lang=` from the site) picks them before the viewer chooses: Arabic or
   French on those sites, none on the English one; with none in that language, the English ones are
   translated. Any subtitle can be translated (Google Translate's free web endpoint, unofficial).
