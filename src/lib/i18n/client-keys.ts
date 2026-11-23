@@ -3,7 +3,7 @@
 // Which strings go to the browser (see clientMessages in ./index.ts): the root layout sends every
 // key that is in neither list below (the shell), a <ClientMessages scope> adds its scope's keys to
 // the pages under it, and the server-only keys never leave the server.
-// 644 of 3341 keys on every page, 2092 in 37 scopes, 605 server-only.
+// 644 of 3384 keys on every page, 2135 in 38 scopes, 605 server-only.
 
 export type MessageScope =
   | 'about/layout'
@@ -22,6 +22,7 @@ export type MessageScope =
   | 'dramas/layout'
   | 'favorites/layout'
   | 'friends/layout'
+  | 'gift/layout'
   | 'guess/layout'
   | 'history/layout'
   | 'lists/layout'
@@ -1637,6 +1638,32 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'taste.strip.text',
     'taste.strip.title',
   ],
+  'gift/layout': [
+    'gift.page.choose',
+    'gift.page.doneText',
+    'gift.page.doneTitle',
+    'gift.page.failed',
+    'gift.page.from',
+    'gift.page.fromFriend',
+    'gift.page.length',
+    'gift.page.mineText',
+    'gift.page.mineTitle',
+    'gift.page.notFoundText',
+    'gift.page.notFoundTitle',
+    'gift.page.redeem',
+    'gift.page.signIn',
+    'gift.page.signUp',
+    'gift.page.text',
+    'gift.page.title',
+    'gift.page.unpaidText',
+    'gift.page.unpaidTitle',
+    'gift.page.usedText',
+    'gift.page.usedTitle',
+    'plus.perk.accent',
+    'plus.perk.badge',
+    'plus.perk.lists',
+    'plus.perk.profiles',
+  ],
   'guess/layout': [
     'decide.nights.save',
     'decide.nights.saved',
@@ -2443,6 +2470,30 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
   'plus/layout': [
     'calendarFeed.copied',
     'calendarFeed.copyFailed',
+    'gift.cancel',
+    'gift.cancelled',
+    'gift.checkAgain',
+    'gift.copyCode',
+    'gift.copyLink',
+    'gift.fromLabel',
+    'gift.make',
+    'gift.message',
+    'gift.months',
+    'gift.openKofi',
+    'gift.page.failed',
+    'gift.paidText',
+    'gift.paidTitle',
+    'gift.rules',
+    'gift.status.ready',
+    'gift.status.redeemed',
+    'gift.status.waiting',
+    'gift.step1',
+    'gift.step2',
+    'gift.text',
+    'gift.title',
+    'gift.tooMany',
+    'gift.waiting',
+    'gift.yours',
     'plus.accent.emerald',
     'plus.accent.gold',
     'plus.accent.ocean',

@@ -3,6 +3,7 @@
 // plus       {_id: userId, until, grants: [{at, days, source}] (last 50), inviteMonths, accent, showBadge}
 // referrals  {_id: newUserId, referrerId, at, qualifiedAt}  (one referrer per account, ever)
 // users.refCode  8 characters (sparse unique index): the invite link's ?ref=
+// Gifts (a month of Plus paid for a friend) are in lib/plus-gifts.
 import 'server-only'
 import { cache } from 'react'
 import { randomBytes } from 'crypto'
@@ -13,7 +14,7 @@ import {
   type Accent,
 } from '@/src/lib/plus-rules'
 
-export type PlusSource = 'coffee' | 'membership' | 'invite'
+export type PlusSource = 'coffee' | 'membership' | 'invite' | 'gift'
 export type PlusDoc = {
   _id: string
   until: Date | null
@@ -177,19 +178,22 @@ export async function inviteProgress(userId: string): Promise<{ code: string | n
   return { code, friends, waiting, months: doc?.inviteMonths ?? 0 }
 }
 
-/** Everything kept about Plus and invites for an account (export). */
+/** Everything kept about Plus, invites and gifts for an account (export). */
 export async function exportPlusData(userId: string): Promise<unknown> {
   const { plus, referrals } = await plusDb()
-  const [doc, invited, invitedBy] = await Promise.all([
+  const { exportGiftData } = await import('@/src/lib/plus-gifts')
+  const [doc, invited, invitedBy, gifts] = await Promise.all([
     plus.findOne({ _id: userId }),
     referrals.countDocuments({ referrerId: userId }),
     referrals.findOne({ _id: userId }, { projection: { at: 1 } }),
+    exportGiftData(userId),
   ])
-  return { plus: doc ? { until: doc.until, grants: doc.grants, inviteMonths: doc.inviteMonths, accent: doc.accent ?? null, showBadge: doc.showBadge ?? false } : null, friendsInvited: invited, joinedThroughAnInvite: !!invitedBy }
+  return { plus: doc ? { until: doc.until, grants: doc.grants, inviteMonths: doc.inviteMonths, accent: doc.accent ?? null, showBadge: doc.showBadge ?? false } : null, friendsInvited: invited, joinedThroughAnInvite: !!invitedBy, gifts }
 }
 
-/** Account deletion: Plus, and the account's place in invites (as the invited one and the inviter). */
+/** Account deletion: Plus, the account's place in invites (as the invited one and the inviter), and its gifts. */
 export async function deletePlusData(userId: string): Promise<void> {
   const { plus, referrals } = await plusDb()
-  await Promise.all([plus.deleteOne({ _id: userId }), referrals.deleteMany({ $or: [{ _id: userId }, { referrerId: userId }] })])
+  const { deleteGiftData } = await import('@/src/lib/plus-gifts')
+  await Promise.all([plus.deleteOne({ _id: userId }), referrals.deleteMany({ $or: [{ _id: userId }, { referrerId: userId }] }), deleteGiftData(userId)])
 }

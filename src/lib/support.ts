@@ -1,7 +1,8 @@
 // Supporters, through Ko-fi (free). Ko-fi calls our webhook for every coffee; we keep only what it
 // takes to say thank you: which account it was (by the TF- code in the message, or else a keyed
 // hash of the e-mail matched against verified accounts), when, and how many times. Never an
-// e-mail, a name, an amount or a message.
+// e-mail, a name, an amount or a message. A GIFT- code in the message makes it a gift of Plus for a
+// friend (lib/plus-gifts): the month goes on the gift, and its giver gets the supporter's thanks.
 //
 // supporters    {_id: userId, since, lastAt, count, listed, listName (≤30), badgePublic}
 // supportEvents {_id: 'kofi:<transaction id>', at, emailKey, code, userId, expireAt (+400 days)}
@@ -85,7 +86,7 @@ const transactionId = (payload: KofiPayload): string | null => {
  * Records one more coffee for an account, adds its month of TunisiaFlicks+ (lib/plus), and makes
  * sure the badge gets announced.
  */
-async function credit(userId: string, at: Date, membership = false): Promise<void> {
+async function credit(userId: string, at: Date, membership = false, { plus = true } = {}): Promise<void> {
   const { supporters } = await supportDb()
   await supporters.updateOne(
     { _id: userId },
@@ -101,7 +102,7 @@ async function credit(userId: string, at: Date, membership = false): Promise<voi
     await supporters.updateOne({ _id: userId }, { $min: { since: at }, $max: { lastAt: at }, $inc: { count: 1 } })
   })
   // A month of TunisiaFlicks+ from when it was paid (a membership's payment: the next month).
-  try {
+  if (plus) try {
     const { creditKofi } = await import('@/src/lib/plus')
     await creditKofi(userId, at, membership)
   } catch (error) {
@@ -127,19 +128,23 @@ export async function processKofi(payload: KofiPayload, hashSecret: string, now:
   const id = transactionId(payload)
   if (!id) return 'ignored'
   const { events, users } = await supportDb()
-  const code = findSupportCode(payload.message)
+  // A gift for a friend: the gift's code wins over everything else in the message.
+  const { findGiftCode } = await import('@/src/lib/plus-rules')
+  const giftCode = findGiftCode(payload.message)
+  const gift = giftCode ? await (await import('@/src/lib/plus-gifts')).giftGiver(giftCode) : null
+  const code = gift ? null : findSupportCode(payload.message)
   const email = typeof payload.email === 'string' && payload.email.includes('@') && payload.email.length <= 320 ? payload.email : null
   const key = email ? emailKey(email, hashSecret) : null
   const at = typeof payload.timestamp === 'string' && !Number.isNaN(Date.parse(payload.timestamp)) && Date.parse(payload.timestamp) <= now.getTime()
     ? new Date(payload.timestamp)
     : now
 
-  let userId: string | null = null
+  let userId: string | null = gift ? gift.fromUserId : null
   if (code) {
     const owner = await users.findOne({ supportCode: code }, { projection: { _id: 1 } })
     if (owner) userId = String(owner._id)
   }
-  if (!userId && email) {
+  if (!userId && !gift && email) {
     const owner = await findUserByEmail(normalizeEmail(email))
     if (owner?.emailVerified) userId = String(owner._id)
   }
@@ -156,6 +161,11 @@ export async function processKofi(payload: KofiPayload, hashSecret: string, now:
   } catch (error) {
     if (isDuplicateKey(error)) return 'duplicate'
     throw error
+  }
+  if (gift && giftCode) {
+    await (await import('@/src/lib/plus-gifts')).creditGift(giftCode, at)
+    if (userId) await credit(userId, at, false, { plus: false })
+    return 'linked'
   }
   if (!userId) return 'pending'
   await credit(userId, at, payload.is_subscription_payment === true)

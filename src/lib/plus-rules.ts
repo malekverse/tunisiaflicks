@@ -63,3 +63,43 @@ export const isNewAccount = (createdAt: Date, now: Date = new Date()) => now.get
 
 /** A ref link stays remembered on the device this long. */
 export const REF_KEEP_DAYS = 30
+
+// ---- gifts ---------------------------------------------------------------------------------------
+//
+// A gift has two codes. GIFT-XXXXXXXX goes in the Ko-fi message, which Ko-fi may show publicly: it
+// only says which gift a payment is for. The link the friend opens carries a separate secret
+// (22 url-safe characters) that only the giver's account ever sees.
+
+const GIFT_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+export const GIFT_CODE_RE = /^GIFT-[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{8}$/
+const GIFT_IN_TEXT_RE = /\bGIFT-([A-Z0-9]{8})\b/i
+export const GIFT_TOKEN_RE = /^[A-Za-z0-9_-]{22}$/
+/** Gifts made but not paid yet, per account. */
+export const MAX_OPEN_GIFTS = 5
+/** An unpaid gift is forgotten after this. */
+export const GIFT_UNPAID_DAYS = 30
+export const GIFT_FROM_MAX = 30
+
+export const isGiftCode = (value: unknown): value is string => typeof value === 'string' && GIFT_CODE_RE.test(value)
+export const isGiftToken = (value: unknown): value is string => typeof value === 'string' && GIFT_TOKEN_RE.test(value)
+
+/** A new gift code from random bytes. */
+export function giftCodeFrom(bytes: Uint8Array): string {
+  return `GIFT-${Array.from(bytes.slice(0, 8), (byte) => GIFT_ALPHABET[byte % GIFT_ALPHABET.length]).join('')}`
+}
+
+/** A gift code written somewhere in a Ko-fi message ('gift-ab3cd5ef' works too), normalized, or null. */
+export function findGiftCode(text: unknown): string | null {
+  if (typeof text !== 'string') return null
+  const match = GIFT_IN_TEXT_RE.exec(text)
+  if (!match) return null
+  const code = `GIFT-${match[1].toUpperCase()}`
+  return isGiftCode(code) ? code : null
+}
+
+/** The giver's name on the gift: one line, no control characters, at most 30 characters, or ''. */
+export function cleanFromName(value: unknown): string {
+  if (typeof value !== 'string') return ''
+  const name = value.normalize('NFC').replace(/[\u0000-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2066-\u2069]/g, '').replace(/\s+/g, ' ').trim()
+  return [...name].slice(0, GIFT_FROM_MAX).join('')
+}

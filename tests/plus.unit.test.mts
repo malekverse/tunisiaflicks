@@ -3,8 +3,9 @@ import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   daysLeft, extendUntil, FRIENDS_PER_MONTH, INVITE_MONTHS_MAX, inviteMonths, isAccent, isActive, isNewAccount, isRefCode, limitFor,
-  refCodeFrom, towardsNext,
+  refCodeFrom, towardsNext, cleanFromName, findGiftCode, giftCodeFrom, isGiftCode, isGiftToken,
 } from '@/src/lib/plus-rules'
+import { findSupportCode } from '@/src/lib/badges/kofi'
 
 const at = new Date('2026-12-01T00:00:00Z')
 const DAY = 86_400_000
@@ -62,5 +63,31 @@ describe('perks', () => {
     assert.equal(limitFor('profiles', false), 5)
     assert.equal(limitFor('profiles', true), 8)
     assert.ok(limitFor('lists', true) > limitFor('lists', false))
+  })
+})
+
+describe('gifts', () => {
+  test('a gift code from random bytes, never with look-alikes', () => {
+    const code = giftCodeFrom(new Uint8Array([0, 1, 2, 3, 4, 5, 6, 255]))
+    assert.ok(isGiftCode(code), code)
+    assert.ok(!/[01IOL]/.test(code.slice(5)))
+  })
+  test('found in a Ko-fi message, however it was typed', () => {
+    assert.equal(findGiftCode('For my brother! gift-ab3cd5ef thanks'), 'GIFT-AB3CD5EF')
+    assert.equal(findGiftCode('GIFT-AB3CD5EF'), 'GIFT-AB3CD5EF')
+    assert.equal(findGiftCode('GIFT-AB3CD5E'), null)          // too short
+    assert.equal(findGiftCode('GIFT-AB0CD5EF'), null)         // 0 is never in a code
+    assert.equal(findGiftCode(null), null)
+  })
+  test('a gift code is never taken for a support code', () => {
+    assert.equal(findSupportCode('GIFT-AB3CD5EF'), null)
+    assert.equal(findGiftCode('TF-AB3CD'), null)
+  })
+  test('the link’s secret and the giver’s name', () => {
+    assert.ok(isGiftToken('kN0k2FDAztmroSOawzf7-Q'))
+    assert.ok(!isGiftToken('GIFT-AB3CD5EF'))
+    assert.equal(cleanFromName('  Amine‮  B. '), 'Amine B.')
+    assert.equal([...cleanFromName('x'.repeat(50))].length, 30)
+    assert.equal(cleanFromName(42), '')
   })
 })

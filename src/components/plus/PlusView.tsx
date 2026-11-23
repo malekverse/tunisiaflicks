@@ -2,7 +2,7 @@
 // /plus: TunisiaFlicks+. Where you stand (on until a date, or not yet), what it gives (accent
 // colours, a badge on your page, more profiles and lists), and the two ways to get it: a coffee
 // or a monthly membership on Ko-fi (/support links it to the account), or three friends who join
-// through your link for each free month.
+// through your link for each free month. And giving it to a friend (GiftPlus).
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { m } from 'framer-motion'
@@ -16,6 +16,7 @@ import { ACCENTS, FRIENDS_PER_MONTH, INVITE_MONTHS_MAX, LIMITS, type Accent } fr
 import { spring } from '@/src/lib/motion'
 import { cn } from '@/src/lib/utils'
 import { applyAccent } from './PlusSync'
+import GiftPlus from './GiftPlus'
 
 export type PlusData = {
   active: boolean
@@ -215,6 +216,7 @@ export default function PlusView({ initial, kofi }: { initial: PlusData, kofi: b
                 <p className="mt-4 flex items-start gap-2 text-[12.5px] leading-relaxed text-white/50"><Sparkles aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />{t('plus.invite.rules')}</p>
               </div>
             </div>
+            <GiftPlus />
           </section>
         </div>
       </div>

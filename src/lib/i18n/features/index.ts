@@ -30,8 +30,9 @@ import { play } from './play'
 import { rail } from './rail'
 import { calendarFeed } from './calendar-feed'
 import { plus } from './plus'
+import { plusGift } from './plus-gift'
 
-const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop, halal, mail, anime, landing, welcome, decide, guess, taste, shows, blindDate, play, rail, calendarFeed, plus]
+const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop, halal, mail, anime, landing, welcome, decide, guess, taste, shows, blindDate, play, rail, calendarFeed, plus, plusGift]
 
 export type FeatureKey =
   | keyof typeof aiSearch.en
@@ -64,6 +65,7 @@ export type FeatureKey =
   | keyof typeof rail.en
   | keyof typeof calendarFeed.en
   | keyof typeof plus.en
+  | keyof typeof plusGift.en
 
 type Language = 'en' | 'ar' | 'tn' | 'fr'
 
