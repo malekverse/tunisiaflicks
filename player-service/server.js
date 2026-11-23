@@ -35,6 +35,7 @@ import { createStateStore, isTitleKey } from './state.js'
 import { MAX_CHARS, MAX_LINES, TARGETS, translateLines } from './translate.js'
 import { builtInSubtitles, downloadSubtitle } from './subtitles.js'
 import { bestFit, speechSegments } from './autosync.js'
+import { createIntroStore, introDb, learnIntro } from './segments.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -589,6 +590,26 @@ app.post('/translate', requireAllowedOrigin, async (req, res) => {
 })
 
 /**
+ * What's playing, as ffmpeg's input: { kind: 'torrent', infoHash, index } → its file through our own
+ * stream, { kind: 'url', sourceId } → the source's link. Never an address from the page.
+ */
+function playingInput(body) {
+  const index = Number(body.index)
+  if (body.kind === 'torrent' && /^[0-9a-f]{40}$/i.test(String(body.infoHash)) && Number.isInteger(index) && index >= 0) {
+    const entry = active.get(String(body.infoHash).toLowerCase())
+    if (!entry || index >= entry.torrent.files.length) return { status: 404, error: 'Not playing' }
+    touch(entry.torrent.infoHash)
+    return { input: `http://127.0.0.1:${server.address().port}/stream/${entry.torrent.infoHash}/${index}` }
+  }
+  if (body.kind === 'url') {
+    const source = sources.get(String(body.sourceId))
+    if (!source || source.kind !== 'url') return { status: 404, error: 'Not playing' }
+    return { input: source.url }
+  }
+  return { status: 400, error: 'Unknown source' }
+}
+
+/**
  * Subtitle auto-sync (autosync.js): { kind: 'torrent', infoHash, index | kind: 'url', sourceId,
  * audio, from, duration, cues: [[start, end]…], current: { offset, scale } } → the shift and
  * stretch that line the cues up with the speech in [from, from + duration] of what's playing.
@@ -604,19 +625,8 @@ app.post('/autosync', requireAllowedOrigin, async (req, res) => {
   const current = { offset: Number(body.current?.offset) || 0, scale: Number(body.current?.scale) || 1 }
   if (cues.length < 8) return res.status(400).json({ error: 'Not enough subtitle lines here' })
 
-  let input = null
-  const index = Number(body.index)
-  if (body.kind === 'torrent' && /^[0-9a-f]{40}$/i.test(String(body.infoHash)) && Number.isInteger(index) && index >= 0) {
-    const entry = active.get(String(body.infoHash).toLowerCase())
-    if (!entry) return res.status(404).json({ error: 'Not playing' })
-    touch(entry.torrent.infoHash)
-    input = `http://127.0.0.1:${server.address().port}/stream/${entry.torrent.infoHash}/${index}`
-  } else if (body.kind === 'url') {
-    const source = sources.get(String(body.sourceId))
-    if (!source || source.kind !== 'url') return res.status(404).json({ error: 'Not playing' })
-    input = source.url
-  }
-  if (!input) return res.status(400).json({ error: 'Unknown source' })
+  const { input, status, error } = playingInput(body)
+  if (!input) return res.status(status).json({ error })
   if (syncing) return res.status(429).json({ error: 'Already syncing' })
   syncing = true
   try {
@@ -626,6 +636,56 @@ app.post('/autosync', requireAllowedOrigin, async (req, res) => {
   } finally {
     syncing = false
   }
+})
+
+// ---- skip intro, skip recap, the credits (segments.js) ----------------------------------------------
+
+const introStore = createIntroStore(DATA_DIR)
+const learning = new Set()   // 'tmdb:season:episode' being listened to
+const episodeOf = (q) => {
+  const tmdb = /^\d{1,9}$/.test(String(q.tmdb ?? '')) ? String(q.tmdb) : null
+  const season = Number(q.season), episode = Number(q.episode)
+  return tmdb && Number.isInteger(season) && season >= 0 && season < 1000 && Number.isInteger(episode) && episode > 0 && episode < 10000 ? { tmdb, season, episode, key: `${tmdb}:${season}:${episode}` } : null
+}
+
+/**
+ * ?tmdb&season&episode → { intro: [start, end] | null, recap, credits: start | null, source, learning }:
+ * TheIntroDB's when it knows the intro, else what this player learned (with the database's recap
+ * and credits, when it has them).
+ */
+app.get('/segments', requireAllowedOrigin, async (req, res) => {
+  const ep = episodeOf(req.query)
+  if (!ep) return res.status(400).json({ error: 'Which episode?' })
+  const db = await introDb(ep.tmdb, ep.season, ep.episode)
+  const learned = db?.intro ? null : introStore.learned(ep.tmdb, ep.season, ep.episode)
+  res.json({
+    intro: db?.intro ?? learned?.intro ?? null,
+    recap: db?.recap ?? null,
+    credits: db?.credits ?? null,
+    source: db?.intro ? 'introdb' : learned ? 'learned' : null,
+    learning: learning.has(ep.key),
+  })
+})
+
+/**
+ * Learn the episode's intro from its sound: { tmdb, season, episode, audio, kind, infoHash, index |
+ * sourceId }. Answers at once; the page asks /segments again until `learning` is over. One episode
+ * at a time (it decodes minutes of audio).
+ */
+app.post('/segments/learn', requireAllowedOrigin, (req, res) => {
+  const body = req.body ?? {}
+  const ep = episodeOf(body)
+  if (!ep) return res.status(400).json({ error: 'Which episode?' })
+  const { input, status, error } = playingInput(body)
+  if (!input) return res.status(status).json({ error })
+  if (learning.has(ep.key)) return res.status(202).json({ learning: true })
+  if (learning.size) return res.status(429).json({ error: 'Already listening to another episode' })
+  learning.add(ep.key)
+  const audio = Math.max(0, Math.floor(Number(body.audio) || 0))
+  learnIntro({ store: introStore, ffmpeg: FFMPEG, input, audio, tmdb: ep.tmdb, season: ep.season, episode: ep.episode })
+    .catch((err) => console.error('[intro]', err.message))
+    .finally(() => learning.delete(ep.key))
+  res.status(202).json({ learning: true })
 })
 
 // ---- what the player remembers (see state.js) -------------------------------------------------

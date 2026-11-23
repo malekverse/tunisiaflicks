@@ -17,6 +17,10 @@
     follow that clock), with a size, a style and a delay.
   - Keyboard shortcuts (? lists them), resume where the viewer stopped, preferences (/state), and
     "Play on TV" (/cast/…, see dlna.js).
+  - Episodes: "Skip intro" and "Skip recap" (/segments, see segments.js), and "Next episode" when the
+    credits start, a 10-second countdown the viewer can stop. The site says whether there is a next
+    episode and moves to it (postMessage, below); it also does this player's full screen, so the
+    next episode opens in full screen too.
 -->
 <style>
   :root {
@@ -188,6 +192,23 @@
   .casting h2 { margin: 14px 0 0; font-size: 20px; font-weight: 700; }
   .casting .clock { margin-top: 6px; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px; }
   .casting .row { justify-content: center; }
+  /* Skip intro or recap, and the next episode: bottom right, above the controls, there while they're due. */
+  .skip, .upnext { position: absolute; right: 24px; bottom: 112px; z-index: 5; transition: bottom .35s var(--ease), opacity .25s, transform .3s var(--ease); }
+  .player.idle .skip, .player.idle .upnext { bottom: 36px; }
+  .skip { display: inline-flex; align-items: center; gap: 10px; height: 48px; padding: 0 22px 0 18px; border-radius: 12px;
+    background: rgba(18,18,20,.72); backdrop-filter: blur(12px); box-shadow: inset 0 0 0 1px rgba(255,255,255,.35), 0 12px 30px -10px #000;
+    font-weight: 700; font-size: 15px; }
+  .skip:hover { background: #fff; color: #000; }
+  .skip svg.i { width: 18px; height: 18px; }
+  .skip.enter, .upnext.enter { opacity: 0; transform: translateY(6px); }
+  .upnext { width: min(340px, calc(100% - 48px)); padding: 14px; border-radius: 18px; background: var(--glass); backdrop-filter: blur(18px);
+    box-shadow: inset 0 0 0 1px var(--line), 0 24px 60px -20px #000; }
+  .upnext .what { color: var(--faint); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .upnext .label { margin-top: 2px; font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .upnext .row { margin: 12px 0 0; }
+  .upnext .go { position: relative; flex: 1; overflow: hidden; isolation: isolate; }
+  .upnext .go i { position: absolute; inset: 0; z-index: -1; background: rgba(255,36,20,.3); transform-origin: left; transform: scaleX(0); }
+  @media (prefers-reduced-motion: reduce) { .skip, .upnext { transition: none; } }
   .drop { position: absolute; inset: 12px; z-index: 8; display: grid; place-items: center; border-radius: 22px; border: 2px dashed rgba(255,255,255,.5);
     background: rgba(0,0,0,.7); font-size: 18px; font-weight: 700; pointer-events: none; }
   @media (max-width: 560px) {
@@ -227,6 +248,7 @@
       <button id="playBtn" class="ctl big" type="button" aria-label="Play (k)"><svg class="i" data-icon="play"></svg></button>
       <button id="backBtn" class="ctl hide-sm" type="button" aria-label="Back 10 seconds (j)"><svg class="i" data-icon="back"></svg><span class="sub">10</span></button>
       <button id="fwdBtn" class="ctl hide-sm" type="button" aria-label="Forward 10 seconds (l)"><svg class="i" data-icon="fwd"></svg><span class="sub">10</span></button>
+      <button id="nextBtn" class="ctl" type="button" aria-label="Next episode (n)" hidden><svg class="i" data-icon="next"></svg></button>
       <div id="volumeBox" class="volume">
         <button id="muteBtn" class="ctl" type="button" aria-label="Mute (m)"><svg class="i" data-icon="vol2"></svg></button>
         <input id="volume" type="range" min="0" max="1" step="0.01" value="1" aria-label="Volume" />
@@ -241,6 +263,16 @@
       <button id="keysBtn" class="ctl hide-sm" type="button" aria-label="Keyboard shortcuts (?)"><svg class="i" data-icon="keyboard"></svg></button>
       <button id="pipBtn" class="ctl hide-sm" type="button" aria-label="Picture in picture (p)"><svg class="i" data-icon="pip"></svg></button>
       <button id="fsBtn" class="ctl" type="button" aria-label="Full screen (f)"><svg class="i" data-icon="max"></svg></button>
+    </div>
+  </div>
+
+  <button id="skipBtn" class="skip" type="button" hidden></button>
+  <div id="upNext" class="upnext" role="region" aria-label="Next episode" hidden>
+    <div class="what" id="upNextWhat">Next episode</div>
+    <div class="label" id="upNextLabel"></div>
+    <div class="row">
+      <button id="upNextGo" class="btn go" type="button"><i id="upNextFill"></i><svg class="i" data-icon="play"></svg><span>Play now</span></button>
+      <button id="upNextStay" class="btn ghost" type="button">Watch credits</button>
     </div>
   </div>
 
@@ -350,6 +382,7 @@
     disk: '<path d="M21 12H3"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
     refresh: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
     gauge: '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
+    next: '<polygon points="5 4 15 12 5 20 5 4" fill="currentColor"/><line x1="19" x2="19" y1="5" y2="19"/>',
     cast: '<path d="M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/><path d="M2 12a9 9 0 0 1 8 8"/><path d="M2 16a5 5 0 0 1 4 4"/><line x1="2" x2="2.01" y1="20" y2="20"/>',
   }
   const svg = (name, extra = '') => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true" ${extra}>${ICONS[name] || ''}</svg>`
@@ -560,6 +593,7 @@
 
   // ---- the video's own events ---------------------------------------------------------------------
   video.addEventListener('playing', () => {
+    if (!segmentsAsked) { segmentsAsked = true; loadSegments() }
     stopStats()
     $('loading').hidden = true
     $('buffer').hidden = true
@@ -588,11 +622,12 @@
   video.addEventListener('play', () => { setIcon($('playBtn').querySelector('svg'), 'pause'); $('playBtn').setAttribute('aria-label', 'Pause (k)'); poke() })
   video.addEventListener('pause', () => { setIcon($('playBtn').querySelector('svg'), 'play'); $('playBtn').setAttribute('aria-label', 'Play (k)'); poke(); saveProgress() })
   video.addEventListener('timeupdate', renderTime)
+  video.addEventListener('timeupdate', () => renderEpisodeBits())
   video.addEventListener('progress', renderTime)
   video.addEventListener('durationchange', renderTime)
   video.addEventListener('volumechange', renderVolume)
   video.addEventListener('ratechange', () => { $('speedBtn').textContent = `${video.playbackRate}×` })
-  video.addEventListener('ended', () => { saveProgress(true); poke() })
+  video.addEventListener('ended', () => { saveProgress(true); poke(); if (canGoNext()) { upNext.dismissed = false; showUpNext() } })
 
   // ---- time, the timeline ---------------------------------------------------------------------------
   function bufferedEnd() {
@@ -709,15 +744,22 @@
   }
 
   // Full screen and picture in picture
+  // On the site, the site makes its player frame full screen (so the next episode, a new page in the
+  // same frame, stays full screen); alone, this page does it itself.
   function toggleFullscreen() {
+    if (site.ready && !document.fullscreenElement) return tellSite('fullscreen', { on: !site.fullscreen })
+    ownFullscreen()
+  }
+  function ownFullscreen() {
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
     else player.requestFullscreen?.().catch(() => {})
   }
-  document.addEventListener('fullscreenchange', () => {
-    const on = !!document.fullscreenElement
+  function renderFullscreen() {
+    const on = !!document.fullscreenElement || site.fullscreen
     setIcon($('fsBtn').querySelector('svg'), on ? 'min' : 'max')
     $('fsBtn').setAttribute('aria-label', on ? 'Exit full screen (f)' : 'Full screen (f)')
-  })
+  }
+  document.addEventListener('fullscreenchange', renderFullscreen)
   $('fsBtn').addEventListener('click', toggleFullscreen)
   $('pipBtn').hidden = !document.pictureInPictureEnabled
   async function togglePip() {
@@ -1316,7 +1358,7 @@
         [['Space', 'K'], 'Play or pause'], [['←', '→'], 'Back or forward 5s'], [['J', 'L'], 'Back or forward 10s'],
         [['↑', '↓'], 'Volume'], [['M'], 'Mute'], [['F'], 'Full screen'], [['P'], 'Picture in picture'],
         [['C'], 'Subtitles on or off'], [['A'], 'Audio and dubbed versions'], [['[', ']'], 'Subtitle delay'], [['<', '>'], 'Speed'],
-        [['0', '…', '9'], 'Jump to 0% … 90%'], [['Home', 'End'], 'Start or end'], [['S'], 'Sources'], [['?'], 'These shortcuts'], [['Esc'], 'Close'],
+        [['0', '…', '9'], 'Jump to 0% … 90%'], [['Home', 'End'], 'Start or end'], [['S'], 'Sources'], ...(type === 'tv' ? [[['I'], 'Skip intro or recap'], [['N'], 'Next episode']] : []), [['?'], 'These shortcuts'], [['Esc'], 'Close'],
       ]
       body.innerHTML = `<div class="keys">${keys.map(([k, what]) => `<span>${k.map((x) => x === '…' ? '…' : `<kbd>${esc(x)}</kbd>`).join(' ')}</span><span>${esc(what)}</span>`).join('')}</div>`
     }
@@ -1456,12 +1498,156 @@
       case '<': case ',': if (e.shiftKey || key === '<') { handled(); stepSpeed(-1) } break
       case '>': case '.': if (e.shiftKey || key === '>') { handled(); stepSpeed(1) } break
       case '?': handled(); openPanel('keys'); break
+      case 'i': if (skipShown) { handled(); skipSegment() } break
+      case 'n': if (canGoNext()) { handled(); goNext() } break
       case 'Home': handled(); seekTo(0); break
       case 'End': handled(); seekTo(duration()); break
       default:
         if (/^[0-9]$/.test(key) && duration()) { handled(); seekTo(duration() * Number(key) / 10); osd('right', `${Number(key) * 10}%`) }
     }
   })
+
+  // ---- the site around this player ------------------------------------------------------------------
+  // In the site's player frame, the site tells this page whether there's a next episode (and its
+  // name), and whether its frame is full screen; this page asks it to go to the next episode and to
+  // go full screen. Only with the page that framed it (the referrer's origin, see the iframe's
+  // referrerPolicy), never with anyone else.
+  const site = { ready: false, hasNext: false, nextLabel: '', fullscreen: false }
+  const siteOrigin = (() => { try { return window.parent !== window && document.referrer ? new URL(document.referrer).origin : null } catch { return null } })()
+  function tellSite(action, extra = {}) {
+    if (siteOrigin) window.parent.postMessage({ type: 'tunisiaflicks:player', action, ...extra }, siteOrigin)
+  }
+  addEventListener('message', (e) => {
+    if (!siteOrigin || e.source !== window.parent || e.origin !== siteOrigin) return
+    const d = e.data
+    if (!d || typeof d !== 'object' || d.type !== 'tunisiaflicks:site') return
+    site.ready = true
+    if ('hasNext' in d) {
+      site.hasNext = d.hasNext === true
+      site.nextLabel = typeof d.nextLabel === 'string' ? d.nextLabel.slice(0, 80) : ''
+      $('nextBtn').hidden = !canGoNext()
+      $('upNextLabel').textContent = site.nextLabel || episodeAfter()
+      if (!canGoNext()) hideUpNext()
+    }
+    if ('fullscreen' in d) { site.fullscreen = d.fullscreen === true; renderFullscreen() }
+    // The site couldn't (no click to go with it): do it here.
+    if (d.fullscreenFailed) ownFullscreen()
+  })
+
+  // ---- skip intro, skip recap, next episode (segments.js) ---------------------------------------
+  let segments = null       // { intro: [start, end] | null, recap, credits: start | null, source, learning }
+  let segmentsAsked = false
+  let skipShown = null      // 'intro' | 'recap' while its button shows
+  let segmentsTimer = null
+  const episodeQuery = () => new URLSearchParams({ tmdb, season, episode })
+  const episodeAfter = () => `Season ${season}, episode ${episode + 1}`
+
+  async function loadSegments() {
+    if (type !== 'tv' || !tmdb) return
+    try { segments = await json(`/segments?${episodeQuery()}`) } catch { return }
+    renderEpisodeBits()
+    // Not in the database: learn it from the sound, when watching from the start (listening to the
+    // first minutes then costs nothing: they're being downloaded to watch anyway).
+    if (!segments.intro && !segments.learning && now() < 60 && current) {
+      const body = { tmdb, season, episode, audio: audioTrack, ...(current.kind === 'url' ? { kind: 'url', sourceId: current.sourceId } : { kind: 'torrent', infoHash: current.infoHash, index: current.index }) }
+      try { await send('/segments/learn', 'POST', body); segments.learning = true } catch {}
+    }
+    if (segments.learning) watchLearning()
+  }
+  function watchLearning() {
+    clearTimeout(segmentsTimer)
+    segmentsTimer = setTimeout(async () => {
+      try {
+        segments = await json(`/segments?${episodeQuery()}`)
+        renderEpisodeBits()
+        if (segments.learning) watchLearning()
+      } catch {}
+    }, 8000)
+  }
+
+  const showEl = (el) => { if (!el.hidden) return; el.classList.add('enter'); el.hidden = false; requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove('enter'))) }
+
+  /** On every tick: the skip button while an intro or recap plays, the next episode at the credits. */
+  function renderEpisodeBits() {
+    if (type !== 'tv' || cast || leaving) return
+    const t = now()
+    const inside = (span) => !!span && t >= span[0] && t < span[1] - 1.5
+    const which = inside(segments?.recap) ? 'recap' : inside(segments?.intro) ? 'intro' : null
+    if (which !== skipShown) {
+      skipShown = which
+      const button = $('skipBtn')
+      if (which) {
+        const label = which === 'recap' ? 'Skip recap' : 'Skip intro'
+        button.innerHTML = `${svg('next')}${label}`
+        button.setAttribute('aria-label', `${label} (i)`)
+        showEl(button)
+      } else button.hidden = true
+    }
+    if (!canGoNext()) return
+    const at = creditsAt()
+    if (at === null) return
+    if (t < at - 2) { upNext.dismissed = false; if (upNext.shown) hideUpNext() }
+    else if (t >= at && !upNext.dismissed && !upNext.shown) showUpNext()
+  }
+  function skipSegment() {
+    const span = skipShown && segments?.[skipShown]
+    if (!span) return
+    const what = skipShown
+    seekTo(span[1])
+    osd('next', what === 'recap' ? 'Recap skipped' : 'Intro skipped')
+  }
+  $('skipBtn').addEventListener('click', skipSegment)
+
+  // Next episode: at the credits (from the database), or else in the last 25 seconds.
+  const canGoNext = () => type === 'tv' && site.hasNext
+  function creditsAt() {
+    const d = duration()
+    if (segments?.credits && (!d || segments.credits < d - 5)) return segments.credits
+    return d > 300 ? d - 25 : null
+  }
+  const COUNTDOWN = 10
+  const upNext = { shown: false, dismissed: false, left: COUNTDOWN, timer: null }
+  function showUpNext() {
+    if (upNext.shown || leaving) return
+    upNext.shown = true
+    upNext.left = COUNTDOWN
+    renderCountdown()
+    showEl($('upNext'))
+    clearInterval(upNext.timer)
+    upNext.timer = setInterval(() => {
+      // It counts while the video plays (or has ended), not while it's paused.
+      if (video.paused && !video.ended) return
+      upNext.left = Math.max(0, upNext.left - 0.1)
+      renderCountdown()
+      if (upNext.left <= 0) goNext()
+    }, 100)
+  }
+  function hideUpNext() {
+    clearInterval(upNext.timer)
+    upNext.shown = false
+    $('upNext').hidden = true
+  }
+  function renderCountdown() {
+    $('upNextFill').style.transform = `scaleX(${1 - upNext.left / COUNTDOWN})`
+    $('upNextWhat').textContent = `Next episode in ${Math.ceil(upNext.left)}`
+  }
+  let leaving = false
+  function goNext() {
+    if (leaving || !canGoNext()) return
+    leaving = true
+    hideUpNext()
+    $('skipBtn').hidden = true
+    saveProgress(true)
+    video.pause()
+    showLoading()
+    setStage(0, 'Next episode…', site.nextLabel || episodeAfter())
+    tellSite('next')
+    // The site swaps this page for the next one; if it doesn't, say so.
+    setTimeout(() => { leaving = false; fail('The next episode didn’t open', 'Pick it on the page, under the player.') }, 6000)
+  }
+  $('nextBtn').addEventListener('click', goNext)
+  $('upNextGo').addEventListener('click', goNext)
+  $('upNextStay').addEventListener('click', () => { upNext.dismissed = true; hideUpNext(); $('playBtn').focus() })
 
   // ---- Play on TV --------------------------------------------------------------------------------------
   let cast = null         // { id, device } while a TV plays it
@@ -1566,6 +1752,7 @@
   $('errFaster').addEventListener('click', playNextBest)
   $('retry').addEventListener('click', () => (current?.sourceId ? play(current.sourceId, now()) : start()))
   addEventListener('pagehide', stopStats)
+  tellSite('hello')
   start()
 </script>
 </body>

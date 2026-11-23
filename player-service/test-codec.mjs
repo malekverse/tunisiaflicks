@@ -8,6 +8,7 @@ import fs from 'node:fs'
 import * as ffbin from 'ffmpeg-ffprobe-static'
 import { analyze, ffmpegArgs } from './codec.js'
 import { bestFit, speechSegments } from './autosync.js'
+import { createIntroStore, learnIntro } from './segments.js'
 
 const FFMPEG = ffbin.ffmpegPath
 const FFPROBE = ffbin.ffprobePath
@@ -94,6 +95,33 @@ for (const c of CASES) {
   const late = lines.map(([a, b]) => [a - 2.7, b - 2.7])
   const fit = bestFit(late, speech ?? [], { from: 20, to: 100 })
   check('auto-sync: a subtitle 2.7 s early is moved 2.7 s later', fit.confident && fit.scale === 1 && Math.abs(fit.offset - 2.7) <= 0.2, JSON.stringify(fit))
+}
+
+// ---- skip intro: real ffmpeg listening to two "episodes" that open with the same title song ---------
+{
+  // The song: two voices of notes that change every 0.4 and 0.77 s, on a beat. The episodes: pink
+  // noise switched on and off like speech (each its own), the song after cold opens of 40 and 75 s.
+  const songExpr = "0.25*sin(2*PI*(220+55*floor(mod(t*2.5,9)))*t)+0.18*sin(2*PI*(330+40*floor(mod(t*1.3,7)))*t)*(0.6+0.4*sin(2*PI*2*t))"
+  const episode = async (name, coldOpen, seed) => {
+    const file = path.join(tmp, `${name}.m4a`)
+    const rest = 200 - coldOpen - 45
+    await run(FFMPEG, ['-y',
+      '-f', 'lavfi', '-i', `anoisesrc=color=pink:seed=${seed}:sample_rate=16000:duration=${coldOpen}`,
+      '-f', 'lavfi', '-i', `aevalsrc='${songExpr}':s=16000:d=45`,
+      '-f', 'lavfi', '-i', `anoisesrc=color=pink:seed=${seed + 1}:sample_rate=16000:duration=${rest}`,
+      '-filter_complex', `[0:a]volume=0.5,volume=0:enable='lt(mod(t,1.7),0.5)'[a];[2:a]volume=0.5,volume=0:enable='lt(mod(t,1.3),0.4)'[c];[a][1:a][c]concat=n=3:v=0:a=1`,
+      '-c:a', 'aac', file])
+    return file
+  }
+  const [one, two] = [await episode('ep1', 40, 11), await episode('ep2', 75, 23)]
+  const store = createIntroStore(path.join(tmp, 'data'))
+  const checkpoints = [100, 200]
+  const first = await learnIntro({ store, ffmpeg: FFMPEG, input: one, tmdb: 9, season: 1, episode: 1, checkpoints })
+  check('skip intro: the first episode has nothing to compare with yet', first === null, JSON.stringify(first))
+  const second = await learnIntro({ store, ffmpeg: FFMPEG, input: two, tmdb: 9, season: 1, episode: 2, checkpoints })
+  check('skip intro: the second episode’s intro is found from the sound', !!second && Math.abs(second[0] - 75) <= 2 && Math.abs(second[1] - 120) <= 2, JSON.stringify(second))
+  const taught = store.learned(9, 1, 1)?.intro
+  check('skip intro: and the first episode learns its own', !!taught && Math.abs(taught[0] - 40) <= 2 && Math.abs(taught[1] - 85) <= 2, JSON.stringify(taught))
 }
 
 fs.rmSync(tmp, { recursive: true, force: true })

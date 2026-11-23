@@ -7,6 +7,10 @@ import { releaseMatches, rankOptions, pickBest } from './resolve.js'
 import { isPack, streamScore, rankForTitle } from './providers.js'
 import { manifestUrl, mediaId, sizeIn, seedsIn, serves } from './addons.js'
 import { isPrivateIPv4, escapeXml } from './dlna.js'
+import { agree, createIntroStore, fingerprint, fromIntroDb, introDb, sharedStretch, HOP, RATE } from './segments.js'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 
 const probe = (vcodec, acodec, format) => ({
   format: { format_name: format, duration: '5400.2' },
@@ -159,3 +163,99 @@ test('auto-sync: silences from ffmpeg’s log, and the speech between them', () 
   assert.deepEqual(speechFrom(silences, 12), [[2.5, 6.1], [6.4, 9.9]])
   assert.equal(parseSilences('nothing here', 10), null)
 })
+
+
+// ---- skip intro (segments.js) ----------------------------------------------------------------------
+
+test('skip intro: TheIntroDB’s answer, read', () => {
+  const found = fromIntroDb({ intro: [{ start_ms: 5008, end_ms: 106018 }], recap: [{ start_ms: null, end_ms: 42000 }], credits: [{ start_ms: 3251127, end_ms: null }] })
+  assert.deepEqual(found, { intro: [5, 106], recap: [0, 42], credits: 3251.127 })
+  // An intro with no end, or too long to be one, or nothing at all: none.
+  assert.equal(fromIntroDb({ intro: [{ start_ms: 1000, end_ms: null }] }).intro, null)
+  assert.equal(fromIntroDb({ intro: [{ start_ms: 0, end_ms: 900000 }] }).intro, null)
+  assert.deepEqual(fromIntroDb(null), { intro: null, recap: null, credits: null })
+})
+
+test('skip intro: TheIntroDB is asked once, then remembered', async () => {
+  let calls = 0
+  const fetchImpl = async (url) => { calls++; assert.match(url, /tmdb_id=77&season=2&episode=3$/); return { ok: true, json: async () => ({ intro: [{ start_ms: 1000, end_ms: 61000 }] }) } }
+  assert.deepEqual((await introDb(77, 2, 3, { fetchImpl })).intro, [1, 61])
+  await introDb(77, 2, 3, { fetchImpl })
+  assert.equal(calls, 1)
+  assert.equal(await introDb(78, 1, 1, { fetchImpl: async () => { throw new Error('offline') } }), null)
+})
+
+// A "title song" (chords changing every 0.4 s, a beat) inside two "episodes" of speech-like sound,
+// after cold opens of different lengths, a few milliseconds off the frame grid, one quieter.
+let seed = 7
+const rnd = () => (seed = (Math.imul(seed, 1103515245) + 12345) >>> 0) / 2 ** 32
+const song = (seconds) => {
+  const out = new Float64Array(seconds * RATE)
+  let notes = [220, 277, 330]
+  for (let i = 0; i < out.length; i++) {
+    if (i % (RATE * 0.4) === 0) notes = notes.map(() => 200 + Math.floor(rnd() * 12) * 60)
+    const t = i / RATE
+    out[i] = notes.reduce((sum, f) => sum + Math.sin(2 * Math.PI * f * t), 0) * 3000 * (1 + 0.5 * Math.sin(4 * Math.PI * t))
+  }
+  return out
+}
+const talk = (seconds) => {
+  const out = new Float64Array(seconds * RATE)
+  let f = 300, amp = 0
+  for (let i = 0; i < out.length; i++) {
+    if (i % (RATE * 0.15) === 0) { f = 150 + rnd() * 900; amp = rnd() < 0.3 ? 0 : 4000 * rnd() }
+    out[i] = (Math.sin((2 * Math.PI * f * i) / RATE) + (rnd() - 0.5)) * amp
+  }
+  return out
+}
+const pcm = (x) => Int16Array.from(x, (v) => Math.max(-32768, Math.min(32767, v)))
+const THEME = song(50)
+const episodeWith = (coldOpen, total, offGrid, gain) => {
+  const out = talk(total)
+  const at = coldOpen * RATE + offGrid
+  for (let i = 0; i < THEME.length; i++) out[at + i] = THEME[i] * gain + (rnd() - 0.5) * 300
+  return pcm(out)
+}
+
+test('skip intro: two episodes’ shared title song is found, wherever it starts', async () => {
+  const one = episodeWith(70, 200, 0, 1)
+  const two = episodeWith(110, 200, 437, 0.6)
+  const ref = fingerprint(two)
+  // Of the frame's two halves, the better lined up finds it.
+  const [x, y] = [await sharedStretch(fingerprint(one), ref), await sharedStretch(fingerprint(one, HOP / 2), ref)]
+  const found = !x ? y : !y ? x : (y.a[1] - y.a[0] > x.a[1] - x.a[0] ? y : x)
+  assert.ok(found, 'found')
+  assert.ok(Math.abs(found.a[0] - 70) <= 2 && Math.abs(found.a[1] - 120) <= 2, JSON.stringify(found))
+  assert.ok(Math.abs(found.b[0] - 110) <= 2 && Math.abs(found.b[1] - 160) <= 2, JSON.stringify(found))
+})
+
+test('skip intro: unrelated sound shares nothing', async () => {
+  assert.equal(await sharedStretch(fingerprint(pcm(talk(150))), fingerprint(pcm(talk(150)))), null)
+})
+
+test('skip intro: the stretch most episodes agree on wins', () => {
+  assert.deepEqual(agree([[60, 110], [61, 109], [300, 400]]), [60, 110])
+  assert.deepEqual(agree([null, [10, 40]]), [10, 40])
+  assert.equal(agree([null, null]), null)
+})
+
+test('skip intro: what was learned is kept per show, the last 10 episodes', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'intro-store-'))
+  try {
+    const store = createIntroStore(dir)
+    store.save(5, 1, 1, { fp: Uint32Array.of(1, 2, 3) })
+    store.save(5, 1, 2, { fp: Uint32Array.of(4, 5, 6), intro: [30, 80] })
+    assert.deepEqual(store.learned(5, 1, 2), { intro: [30, 80] })
+    assert.equal(store.learned(5, 1, 1), null)
+    const refs = store.references(5, 1, 3)
+    assert.deepEqual(refs.map((r) => r.key), ['1:2', '1:1'])   // the nearest episode first
+    assert.deepEqual([...refs[0].fp], [4, 5, 6])
+    store.teach(5, '1:1', [29, 79])
+    assert.deepEqual(store.learned(5, 1, 1), { intro: [29, 79] })
+    for (let e = 3; e <= 14; e++) store.save(5, 1, e, { fp: Uint32Array.of(e) })
+    assert.equal(store.references(5, 2, 1).length, 10)
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+})
+

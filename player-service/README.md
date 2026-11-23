@@ -44,6 +44,8 @@ Each file is probed with `ffprobe`, then one of three paths is chosen (see `code
 | `GET /subtitles?type=…&tmdb=…` · `GET /subtitle/:id` | every subtitle for a title (YIFY Subtitles, SubDL with `SUBDL_API_KEY`, and the extensions'), then one as UTF-8 text, unzipped and decoded (Arabic Windows-1256 too) |
 | `POST /translate` | `{ to, lines }`: a batch of subtitle lines in another language (`translate.js`) |
 | `POST /autosync` | `{ kind, infoHash, index \| sourceId, audio, from, duration, cues, current }`: the shift (and frame-rate stretch) that lines a subtitle up with the voices in that part of what's playing (`autosync.js`: ffmpeg's silence detection on the voice band, then the best fit over ±40 s and 23.976 ↔ 25 fps) |
+| `GET /segments?tmdb=&season=&episode=` | an episode's intro and recap (`[start, end]`) and when its credits start: TheIntroDB's (theintrodb.org, free; only the three numbers are sent), else what this player learned (`segments.js`), with `learning` while it listens |
+| `POST /segments/learn` | `{ tmdb, season, episode, audio, kind, infoHash, index \| sourceId }`: learn the episode's intro from its sound (answers at once, `202`; one episode at a time): ffmpeg listens to its first 8 minutes as they arrive, an audio fingerprint is kept (`DATA_DIR/intros/<tmdb>.json`, the last 10 episodes per show), and the stretch it shares with the episodes heard before is the intro (so it works from the second episode on) |
 | `GET /addons` · `GET /addons/catalog` · `POST /addons` · `DELETE /addons/:id` | the installed extensions, the ready list (`extensions.json`), install one by its `manifest.json` address, remove one |
 | `GET /state?key=movie:550` · `PUT /prefs` · `PUT /progress/:key` | what the player remembers (`state.js`): preferences, and where the viewer stopped |
 | `GET /embed/movie/:tmdb` · `GET /embed/tv/:tmdb/:season/:episode` | the player as an embed, for the TunisiaFlicks site's player frame (desktop app). Only the site's origins and loopback may frame it (`frame-ancestors`). |
@@ -87,6 +89,12 @@ stopped, and Play on TV. Its panels:
   indexers), the ready list (`extensions.json`, one click), and any other
   by its `manifest.json` address. They follow the common add-on protocol: `/stream/…` and
   `/subtitles/…` for an IMDB id.
+
+Episodes: **Skip intro** and **Skip recap** show while they play (or press `I`), and when the credits
+start (from TheIntroDB, or the last 25 seconds) **Next episode** counts down 10 seconds, which the
+viewer can stop ("Watch credits"); `N` or the bar's button goes at once. The site says whether there
+is a next episode and goes to it (postMessage, only with the page that framed the player); it also
+does the player's full screen, so the next episode opens in full screen too.
 
 Converted streams (MKV, HEVC, another audio track) seek by starting again where asked: the page asks
 `/seek` for the keyframe, then plays `…?t=<keyframe>`, and its clock is that offset plus the video's

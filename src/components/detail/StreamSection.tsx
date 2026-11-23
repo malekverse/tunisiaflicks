@@ -46,6 +46,11 @@ const PLAYER_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-presen
  * watching]) comes first, then Start goes full screen, keeps the screen awake and hands the remote
  * to the player. Back while playing opens the player menu (back to the video, next episode,
  * sources, the next source, leave); a second Back leaves the player.
+ *
+ * The desktop app's own player talks to this frame (postMessage, only with the player's own origin):
+ * it asks for the next episode when the credits roll (or the viewer presses Next), and for full
+ * screen, which this frame does itself so the next episode, a new page in the same frame, opens in
+ * full screen too. It hears whether there is a next episode, its name, and the full-screen state.
  */
 export default function StreamSection({ services: providerServices, media, downloadSlot, enabled = true, placeholder, backdrop, onNext, nextLabel, className }: {
     services: StreamProvider[]
@@ -268,6 +273,46 @@ export default function StreamSection({ services: providerServices, media, downl
     const sourceName = source.current?.name ?? ''
     const briefing = tv && enabled && !started
 
+    // --- The desktop app's own player: the next episode, and full screen ---
+    const onNextRef = useRef(onNext)
+    onNextRef.current = onNext
+    const playerOrigin = (() => {
+        if (sourceName !== LOCAL_PLAYER_SOURCE || !url) return null
+        try { return new URL(url).origin } catch { return null }
+    })()
+    const tellPlayer = useCallback((data: Record<string, unknown>) => {
+        if (playerOrigin) iframeRef.current?.contentWindow?.postMessage({ type: 'tunisiaflicks:site', ...data }, playerOrigin)
+    }, [playerOrigin])
+    const nextState = useCallback(() => ({ hasNext: !!onNextRef.current, nextLabel: nextLabel ?? '' }), [nextLabel])
+    useEffect(() => {
+        if (!playerOrigin) return
+        const framed = () => document.fullscreenElement === frameRef.current
+        const onMessage = (event: MessageEvent) => {
+            if (event.origin !== playerOrigin || event.source !== iframeRef.current?.contentWindow) return
+            const data = event.data as { type?: unknown, action?: unknown, on?: unknown } | null
+            if (!data || data.type !== 'tunisiaflicks:player') return
+            if (data.action === 'hello') tellPlayer({ ...nextState(), fullscreen: framed() })
+            else if (data.action === 'next') onNextRef.current?.()
+            else if (data.action === 'fullscreen') {
+                if (data.on === true && !document.fullscreenElement) {
+                    const request = frameRef.current?.requestFullscreen?.({ navigationUI: 'hide' })
+                    if (request) request.catch(() => tellPlayer({ fullscreenFailed: true }))
+                    else tellPlayer({ fullscreenFailed: true })
+                } else if (data.on === false && document.fullscreenElement) document.exitFullscreen().catch(() => {})
+            }
+        }
+        const onFullscreen = () => tellPlayer({ fullscreen: framed() })
+        window.addEventListener('message', onMessage)
+        document.addEventListener('fullscreenchange', onFullscreen)
+        return () => {
+            window.removeEventListener('message', onMessage)
+            document.removeEventListener('fullscreenchange', onFullscreen)
+        }
+    }, [playerOrigin, tellPlayer, nextState])
+    // A next episode that shows up (or goes) while the player is open.
+    const hasNext = !!onNext
+    useEffect(() => { tellPlayer(nextState()) }, [hasNext, tellPlayer, nextState])
+
     return (
         <section
             id="streamSection"
@@ -288,7 +333,7 @@ export default function StreamSection({ services: providerServices, media, downl
                     style={{ background: `rgb(var(--tf-ambient) / ${lightsOff ? 0.5 : 0.24})` }}
                 />
 
-                <div ref={frameRef} className="relative mx-auto aspect-video max-h-[80vh] w-full overflow-hidden rounded-[14px] bg-black shadow-[0_40px_100px_-30px_rgb(0_0_0/0.9)] ring-1 ring-white/10 md:rounded-[22px]">
+                <div ref={frameRef} className="relative mx-auto aspect-video max-h-[80vh] w-full overflow-hidden rounded-[14px] bg-black shadow-[0_40px_100px_-30px_rgb(0_0_0/0.9)] ring-1 ring-white/10 md:rounded-[22px] [&:fullscreen]:rounded-none [&:fullscreen]:ring-0">
                     {!enabled ? (
                         <div className="absolute inset-0">
                             {backdrop && <TmdbImage kind="backdrop" path={backdrop} alt="" fill sizes="(min-width: 1400px) 1400px, 100vw" className="object-cover opacity-30 blur-[2px]" />}
