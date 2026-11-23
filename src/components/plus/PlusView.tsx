@@ -2,7 +2,8 @@
 // /plus: TunisiaFlicks+. Where you stand (on until a date, or not yet), what it gives (accent
 // colours, a badge on your page, more profiles and lists), and the two ways to get it: a coffee
 // or a monthly membership on Ko-fi (/support links it to the account), or three friends who join
-// through your link for each free month. And giving it to a friend (GiftPlus).
+// through your link for each free month. Sharing it with a family (FamilyPlus), and giving it to a
+// friend (GiftPlus).
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { m } from 'framer-motion'
@@ -17,6 +18,7 @@ import { spring } from '@/src/lib/motion'
 import { cn } from '@/src/lib/utils'
 import { applyAccent } from './PlusSync'
 import GiftPlus from './GiftPlus'
+import FamilyPlus from './FamilyPlus'
 
 export type PlusData = {
   active: boolean
@@ -25,6 +27,7 @@ export type PlusData = {
   daysLeft: number
   showBadge: boolean
   membership: boolean
+  viaFamily: boolean
   invite: { link: string | null, friends: number, waiting: number, months: number, towardsNext: number }
 }
 
@@ -103,7 +106,7 @@ export default function PlusView({ initial, kofi }: { initial: PlusData, kofi: b
             <p className={cn('mt-5 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[14px] font-medium', data.active ? 'bg-white text-black' : 'bg-white/[0.08] text-white/80')}>
               {data.active ? <Check aria-hidden className="h-4 w-4" /> : <Lock aria-hidden className="h-4 w-4" />}
               {data.active
-                ? (data.membership ? t('plus.status.membership') : t('plus.status.until', { date: until ?? '' }))
+                ? (data.viaFamily ? t('family.status', { date: until ?? '' }) : data.membership ? t('plus.status.membership') : t('plus.status.until', { date: until ?? '' }))
                 : t('plus.status.off')}
             </p>
           </header>
@@ -216,6 +219,7 @@ export default function PlusView({ initial, kofi }: { initial: PlusData, kofi: b
                 <p className="mt-4 flex items-start gap-2 text-[12.5px] leading-relaxed text-white/50"><Sparkles aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />{t('plus.invite.rules')}</p>
               </div>
             </div>
+            <FamilyPlus kofi={kofi} />
             <GiftPlus />
           </section>
         </div>

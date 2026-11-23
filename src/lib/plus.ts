@@ -3,7 +3,7 @@
 // plus       {_id: userId, until, grants: [{at, days, source}] (last 50), inviteMonths, accent, showBadge}
 // referrals  {_id: newUserId, referrerId, at, qualifiedAt}  (one referrer per account, ever)
 // users.refCode  8 characters (sparse unique index): the invite link's ?ref=
-// Gifts (a month of Plus paid for a friend) are in lib/plus-gifts.
+// Gifts (a month of Plus paid for a friend) are in lib/plus-gifts, Family sharing in lib/plus-family.
 import 'server-only'
 import { cache } from 'react'
 import { randomBytes } from 'crypto'
@@ -62,20 +62,24 @@ export async function addPlusDays(userId: string, days: number, source: PlusSour
 /** A Ko-fi coffee or membership payment (lib/support credit): a month of Plus from when it was paid. */
 export const creditKofi = (userId: string, at: Date, membership: boolean) => addPlusDays(userId, PLUS_DAYS, membership ? 'membership' : 'coffee', at)
 
-export type PlusState = { active: boolean, until: Date | null, accent: Accent, showBadge: boolean, membership: boolean }
+/** viaFamily: the Plus comes from someone's Family membership (lib/plus-family), not the account's own. */
+export type PlusState = { active: boolean, until: Date | null, accent: Accent, showBadge: boolean, membership: boolean, viaFamily: boolean }
 
 export const getPlus = cache(async (userId: string): Promise<PlusState> => {
   const { plus } = await plusDb()
   const doc = await plus.findOne({ _id: userId })
-  const active = isActive(doc?.until)
+  const own = isActive(doc?.until)
+  const family = own ? null : await (await import('@/src/lib/plus-family')).activeFamilyOf(userId)
+  const active = own || !!family
   const lastMembership = [...(doc?.grants ?? [])].reverse().find((grant) => grant.source === 'membership')
   return {
     active,
-    until: doc?.until ?? null,
+    until: family ? family.until : doc?.until ?? null,
     accent: active && isAccent(doc?.accent) ? doc!.accent! : 'red',
     showBadge: active && doc?.showBadge === true,
     // A membership paid in the last 35 days: it renews by itself.
-    membership: !!lastMembership && Date.now() - new Date(lastMembership.at).getTime() < 35 * 86_400_000,
+    membership: !family && !!lastMembership && Date.now() - new Date(lastMembership.at).getTime() < 35 * 86_400_000,
+    viaFamily: !!family,
   }
 })
 
@@ -86,7 +90,8 @@ export async function setPlusPrefs(userId: string, prefs: { accent?: Accent, sho
   const set: Partial<PlusDoc> = {}
   if (prefs.accent) set.accent = prefs.accent
   if (typeof prefs.showBadge === 'boolean') set.showBadge = prefs.showBadge
-  if (Object.keys(set).length) await plus.updateOne({ _id: userId }, { $set: set })
+  // Upserted: a family member may have no Plus document of their own yet.
+  if (Object.keys(set).length) await plus.updateOne({ _id: userId }, { $set: set, $setOnInsert: { until: null, grants: [], inviteMonths: 0 } }, { upsert: true })
 }
 
 // ---- invites -------------------------------------------------------------------------------------
@@ -182,18 +187,21 @@ export async function inviteProgress(userId: string): Promise<{ code: string | n
 export async function exportPlusData(userId: string): Promise<unknown> {
   const { plus, referrals } = await plusDb()
   const { exportGiftData } = await import('@/src/lib/plus-gifts')
-  const [doc, invited, invitedBy, gifts] = await Promise.all([
+  const { exportFamilyData } = await import('@/src/lib/plus-family')
+  const [doc, invited, invitedBy, gifts, family] = await Promise.all([
     plus.findOne({ _id: userId }),
     referrals.countDocuments({ referrerId: userId }),
     referrals.findOne({ _id: userId }, { projection: { at: 1 } }),
     exportGiftData(userId),
+    exportFamilyData(userId),
   ])
-  return { plus: doc ? { until: doc.until, grants: doc.grants, inviteMonths: doc.inviteMonths, accent: doc.accent ?? null, showBadge: doc.showBadge ?? false } : null, friendsInvited: invited, joinedThroughAnInvite: !!invitedBy, gifts }
+  return { plus: doc ? { until: doc.until, grants: doc.grants, inviteMonths: doc.inviteMonths, accent: doc.accent ?? null, showBadge: doc.showBadge ?? false } : null, friendsInvited: invited, joinedThroughAnInvite: !!invitedBy, gifts, family }
 }
 
 /** Account deletion: Plus, the account's place in invites (as the invited one and the inviter), and its gifts. */
 export async function deletePlusData(userId: string): Promise<void> {
   const { plus, referrals } = await plusDb()
   const { deleteGiftData } = await import('@/src/lib/plus-gifts')
-  await Promise.all([plus.deleteOne({ _id: userId }), referrals.deleteMany({ $or: [{ _id: userId }, { referrerId: userId }] }), deleteGiftData(userId)])
+  const { deleteFamilyData } = await import('@/src/lib/plus-family')
+  await Promise.all([plus.deleteOne({ _id: userId }), referrals.deleteMany({ $or: [{ _id: userId }, { referrerId: userId }] }), deleteGiftData(userId), deleteFamilyData(userId)])
 }

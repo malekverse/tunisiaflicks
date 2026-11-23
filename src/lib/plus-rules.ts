@@ -103,3 +103,19 @@ export function cleanFromName(value: unknown): string {
   const name = value.normalize('NFC').replace(/[\u0000-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2066-\u2069]/g, '').replace(/\s+/g, ' ').trim()
   return [...name].slice(0, GIFT_FROM_MAX).join('')
 }
+
+// ---- family --------------------------------------------------------------------------------------
+//
+// A Ko-fi payment from the membership tier named Family (or Famille, عائلة) gives the payer's own
+// Plus as usual, and a month of family sharing: up to FAMILY_SEATS other accounts join through the
+// account's family link and have Plus while the family does.
+
+export const FAMILY_SEATS = 3
+export const FAMILY_TOKEN_RE = /^[A-Za-z0-9_-]{22}$/
+export const isFamilyToken = (value: unknown): value is string => typeof value === 'string' && FAMILY_TOKEN_RE.test(value)
+
+/** A Ko-fi tier name that means the Family membership. */
+export function isFamilyTier(name: unknown): boolean {
+  if (typeof name !== 'string' || name.length > 100) return false
+  return /\bfamil(y|le|ia)\b/i.test(name) || /عائل|عايل/.test(name)
+}

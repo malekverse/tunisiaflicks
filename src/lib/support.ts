@@ -39,6 +39,8 @@ export type SupportEventDoc = {
   emailKey: string | null
   code: string | null
   userId: string | null
+  /** From the Family membership tier (lib/plus-family): credited as such when it's claimed later. */
+  family?: boolean
   expireAt: Date
 }
 
@@ -86,7 +88,7 @@ const transactionId = (payload: KofiPayload): string | null => {
  * Records one more coffee for an account, adds its month of TunisiaFlicks+ (lib/plus), and makes
  * sure the badge gets announced.
  */
-async function credit(userId: string, at: Date, membership = false, { plus = true } = {}): Promise<void> {
+async function credit(userId: string, at: Date, membership = false, { plus = true, family = false } = {}): Promise<void> {
   const { supporters } = await supportDb()
   await supporters.updateOne(
     { _id: userId },
@@ -107,6 +109,13 @@ async function credit(userId: string, at: Date, membership = false, { plus = tru
     await creditKofi(userId, at, membership)
   } catch (error) {
     console.error('support: adding Plus time failed', error)
+  }
+  // The Family tier: a month of sharing Plus with up to three accounts.
+  if (plus && family) try {
+    const { creditFamily } = await import('@/src/lib/plus-family')
+    await creditFamily(userId, at)
+  } catch (error) {
+    console.error('support: adding family time failed', error)
   }
   // The thank-you badge, in the inbox of the account's first grown-up profile (best effort).
   try {
@@ -129,7 +138,8 @@ export async function processKofi(payload: KofiPayload, hashSecret: string, now:
   if (!id) return 'ignored'
   const { events, users } = await supportDb()
   // A gift for a friend: the gift's code wins over everything else in the message.
-  const { findGiftCode } = await import('@/src/lib/plus-rules')
+  const { findGiftCode, isFamilyTier } = await import('@/src/lib/plus-rules')
+  const family = isFamilyTier(payload.tier_name)
   const giftCode = findGiftCode(payload.message)
   const gift = giftCode ? await (await import('@/src/lib/plus-gifts')).giftGiver(giftCode) : null
   const code = gift ? null : findSupportCode(payload.message)
@@ -156,6 +166,7 @@ export async function processKofi(payload: KofiPayload, hashSecret: string, now:
       emailKey: key,
       code,
       userId,
+      ...(family && !gift ? { family: true } : {}),
       expireAt: new Date(now.getTime() + EVENT_TTL_DAYS * 86_400_000),
     })
   } catch (error) {
@@ -168,7 +179,7 @@ export async function processKofi(payload: KofiPayload, hashSecret: string, now:
     return 'linked'
   }
   if (!userId) return 'pending'
-  await credit(userId, at, payload.is_subscription_payment === true)
+  await credit(userId, at, payload.is_subscription_payment === true, { family })
   return 'linked'
 }
 
@@ -216,7 +227,7 @@ export async function claimSupport(userId: string, now: Date = new Date()): Prom
     const result = await events.updateOne({ _id: event._id, userId: null }, { $set: { userId } })
     if (result.modifiedCount === 1) {
       claimed++
-      await credit(userId, event.at)
+      await credit(userId, event.at, false, { family: event.family === true })
     }
   }
   return claimed

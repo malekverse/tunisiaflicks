@@ -119,6 +119,9 @@ mongodb://127.0.0.1:27017/<test db> --base http://localhost:3000`.
 Badges are computed nightly (the `badges` job) from a private per-profile log of the days you pressed play;
 the weekly streak never shows 0 or "lost". `/support` links to Ko-fi; a coffee is matched to an account by a
 keyed hash of the payer's e-mail (or a `TF-` code in the message) and earns the Supporter badge.
+A payment from a Ko-fi membership tier named **Family** (or Famille, عائلة) also opens Family Plus: up to
+three other accounts join through the payer's link on `/plus` (`/family/<token>`) and have Plus while the
+membership runs. Create that tier on Ko-fi for the feature to be reachable.
 
 ### Arab cinema map
 

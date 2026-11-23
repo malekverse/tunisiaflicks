@@ -3,7 +3,7 @@ import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   daysLeft, extendUntil, FRIENDS_PER_MONTH, INVITE_MONTHS_MAX, inviteMonths, isAccent, isActive, isNewAccount, isRefCode, limitFor,
-  refCodeFrom, towardsNext, cleanFromName, findGiftCode, giftCodeFrom, isGiftCode, isGiftToken,
+  refCodeFrom, towardsNext, cleanFromName, findGiftCode, giftCodeFrom, isGiftCode, isGiftToken, isFamilyTier, isFamilyToken,
 } from '@/src/lib/plus-rules'
 import { findSupportCode } from '@/src/lib/badges/kofi'
 
@@ -89,5 +89,23 @@ describe('gifts', () => {
     assert.equal(cleanFromName('  Amine‮  B. '), 'Amine B.')
     assert.equal([...cleanFromName('x'.repeat(50))].length, 30)
     assert.equal(cleanFromName(42), '')
+  })
+})
+
+describe('Family Plus', () => {
+  test('the Family tier, by its name on Ko-fi', () => {
+    assert.ok(isFamilyTier('Family'))
+    assert.ok(isFamilyTier('TunisiaFlicks+ Family'))
+    assert.ok(isFamilyTier('famille'))
+    assert.ok(isFamilyTier('اشتراك العائلة'))
+    assert.ok(!isFamilyTier('Supporter'))
+    assert.ok(!isFamilyTier('Familiar faces'))
+    assert.ok(!isFamilyTier(undefined))
+    assert.ok(!isFamilyTier('family'.repeat(30)))
+  })
+  test('the family link’s secret', () => {
+    assert.ok(isFamilyToken('kN0k2FDAztmroSOawzf7-Q'))
+    assert.ok(!isFamilyToken('short'))
+    assert.ok(!isFamilyToken(null))
   })
 })

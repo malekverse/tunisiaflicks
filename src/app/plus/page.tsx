@@ -30,6 +30,7 @@ export default async function PlusPage() {
     daysLeft: daysLeft(plus.until),
     showBadge: plus.showBadge,
     membership: plus.membership,
+    viaFamily: plus.viaFamily,
     invite: {
       link: invite.code ? `${linkBase()}/?ref=${invite.code}` : null,
       friends: invite.friends,

@@ -52,6 +52,8 @@ export type KofiPayload = {
   email?: unknown
   /** A Ko-fi monthly membership's payment (each month while it runs). */
   is_subscription_payment?: unknown
+  /** The membership tier's name (a Family tier shares Plus: lib/plus-family). */
+  tier_name?: unknown
 }
 
 /**
