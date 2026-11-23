@@ -101,6 +101,12 @@ does the player's full screen, so the next episode opens in full screen too.
 **Phone remote**: a QR code; the phone that scans it plays, pauses, seeks, sets the volume and the
 subtitles, skips the intro and goes to the next episode (`remote.js`, `views/remote.html`).
 
+**Watch party**: the site keeps friends' players in step (their pages connect directly over WebRTC;
+the service takes no part). The player says it can (`hello` with `party: true`), reports `state`
+(playing, position) when it plays, pauses or seeks and every 5 seconds while playing (`beat`), and
+follows the site's `party` messages (play or pause, and a jump when it's further off than the
+tolerance). A move it made because the site asked is reported with `echo`, so it isn't sent back.
+
 Converted streams (MKV, HEVC, another audio track) seek by starting again where asked: the page asks
 `/seek` for the keyframe, then plays `…?t=<keyframe>`, and its clock is that offset plus the video's
 own time; subtitles are drawn by the page on that clock.

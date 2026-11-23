@@ -1,14 +1,20 @@
 "use client"
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { m } from 'framer-motion'
-import { Check, Layers, Lightbulb, LightbulbOff, LogOut, Play, ShieldCheck, SkipForward, TriangleAlert } from 'lucide-react'
+import { Check, Layers, Lightbulb, LightbulbOff, LogOut, PartyPopper, Play, ShieldCheck, SkipForward, TriangleAlert } from 'lucide-react'
+import { useSession } from 'next-auth/react'
 import { toast } from '@/src/hooks/use-toast'
 import type { StreamProvider } from '@/src/lib/stream-providers'
 import { cn } from '@/src/lib/utils'
 import { spring } from '@/src/lib/motion'
 import { useT } from '@/src/components/I18nProvider'
 import { useStreamSource } from '@/src/hooks/use-stream-source'
-import { LOCAL_PLAYER_SOURCE, useWithLocalPlayer, type LocalMedia } from '@/src/hooks/use-desktop-app'
+import { LOCAL_PLAYER_SOURCE, isDesktopApp, useWithLocalPlayer, type LocalMedia } from '@/src/hooks/use-desktop-app'
+import { useProfiles } from '@/src/hooks/use-profiles'
+import { useWatchParty } from '@/src/components/party/use-watch-party'
+import PartyPanel from '@/src/components/party/PartyPanel'
+import PartyOverlay from '@/src/components/party/PartyOverlay'
+import { normalizePartyCode } from '@/src/lib/party-rules'
 import { useTvMode } from '@/src/hooks/use-tv-mode'
 import { pushTvBackHandler } from '@/src/components/tv/use-focus-engine'
 import KeyGlyph from '@/src/components/tv/KeyGlyph'
@@ -51,6 +57,9 @@ const PLAYER_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-presen
  * it asks for the next episode when the credits roll (or the viewer presses Next), and for full
  * screen, which this frame does itself so the next episode, a new page in the same frame, opens in
  * full screen too. It hears whether there is a next episode, its name, and the full-screen state.
+ *
+ * A watch party (components/party) keeps the desktop app's players of friends in step: this frame
+ * passes its player's plays, pauses and jumps to the party, and the party's to its player.
  */
 export default function StreamSection({ services: providerServices, media, downloadSlot, enabled = true, placeholder, backdrop, onNext, nextLabel, className }: {
     services: StreamProvider[]
@@ -284,15 +293,54 @@ export default function StreamSection({ services: providerServices, media, downl
         if (playerOrigin) iframeRef.current?.contentWindow?.postMessage({ type: 'tunisiaflicks:site', ...data }, playerOrigin)
     }, [playerOrigin])
     const nextState = useCallback(() => ({ hasNext: !!onNextRef.current, nextLabel: nextLabel ?? '' }), [nextLabel])
+
+    // --- Watch party: the desktop app's player, in step with friends' ---
+    const { status: sessionStatus } = useSession()
+    const { data: profilesData } = useProfiles()
+    const activeProfile = profilesData?.profiles.find((profile) => profile.id === profilesData.activeId) ?? null
+    const [inApp, setInApp] = useState(false)
+    const [urlParty, setUrlParty] = useState<string | null>(null)
+    const [playerParty, setPlayerParty] = useState(false)
+    const [partyOpen, setPartyOpen] = useState(false)
+    useEffect(() => {
+        setInApp(isDesktopApp())
+        setUrlParty(normalizePartyCode(new URLSearchParams(window.location.search).get('party')))
+    }, [])
+    const party = useWatchParty({
+        media: media ?? null,
+        title: '',
+        myName: activeProfile?.name ?? '',
+        tellPlayer,
+        goNext: () => onNextRef.current?.(),
+        enabled: !!playerOrigin && playerParty && sessionStatus === 'authenticated' && !activeProfile?.kids,
+    })
+    const partyRef = useRef(party)
+    partyRef.current = party
+    // Back on a party this page hosts (a reload): host it again straight away.
+    useEffect(() => {
+        if (urlParty && playerParty && !party.role && party.status === 'idle') {
+            try { if (sessionStorage.getItem(`tf-party-host:${urlParty}`)) party.join(urlParty) } catch { /* private mode */ }
+        }
+    }, [urlParty, playerParty, party])
+    const goNextTogether = useCallback(() => {
+        partyRef.current.onPlayerNext()
+        onNextRef.current?.()
+    }, [])
+
     useEffect(() => {
         if (!playerOrigin) return
         const framed = () => document.fullscreenElement === frameRef.current
         const onMessage = (event: MessageEvent) => {
             if (event.origin !== playerOrigin || event.source !== iframeRef.current?.contentWindow) return
-            const data = event.data as { type?: unknown, action?: unknown, on?: unknown } | null
+            const data = event.data as { type?: unknown, action?: unknown, on?: unknown, party?: unknown, playing?: unknown, t?: unknown, beat?: unknown, echo?: unknown } | null
             if (!data || data.type !== 'tunisiaflicks:player') return
-            if (data.action === 'hello') tellPlayer({ ...nextState(), fullscreen: framed() })
-            else if (data.action === 'next') onNextRef.current?.()
+            if (data.action === 'hello') {
+                setPlayerParty(data.party === true)
+                tellPlayer({ ...nextState(), fullscreen: framed(), partyOn: partyRef.current.onPlayerHello() })
+            } else if (data.action === 'next') goNextTogether()
+            else if (data.action === 'state' && typeof data.t === 'number' && Number.isFinite(data.t)) {
+                partyRef.current.onPlayerState({ playing: data.playing === true, t: data.t, beat: data.beat === true, echo: data.echo === true })
+            }
             else if (data.action === 'fullscreen') {
                 if (data.on === true && !document.fullscreenElement) {
                     const request = frameRef.current?.requestFullscreen?.({ navigationUI: 'hide' })
@@ -308,7 +356,7 @@ export default function StreamSection({ services: providerServices, media, downl
             window.removeEventListener('message', onMessage)
             document.removeEventListener('fullscreenchange', onFullscreen)
         }
-    }, [playerOrigin, tellPlayer, nextState])
+    }, [playerOrigin, tellPlayer, nextState, goNextTogether])
     // A next episode that shows up (or goes) while the player is open.
     const hasNext = !!onNext
     useEffect(() => { tellPlayer(nextState()) }, [hasNext, tellPlayer, nextState])
@@ -412,6 +460,7 @@ export default function StreamSection({ services: providerServices, media, downl
                                     onLoad={() => setIsLoading(false)}
                                 />
                             )}
+                            {party.role && <PartyOverlay events={party.events} />}
                             {playerOn && slow && isLoading && !menu && (
                                 <div role="status" className="glass-strong absolute inset-x-[4%] top-[5%] z-20 mx-auto flex max-w-[40rem] flex-wrap items-center gap-x-5 gap-y-3 rounded-[20px] p-[1.1em]">
                                     <div className="min-w-0 flex-1">
@@ -531,8 +580,13 @@ export default function StreamSection({ services: providerServices, media, downl
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
+                        {inApp && media && !tv && !activeProfile?.kids && !party.role && (
+                            <Button variant="secondary" size="sm" onClick={() => setPartyOpen((value) => !value)} aria-expanded={partyOpen} className="h-9">
+                                <PartyPopper aria-hidden className="h-4 w-4" />{t('party.button')}
+                            </Button>
+                        )}
                         {onNext && (
-                            <Button variant="secondary" size="sm" onClick={onNext} className="h-9">
+                            <Button variant="secondary" size="sm" onClick={goNextTogether} className="h-9">
                                 <SkipForward aria-hidden className="h-4 w-4 rtl:-scale-x-100" />{nextLabel ?? t('detail.nextEpisode')}
                             </Button>
                         )}
@@ -553,6 +607,17 @@ export default function StreamSection({ services: providerServices, media, downl
                     </div>
                 </div>
 
+                {!tv && media && (
+                    <PartyPanel
+                        party={party}
+                        supported={!!playerOrigin && playerParty}
+                        inApp={inApp}
+                        signedIn={sessionStatus === 'authenticated'}
+                        urlCode={urlParty}
+                        open={partyOpen}
+                        onClose={() => { setPartyOpen(false); setUrlParty(null) }}
+                    />
+                )}
                 <div className={cn('mt-3 flex flex-col-reverse gap-2 sm:flex-row sm:items-start sm:justify-between', lightsOff && 'relative z-[61]')}>
                     <div className="flex flex-col gap-2">
                         {enabled && <AdFreeTip />}

@@ -1563,9 +1563,39 @@
       pushRemote(true)
     }
     if ('fullscreen' in d) { site.fullscreen = d.fullscreen === true; renderFullscreen() }
+    if ('partyOn' in d) party.on = d.partyOn === true
+    if (d.party && typeof d.party === 'object') applyParty(d.party)
     // The site couldn't (no click to go with it): do it here.
     if (d.fullscreenFailed) ownFullscreen()
   })
+
+  // ---- watch party -------------------------------------------------------------------------------
+  // In a watch party the site around this player keeps it in step with the others' players (they
+  // talk directly to each other; see the site's party code). This player tells the site when it
+  // plays, pauses or jumps, and every few seconds where it is while playing; the site tells it where
+  // the party is. A move the site asked for isn't reported back as this viewer's own (echo).
+  const party = { on: false, applyingUntil: 0 }
+  function applyParty({ playing, t, tolerance }) {
+    if (!current || typeof t !== 'number' || !Number.isFinite(t)) return
+    const jump = Math.abs(now() - t) > (Number(tolerance) || 0.75)
+    const play = playing === true && video.paused
+    const pause = playing === false && !video.paused
+    if (!jump && !play && !pause) return
+    // What follows isn't this viewer's doing (a jump far ahead restarts the stream, which plays and
+    // pauses on its own for a while).
+    party.applyingUntil = Date.now() + 3000
+    if (jump) seekTo(t)
+    if (play) video.play().catch(() => {})
+    if (pause) video.pause()
+  }
+  function reportParty(beat = false) {
+    if (!party.on || !current) return
+    tellSite('state', { playing: !video.paused, t: Math.round(now() * 100) / 100, beat, echo: Date.now() < party.applyingUntil })
+  }
+  video.addEventListener('play', () => reportParty())
+  video.addEventListener('pause', () => { if (!video.ended) reportParty() })
+  video.addEventListener('seeked', () => reportParty())
+  setInterval(() => { if (party.on && !video.paused) reportParty(true) }, 5000)
 
   // ---- skip intro, skip recap, next episode (segments.js) ---------------------------------------
   let segments = null       // { intro: [start, end] | null, recap, credits: start | null, source, learning }
@@ -1907,7 +1937,7 @@
   $('errFaster').addEventListener('click', playNextBest)
   $('retry').addEventListener('click', () => (current?.sourceId ? play(current.sourceId, now()) : start()))
   addEventListener('pagehide', stopStats)
-  tellSite('hello')
+  tellSite('hello', { party: true })
   start()
 </script>
 </body>

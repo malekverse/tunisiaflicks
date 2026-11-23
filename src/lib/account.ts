@@ -64,6 +64,8 @@ export async function deleteUserData(userId: string) {
   await deleteDigestData(userId)
   await deleteBadgeData(userId)
   await deleteTvSessions(userId)
+  // Watch parties it hosts, and its seats in others (lib/party).
+  await (await import('@/src/lib/party')).deletePartyData(userId)
   // 3. Everything else keyed by the account.
   await Promise.all([
     ...USER_COLLECTIONS.map((name) => db.collection(name).deleteMany({ userId })),
