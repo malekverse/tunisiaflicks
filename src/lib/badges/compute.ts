@@ -12,6 +12,7 @@ import { CATALOGUE_VERSION, badgesFor, levelFor, type BadgeId } from './catalogu
 import { badgesDb, type BadgesDoc } from './db'
 import { loadFacts, FACTS_BUDGET_MS } from './facts'
 import { computeMetrics, titleKeyOf, titlesInLog, type ActivityDay, type TitleKey } from './metrics'
+import { challengeWins } from './challenges'
 import { dayOf, tunisToday } from './time'
 
 /** A computation older than this is redone on the next view. */
@@ -101,7 +102,7 @@ export async function computeAndStore(ref: ProfileRef, opts: { budgetMs?: number
   const titles = [...new Set([...history, ...titlesInLog(days)])]
   const { facts, incomplete } = await loadFacts(titles, { budgetMs: opts.budgetMs ?? FACTS_BUDGET_MS })
   const today = tunisToday(now)
-  const metrics = computeMetrics({ days, titles, facts, today, supporter: !!supporter, bestStreak: stored?.streak?.best ?? 0 })
+  const metrics = computeMetrics({ days, titles, facts, today, supporter: !!supporter, bestStreak: stored?.streak?.best ?? 0, challengeWins: challengeWins(days, facts) })
 
   const set: Record<string, unknown> = {
     userId: ref.userId,

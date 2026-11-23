@@ -73,6 +73,11 @@ const GLYPHS: Record<BadgeId, IconNode> = {
     ['path', { d: 'M3 10h18' }],
     ['path', { d: 'm9 16 2 2 4-4' }],
   ],
+  challenges: [
+    ['circle', { cx: '12', cy: '12', r: '10' }],
+    ['circle', { cx: '12', cy: '12', r: '6' }],
+    ['circle', { cx: '12', cy: '12', r: '2' }],
+  ],
   supporter: [
     ['path', { d: 'M10 2v2' }],
     ['path', { d: 'M14 2v2' }],

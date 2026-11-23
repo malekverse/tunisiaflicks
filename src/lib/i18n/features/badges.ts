@@ -55,6 +55,7 @@ export const badges = defineStrings({
     'badges.name.decades': 'Time traveller',
     'badges.name.finisher': 'Finisher',
     'badges.name.streakWeeks': 'Week after week',
+    'badges.name.challenges': 'Challenger',
     'badges.name.supporter': 'Supporter',
     'badges.desc.openingNight': 'Press play on your first film or episode.',
     'badges.desc.marathon': 'Your best day: the most episodes of one show, or the most films.',
@@ -67,6 +68,7 @@ export const badges = defineStrings({
     'badges.desc.decades': 'Decades your films and series come from.',
     'badges.desc.finisher': 'Seasons you played from the first episode to the last.',
     'badges.desc.streakWeeks': 'Weeks in a row with at least one play.',
+    'badges.desc.challenges': 'Monthly challenges you finished.',
     'badges.desc.supporter': 'You help keep TunisiaFlicks free. Thank you.',
 
     // Inbox (badge_earned) and the weekly e-mail
@@ -183,6 +185,7 @@ export const badges = defineStrings({
     'badges.name.decades': 'رحلة عبر الزمن',
     'badges.name.finisher': 'إتمام المواسم',
     'badges.name.streakWeeks': 'أسبوعًا بعد أسبوع',
+    'badges.name.challenges': 'التحديات',
     'badges.name.supporter': 'الدعم',
     'badges.desc.openingNight': 'اضغط تشغيل على أول فيلم أو حلقة.',
     'badges.desc.marathon': 'أفضل يوم لك: أكبر عدد من حلقات مسلسل واحد، أو من الأفلام.',
@@ -195,6 +198,7 @@ export const badges = defineStrings({
     'badges.desc.decades': 'العقود التي تعود إليها أفلامك ومسلسلاتك.',
     'badges.desc.finisher': 'المواسم التي شاهدتها من الحلقة الأولى حتى الأخيرة.',
     'badges.desc.streakWeeks': 'أسابيع متتالية فيها تشغيل واحد على الأقل.',
+    'badges.desc.challenges': 'التحديات الشهرية التي أتممتها.',
     'badges.desc.supporter': 'بفضلك يبقى TunisiaFlicks مجانيًا. شكرًا لك.',
 
     'badges.inbox.earned': 'شارة جديدة: {badge}',
@@ -324,6 +328,7 @@ export const badges = defineStrings({
     'badges.name.decades': 'Voyage dans le temps',
     'badges.name.finisher': 'Saisons bouclées',
     'badges.name.streakWeeks': 'Semaine après semaine',
+    'badges.name.challenges': 'Défis relevés',
     'badges.name.supporter': 'Soutien',
     'badges.desc.openingNight': 'Lancez votre premier film ou épisode.',
     'badges.desc.marathon': 'Votre plus belle journée : le plus d’épisodes d’une même série, ou le plus de films.',
@@ -336,6 +341,7 @@ export const badges = defineStrings({
     'badges.desc.decades': 'Les décennies d’où viennent vos films et séries.',
     'badges.desc.finisher': 'Les saisons regardées du premier au dernier épisode.',
     'badges.desc.streakWeeks': 'Les semaines d’affilée avec au moins une lecture.',
+    'badges.desc.challenges': 'Les défis du mois que vous avez relevés.',
     'badges.desc.supporter': 'Grâce à vous, TunisiaFlicks reste gratuit. Merci.',
 
     'badges.inbox.earned': 'Nouveau badge : {badge}',

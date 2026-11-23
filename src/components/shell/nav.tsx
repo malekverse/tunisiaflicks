@@ -4,7 +4,7 @@
 import {
   Drama,
   Bookmark, CalendarClock, CalendarHeart, Clapperboard, Compass, Dices, Flag, Heart, HeartHandshake, History, House,
-  Gamepad2, Library, ListVideo, Map as MapIcon, MonitorPlay, MoonStar, Popcorn, Search, Swords, Trophy, Tv, UsersRound, type LucideIcon,
+  Gamepad2, Library, ListVideo, Map as MapIcon, MonitorPlay, MoonStar, Popcorn, Search, Swords, Target, Trophy, Tv, UsersRound, type LucideIcon,
 } from 'lucide-react'
 import TunisiaMark from '@/src/components/tunisian/TunisiaMark'
 import { PLAY_TOOLS, isNewTool } from '@/src/components/play/tools'
@@ -73,7 +73,7 @@ export const PLAY: NavItem[] = PLAY_TOOLS.map((tool) => ({
   ...(isNewTool(tool) ? { badge: 'play.new' as TKey } : {}),
 }))
 
-/** What's yours: Friends, Movie night (Kids: Swipe), My shows, Library. Your year lives on /me. */
+/** What's yours: Friends, Movie night (Kids: Swipe), My shows, Challenges, Library. Your year lives on /me. */
 export const YOURS: NavItem[] = [
   { href: '/friends', label: 'social.nav', icon: UsersRound, grownUp: true },
   {
@@ -82,6 +82,8 @@ export const YOURS: NavItem[] = [
   },
   // Where you are in every series you watch, and what's next.
   { href: '/shows', label: 'shows.nav', icon: MonitorPlay },
+  // This month's film challenges (grown-ups: they reward watching more).
+  { href: '/challenges', label: 'challenges.nav', icon: Target, grownUp: true },
   { href: '/saved', label: 'nav.library', icon: Library, match: ['/favorites', '/history', '/lists'] },
 ]
 

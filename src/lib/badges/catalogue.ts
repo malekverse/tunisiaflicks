@@ -7,7 +7,7 @@
 
 export const BADGE_IDS = [
   'openingNight', 'marathon', 'nightOwl', 'earlyBird', 'ramadan', 'tunisian',
-  'genres', 'world', 'decades', 'finisher', 'streakWeeks', 'supporter',
+  'genres', 'world', 'decades', 'finisher', 'streakWeeks', 'challenges', 'supporter',
 ] as const
 
 export type BadgeId = (typeof BADGE_IDS)[number]
@@ -29,7 +29,7 @@ export type BadgeDef = {
 }
 
 /** Bump when a threshold or a measure changes: every profile is recomputed on its next view. */
-export const CATALOGUE_VERSION = 1
+export const CATALOGUE_VERSION = 2
 
 /** The level a single-level badge gets. */
 export const SINGLE_LEVEL: Level = 3
@@ -56,6 +56,8 @@ export const BADGES: readonly BadgeDef[] = [
   { id: 'decades', thresholds: [3, 5, 7, 9], kids: true, public: 'yes' },
   { id: 'finisher', thresholds: [1, 5, 15, 30], kids: true, public: 'yes' },
   { id: 'streakWeeks', thresholds: [2, 4, 12, 26], kids: false, public: 'yes' },
+  // Monthly challenges finished (./challenges, /challenges). Not for Kids: they reward watching more.
+  { id: 'challenges', thresholds: [1, 3, 6, 12], kids: false, public: 'yes' },
   { id: 'supporter', thresholds: null, kids: false, public: 'optIn', hiddenUntilEarned: true },
 ]
 

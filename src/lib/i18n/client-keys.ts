@@ -3,7 +3,7 @@
 // Which strings go to the browser (see clientMessages in ./index.ts): the root layout sends every
 // key that is in neither list below (the shell), a <ClientMessages scope> adds its scope's keys to
 // the pages under it, and the server-only keys never leave the server.
-// 647 of 3448 keys on every page, 2195 in 39 scopes, 606 server-only.
+// 648 of 3483 keys on every page, 2227 in 40 scopes, 608 server-only.
 
 export type MessageScope =
   | 'about/layout'
@@ -13,6 +13,7 @@ export type MessageScope =
   | 'arab-cinema/layout'
   | 'auth/layout'
   | 'blind-date/layout'
+  | 'challenges/layout'
   | 'clips/layout'
   | 'contact/layout'
   | 'decide/layout'
@@ -176,6 +177,8 @@ export const SERVER_ONLY_KEYS: readonly string[] = [
   'card.rating',
   'card.share',
   'card.trailerPreview',
+  'challenges.kidsText',
+  'challenges.kidsTitle',
   'clips.description',
   'clips.title',
   'clips.unavailable',
@@ -1139,6 +1142,39 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'hero.watchNow',
     'play.more',
   ],
+  'challenges/layout': [
+    'badges.progress',
+    'challenges.daysLeft',
+    'challenges.done',
+    'challenges.doneCount',
+    'challenges.friends',
+    'challenges.incomplete',
+    'challenges.kind.animation',
+    'challenges.kind.arabic',
+    'challenges.kind.classics',
+    'challenges.kind.days',
+    'challenges.kind.decades',
+    'challenges.kind.documentary',
+    'challenges.kind.episodes',
+    'challenges.kind.films',
+    'challenges.kind.genres',
+    'challenges.kind.languages',
+    'challenges.kind.newReleases',
+    'challenges.kind.tunisian',
+    'challenges.lastDay',
+    'challenges.noFriends',
+    'challenges.noPage',
+    'challenges.off',
+    'challenges.past',
+    'challenges.rules',
+    'challenges.signIn',
+    'challenges.signInButton',
+    'challenges.signUp',
+    'challenges.subtitle',
+    'challenges.title',
+    'challenges.toFriends',
+    'challenges.turnOn',
+  ],
   'clips/layout': [
     'clips.backToTop',
     'clips.browse',
@@ -2004,6 +2040,7 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
   ],
   'me/layout': [
     'badges.artLabel',
+    'badges.desc.challenges',
     'badges.desc.decades',
     'badges.desc.earlyBird',
     'badges.desc.finisher',
@@ -2026,6 +2063,7 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'badges.levelReached',
     'badges.levels',
     'badges.maxed',
+    'badges.name.challenges',
     'badges.name.decades',
     'badges.name.earlyBird',
     'badges.name.finisher',
@@ -3534,6 +3572,7 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
   ],
   'u/layout': [
     'badges.artLabel',
+    'badges.desc.challenges',
     'badges.desc.decades',
     'badges.desc.earlyBird',
     'badges.desc.finisher',
@@ -3556,6 +3595,7 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'badges.levelReached',
     'badges.levels',
     'badges.maxed',
+    'badges.name.challenges',
     'badges.name.decades',
     'badges.name.earlyBird',
     'badges.name.finisher',

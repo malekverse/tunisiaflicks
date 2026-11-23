@@ -187,6 +187,8 @@ export type MetricsInput = {
   supporter: boolean
   /** The best streak already on record (the log only goes back 13 months). */
   bestStreak?: number
+  /** Monthly challenges finished in the log (./challenges). */
+  challengeWins?: number
 }
 
 export type Metrics = { values: Record<BadgeId, number>; streak: Streak }
@@ -214,6 +216,7 @@ export function computeMetrics(input: MetricsInput): Metrics {
       decades: decades.size,
       finisher: finishedSeasons(input.days, input.facts),
       streakWeeks: streak.best,
+      challenges: input.challengeWins ?? 0,
       supporter: input.supporter ? 1 : 0,
     },
     streak,
