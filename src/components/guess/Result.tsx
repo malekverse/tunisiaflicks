@@ -129,12 +129,15 @@ function NextFilm({ onReady }: { onReady: () => void }) {
   )
 }
 
-export function Finished({ answer, entries, day, isToday, onToday }: {
+export function Finished({ answer, entries, day, isToday, onToday, sharePath = '/guess', heading }: {
   answer: Answer
   entries: readonly Entry[]
   day: string
   isToday: boolean
   onToday: () => void
+  /** Where the shared result links to, and its first line (the music game has its own). */
+  sharePath?: string
+  heading?: string
 }) {
   const { t } = useI18n()
   const reduceMotion = useReducedMotion()
@@ -146,7 +149,7 @@ export function Finished({ answer, entries, day, isToday, onToday }: {
   }, [won])
 
   const share = async () => {
-    const text = shareText(day, entries, `${window.location.origin}/guess`)
+    const text = shareText(day, entries, `${window.location.origin}${sharePath}`, heading)
     try {
       if (canShare) {
         await navigator.share({ text })

@@ -1,5 +1,6 @@
 // Guess the film keeps its games on this device (localStorage): each day's guesses, so a reload
-// or a locked screen picks up where you were, and the stats. Nothing goes to the server.
+// or a locked screen picks up where you were, and the stats. Nothing goes to the server. The music
+// game (/guess/music) keeps its own games the same way, under its own key.
 import { ARCHIVE_DAYS, isDay, isGuessPool, MAX_TRIES, type Entry, type Game, type GuessPool } from '@/src/lib/guess'
 
 const KEY = 'tf-guess:v1'
@@ -28,9 +29,9 @@ function cleanEntry(raw: any): Entry | null {
   }
 }
 
-export function loadGames(): Game[] {
+export function loadGames(key = KEY): Game[] {
   try {
-    const raw = JSON.parse(localStorage.getItem(KEY) ?? '[]')
+    const raw = JSON.parse(localStorage.getItem(key) ?? '[]')
     if (!Array.isArray(raw)) return []
     return raw.flatMap((game: any): Game[] => {
       if (!game || !isDay(game.day) || !isGuessPool(game.pool) || !Array.isArray(game.entries)) return []
@@ -42,10 +43,10 @@ export function loadGames(): Game[] {
   }
 }
 
-export function saveGame(game: Game): Game[] {
-  const games = loadGames().filter((other) => !(other.day === game.day && other.pool === game.pool))
+export function saveGame(game: Game, key = KEY): Game[] {
+  const games = loadGames(key).filter((other) => !(other.day === game.day && other.pool === game.pool))
   const next = [game, ...games].sort((a, b) => (a.day < b.day ? 1 : -1)).slice(0, KEEP)
-  try { localStorage.setItem(KEY, JSON.stringify(next)) } catch { /* private mode: this visit only */ }
+  try { localStorage.setItem(key, JSON.stringify(next)) } catch { /* private mode: this visit only */ }
   return next
 }
 

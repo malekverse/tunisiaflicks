@@ -36,8 +36,8 @@ async function puzzles() {
   return collection
 }
 
-/** The pool's films, most voted first. */
-async function poolFilms(pool: GuessPool): Promise<number[]> {
+/** The pool's films, most voted first (the music game draws from them too). */
+export async function poolFilms(pool: GuessPool): Promise<number[]> {
   const { pages, params } = POOLS[pool]
   const results: any[] = []
   for (let start = 1; start <= pages; start += 5) {

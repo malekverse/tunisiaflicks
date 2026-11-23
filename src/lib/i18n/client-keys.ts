@@ -3,7 +3,7 @@
 // Which strings go to the browser (see clientMessages in ./index.ts): the root layout sends every
 // key that is in neither list below (the shell), a <ClientMessages scope> adds its scope's keys to
 // the pages under it, and the server-only keys never leave the server.
-// 644 of 3430 keys on every page, 2181 in 39 scopes, 605 server-only.
+// 647 of 3448 keys on every page, 2195 in 39 scopes, 606 server-only.
 
 export type MessageScope =
   | 'about/layout'
@@ -303,6 +303,7 @@ export const SERVER_ONLY_KEYS: readonly string[] = [
   'genre.heading',
   'genre.subtitle',
   'guess.subtitle',
+  'guessMusic.subtitle',
   'halal.blocked.desc',
   'halal.blocked.home',
   'halal.blocked.settings',
@@ -1771,6 +1772,20 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'guess.won.first',
     'guess.won.text',
     'guess.won.title',
+    'guessMusic.audioFailed',
+    'guessMusic.clue.first',
+    'guessMusic.clue.genres',
+    'guessMusic.clue.musicBy',
+    'guessMusic.clue.yearComposer',
+    'guessMusic.failed',
+    'guessMusic.help.one',
+    'guessMusic.help.text',
+    'guessMusic.help.two',
+    'guessMusic.play',
+    'guessMusic.playAll',
+    'guessMusic.stop',
+    'guessMusic.toMusic',
+    'guessMusic.toStills',
     'hero.watchNow',
     'play.more',
   ],

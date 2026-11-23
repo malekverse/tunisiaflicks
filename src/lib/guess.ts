@@ -276,7 +276,7 @@ export function stats(games: readonly Game[], today: string = tunisDay()): Stats
 }
 
 /** The result to paste in a chat: the number, the score and one square per try (no spoilers). */
-export function shareText(day: string, entries: readonly Entry[], url: string): string {
+export function shareText(day: string, entries: readonly Entry[], url: string, heading = `TunisiaFlicks #${puzzleNumber(day)}`): string {
   const result = outcome(entries)
   const score = result === 'won' ? `${entries.length}/${MAX_TRIES}` : `X/${MAX_TRIES}`
   const squares = Array.from({ length: MAX_TRIES }, (_, index) => {
@@ -285,7 +285,7 @@ export function shareText(day: string, entries: readonly Entry[], url: string): 
     if (entry.kind === 'skip') return '⬛'
     return entry.right ? '🟩' : '🟥'
   })
-  return `TunisiaFlicks #${puzzleNumber(day)} ${score}\n${squares.join('')}\n${url}`
+  return `${heading} ${score}\n${squares.join('')}\n${url}`
 }
 
 // ---------------------------------------------------------------------------------------------

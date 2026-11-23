@@ -32,8 +32,9 @@ import { calendarFeed } from './calendar-feed'
 import { plus } from './plus'
 import { plusGift } from './plus-gift'
 import { plusFamily } from './plus-family'
+import { guessMusic } from './guess-music'
 
-const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop, halal, mail, anime, landing, welcome, decide, guess, taste, shows, blindDate, play, rail, calendarFeed, plus, plusGift, plusFamily]
+const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop, halal, mail, anime, landing, welcome, decide, guess, taste, shows, blindDate, play, rail, calendarFeed, plus, plusGift, plusFamily, guessMusic]
 
 export type FeatureKey =
   | keyof typeof aiSearch.en
@@ -68,6 +69,7 @@ export type FeatureKey =
   | keyof typeof plus.en
   | keyof typeof plusGift.en
   | keyof typeof plusFamily.en
+  | keyof typeof guessMusic.en
 
 type Language = 'en' | 'ar' | 'tn' | 'fr'
 
