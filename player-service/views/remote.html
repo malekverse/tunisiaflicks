@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0b0b0c" />
+<meta name="color-scheme" content="dark" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="TF Remote" />
+<title>TunisiaFlicks Remote</title>
+<!--
+  The phone's remote (remote.js serves it on the home network, at /r/<token>). What's playing comes
+  down /r/<token>/events (Server-Sent Events); a tap goes up as a command to /r/<token>/cmd.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" />
+<style>
+  :root { --red: #ff2414; --red-strong: #e50f05; --bg: #0b0b0c; --card: rgba(255,255,255,.06); --line: rgba(255,255,255,.1);
+    --muted: rgba(255,255,255,.66); --faint: rgba(255,255,255,.45); --ease: cubic-bezier(.23, 1, .32, 1); }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; min-height: 100%; background: var(--bg); color: #fff; }
+  body { min-height: 100dvh; font: 15px/1.4 "Readex Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased;
+    user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; overscroll-behavior: none; touch-action: manipulation;
+    background: radial-gradient(120% 60% at 50% -10%, rgba(255,36,20,.16), transparent 60%), var(--bg); }
+  button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+  svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  [hidden] { display: none !important; }
+
+  .app { display: flex; flex-direction: column; min-height: 100dvh; max-width: 480px; margin: 0 auto;
+    padding: max(16px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); }
+  .brand { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); font-weight: 600; }
+  .brand b { color: var(--red); font-weight: 700; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #f5a524; box-shadow: 0 0 0 4px rgba(245,165,36,.15); }
+  .dot.on { background: #34d399; box-shadow: 0 0 0 4px rgba(52,211,153,.15); }
+  .dot.off { background: #f87171; box-shadow: 0 0 0 4px rgba(248,113,113,.15); }
+  .status { margin-inline-start: auto; font-size: 12.5px; color: var(--faint); font-weight: 500; }
+
+  .now { margin-top: 28px; }
+  .title { margin: 0; font-size: 24px; line-height: 1.15; font-weight: 700; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .episode { margin-top: 6px; color: var(--muted); font-size: 14px; min-height: 1.4em; }
+
+  .timeline { margin-top: 28px; }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 36px; background: transparent; margin: 0; touch-action: none; }
+  input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 6px; background: linear-gradient(to right, var(--fill, var(--red)) var(--v, 0%), rgba(255,255,255,.18) var(--v, 0%)); }
+  input[type=range]::-moz-range-track { height: 6px; border-radius: 6px; background: linear-gradient(to right, var(--fill, var(--red)) var(--v, 0%), rgba(255,255,255,.18) var(--v, 0%)); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; margin-top: -8px; border-radius: 50%; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.5); }
+  input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border: 0; border-radius: 50%; background: #fff; }
+  .times { display: flex; justify-content: space-between; margin-top: -2px; color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+
+  .transport { display: flex; align-items: center; justify-content: center; gap: 28px; margin-top: 22px; }
+  .round { position: relative; display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: var(--card); box-shadow: inset 0 0 0 1px var(--line);
+    transition: transform .16s var(--ease), background .2s; }
+  .round:active { transform: scale(.92); }
+  .round span { position: absolute; inset: 0; display: grid; place-items: center; padding-top: 1px; font-size: 8.5px; font-weight: 700; pointer-events: none; }
+  .round svg { width: 26px; height: 26px; }
+  .play { width: 92px; height: 92px; background: var(--red-strong); box-shadow: 0 18px 40px -12px rgba(229,15,5,.8); }
+  .play svg { width: 34px; height: 34px; }
+  .play.busy svg { opacity: .5; }
+
+  .big { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 56px; margin-top: 18px; padding: 0 18px; border-radius: 16px;
+    font-weight: 700; font-size: 16px; transition: transform .16s var(--ease); }
+  .big:active { transform: scale(.97); }
+  .big.white { background: #fff; color: #000; }
+  .big.ghost { background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
+  .big small { font-weight: 500; color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .section { margin-top: 26px; }
+  .label { color: var(--faint); font-size: 12.5px; font-weight: 600; margin-bottom: 8px; }
+  .volume { display: flex; align-items: center; gap: 12px; }
+  .volume .round { width: 48px; height: 48px; flex: none; }
+  .volume .round svg { width: 22px; height: 22px; }
+  .volume input { --fill: #fff; }
+  .chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -20px; padding: 2px 20px; scroll-padding-inline: 20px; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { flex: none; height: 40px; padding: 0 16px; border-radius: 999px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); color: var(--muted); font-weight: 600; font-size: 14px; }
+  .chip[aria-pressed=true] { background: #fff; color: #000; box-shadow: none; }
+
+  .empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 10px; }
+  .empty .icon { display: grid; place-items: center; width: 72px; height: 72px; border-radius: 22px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); color: var(--red); }
+  .empty .icon svg { width: 32px; height: 32px; }
+  .empty h2 { margin: 18px 0 0; font-size: 20px; font-weight: 700; }
+  .empty p { margin: 6px 0 0; color: var(--muted); font-size: 14px; max-width: 30ch; }
+  .foot { margin-top: auto; padding-top: 28px; text-align: center; color: var(--faint); font-size: 12px; }
+  @media (prefers-reduced-motion: reduce) { .round, .big { transition: none; } }
+</style>
+</head>
+<body>
+<main class="app">
+  <div class="brand"><b>TunisiaFlicks</b> Remote <span id="status" class="status">Connecting…</span><i id="dot" class="dot" aria-hidden="true"></i></div>
+
+  <section id="empty" class="empty">
+    <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+    <h2 id="emptyTitle">Connecting to your computer…</h2>
+    <p id="emptyText">Keep this phone on the same Wi-Fi as the computer.</p>
+  </section>
+
+  <section id="remote" hidden>
+    <div class="now">
+      <h1 id="title" class="title"></h1>
+      <div id="episode" class="episode"></div>
+    </div>
+
+    <div class="timeline">
+      <input id="seek" type="range" min="0" max="1" step="1" value="0" aria-label="Position" />
+      <div class="times"><span id="tNow">0:00</span><span id="tLeft">0:00</span></div>
+    </div>
+
+    <div class="transport">
+      <button id="back" class="round" type="button" aria-label="Back 10 seconds"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg><span>10</span></button>
+      <button id="play" class="round play" type="button" aria-label="Play"></button>
+      <button id="fwd" class="round" type="button" aria-label="Forward 10 seconds"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg><span>10</span></button>
+    </div>
+
+    <button id="skip" class="big white" type="button" hidden></button>
+    <button id="next" class="big ghost" type="button" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="5 4 15 12 5 20 5 4" fill="currentColor"/><line x1="19" x2="19" y1="5" y2="19"/></svg>Next episode <small id="nextLabel"></small></button>
+
+    <div class="section">
+      <div class="label" id="volLabel">Volume</div>
+      <div class="volume">
+        <button id="mute" class="round" type="button" aria-label="Mute"></button>
+        <input id="vol" type="range" min="0" max="100" step="1" value="100" aria-labelledby="volLabel" />
+      </div>
+    </div>
+
+    <div class="section" id="subsBox" hidden>
+      <div class="label" id="subsLabel">Subtitles</div>
+      <div id="subs" class="chips" role="group" aria-labelledby="subsLabel"></div>
+    </div>
+  </section>
+
+  <div class="foot">Works while this phone and the computer share a Wi-Fi.</div>
+</main>
+
+<script>
+  const $ = (id) => document.getElementById(id)
+  const base = location.pathname.replace(/\/$/, '')
+  const ICON = {
+    play: '<svg viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4" fill="currentColor"/></svg>',
+    pause: '<svg viewBox="0 0 24 24"><rect x="14" y="4" width="4.5" height="16" rx="1" fill="currentColor"/><rect x="5.5" y="4" width="4.5" height="16" rx="1" fill="currentColor"/></svg>',
+    vol: '<svg viewBox="0 0 24 24"><path d="M11 4.7a.7.7 0 0 0-1.2-.5L6.4 7.6A1.4 1.4 0 0 1 5.4 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.4a1.4 1.4 0 0 1 1 .4l3.4 3.4a.7.7 0 0 0 1.2-.5z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.4 18.4a9 9 0 0 0 0-12.8"/></svg>',
+    mute: '<svg viewBox="0 0 24 24"><path d="M11 4.7a.7.7 0 0 0-1.2-.5L6.4 7.6A1.4 1.4 0 0 1 5.4 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.4a1.4 1.4 0 0 1 1 .4l3.4 3.4a.7.7 0 0 0 1.2-.5z"/><line x1="22" x2="16" y1="9" y2="15"/><line x1="16" x2="22" y1="9" y2="15"/></svg>',
+    next: '<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="5 4 15 12 5 20 5 4" fill="currentColor"/><line x1="19" x2="19" y1="5" y2="19"/></svg>',
+  }
+  const clock = (s) => {
+    s = Math.max(0, Math.floor(s || 0))
+    const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, sec = String(s % 60).padStart(2, '0')
+    return h ? `${h}:${String(m).padStart(2, '0')}:${sec}` : `${m}:${sec}`
+  }
+  const buzz = () => { try { navigator.vibrate?.(8) } catch {} }
+
+  let state = null            // the last state from the computer
+  let at = 0                  // when it came (for a smooth clock in between)
+  let seeking = false
+  let volumeDragging = false
+
+  function send(action, value = null) {
+    buzz()
+    return fetch(`${base}/cmd`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, value }) })
+      .then((res) => { if (res.status === 409) showEmpty('nothing') })
+      .catch(() => {})
+  }
+
+  function connected(on, text) {
+    $('dot').className = `dot ${on === true ? 'on' : on === false ? 'off' : ''}`
+    $('status').textContent = text
+  }
+
+  function showEmpty(kind) {
+    $('remote').hidden = true
+    $('empty').hidden = false
+    const [title, text] = {
+      connecting: ['Connecting to your computer…', 'Keep this phone on the same Wi-Fi as the computer.'],
+      nothing: ['Nothing playing yet', 'Start a film or an episode in TunisiaFlicks on your computer. It shows up here.'],
+      lost: ['Can’t reach your computer', 'Is TunisiaFlicks open, and this phone on the same Wi-Fi? Trying again…'],
+      off: ['The remote was turned off', 'Turn it on again from the player on your computer, and scan the new code.'],
+    }[kind]
+    $('emptyTitle').textContent = title
+    $('emptyText').textContent = text
+  }
+
+  /** Where the film is now: the last position, moved on by the time since, while it plays. */
+  const position = () => (state ? Math.min(state.d || Infinity, state.t + (state.playing && !state.loading ? (performance.now() - at) / 1000 : 0)) : 0)
+
+  function render() {
+    if (!state || !state.player) return showEmpty('nothing')
+    $('empty').hidden = true
+    $('remote').hidden = false
+    $('title').textContent = state.title || 'TunisiaFlicks'
+    $('episode').textContent = state.episode || ''
+    document.title = `${state.title || 'Remote'} · TunisiaFlicks`
+    const play = $('play')
+    play.innerHTML = state.playing ? ICON.pause : ICON.play
+    play.setAttribute('aria-label', state.playing ? 'Pause' : 'Play')
+    play.classList.toggle('busy', !!state.loading)
+    if (!volumeDragging) {
+      const v = state.muted ? 0 : Math.round(state.volume * 100)
+      $('vol').value = String(v)
+      $('vol').style.setProperty('--v', `${v}%`)
+    }
+    $('mute').innerHTML = state.muted || state.volume === 0 ? ICON.mute : ICON.vol
+    $('mute').setAttribute('aria-label', state.muted ? 'Unmute' : 'Mute')
+    const skip = $('skip')
+    skip.hidden = !state.skip
+    if (state.skip) skip.innerHTML = `${ICON.next}${state.skip === 'recap' ? 'Skip recap' : 'Skip intro'}`
+    $('next').hidden = !state.next
+    $('nextLabel').textContent = state.nextLabel ? `· ${state.nextLabel}` : ''
+    $('subsBox').hidden = !state.subs?.length
+    if (state.subs?.length) {
+      const chips = [{ lang: 'off', label: 'Off' }, ...state.subs]
+      $('subs').innerHTML = chips.map((s) => `<button class="chip" type="button" data-lang="${s.lang}" aria-pressed="${(state.sub || 'off') === s.lang}"></button>`).join('')
+      $('subs').querySelectorAll('button').forEach((b, i) => { b.textContent = chips[i].label })
+    }
+    renderTime()
+  }
+
+  function renderTime() {
+    if (!state) return
+    const d = state.d || 0
+    const seek = $('seek')
+    seek.max = String(Math.max(1, Math.floor(d)))
+    const t = seeking ? Number(seek.value) : position()
+    if (!seeking) seek.value = String(Math.floor(t))
+    seek.style.setProperty('--v', `${d ? Math.min(100, (t / d) * 100) : 0}%`)
+    seek.disabled = !d
+    $('tNow').textContent = clock(t)
+    $('tLeft').textContent = d ? `−${clock(d - t)}` : '–:––'
+  }
+  setInterval(renderTime, 500)
+
+  // ---- the controls ----
+  $('play').addEventListener('click', () => {
+    if (state) { state.t = position(); at = performance.now(); state.playing = !state.playing; render() }
+    send('toggle')
+  })
+  $('back').addEventListener('click', () => send('nudge', -10))
+  $('fwd').addEventListener('click', () => send('nudge', 10))
+  $('skip').addEventListener('click', () => { $('skip').hidden = true; send('skip') })
+  $('next').addEventListener('click', () => send('next'))
+  $('mute').addEventListener('click', () => send('mute'))
+  $('subs').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-lang]')
+    if (!b) return
+    $('subs').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)))
+    send('subs', b.dataset.lang)
+  })
+  const seek = $('seek')
+  seek.addEventListener('input', () => { seeking = true; renderTime() })
+  seek.addEventListener('change', () => {
+    const t = Number(seek.value)
+    if (state) { state.t = t; at = performance.now() }
+    seeking = false
+    send('seek', t)
+    renderTime()
+  })
+  const vol = $('vol')
+  let volTimer = null
+  vol.addEventListener('input', () => {
+    volumeDragging = true
+    vol.style.setProperty('--v', `${vol.value}%`)
+    clearTimeout(volTimer)
+    volTimer = setTimeout(() => fetch(`${base}/cmd`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'volume', value: Number(vol.value) / 100 }) }).catch(() => {}), 80)
+  })
+  vol.addEventListener('change', () => { volumeDragging = false })
+
+  // ---- what's playing, live ----
+  function listen() {
+    const events = new EventSource(`${base}/events`)
+    events.addEventListener('open', () => connected(true, 'Connected'))
+    events.addEventListener('state', (e) => {
+      state = JSON.parse(e.data)
+      at = performance.now()
+      connected(true, state.player ? 'Connected' : 'Waiting for the player')
+      render()
+    })
+    events.addEventListener('closed', () => {
+      events.close()
+      connected(false, 'Off')
+      showEmpty('off')
+    })
+    events.addEventListener('error', () => {
+      if (events.readyState === EventSource.CLOSED) { connected(false, 'Lost'); showEmpty('lost'); setTimeout(listen, 4000) }
+      else { connected(null, 'Reconnecting…'); if (!state) showEmpty('lost') }
+    })
+  }
+  showEmpty('connecting')
+  listen()
+</script>
+</body>
+</html>

@@ -52,6 +52,8 @@ Each file is probed with `ffprobe`, then one of three paths is chosen (see `code
 | `GET /cast/devices` | Play on TV: the DLNA TVs on the home network (most Samsung / LG TVs), from an SSDP search |
 | `POST /cast/start` | `{ deviceId, infoHash, index, title, position }`: send an active swarm's file to a TV |
 | `GET /cast/:cast/status` · `POST /cast/:cast/{play,pause,seek,stop}` | follow and drive the TV (`seek` takes `{ position }` in seconds) |
+| `GET /remote` · `POST /remote/start` · `POST /remote/stop` | the phone remote: its link and a QR code of it (SVG), turned on or off (off forgets the link) |
+| `GET /remote/events` · `PUT /remote/state` | the player page's side: the phones' commands come down the event stream; what's playing goes up for the phones |
 | `GET /stats/:infoHash` | peers / speed / progress of an active swarm (the embed's loading screen) |
 | `GET\|POST /add?magnet=…` | join the swarm; returns the file list + `best` with `decision`, codecs and a ready-to-play `playUrl` |
 | `GET /stream/:infoHash/:index` | native byte-range stream (direct path), `206` |
@@ -96,6 +98,9 @@ viewer can stop ("Watch credits"); `N` or the bar's button goes at once. The sit
 is a next episode and goes to it (postMessage, only with the page that framed the player); it also
 does the player's full screen, so the next episode opens in full screen too.
 
+**Phone remote**: a QR code; the phone that scans it plays, pauses, seeks, sets the volume and the
+subtitles, skips the intro and goes to the next episode (`remote.js`, `views/remote.html`).
+
 Converted streams (MKV, HEVC, another audio track) seek by starting again where asked: the page asks
 `/seek` for the keyframe, then plays `…?t=<keyframe>`, and its clock is that offset plus the video's
 own time; subtitles are drawn by the page on that clock.
@@ -109,6 +114,12 @@ own time; subtitles are drawn by the page on that clock.
   from the private address that answered the search. Windows asks once to allow it on private
   networks. The TV gets the original file (TVs decode MKV / HEVC / AC3 themselves): no transcoding.
   `node test-cast.mjs` tests it end to end against a fake TV.
+- **The phone remote** is the other exception, only once the viewer turns it on: a separate small
+  server on this computer's home-network address serves only `/r/<token>` (the phone's page), its
+  events and its commands, where the token is a random 128-bit secret shown in the QR code. A phone
+  can only send the commands in `remote.js` (play, pause, seek, volume, mute, subtitles, skip, next),
+  checked there; it never reaches the engine, the files or the API. The link is kept (with its port,
+  `DATA_DIR/remote.json`) so a saved one keeps working, until the viewer turns the remote off.
 - **Host allow-list** rejects foreign `Host` headers (anti DNS-rebinding).
 - **Origin allow-list** (`ALLOWED_ORIGINS`) — only the app's web origins may drive it; a random site's
   `fetch` is refused, so no page can make your machine join a swarm.

@@ -36,6 +36,8 @@ import { MAX_CHARS, MAX_LINES, TARGETS, translateLines } from './translate.js'
 import { builtInSubtitles, downloadSubtitle } from './subtitles.js'
 import { bestFit, speechSegments } from './autosync.js'
 import { createIntroStore, introDb, learnIntro } from './segments.js'
+import { cleanState, createRemote } from './remote.js'
+import { renderSVG } from 'uqr'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -1035,6 +1037,24 @@ app.post('/cast/:cast/:action', requireAllowedOrigin, async (req, res) => {
     res.status(502).json({ error: err.message })
   }
 })
+
+// ---- your phone as a remote (remote.js) -----------------------------------------------------------
+//
+// Turned on from the player (a QR code to scan); the phone's page lives on a separate small server
+// on the home network (remote.js). Here, loopback only: the player page turns it on and off, gets
+// the phones' commands (/remote/events) and says what's playing (/remote/state).
+
+const remote = createRemote({ dataDir: DATA_DIR, page: path.join(__dirname, 'views', 'remote.html') })
+remote.resume()
+const withQr = (status) => ({ ...status, qr: status.url ? renderSVG(status.url, { border: 2 }) : null })
+
+app.get('/remote', requireAllowedOrigin, (_req, res) => res.json(withQr(remote.status())))
+app.post('/remote/start', requireAllowedOrigin, async (_req, res) => {
+  try { res.json(withQr(await remote.start())) } catch (err) { res.status(err.status || 500).json({ error: err.message }) }
+})
+app.post('/remote/stop', requireAllowedOrigin, (_req, res) => { remote.stop(); res.json(remote.status()) })
+app.get('/remote/events', requireAllowedOrigin, (req, res) => remote.player(req, res))
+app.put('/remote/state', requireAllowedOrigin, (req, res) => { remote.setState(cleanState(req.body)); res.status(204).end() })
 
 app.use(express.static(path.join(__dirname, 'public')))
 

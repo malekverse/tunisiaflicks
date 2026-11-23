@@ -21,6 +21,8 @@
     credits start, a 10-second countdown the viewer can stop. The site says whether there is a next
     episode and moves to it (postMessage, below); it also does this player's full screen, so the
     next episode opens in full screen too.
+  - "Phone remote": a QR code; the phone that scans it plays, pauses, seeks, sets the volume and the
+    subtitles, skips the intro and goes to the next episode (/remote/…, see remote.js).
 -->
 <style>
   :root {
@@ -209,6 +211,14 @@
   .upnext .go { position: relative; flex: 1; overflow: hidden; isolation: isolate; }
   .upnext .go i { position: absolute; inset: 0; z-index: -1; background: rgba(255,36,20,.3); transform-origin: left; transform: scaleX(0); }
   @media (prefers-reduced-motion: reduce) { .skip, .upnext { transition: none; } }
+  .top .pills { display: flex; gap: 8px; flex: none; }
+  .qr { display: grid; place-items: center; width: 212px; height: 212px; margin: 18px auto 0; padding: 6px; border-radius: 18px; background: #fff; }
+  .qr svg { width: 100%; height: 100%; display: block; }
+  .remote-url { margin: 12px 0 0; text-align: center; color: var(--faint); font: 500 12px ui-monospace, Consolas, monospace; word-break: break-all; user-select: text; }
+  .remote-state { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; font-size: 13.5px; font-weight: 600; color: var(--muted); }
+  .remote-state i { width: 8px; height: 8px; border-radius: 50%; background: #f5a524; }
+  .remote-state.on { color: #6ee7a0; }
+  .remote-state.on i { background: #34d399; }
   .drop { position: absolute; inset: 12px; z-index: 8; display: grid; place-items: center; border-radius: 22px; border: 2px dashed rgba(255,255,255,.5);
     background: rgba(0,0,0,.7); font-size: 18px; font-weight: 700; pointer-events: none; }
   @media (max-width: 560px) {
@@ -233,7 +243,10 @@
       <b id="titleName">TunisiaFlicks</b>
       <span id="titleMeta"></span>
     </div>
-    <button id="castBtn" class="pill" type="button" hidden><svg class="i" data-icon="cast"></svg>Play on TV</button>
+    <div class="pills">
+      <button id="remoteBtn" class="pill" type="button" aria-haspopup="dialog"><svg class="i" data-icon="phone"></svg><span class="hide-sm">Phone remote</span></button>
+      <button id="castBtn" class="pill" type="button" hidden><svg class="i" data-icon="cast"></svg>Play on TV</button>
+    </div>
   </header>
 
   <div id="net" class="net chrome" hidden></div>
@@ -330,6 +343,21 @@
     </div>
   </div>
 
+  <div id="remoteSheet" class="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="remoteTitle">
+    <div class="box">
+      <h2 id="remoteTitle">Your phone as a remote</h2>
+      <p id="remoteText">Point your phone’s camera at the code, and open the link.</p>
+      <div id="remoteQr" class="qr" hidden></div>
+      <p id="remoteUrl" class="remote-url"></p>
+      <div id="remoteState" class="remote-state" hidden><i></i><span id="remoteStateText"></span></div>
+      <div class="row" style="margin: 18px 0 0">
+        <button id="remoteDone" class="btn" type="button">Done</button>
+        <button id="remoteOff" class="btn ghost" type="button" hidden>Turn off</button>
+      </div>
+      <p class="hint">Your phone and this computer need the same Wi-Fi. If Windows asks, allow TunisiaFlicks on private networks. The link keeps working: save it to your home screen.</p>
+    </div>
+  </div>
+
   <div id="casting" class="casting" hidden>
     <div class="stack">
       <svg class="i" data-icon="cast" style="width:44px;height:44px;color:var(--red)"></svg>
@@ -382,6 +410,7 @@
     disk: '<path d="M21 12H3"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
     refresh: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
     gauge: '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
+    phone: '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',
     next: '<polygon points="5 4 15 12 5 20 5 4" fill="currentColor"/><line x1="19" x2="19" y1="5" y2="19"/>',
     cast: '<path d="M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/><path d="M2 12a9 9 0 0 1 8 8"/><path d="M2 16a5 5 0 0 1 4 4"/><line x1="2" x2="2.01" y1="20" y2="20"/>',
   }
@@ -623,6 +652,8 @@
   video.addEventListener('pause', () => { setIcon($('playBtn').querySelector('svg'), 'play'); $('playBtn').setAttribute('aria-label', 'Play (k)'); poke(); saveProgress() })
   video.addEventListener('timeupdate', renderTime)
   video.addEventListener('timeupdate', () => renderEpisodeBits())
+  video.addEventListener('timeupdate', () => pushRemote())
+  for (const event of ['play', 'pause', 'playing', 'waiting', 'seeked', 'volumechange', 'ended']) video.addEventListener(event, () => pushRemote(true))
   video.addEventListener('progress', renderTime)
   video.addEventListener('durationchange', renderTime)
   video.addEventListener('volumechange', renderVolume)
@@ -1085,7 +1116,7 @@
     if (pick) chooseSubtitle(pick)
     else openPanel('subtitles')
   }
-  function renderSubsButton() { $('subsBtn').classList.toggle('on', !!subChoice) }
+  function renderSubsButton() { $('subsBtn').classList.toggle('on', !!subChoice); pushRemote(true) }
   const setDelay = (d) => { subDelay = Math.round(d * 10) / 10; osd('captions', `Subtitle delay ${subDelay > 0 ? '+' : ''}${subDelay.toFixed(1)}s`); if (panelView === 'subtitles') renderPanel() }
 
   /**
@@ -1469,13 +1500,14 @@
     const typing = e.target.closest?.('input, textarea')
     if (e.key === 'Escape') {
       if (!$('sheet').hidden) { $('sheet').hidden = true; $('castBtn').focus(); return }
+      if (!$('remoteSheet').hidden) { closeRemoteSheet(); return }
       if (panelView) { closePanel(); return }
       return
     }
     if (typing) return
     // Space and Enter on a focused button press it.
     if ((e.key === ' ' || e.key === 'Enter') && e.target.closest?.('button')) return
-    if (!$('sheet').hidden || !$('casting').hidden) return
+    if (!$('sheet').hidden || !$('casting').hidden || !$('remoteSheet').hidden) return
     const key = e.key.length === 1 ? e.key.toLowerCase() : e.key
     if (e.repeat && /^[kmfpcs?0-9 ]$/.test(key)) { e.preventDefault(); return }
     const handled = () => { e.preventDefault(); poke() }
@@ -1528,6 +1560,7 @@
       $('nextBtn').hidden = !canGoNext()
       $('upNextLabel').textContent = site.nextLabel || episodeAfter()
       if (!canGoNext()) hideUpNext()
+      pushRemote(true)
     }
     if ('fullscreen' in d) { site.fullscreen = d.fullscreen === true; renderFullscreen() }
     // The site couldn't (no click to go with it): do it here.
@@ -1582,6 +1615,7 @@
         button.setAttribute('aria-label', `${label} (i)`)
         showEl(button)
       } else button.hidden = true
+      pushRemote(true)
     }
     if (!canGoNext()) return
     const at = creditsAt()
@@ -1648,6 +1682,127 @@
   $('nextBtn').addEventListener('click', goNext)
   $('upNextGo').addEventListener('click', goNext)
   $('upNextStay').addEventListener('click', () => { upNext.dismissed = true; hideUpNext(); $('playBtn').focus() })
+
+  // ---- your phone as a remote (remote.js) ------------------------------------------------------------
+  let remoteEvents = null   // the service's event stream: the phones' commands come down it
+  let phones = 0
+  let remoteUrl = null
+
+  async function openRemote() {
+    $('remoteSheet').hidden = false
+    $('remoteText').textContent = 'Starting…'
+    $('remoteDone').focus()
+    try {
+      showRemote(await send('/remote/start', 'POST'))
+    } catch (err) {
+      $('remoteQr').hidden = true
+      $('remoteText').textContent = err.status === 503
+        ? 'This computer isn’t on a network. Connect it to your Wi-Fi and try again.'
+        : 'The remote didn’t start. Try again in a moment.'
+    }
+  }
+  function showRemote(status) {
+    remoteUrl = status.url
+    $('remoteText').textContent = 'Point your phone’s camera at the code, and open the link.'
+    $('remoteQr').innerHTML = status.qr || ''   // an SVG the service made from its own link
+    $('remoteQr').hidden = !status.qr
+    $('remoteUrl').textContent = status.url || ''
+    $('remoteOff').hidden = !status.on
+    phones = status.phones || 0
+    connectRemote()
+    renderRemote()
+  }
+  function renderRemote() {
+    $('remoteBtn').classList.toggle('on', !!remoteEvents)
+    $('remoteState').hidden = !remoteEvents
+    $('remoteState').classList.toggle('on', phones > 0)
+    $('remoteStateText').textContent = phones > 1 ? `${phones} phones connected` : phones === 1 ? 'Phone connected' : 'Waiting for your phone…'
+  }
+  function connectRemote() {
+    if (remoteEvents) return
+    remoteEvents = new EventSource('/remote/events')
+    remoteEvents.addEventListener('command', (e) => { try { runCommand(JSON.parse(e.data)) } catch {} })
+    remoteEvents.addEventListener('phones', (e) => {
+      const before = phones
+      try { phones = JSON.parse(e.data).count || 0 } catch {}
+      renderRemote()
+      if (phones > before) {
+        pushRemote(true)
+        // Scanned: the sheet's job is done.
+        if (!$('remoteSheet').hidden) setTimeout(closeRemoteSheet, 900)
+        else toast('Phone remote connected')
+      }
+    })
+    pushRemote(true)
+  }
+  function closeRemoteSheet() { $('remoteSheet').hidden = true; $('remoteBtn').focus() }
+  async function stopRemote() {
+    try { await send('/remote/stop', 'POST') } catch {}
+    remoteEvents?.close()
+    remoteEvents = null
+    phones = 0
+    renderRemote()
+    closeRemoteSheet()
+    toast('Phone remote turned off')
+  }
+
+  /** A phone's command (checked by the service already). */
+  function runCommand({ action, value }) {
+    if (!current && action !== 'next') return
+    switch (action) {
+      case 'toggle': togglePlay(); break
+      case 'play': video.play().catch(() => {}); break
+      case 'pause': video.pause(); break
+      case 'seek': seekTo(Number(value)); break
+      case 'nudge': nudge(Number(value)); break
+      case 'volume': setVolume(Number(value)); break
+      case 'mute': toggleMute(); break
+      case 'subs':
+        if (value === 'off') subtitlesOff()
+        else { const best = subtitlesIn(value)[0]; if (best) chooseSubtitle(best) }
+        break
+      case 'skip': skipSegment(); break
+      case 'next': goNext(); break
+    }
+    poke()
+    pushRemote(true)
+  }
+
+  // What's playing, for the phones: on every change, and every couple of seconds while it plays.
+  let remoteSent = 0
+  let remoteTimer = null
+  function pushRemote(now_ = false) {
+    if (!remoteEvents) return
+    const wait = now_ ? 120 : Math.max(0, 2000 - (Date.now() - remoteSent))
+    if (remoteTimer && !now_) return
+    clearTimeout(remoteTimer)
+    remoteTimer = setTimeout(() => {
+      remoteTimer = null
+      remoteSent = Date.now()
+      const langs = [...new Set(subtitleList.map((s) => s.lang).filter((l) => /^[a-z]{2,3}$/.test(String(l))))]
+      send('/remote/state', 'PUT', {
+        title: $('titleName').textContent,
+        episode: episodeLabel,
+        playing: !video.paused,
+        loading: player.classList.contains('loading') || !$('buffer').hidden,
+        t: now(),
+        d: duration(),
+        volume: video.volume,
+        muted: video.muted,
+        subs: langs.map((lang) => ({ lang, label: languageName(lang) })),
+        sub: subChoice?.lang && langs.includes(subChoice.lang) ? subChoice.lang : null,
+        skip: skipShown,
+        next: canGoNext(),
+        nextLabel: site.nextLabel,
+      }).catch(() => {})
+    }, wait)
+  }
+
+  $('remoteBtn').addEventListener('click', openRemote)
+  $('remoteDone').addEventListener('click', closeRemoteSheet)
+  $('remoteOff').addEventListener('click', stopRemote)
+  // Turned on before (an earlier episode, yesterday): the phone carries on with this page.
+  json('/remote').then((status) => { if (status.on) { remoteUrl = status.url; phones = status.phones || 0; $('remoteQr').innerHTML = status.qr || ''; $('remoteQr').hidden = !status.qr; $('remoteUrl').textContent = status.url || ''; $('remoteOff').hidden = false; connectRemote(); renderRemote() } }).catch(() => {})
 
   // ---- Play on TV --------------------------------------------------------------------------------------
   let cast = null         // { id, device } while a TV plays it

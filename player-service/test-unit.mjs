@@ -9,6 +9,8 @@ import { manifestUrl, mediaId, sizeIn, seedsIn, serves } from './addons.js'
 import { isPrivateIPv4, escapeXml } from './dlna.js'
 import { agree, createIntroStore, fingerprint, fromIntroDb, introDb, sharedStretch, HOP, RATE } from './segments.js'
 import fs from 'node:fs'
+import http from 'node:http'
+import { cleanState, createRemote, homeAddress, readCommand } from './remote.js'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -259,3 +261,96 @@ test('skip intro: what was learned is kept per show, the last 10 episodes', () =
   }
 })
 
+
+// ---- the phone remote (remote.js) -------------------------------------------------------------------
+
+test('remote: only the known commands, with sane values', () => {
+  assert.deepEqual(readCommand({ action: 'toggle' }), { action: 'toggle', value: null })
+  assert.deepEqual(readCommand({ action: 'seek', value: 125.5 }), { action: 'seek', value: 125.5 })
+  assert.deepEqual(readCommand({ action: 'subs', value: 'ara' }), { action: 'subs', value: 'ara' })
+  assert.deepEqual(readCommand({ action: 'subs', value: 'off' }), { action: 'subs', value: 'off' })
+  assert.equal(readCommand({ action: 'seek', value: -3 }), null)
+  assert.equal(readCommand({ action: 'volume', value: 4 }), null)
+  assert.equal(readCommand({ action: 'nudge', value: 9999 }), null)
+  assert.equal(readCommand({ action: 'subs', value: '<script>' }), null)
+  assert.equal(readCommand({ action: 'constructor' }), null)
+  assert.equal(readCommand({ action: 'eval', value: 'x' }), null)
+})
+
+test('remote: what the player says is cut down to what a phone shows', () => {
+  const state = cleanState({ title: 'x'.repeat(500), t: 61, d: -5, volume: 3, playing: true, subs: [{ lang: 'ara', label: 'Arabic' }, { lang: 'bad lang', label: 'x' }], sub: 'fre', skip: 'credits', next: true, extra: 'dropped' })
+  assert.equal(state.title.length, 120)
+  assert.equal(state.d, 0)
+  assert.equal(state.volume, 1)
+  assert.deepEqual(state.subs, [{ lang: 'ara', label: 'Arabic' }])
+  assert.equal(state.sub, null)        // not one of the subtitles offered
+  assert.equal(state.skip, null)
+  assert.equal('extra' in state, false)
+})
+
+/** An event stream's events, as they come: [{ event, data }]. */
+function events(url) {
+  const seen = []
+  const req = http.get(url, (res) => {
+    let buffer = ''
+    res.on('data', (d) => {
+      buffer += d
+      let cut
+      while ((cut = buffer.indexOf('\n\n')) >= 0) {
+        const block = buffer.slice(0, cut)
+        buffer = buffer.slice(cut + 2)
+        const event = /^event: (.*)$/m.exec(block)?.[1]
+        const data = /^data: (.*)$/m.exec(block)?.[1]
+        if (event) seen.push({ event, data: JSON.parse(data) })
+      }
+    })
+  })
+  return { seen, close: () => req.destroy() }
+}
+const until = async (check, ms = 3000) => { const end = Date.now() + ms; while (!check()) { if (Date.now() > end) throw new Error('timed out'); await new Promise((r) => setTimeout(r, 20)) } }
+
+test('remote: a phone on the Wi-Fi drives the player, and a wrong link gets nothing', async (t) => {
+  if (!(await homeAddress())) return t.skip('no home network here')
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'remote-'))
+  const page = path.join(dir, 'remote.html')
+  fs.writeFileSync(page, '<p>remote</p>')
+  const remote = createRemote({ dataDir: dir, page })
+  // The player page's stream, through a stand-in for the loopback route.
+  const loop = http.createServer((req, res) => remote.player(req, res)).listen(0, '127.0.0.1')
+  await new Promise((r) => loop.once('listening', r))
+  try {
+    const status = await remote.start()
+    assert.ok(status.on && /^http:\/\/[\d.]+:\d+\/r\/[A-Za-z0-9_-]{22}$/.test(status.url), status.url)
+    const player = events(`http://127.0.0.1:${loop.address().port}/`)
+    await until(() => player.seen.some((e) => e.event === 'phones'))
+    remote.setState(cleanState({ title: 'Dune', t: 10, d: 100, playing: true }))
+
+    const phone = events(`${status.url}/events`)
+    await until(() => phone.seen.some((e) => e.event === 'state' && e.data.title === 'Dune' && e.data.player === true))
+    await until(() => player.seen.some((e) => e.event === 'phones' && e.data.count === 1))
+
+    const post = (url, body) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    assert.equal((await post(`${status.url}/cmd`, { action: 'seek', value: 42 })).status, 204)
+    await until(() => player.seen.some((e) => e.event === 'command' && e.data.action === 'seek' && e.data.value === 42))
+    assert.equal((await post(`${status.url}/cmd`, { action: 'rm -rf' })).status, 400)
+
+    const wrong = status.url.replace(/\/r\/.*/, '/r/' + 'A'.repeat(22))
+    assert.equal((await fetch(wrong)).status, 404)
+    assert.equal((await fetch(status.url.replace(/\/r\/.*/, '/stream/x/0'))).status, 404)
+    assert.equal((await fetch(status.url)).status, 200)
+
+    // The same link after a restart (it's saved), gone once turned off.
+    const again = createRemote({ dataDir: dir, page })
+    remote.stop()
+    phone.close()
+    const back = await again.start()
+    assert.equal(back.url.split('/r/')[1], status.url.split('/r/')[1])
+    again.stop()
+    assert.equal(createRemote({ dataDir: dir, page }).status().on, false)
+    assert.equal(fs.existsSync(path.join(dir, 'remote.json')), false)
+    player.close()
+  } finally {
+    loop.close()
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+})
