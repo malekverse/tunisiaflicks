@@ -29,6 +29,7 @@ import * as ffbin from 'ffmpeg-ffprobe-static'
 import { analyze, ffmpegArgs, withAudio } from './codec.js'
 import { tmdbTitle, browseMovies, movieMagnets, tvMagnets, rankOptions } from './resolve.js'
 import * as dlna from './dlna.js'
+import * as chromecast from './chromecast.js'
 import { audioLanguagesOf, createAddonStore, decodeSubtitle, languageOf, sourceFromStream, mediaId } from './addons.js'
 import { extraBuiltIns, rankForTitle } from './providers.js'
 import { createStateStore, isTitleKey } from './state.js'
@@ -268,7 +269,10 @@ const LOOPBACK_ORIGIN = /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/
 const isAllowedOrigin = (origin) => !origin || ALLOWED_ORIGINS.has(origin) || LOOPBACK_ORIGIN.test(origin)
 
 app.use(cors({ origin: (origin, cb) => cb(null, isAllowedOrigin(origin)) }))
-app.use(express.json())
+// "Play on TV" carries the subtitles (WebVTT) with it: more room than the rest.
+const smallJson = express.json()
+const castJson = express.json({ limit: '4mb' })
+app.use((req, res, next) => (req.path === '/cast/start' ? castJson : smallJson)(req, res, next))
 
 // Only allow-listed web origins may DRIVE the engine (add swarms). Same-origin page fetches and
 // the native app send no Origin and are allowed; a random website's fetch carries its Origin and is
@@ -922,15 +926,18 @@ app.get('/uplay/:id', async (req, res) => {
   sendConverted(res, ffmpegArgs(info, TRANSCODE_MAXHEIGHT, { input: source.url, start: startOf(req) }))
 })
 
-// ---- Play on TV (DLNA) --------------------------------------------------------------------------
+// ---- Play on TV (DLNA TVs: dlna.js; Chromecasts and Google TVs: chromecast.js) -------------------
 //
 // The TV fetches the video from this machine, so for this one thing the player answers on the home
 // network: a separate small server on the LAN address the TV was found from, serving only
 // /media/<token>/<name>, where the token is a random 256-bit secret made for that one cast and
 // dropped when it stops. Everything else (driving the engine, the API) stays loopback-only.
 //
-// The TV gets the original file, never a conversion: TVs decode MKV, HEVC, AC3 and DTS in hardware,
-// so even the copies a browser can't play go straight through, seekable, with no CPU spent.
+// A DLNA TV gets the original file, never a conversion: TVs decode MKV, HEVC, AC3 and DTS in
+// hardware, so even the copies a browser can't play go straight through, seekable, with no CPU
+// spent. A Chromecast plays what a browser plays: a file the browser can't is converted on the way
+// (the same conversion as here, started at the position: seeking starts it again elsewhere), and
+// the subtitles go along as WebVTT (/media/<token>/subs.vtt).
 
 const MIME = {
   '.mp4': 'video/mp4', '.m4v': 'video/mp4', '.mkv': 'video/x-matroska', '.webm': 'video/webm',
@@ -940,22 +947,43 @@ const MIME = {
 const mimeOf = (name) => MIME[path.extname(name).toLowerCase()] || 'video/mp4'
 
 const devices = new Map()      // id -> TV, only ever from our own discovery
-const casts = new Map()        // token -> { infoHash, index, device }
+const casts = new Map()        // token -> { infoHash, index, device, converted, audio, offset, vtt }
+const driverOf = (device) => (device.kind === 'cast' ? chromecast : dlna)
 const lanServers = new Map()   // our LAN address -> Promise<port>
 
 function lanServer(address) {
   if (!lanServers.has(address)) {
     const started = new Promise((resolve, reject) => {
       const srv = http.createServer((req, res) => {
-        const match = /^\/media\/([0-9a-f]{64})\/[^/]*$/.exec((req.url || '').split('?')[0])
+        const match = /^\/media\/([0-9a-f]{64})\/([^/]*)$/.exec((req.url || '').split('?')[0])
         const cast = match && casts.get(match[1])
         if (!cast || (req.method !== 'GET' && req.method !== 'HEAD')) { res.writeHead(404); return res.end() }
+        // A Chromecast's player fetches the subtitles from its own page: it needs CORS.
+        const shared = cast.device.kind === 'cast' ? { 'Access-Control-Allow-Origin': '*' } : {}
+        if (match[2] === 'subs.vtt') {
+          if (!cast.vtt) { res.writeHead(404); return res.end() }
+          res.writeHead(200, { 'Content-Type': 'text/vtt; charset=utf-8', 'Cache-Control': 'no-store', ...shared })
+          return res.end(req.method === 'HEAD' ? undefined : chromecast.shiftVtt(cast.vtt, cast.offset))
+        }
         const entry = active.get(cast.infoHash)
         if (!entry) { res.writeHead(410); return res.end() }
         touch(cast.infoHash)
         const file = entry.torrent.files[cast.index]
         file.select()
-        sendRange(req, res, file, mimeOf(file.name), { 'transferMode.dlna.org': 'Streaming', 'contentFeatures.dlna.org': dlna.DLNA_FEATURES })
+        if (cast.converted) {
+          // Converted on the way, from where the cast (re)started: our own /play, passed through.
+          const local = `http://127.0.0.1:${server.address().port}/play/${entry.torrent.infoHash}/${cast.index}?t=${cast.offset}&audio=${cast.audio}`
+          if (req.method === 'HEAD') { res.writeHead(200, { 'Content-Type': 'video/mp4', ...shared }); return res.end() }
+          const upstream = http.get(local, (answer) => {
+            res.writeHead(answer.statusCode || 502, { 'Content-Type': 'video/mp4', 'Cache-Control': 'no-store', ...shared })
+            answer.pipe(res)
+          })
+          upstream.on('error', () => { try { res.destroy() } catch {} })
+          res.on('close', () => upstream.destroy())
+          return
+        }
+        const features = cast.device.kind === 'cast' ? {} : { 'transferMode.dlna.org': 'Streaming', 'contentFeatures.dlna.org': dlna.DLNA_FEATURES }
+        sendRange(req, res, file, mimeOf(file.name), { ...features, ...shared })
       })
       srv.on('error', reject)
       srv.listen(0, address, () => resolve(srv.address().port))
@@ -969,17 +997,21 @@ function lanServer(address) {
 /** The TVs on the home network that can play a video sent to them. */
 app.get('/cast/devices', requireAllowedOrigin, async (_req, res) => {
   try {
-    const found = await dlna.discover()
+    const [tvs, cast] = await Promise.all([dlna.discover(), chromecast.discover().catch(() => [])])
+    const found = [...tvs, ...cast]
     for (const device of found) devices.set(device.id, device)
-    res.json({ devices: found.map((d) => ({ id: d.id, name: d.name, model: [d.manufacturer, d.model].filter(Boolean).join(' ') })) })
+    res.json({ devices: found.map((d) => ({ id: d.id, kind: d.kind === 'cast' ? 'cast' : 'dlna', name: d.name, model: [d.manufacturer, d.model].filter(Boolean).join(' ') })) })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 })
 
-/** Send a file of an active swarm to a TV: { deviceId, infoHash, index, title, position }. */
+/**
+ * Send a file of an active swarm to a TV: { deviceId, infoHash, index, title, position, audio,
+ * subtitles: { vtt, lang, label } } (audio and subtitles: Chromecasts; a DLNA TV picks its own).
+ */
 app.post('/cast/start', requireAllowedOrigin, async (req, res) => {
-  const { deviceId, infoHash, index, title, position } = req.body ?? {}
+  const { deviceId, infoHash, index, title, position, audio, subtitles } = req.body ?? {}
   const device = devices.get(deviceId)
   if (!device) return res.status(404).json({ error: 'That TV is gone. Search again.' })
   const entry = typeof infoHash === 'string' ? active.get(infoHash.toLowerCase()) : null
@@ -990,17 +1022,42 @@ app.post('/cast/start', requireAllowedOrigin, async (req, res) => {
     const token = crypto.randomBytes(32).toString('hex')
     const file = entry.torrent.files[i]
     for (const [other, cast] of casts) if (cast.device.id === device.id) casts.delete(other)   // one video per TV
-    casts.set(token, { infoHash: entry.torrent.infoHash, index: i, device })
-    const url = `http://${device.localAddress}:${port}/media/${token}/${encodeURIComponent(file.name)}`
-    await dlna.load(device, { url, title: String(title || file.name).slice(0, 200), mime: mimeOf(file.name), size: file.length })
-    // Pick up where the viewer was (a TV only seeks once it's playing).
-    if (Number(position) > 5) setTimeout(() => dlna.seek(device, Number(position)).catch(() => {}), 3000)
+    const base = `http://${device.localAddress}:${port}/media/${token}`
+    const name = String(title || file.name).slice(0, 200)
+    if (device.kind === 'cast') {
+      const probed = await analysisFor(entry, i)
+      const track = Math.max(0, Math.floor(Number(audio) || 0))
+      const info = withAudio(probed, track < (probed.audioTracks?.length || 0) ? track : 0)
+      const converted = info.decision !== 'direct'
+      const at = Math.max(0, Number(position) || 0)
+      const vtt = chromecast.cleanVtt(subtitles?.vtt)
+      const cast = { infoHash: entry.torrent.infoHash, index: i, device, converted, audio: info.audio ?? 0, offset: converted ? Math.floor(at) : 0, duration: info.durationSec || null, vtt, title: name, subtitles: vtt ? { lang: String(subtitles.lang || 'und').slice(0, 12), label: String(subtitles.label || 'Subtitles').slice(0, 60) } : null }
+      casts.set(token, cast)
+      await chromecast.load(device, castMedia(cast, base, file, converted ? 0 : at))
+    } else {
+      casts.set(token, { infoHash: entry.torrent.infoHash, index: i, device })
+      await dlna.load(device, { url: `${base}/${encodeURIComponent(file.name)}`, title: name, mime: mimeOf(file.name), size: file.length })
+      // Pick up where the viewer was (a TV only seeks once it's playing).
+      if (Number(position) > 5) setTimeout(() => dlna.seek(device, Number(position)).catch(() => {}), 3000)
+    }
     res.json({ cast: token, device: device.name })
   } catch (err) {
     console.error('[cast]', err.message)
     res.status(502).json({ error: err.message })
   }
 })
+
+/** What a Chromecast is told to load for a cast (a converted one starts at its offset). */
+function castMedia(cast, base, file, position) {
+  const mime = cast.converted ? 'video/mp4' : mimeOf(file.name)
+  return {
+    url: cast.converted ? `${base}/live.mp4?from=${cast.offset}` : `${base}/${encodeURIComponent(file.name)}`,
+    mime: mime === 'video/x-matroska' ? 'video/webm' : mime,
+    title: cast.title,
+    position,
+    subtitles: cast.subtitles ? { ...cast.subtitles, url: `${base}/subs.vtt?from=${cast.offset}` } : null,
+  }
+}
 
 function castFor(req, res) {
   const cast = casts.get(String(req.params.cast))
@@ -1013,7 +1070,13 @@ app.get('/cast/:cast/status', requireAllowedOrigin, async (req, res) => {
   const cast = castFor(req, res)
   if (!cast) return
   touch(cast.infoHash)
-  try { res.json(await dlna.status(cast.device)) } catch (err) { res.status(502).json({ error: err.message }) }
+  try {
+    const now = await driverOf(cast.device).status(cast.device)
+    // A converted cast plays from its offset: the TV counts from 0.
+    if (cast.offset && Number.isFinite(now.position)) now.position += cast.offset
+    if (cast.converted) now.duration = cast.duration ?? null
+    res.json(now)
+  } catch (err) { res.status(502).json({ error: err.message }) }
 })
 
 /** play | pause | seek ({ position }) | stop. */
@@ -1021,14 +1084,25 @@ app.post('/cast/:cast/:action', requireAllowedOrigin, async (req, res) => {
   const cast = castFor(req, res)
   if (!cast) return
   const { device } = cast
+  const driver = driverOf(device)
   try {
     switch (req.params.action) {
-      case 'play': await dlna.play(device); break
-      case 'pause': await dlna.pause(device); break
-      case 'seek': await dlna.seek(device, Math.max(0, Number(req.body?.position) || 0)); break
+      case 'play': await driver.play(device); break
+      case 'pause': await driver.pause(device); break
+      case 'seek': {
+        const to = Math.max(0, Number(req.body?.position) || 0)
+        if (!cast.converted) { await driver.seek(device, to); break }
+        // A converted stream can't seek: it starts again from there.
+        const entry = active.get(cast.infoHash)
+        if (!entry) return res.status(410).json({ error: 'Not playing any more' })
+        cast.offset = Math.floor(to)
+        const port = await lanServer(device.localAddress)
+        await chromecast.load(device, castMedia(cast, `http://${device.localAddress}:${port}/media/${req.params.cast}`, entry.torrent.files[cast.index], 0))
+        break
+      }
       case 'stop':
         casts.delete(String(req.params.cast))
-        await dlna.stop(device).catch(() => {})
+        await driver.stop(device).catch(() => {})
         break
       default: return res.status(400).json({ error: 'Unknown action' })
     }

@@ -1860,11 +1860,34 @@
       pick.style.background = 'rgba(255,255,255,.08)'
       pick.innerHTML = `<span class="main"><span class="name"></span><span class="meta"></span></span>`
       pick.querySelector('.name').textContent = device.name
-      pick.querySelector('.meta').textContent = device.model || ''
+      pick.querySelector('.meta').textContent = [device.kind === 'cast' ? 'Chromecast' : '', device.model || ''].filter(Boolean).join(' · ')
       pick.addEventListener('click', () => startCast(device))
       $('tvList').append(pick)
     }
     $('tvList').firstChild.focus()
+  }
+
+  /** The subtitles on screen, as the TV should show them (with their delay and stretch), in WebVTT. */
+  function castSubtitles() {
+    if (!cues.length) return null
+    const stamp = (t) => {
+      const ms = Math.max(0, Math.round(t * 1000))
+      return `${String(Math.floor(ms / 3600000)).padStart(2, '0')}:${String(Math.floor(ms / 60000) % 60).padStart(2, '0')}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}.${String(ms % 1000).padStart(3, '0')}`
+    }
+    const at = (t) => t * subScale + subDelay
+    const body = cues
+      .filter((cue) => at(cue.end) > 0 && cue.text)
+      .map((cue) => `${stamp(at(cue.start))} --> ${stamp(at(cue.end))}
+${String(cue.text).replace(/-->/g, '→').replace(/
+{2,}/g, '
+')}`)
+      .join('
+
+')
+    return { vtt: `WEBVTT
+
+${body}
+`, lang: subChoice?.lang || 'und', label: subChoice?.label || 'Subtitles' }
   }
 
   async function startCast(device) {
@@ -1872,7 +1895,7 @@
     $('tvList').replaceChildren()
     const position = now()
     try {
-      const res = await post('/cast/start', { deviceId: device.id, infoHash: current.infoHash, index: current.index, title: current.name || current.title, position })
+      const res = await post('/cast/start', { deviceId: device.id, infoHash: current.infoHash, index: current.index, title: current.name || current.title, position, audio: audioTrack, subtitles: castSubtitles() })
       const body = await res.json()
       if (!res.ok) throw new Error(body.error)
       cast = { id: body.cast, device: device.name }

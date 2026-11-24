@@ -49,8 +49,8 @@ Each file is probed with `ffprobe`, then one of three paths is chosen (see `code
 | `GET /addons` · `GET /addons/catalog` · `POST /addons` · `DELETE /addons/:id` | the installed extensions, the ready list (`extensions.json`), install one by its `manifest.json` address, remove one |
 | `GET /state?key=movie:550` · `PUT /prefs` · `PUT /progress/:key` | what the player remembers (`state.js`): preferences, and where the viewer stopped |
 | `GET /embed/movie/:tmdb` · `GET /embed/tv/:tmdb/:season/:episode` | the player as an embed, for the TunisiaFlicks site's player frame (desktop app). Only the site's origins and loopback may frame it (`frame-ancestors`). |
-| `GET /cast/devices` | Play on TV: the DLNA TVs on the home network (most Samsung / LG TVs), from an SSDP search |
-| `POST /cast/start` | `{ deviceId, infoHash, index, title, position }`: send an active swarm's file to a TV |
+| `GET /cast/devices` | Play on TV: the DLNA TVs on the home network (most Samsung / LG TVs), from an SSDP search, and the Chromecasts and Google TVs, from an mDNS question (`chromecast.js`) |
+| `POST /cast/start` | `{ deviceId, infoHash, index, title, position, audio, subtitles: { vtt, lang, label } }`: send an active swarm's file to a TV (a Chromecast also gets the audio track and the subtitles on screen) |
 | `GET /cast/:cast/status` · `POST /cast/:cast/{play,pause,seek,stop}` | follow and drive the TV (`seek` takes `{ position }` in seconds) |
 | `GET /remote` · `POST /remote/start` · `POST /remote/stop` | the phone remote: its link and a QR code of it (SVG), turned on or off (off forgets the link) |
 | `GET /remote/events` · `PUT /remote/state` | the player page's side: the phones' commands come down the event stream; what's playing goes up for the phones |
@@ -118,8 +118,13 @@ own time; subtitles are drawn by the page on that clock.
   `/media/<token>/<name>`, where the token is a random 256-bit secret for that one cast, dead once it
   stops. TVs are only driven by ids from our own discovery, and a device description is only read
   from the private address that answered the search. Windows asks once to allow it on private
-  networks. The TV gets the original file (TVs decode MKV / HEVC / AC3 themselves): no transcoding.
-  `node test-cast.mjs` tests it end to end against a fake TV.
+  networks. A DLNA TV gets the original file (TVs decode MKV / HEVC / AC3 themselves): no
+  transcoding. A Chromecast gets what a browser would play: a file a browser can't play is converted
+  on the way (seeking restarts the conversion there), and the subtitles go as `/media/<token>/subs.vtt`
+  (with CORS, which its player needs). Cast devices are reached over TLS with their self-signed
+  certificate (there is no CA to check), only at a private address from our own mDNS question.
+  `node test-cast.mjs` tests DLNA end to end against a fake TV; `node --test test-chromecast.mjs`
+  tests discovery and the Cast protocol against a fake device.
 - **The phone remote** is the other exception, only once the viewer turns it on: a separate small
   server on this computer's home-network address serves only `/r/<token>` (the phone's page), its
   events and its commands, where the token is a random 128-bit secret shown in the QR code. A phone

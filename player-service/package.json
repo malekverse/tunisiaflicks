@@ -7,7 +7,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test test-unit.mjs && node test-codec.mjs",
+    "test": "node --test test-unit.mjs test-chromecast.mjs && node test-codec.mjs",
     "test:cast": "node test-cast.mjs"
   },
   "engines": {
