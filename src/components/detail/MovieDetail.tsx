@@ -18,6 +18,10 @@ import { fillProviders } from '@/src/lib/media-assets'
 import type { ExtrasGroup } from '@/src/lib/extras'
 import type { ProviderTemplate } from '@/src/lib/stream-providers'
 import { useT } from '@/src/components/I18nProvider'
+import WatchOffers from '@/src/components/detail/WatchOffers'
+import FranchiseOrder from '@/src/components/detail/FranchiseOrder'
+import type { Franchise } from '@/src/lib/franchise'
+import type { WatchOffers as Offers } from '@/src/lib/watch-providers'
 
 /** What a title page knows on the server, besides the title itself (see the movie and tv pages). */
 export type DetailServerProps = {
@@ -40,18 +44,23 @@ export type DetailServerProps = {
   /** The Extras videos (without the main trailer). */
   extras: ExtrasGroup[]
   soundtrack: SoundtrackInitial
+  /** Where it's legally available in the viewer's country (none for Kids). */
+  offers?: Offers | null
+  /** A film's franchise in watch order (movies only). */
+  franchise?: Franchise | null
 }
 
 /**
  * The page's chapters in their order, only those the server knows are there: Watch, Episodes,
- * Ratings, More like this, Extras, Cast, Details. (A soundtrack found later by the browser shows
+ * Ratings, In order (a film's franchise), More like this, Extras, Cast, Details. (A soundtrack found later by the browser shows
  * in place without an entry.)
  */
-export function detailSections(t: ReturnType<typeof useT>, o: { episodes?: boolean, ratings: boolean, similar: boolean, extras: boolean, cast: boolean }): Section[] {
+export function detailSections(t: ReturnType<typeof useT>, o: { episodes?: boolean, ratings: boolean, franchise?: boolean, similar: boolean, extras: boolean, cast: boolean }): Section[] {
   return [
     { id: 'streamSection', label: t('detail.watch') },
     ...(o.episodes ? [{ id: 'episodes', label: t('tv.episodes') }] : []),
     ...(o.ratings ? [{ id: 'ratings', label: t('social.ratings.title') }] : []),
+    ...(o.franchise ? [{ id: 'franchise', label: t('franchise.nav') }] : []),
     ...(o.similar ? [{ id: 'similar', label: t('detail.moreLikeThis') }] : []),
     ...(o.extras ? [{ id: 'extras', label: t('extras.title') }] : []),
     ...(o.cast ? [{ id: 'cast', label: t('detail.cast') }] : []),
@@ -60,7 +69,7 @@ export function detailSections(t: ReturnType<typeof useT>, o: { episodes?: boole
 }
 
 /** A movie page: the hero, the player, ratings, similar titles, extras, the cast and the facts. */
-export default function MovieDetail({ id, data, similar, providers, kids, halal, signedIn, ratings, tabs, trailers, extras, soundtrack: initialSoundtrack }: DetailServerProps) {
+export default function MovieDetail({ id, data, similar, providers, kids, halal, signedIn, ratings, tabs, trailers, extras, soundtrack: initialSoundtrack, offers, franchise }: DetailServerProps) {
   const t = useT()
   const ambient = useAmbientColor(data.poster_path)
   useRoomLight(ambient)
@@ -74,10 +83,11 @@ export default function MovieDetail({ id, data, similar, providers, kids, halal,
 
   const sections = useMemo(() => detailSections(t, {
     ratings,
+    franchise: !!franchise,
     similar: tabs.length > 0,
     extras: extras.length > 0 || initialSoundtrack.state === 'found',
     cast: cast.length > 0,
-  }), [t, ratings, tabs.length, extras.length, initialSoundtrack.state, cast.length])
+  }), [t, ratings, franchise, tabs.length, extras.length, initialSoundtrack.state, cast.length])
 
   // Arriving straight at the player ("Play" on the home page) counts as starting to watch.
   // (markWatched only succeeds once the session has loaded, hence the retry on its change.)
@@ -102,7 +112,9 @@ export default function MovieDetail({ id, data, similar, providers, kids, halal,
           downloadSlot={imdbId ? <DownloadDialog type="movie" imdbId={imdbId} title={data.title} /> : undefined}
         />
         {halal && <HalalReport kind="movie" id={id} className="-mt-12" />}
+        <WatchOffers offers={offers} className="-mt-10" />
         {ratings && <RatingsBand id="ratings" media={media} />}
+        {franchise && <FranchiseOrder id="franchise" franchise={franchise} currentId={id} signedIn={signedIn} />}
         {tabs.length > 0 && <MoreLikeThis kind="movie" id={id} kids={kids} closest={similar} tabs={tabs} />}
         <ExtrasSection type="movie" id={id} title={data.title ?? ''} kids={kids} groups={extras} soundtrack={soundtrack} />
         <CastRow id="cast" cast={cast} mediaType="movie" mediaId={id} signedIn={signedIn} />

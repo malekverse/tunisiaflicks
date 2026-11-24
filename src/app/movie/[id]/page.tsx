@@ -17,6 +17,9 @@ import { videoExtras } from '@/src/lib/extras'
 import { trailerLanguages } from '@/src/lib/media-assets'
 import { similarTabs, variationFacts } from '@/src/lib/variations'
 import { withTimeout } from '@/src/lib/with-timeout'
+import { headers } from 'next/headers'
+import { offersFor, viewerCountry } from '@/src/lib/watch-providers'
+import { franchiseFor } from '@/src/lib/franchise-server'
 
 type Props = { params: { id: string } }
 
@@ -27,7 +30,7 @@ async function getMovie(id: string, imageLanguages = 'en,null') {
   try {
     // Videos in English, Arabic and French (and without a language): the trailer and the extras
     // pick the viewer's language first.
-    return await tmdbFetch(`movie/${id}`, { append_to_response: 'images,credits,videos,external_ids', include_image_language: imageLanguages, include_video_language: 'en,ar,fr,null' })
+    return await tmdbFetch(`movie/${id}`, { append_to_response: 'images,credits,videos,external_ids,watch/providers', include_image_language: imageLanguages, include_video_language: 'en,ar,fr,null' })
   } catch (error) {
     if (error instanceof TmdbError && error.status === 404) notFound()
     throw error
@@ -68,11 +71,12 @@ export default async function MoviePage({ params }: Props) {
   if (halal && (await isHalalHidden(movie, 'movie'))) return <HalalBlocked />
   const id = String(movie.id ?? params.id)
   const signedIn = !!active
-  const [similar, summary, soundtrack] = await Promise.all([
+  const [similar, summary, soundtrack, franchise] = await Promise.all([
     kids ? filterKidSafe(recommendations?.results ?? [], 'movie') : recommendations?.results ?? [],
     // Guests only see the ratings band when there is an average to show.
     signedIn ? null : withTimeout(ratingSummary('movie', id), 1500, { average: null, countLabel: null }),
     withTimeout(readSoundtrack('movie', id), 1200, { state: 'unknown' as const }),
+    withTimeout(franchiseFor(movie, locale, { kids, active }), 2500, null),
   ])
 
   const data = localizeDetail(movie, translated, locale)
@@ -92,6 +96,9 @@ export default async function MoviePage({ params }: Props) {
       extras={groups}
       // Kids profiles get no links out.
       soundtrack={soundtrack.state === 'found' && kids ? { state: 'found', album: { ...soundtrack.album, link: null } } : soundtrack}
+      franchise={franchise}
+      // Where it's legally available in the viewer's country; Kids profiles get no links out.
+      offers={kids ? null : offersFor(movie['watch/providers'], viewerCountry(headers().get('x-vercel-ip-country')))}
     />
   )
 }

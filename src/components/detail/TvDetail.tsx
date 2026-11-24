@@ -9,6 +9,7 @@ import { CastRow, DetailsGrid } from '@/src/components/detail/DetailSections'
 import MoreLikeThis from '@/src/components/detail/MoreLikeThis'
 import ExtrasSection from '@/src/components/detail/ExtrasSection'
 import { detailSections, type DetailServerProps } from '@/src/components/detail/MovieDetail'
+import WatchOffers from '@/src/components/detail/WatchOffers'
 import RatingsBand from '@/src/components/social/RatingsBand'
 import DownloadDialog from '@/src/components/detail/DownloadDialog'
 import { useRoomLight } from '@/src/components/shell/RoomLight'
@@ -34,7 +35,7 @@ const scrollToPlayer = () => {
 }
 
 /** A show page: the hero, the player, the episodes, ratings, similar shows, extras, the cast and the facts. */
-export default function TvDetail({ id, data, similar, resume, providers, kids, halal, signedIn, ratings, tabs, trailers, extras, soundtrack: initialSoundtrack, englishName }: DetailServerProps & {
+export default function TvDetail({ id, data, similar, resume, providers, kids, halal, signedIn, ratings, tabs, trailers, extras, soundtrack: initialSoundtrack, englishName, offers }: DetailServerProps & {
   /** Episode to reopen (from "Continue watching" links: /tv/:id?s=&e=). */
   resume?: Pick
   /** TMDB's English name, when the page shows a translated one (torrent releases use it). */
@@ -176,6 +177,7 @@ export default function TvDetail({ id, data, similar, resume, providers, kids, h
           ) : undefined}
         />
         {halal && <HalalReport kind="tv" id={id} className="-mt-12" />}
+        <WatchOffers offers={offers} className="-mt-10" />
 
         {seasons.length > 0 && (
           <EpisodeBrowser

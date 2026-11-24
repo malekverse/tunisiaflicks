@@ -3,7 +3,7 @@
 // Which strings go to the browser (see clientMessages in ./index.ts): the root layout sends every
 // key that is in neither list below (the shell), a <ClientMessages scope> adds its scope's keys to
 // the pages under it, and the server-only keys never leave the server.
-// 650 of 3530 keys on every page, 2270 in 40 scopes, 610 server-only.
+// 650 of 3546 keys on every page, 2286 in 40 scopes, 610 server-only.
 
 export type MessageScope =
   | 'about/layout'
@@ -2404,6 +2404,17 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'extras.type.Teaser',
     'extras.type.Trailer',
     'extras.videos',
+    'franchise.announced',
+    'franchise.coming',
+    'franchise.count',
+    'franchise.done',
+    'franchise.nav',
+    'franchise.next',
+    'franchise.progress',
+    'franchise.start',
+    'franchise.thisFilm',
+    'franchise.title',
+    'franchise.watched',
     'halal.report.button',
     'halal.report.done',
     'halal.report.text',
@@ -2420,6 +2431,11 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'more.hint.closest',
     'more.retry',
     'more.showClosest',
+    'offers.credit',
+    'offers.more',
+    'offers.rentBuy',
+    'offers.stream',
+    'offers.title',
     'party.alone',
     'party.button',
     'party.codeLabel',
@@ -3579,6 +3595,17 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'extras.type.Teaser',
     'extras.type.Trailer',
     'extras.videos',
+    'franchise.announced',
+    'franchise.coming',
+    'franchise.count',
+    'franchise.done',
+    'franchise.nav',
+    'franchise.next',
+    'franchise.progress',
+    'franchise.start',
+    'franchise.thisFilm',
+    'franchise.title',
+    'franchise.watched',
     'guess.chip',
     'halal.report.button',
     'halal.report.done',
@@ -3607,6 +3634,11 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'more.hint.closest',
     'more.retry',
     'more.showClosest',
+    'offers.credit',
+    'offers.more',
+    'offers.rentBuy',
+    'offers.stream',
+    'offers.title',
     'party.alone',
     'party.button',
     'party.codeLabel',

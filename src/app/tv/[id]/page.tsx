@@ -17,6 +17,8 @@ import { videoExtras } from '@/src/lib/extras'
 import { trailerLanguages } from '@/src/lib/media-assets'
 import { similarTabs, variationFacts } from '@/src/lib/variations'
 import { withTimeout } from '@/src/lib/with-timeout'
+import { headers } from 'next/headers'
+import { offersFor, viewerCountry } from '@/src/lib/watch-providers'
 
 type Props = { params: { id: string }, searchParams?: { s?: string, e?: string } }
 
@@ -36,7 +38,7 @@ async function getShow(id: string, imageLanguages = 'en,null') {
   try {
     // Videos in English, Arabic and French (and without a language): the trailer and the extras
     // pick the viewer's language first.
-    return await tmdbFetch(`tv/${id}`, { append_to_response: 'images,credits,videos,external_ids', include_image_language: imageLanguages, include_video_language: 'en,ar,fr,null' })
+    return await tmdbFetch(`tv/${id}`, { append_to_response: 'images,credits,videos,external_ids,watch/providers', include_image_language: imageLanguages, include_video_language: 'en,ar,fr,null' })
   } catch (error) {
     if (error instanceof TmdbError && error.status === 404) notFound()
     throw error
@@ -103,6 +105,8 @@ export default async function TvPage({ params, searchParams }: Props) {
       extras={groups}
       // Kids profiles get no links out.
       soundtrack={soundtrack.state === 'found' && kids ? { state: 'found', album: { ...soundtrack.album, link: null } } : soundtrack}
+      // Where it's legally available in the viewer's country; Kids profiles get no links out.
+      offers={kids ? null : offersFor(show['watch/providers'], viewerCountry(headers().get('x-vercel-ip-country')))}
     />
   )
 }

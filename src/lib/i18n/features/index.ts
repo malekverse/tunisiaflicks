@@ -35,8 +35,9 @@ import { plusFamily } from './plus-family'
 import { guessMusic } from './guess-music'
 import { challenges } from './challenges'
 import { party } from './party'
+import { franchise } from './franchise'
 
-const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop, halal, mail, anime, landing, welcome, decide, guess, taste, shows, blindDate, play, rail, calendarFeed, plus, plusGift, plusFamily, guessMusic, challenges, party]
+const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop, halal, mail, anime, landing, welcome, decide, guess, taste, shows, blindDate, play, rail, calendarFeed, plus, plusGift, plusFamily, guessMusic, challenges, party, franchise]
 
 export type FeatureKey =
   | keyof typeof aiSearch.en
@@ -74,6 +75,7 @@ export type FeatureKey =
   | keyof typeof guessMusic.en
   | keyof typeof challenges.en
   | keyof typeof party.en
+  | keyof typeof franchise.en
 
 type Language = 'en' | 'ar' | 'tn' | 'fr'
 
