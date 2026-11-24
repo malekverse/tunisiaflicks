@@ -23,6 +23,7 @@ import { Button } from '@/src/components/ui/button'
 import { BrandLoader } from '@/src/components/brand/BrandMark'
 import AdFreeTip from '@/src/components/detail/AdFreeTip'
 import { SleepButton, SleepDim, SleepScreen } from '@/src/components/detail/SleepTimer'
+import SendToTv from '@/src/components/detail/SendToTv'
 import { useSleepTimer } from '@/src/hooks/use-sleep-timer'
 import { useScreenTime } from '@/src/hooks/use-screen-time'
 import { ScreenTimeSoon, ScreenTimeUp } from '@/src/components/profiles/ScreenTime'
@@ -70,10 +71,12 @@ const PLAYER_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-presen
  * episode ends: the picture dims in the last minute, then the frame is taken away. A Kids profile's
  * screen time (lib/screen-time) does the same once its day's time is used up, or at bedtime.
  */
-export default function StreamSection({ services: providerServices, media, downloadSlot, enabled = true, placeholder, backdrop, onNext, nextLabel, runtime, className }: {
+export default function StreamSection({ services: providerServices, media, title, downloadSlot, enabled = true, placeholder, backdrop, onNext, nextLabel, runtime, className }: {
     services: StreamProvider[]
     /** The title (and episode) playing: lets the desktop app's local player join the sources. */
     media?: LocalMedia
+    /** Its name (and the episode's): what "Play on my TV" says it sent. */
+    title?: string
     /** Rendered at the end of the controls (the Download control). */
     downloadSlot?: React.ReactNode
     enabled?: boolean
@@ -647,6 +650,7 @@ export default function StreamSection({ services: providerServices, media, downl
                                 <SkipForward aria-hidden className="h-4 w-4 rtl:-scale-x-100" />{nextLabel ?? t('detail.nextEpisode')}
                             </Button>
                         )}
+                        {!tv && enabled && media && title && sessionStatus === 'authenticated' && <SendToTv media={media} title={title} />}
                         {!tv && enabled && <SleepButton sleep={sleep} kind={media?.type === 'tv' ? 'tv' : 'movie'} />}
                         {/* Theater mode is for a room with other lights; a TV is already the screen. */}
                         {!tv && (

@@ -155,6 +155,7 @@ export default function TvDetail({ id, data, similar, resume, providers, kids, h
           services={streamServices}
           media={episode ? { type: 'tv', id, season: episode.season, episode: episode.episode } : undefined}
           enabled={episode !== null}
+          title={episode ? `${data.name} · ${code(episode)}` : data.name}
           runtime={episode ? episodes.find((item) => item.season_number === episode.season && item.episode_number === episode.episode)?.runtime ?? data.episode_run_time?.[0] : null}
           backdrop={data.backdrop_path}
           placeholder={{

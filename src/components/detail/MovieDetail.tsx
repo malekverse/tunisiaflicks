@@ -109,6 +109,7 @@ export default function MovieDetail({ id, data, similar, providers, kids, halal,
         <StreamSection
           services={streamServices}
           media={{ type: 'movie', id }}
+          title={data.title}
           runtime={data.runtime}
           downloadSlot={imdbId ? <DownloadDialog type="movie" imdbId={imdbId} title={data.title} /> : undefined}
         />

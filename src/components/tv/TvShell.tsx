@@ -5,7 +5,8 @@
 // - the phone-only pages (clips, swipe, friends, movie nights) say so instead of showing;
 // - signed out, Sign in (and /login, /signup) opens "Sign in with your phone";
 // - the first time, a card says how the remote works;
-// - a live region says which page opened.
+// - a live region says which page opened;
+// - a title sent from a phone ("Play on my TV") is offered (TvInbox).
 import './tv.css'
 import type React from 'react'
 import { useCallback, useEffect, useState } from 'react'
@@ -18,6 +19,7 @@ import TvSignIn from './TvSignIn'
 import TvCoach from './TvCoach'
 import TvAnnouncer from './TvAnnouncer'
 import TvUnavailable from './TvUnavailable'
+import TvInbox from './TvInbox'
 
 const AUTH_PAGE = /^\/(login|signup)(\/|$)/
 
@@ -66,6 +68,7 @@ export default function TvShell({ children }: { children: React.ReactNode }): JS
       {showSignIn && <TvSignIn onClose={close} onEmail={email} />}
       <TvCoach paused={showSignIn} />
       <TvAnnouncer />
+      {!showSignIn && <TvInbox />}
     </>
   )
 }
