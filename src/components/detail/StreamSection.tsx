@@ -1,7 +1,7 @@
 "use client"
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { m } from 'framer-motion'
-import { Check, Layers, Lightbulb, LightbulbOff, LogOut, PartyPopper, Play, ShieldCheck, SkipForward, TriangleAlert } from 'lucide-react'
+import { Check, Layers, Lightbulb, LightbulbOff, LogOut, Moon, PartyPopper, Play, ShieldCheck, SkipForward, TriangleAlert } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { toast } from '@/src/hooks/use-toast'
 import type { StreamProvider } from '@/src/lib/stream-providers'
@@ -22,6 +22,9 @@ import TmdbImage from '@/src/components/TmdbImage'
 import { Button } from '@/src/components/ui/button'
 import { BrandLoader } from '@/src/components/brand/BrandMark'
 import AdFreeTip from '@/src/components/detail/AdFreeTip'
+import { SleepButton, SleepDim, SleepScreen } from '@/src/components/detail/SleepTimer'
+import { useSleepTimer } from '@/src/hooks/use-sleep-timer'
+import { clock } from '@/src/lib/sleep-timer'
 
 /** TV mode: after this many briefings on a device, the briefing shrinks to a short hint. */
 const FULL_BRIEFINGS = 3
@@ -60,8 +63,11 @@ const PLAYER_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-presen
  *
  * A watch party (components/party) keeps the desktop app's players of friends in step: this frame
  * passes its player's plays, pauses and jumps to the party, and the party's to its player.
+ *
+ * The sleep timer (components/detail/SleepTimer) stops the player after a while, or when this
+ * episode ends: the picture dims in the last minute, then the frame is taken away.
  */
-export default function StreamSection({ services: providerServices, media, downloadSlot, enabled = true, placeholder, backdrop, onNext, nextLabel, className }: {
+export default function StreamSection({ services: providerServices, media, downloadSlot, enabled = true, placeholder, backdrop, onNext, nextLabel, runtime, className }: {
     services: StreamProvider[]
     /** The title (and episode) playing: lets the desktop app's local player join the sources. */
     media?: LocalMedia
@@ -74,6 +80,8 @@ export default function StreamSection({ services: providerServices, media, downl
     /** TV: jump to the next episode. */
     onNext?: () => void
     nextLabel?: string
+    /** What's playing runs this many minutes: offers "stop when it ends" in the sleep timer. */
+    runtime?: number | null
     className?: string
 }) {
     const t = useT()
@@ -104,6 +112,20 @@ export default function StreamSection({ services: providerServices, media, downl
     const playerOn = tv && enabled && started
     // Came here to watch (a Play link: #streamSection, or an episode in the address)?
     const [arrived, setArrived] = useState(false)
+
+    // --- The sleep timer ---
+    const mediaKey = !media ? null : media.type === 'tv' ? `tv:${media.id}:${media.season}:${media.episode}` : `movie:${media.id}`
+    const sleep = useSleepTimer(mediaKey, runtime)
+    const sleepRef = useRef(sleep)
+    sleepRef.current = sleep
+    const wake = () => {
+        setIsLoading(true)
+        sleep.wake()
+    }
+    // Stopped: let the screen sleep too.
+    useEffect(() => {
+        if (sleep.asleep) releaseScreen()
+    }, [sleep.asleep])
 
     // A new source or episode means a new iframe load.
     useEffect(() => {
@@ -279,6 +301,19 @@ export default function StreamSection({ services: providerServices, media, downl
     const sourceTitle = (item: StreamProvider) =>
         [healthLabel(item.name), item.sandbox ? t('stream.fewerAds') : undefined].filter(Boolean).join(' · ') || undefined
 
+    /** TV: off → 30 → 60 → 90 min → this episode ends → off. */
+    const stepSleep = () => {
+        const steps = [30, 60, 90]
+        const current = sleep.timer
+        if (!current) return sleep.setMinutes(steps[0])
+        if (current.kind === 'episode') return sleep.cancel()
+        const left = Math.round(sleep.remaining / 60_000)
+        const next = steps.find((minutes) => minutes > left + 1)
+        if (next) sleep.setMinutes(next)
+        else if (sleep.setEpisode) sleep.setEpisode()
+        else sleep.cancel()
+    }
+
     const sourceName = source.current?.name ?? ''
     const briefing = tv && enabled && !started
 
@@ -337,7 +372,11 @@ export default function StreamSection({ services: providerServices, media, downl
             if (data.action === 'hello') {
                 setPlayerParty(data.party === true)
                 tellPlayer({ ...nextState(), fullscreen: framed(), partyOn: partyRef.current.onPlayerHello() })
-            } else if (data.action === 'next') goNextTogether()
+            } else if (data.action === 'next') {
+                // The credits of the episode the sleep timer was set to end with: stop, don't go on.
+                if (sleepRef.current.timer?.kind === 'episode') sleepRef.current.sleepNow()
+                else goNextTogether()
+            }
             else if (data.action === 'state' && typeof data.t === 'number' && Number.isFinite(data.t)) {
                 partyRef.current.onPlayerState({ playing: data.playing === true, t: data.t, beat: data.beat === true, echo: data.echo === true })
             }
@@ -440,12 +479,13 @@ export default function StreamSection({ services: providerServices, media, downl
                         </div>
                     ) : (
                         <>
-                            {isLoading && (
+                            {sleep.asleep && <SleepScreen onWake={wake} />}
+                            {isLoading && !sleep.asleep && (
                                 <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-black">
                                     <BrandLoader tone="brand" className="h-11 w-11" />
                                 </div>
                             )}
-                            {url && (
+                            {url && !sleep.asleep && (
                                 <iframe
                                     ref={iframeRef}
                                     key={url}
@@ -461,6 +501,7 @@ export default function StreamSection({ services: providerServices, media, downl
                                 />
                             )}
                             {party.role && <PartyOverlay events={party.events} />}
+                            {!sleep.asleep && <SleepDim sleep={sleep} />}
                             {playerOn && slow && isLoading && !menu && (
                                 <div role="status" className="glass-strong absolute inset-x-[4%] top-[5%] z-20 mx-auto flex max-w-[40rem] flex-wrap items-center gap-x-5 gap-y-3 rounded-[20px] p-[1.1em]">
                                     <div className="min-w-0 flex-1">
@@ -514,6 +555,10 @@ export default function StreamSection({ services: providerServices, media, downl
                                                     <SkipForward aria-hidden className="h-4 w-4 rtl:-scale-x-100" />{nextLabel ?? t('detail.nextEpisode')}
                                                 </button>
                                             )}
+                                            <button type="button" onClick={stepSleep} className="inline-flex h-[2.9em] items-center gap-2 rounded-full bg-white/[0.12] px-[1.2em] text-[16px] font-semibold text-white outline-none">
+                                                <Moon aria-hidden className={cn('h-4 w-4', sleep.timer && 'fill-current text-amber-200')} />
+                                                {t('sleep.tv', { value: sleep.timer ? clock(sleep.remaining) : t('sleep.tvOff') })}
+                                            </button>
                                             <button type="button" onClick={() => setMenu('sources')} className="inline-flex h-[2.9em] items-center gap-2 rounded-full bg-white/[0.12] px-[1.2em] text-[16px] font-semibold text-white outline-none">
                                                 <Layers aria-hidden className="h-4 w-4" />{t('tvMode.player.sources')}
                                             </button>
@@ -590,6 +635,7 @@ export default function StreamSection({ services: providerServices, media, downl
                                 <SkipForward aria-hidden className="h-4 w-4 rtl:-scale-x-100" />{nextLabel ?? t('detail.nextEpisode')}
                             </Button>
                         )}
+                        {!tv && enabled && <SleepButton sleep={sleep} kind={media?.type === 'tv' ? 'tv' : 'movie'} />}
                         {/* Theater mode is for a room with other lights; a TV is already the screen. */}
                         {!tv && (
                             <Button
