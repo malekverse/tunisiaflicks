@@ -186,8 +186,8 @@ export function storyLine(overview: string, max = 220): string {
 // ---------------------------------------------------------------------------------------------
 // A guess
 
-/** A film someone guessed, as the search found it. */
-export type Candidate = { id: number, title: string, year: number | null, genre_ids: number[], poster_path: string | null }
+/** A film someone guessed, as the search found it (or, in Guess the actor, a person: `note` says what they're known for). */
+export type Candidate = { id: number, title: string, year: number | null, genre_ids: number[], poster_path: string | null, note?: string }
 
 /** The answer the client checks guesses against. */
 export type Answer = { id: number, title: string, original_title: string, year: number | null, genre_ids: number[], poster_path: string | null, backdrop_path: string | null }

@@ -3,7 +3,7 @@
 // Which strings go to the browser (see clientMessages in ./index.ts): the root layout sends every
 // key that is in neither list below (the shell), a <ClientMessages scope> adds its scope's keys to
 // the pages under it, and the server-only keys never leave the server.
-// 650 of 3546 keys on every page, 2286 in 40 scopes, 610 server-only.
+// 655 of 3572 keys on every page, 2306 in 40 scopes, 611 server-only.
 
 export type MessageScope =
   | 'about/layout'
@@ -306,6 +306,7 @@ export const SERVER_ONLY_KEYS: readonly string[] = [
   'genre.heading',
   'genre.subtitle',
   'guess.subtitle',
+  'guessActor.subtitle',
   'guessMusic.subtitle',
   'halal.blocked.desc',
   'halal.blocked.home',
@@ -1187,8 +1188,6 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'decide.winner.many',
     'decide.winner.one',
     'guess.clue.hidden',
-    'hero.watchNow',
-    'play.more',
   ],
   'challenges/layout': [
     'badges.progress',
@@ -1402,7 +1401,6 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'decide.winner.chosenBy',
     'decide.winner.many',
     'decide.winner.one',
-    'hero.watchNow',
     'movieNight.picker.added',
     'movieNight.picker.full',
     'movieNight.picker.loading',
@@ -1412,7 +1410,6 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'movieNight.picker.search',
     'movieNight.picker.title',
     'movieNight.picker.trending',
-    'play.more',
   ],
   'desktop/layout': [
     'apps.android.alt',
@@ -1856,6 +1853,28 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'guess.won.first',
     'guess.won.text',
     'guess.won.title',
+    'guessActor.born',
+    'guessActor.clue.born',
+    'guessActor.clue.decade',
+    'guessActor.clue.film',
+    'guessActor.clue.first',
+    'guessActor.clue.initials',
+    'guessActor.clue.known',
+    'guessActor.faceAria',
+    'guessActor.failed',
+    'guessActor.help.one',
+    'guessActor.help.text',
+    'guessActor.help.three',
+    'guessActor.help.two',
+    'guessActor.input.empty',
+    'guessActor.input.placeholder',
+    'guessActor.lost.text',
+    'guessActor.next.in',
+    'guessActor.next.ready',
+    'guessActor.theirFilms',
+    'guessActor.toActor',
+    'guessActor.toMusic',
+    'guessActor.toStills',
     'guessMusic.audioFailed',
     'guessMusic.clue.first',
     'guessMusic.clue.genres',
@@ -1870,8 +1889,6 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'guessMusic.stop',
     'guessMusic.toMusic',
     'guessMusic.toStills',
-    'hero.watchNow',
-    'play.more',
   ],
   'history/layout': [
     'library.browse',
@@ -3347,12 +3364,10 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'auth.tooManyAttempts',
     'decide.entry.text',
     'decide.entry.title',
-    'hero.watchNow',
     'movieNight.swipe.back',
     'movieNight.swipe.pickingFor',
     'movieNight.swipe.planLater',
     'movieNight.swipe.planLaterText',
-    'play.more',
     'swipe.anyGenre',
     'swipe.badCode',
     'swipe.both',

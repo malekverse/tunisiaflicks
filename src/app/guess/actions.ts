@@ -31,3 +31,27 @@ export async function searchGuessFilms(query: string): Promise<Candidate[]> {
     return []
   }
 }
+
+/**
+ * People matching what's typed in Guess the actor's box: actors first, each with the films they're
+ * known for (to tell two names apart). Nothing in it depends on the profile: people aren't rated.
+ */
+export async function searchGuessPeople(query: string): Promise<Candidate[]> {
+  const q = String(query ?? '').trim().slice(0, 80)
+  if (q.length < 2) return []
+  try {
+    const data = await tmdbFetch<{ results?: any[] }>('search/person', { query: q, include_adult: false }, 600, { shared: true })
+    const results = (data.results ?? []).filter((person) => Number.isInteger(person?.id) && person.name && !person.adult)
+    const acting = (person: any) => person.known_for_department === 'Acting'
+    return [...results.filter(acting), ...results.filter((person) => !acting(person))].slice(0, 8).map((person) => ({
+      id: person.id,
+      title: String(person.name),
+      year: null,
+      genre_ids: [],
+      poster_path: person.profile_path ?? null,
+      note: (person.known_for ?? []).map((work: any) => work?.title || work?.name).filter((title: unknown) => typeof title === 'string' && title).slice(0, 2).join(', ') || undefined,
+    }))
+  } catch {
+    return []
+  }
+}

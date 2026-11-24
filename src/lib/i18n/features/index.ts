@@ -36,8 +36,9 @@ import { guessMusic } from './guess-music'
 import { challenges } from './challenges'
 import { party } from './party'
 import { franchise } from './franchise'
+import { guessActor } from './guess-actor'
 
-const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop, halal, mail, anime, landing, welcome, decide, guess, taste, shows, blindDate, play, rail, calendarFeed, plus, plusGift, plusFamily, guessMusic, challenges, party, franchise]
+const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop, halal, mail, anime, landing, welcome, decide, guess, taste, shows, blindDate, play, rail, calendarFeed, plus, plusGift, plusFamily, guessMusic, challenges, party, franchise, guessActor]
 
 export type FeatureKey =
   | keyof typeof aiSearch.en
@@ -76,6 +77,7 @@ export type FeatureKey =
   | keyof typeof challenges.en
   | keyof typeof party.en
   | keyof typeof franchise.en
+  | keyof typeof guessActor.en
 
 type Language = 'en' | 'ar' | 'tn' | 'fr'
 

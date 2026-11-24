@@ -6,7 +6,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
-import { BarChart3, CalendarDays, Check, CircleHelp, Clapperboard, Lightbulb, Music, RotateCcw, SkipForward, X } from 'lucide-react'
+import { BarChart3, CalendarDays, Check, CircleHelp, Clapperboard, Drama, Lightbulb, Music, RotateCcw, SkipForward, X } from 'lucide-react'
 import { Button } from '@/src/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/src/components/ui/dialog'
 import RoomTint from '@/src/components/shell/RoomTint'
@@ -167,8 +167,9 @@ export default function GuessApp() {
               ) : (
                 <div aria-label={t('common.loadingAria')} className="aspect-video animate-pulse rounded-stage bg-white/[0.05]" />
               )}
-              <p className="mt-5 text-center text-[13.5px] text-white/55">
+              <p className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2 text-center text-[13.5px] text-white/55">
                 <Link href="/guess/music" className="inline-flex items-center gap-1.5 underline-offset-4 hover:text-white hover:underline"><Music aria-hidden className="h-4 w-4" />{t('guessMusic.toMusic')}</Link>
+                <Link href="/guess/actor" className="inline-flex items-center gap-1.5 underline-offset-4 hover:text-white hover:underline"><Drama aria-hidden className="h-4 w-4" />{t('guessActor.toActor')}</Link>
               </p>
             </div>
 

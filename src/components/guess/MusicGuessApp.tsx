@@ -6,7 +6,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { m } from 'framer-motion'
-import { BarChart3, CalendarDays, Check, CircleHelp, Lightbulb, Lock, Music, Puzzle, Quote, RotateCcw, SkipForward, Tags, Users, X } from 'lucide-react'
+import { BarChart3, CalendarDays, Check, CircleHelp, Drama, Lightbulb, Lock, Music, Puzzle, Quote, RotateCcw, SkipForward, Tags, Users, X } from 'lucide-react'
 import TmdbImage from '@/src/components/TmdbImage'
 import { Button } from '@/src/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/src/components/ui/dialog'
@@ -153,8 +153,9 @@ export default function MusicGuessApp() {
               ) : (
                 <div aria-label={t('common.loadingAria')} className="min-h-[280px] animate-pulse rounded-stage bg-white/[0.05]" />
               )}
-              <p className="mt-5 text-center text-[13.5px] text-white/55">
+              <p className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2 text-center text-[13.5px] text-white/55">
                 <Link href="/guess" className="inline-flex items-center gap-1.5 underline-offset-4 hover:text-white hover:underline"><Puzzle aria-hidden className="h-4 w-4" />{t('guessMusic.toStills')}</Link>
+                <Link href="/guess/actor" className="inline-flex items-center gap-1.5 underline-offset-4 hover:text-white hover:underline"><Drama aria-hidden className="h-4 w-4" />{t('guessActor.toActor')}</Link>
               </p>
             </div>
 

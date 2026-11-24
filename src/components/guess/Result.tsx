@@ -4,7 +4,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { m, useReducedMotion } from 'framer-motion'
-import { ArrowDown, ArrowUp, Check, Equal, Info, Play, Share2, SkipForward, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, Check, Clapperboard, Equal, Info, Play, Share2, SkipForward, X } from 'lucide-react'
 import TmdbImage from '@/src/components/TmdbImage'
 import { Button } from '@/src/components/ui/button'
 import { useI18n } from '@/src/components/I18nProvider'
@@ -111,17 +111,17 @@ export function StatsBlock({ stats, highlight }: { stats: Stats, highlight?: num
   )
 }
 
-function NextFilm({ onReady }: { onReady: () => void }) {
+function NextFilm({ onReady, person = false }: { onReady: () => void, person?: boolean }) {
   const { t } = useI18n()
   const at = useRef(nextPuzzleAt()).current
   const { parts, done } = useCountdown(at, { seconds: true, initial: countdownParts(at - Date.now(), true) })
   const pad = (value: number) => String(value).padStart(2, '0')
   if (done) {
-    return <Button type="button" onClick={onReady} className="w-full">{t('guess.next.ready')}</Button>
+    return <Button type="button" onClick={onReady} className="w-full">{t(person ? 'guessActor.next.ready' : 'guess.next.ready')}</Button>
   }
   return (
     <div className="rounded-[16px] bg-white/[0.05] px-4 py-3 text-center">
-      <p className="text-[13px] text-white/60">{t('guess.next.in')}</p>
+      <p className="text-[13px] text-white/60">{t(person ? 'guessActor.next.in' : 'guess.next.in')}</p>
       <p dir="ltr" className="mt-0.5 font-display text-[28px] font-extrabold tabular-nums leading-none text-white">
         {pad(parts.hours + parts.days * 24)}:{pad(parts.minutes)}:{pad(parts.seconds)}
       </p>
@@ -129,7 +129,7 @@ function NextFilm({ onReady }: { onReady: () => void }) {
   )
 }
 
-export function Finished({ answer, entries, day, isToday, onToday, sharePath = '/guess', heading }: {
+export function Finished({ answer, entries, day, isToday, onToday, sharePath = '/guess', heading, person = false }: {
   answer: Answer
   entries: readonly Entry[]
   day: string
@@ -138,6 +138,8 @@ export function Finished({ answer, entries, day, isToday, onToday, sharePath = '
   /** Where the shared result links to, and its first line (the music game has its own). */
   sharePath?: string
   heading?: string
+  /** The answer is a person (Guess the actor): their face, the year they were born, their films. */
+  person?: boolean
 }) {
   const { t } = useI18n()
   const reduceMotion = useReducedMotion()
@@ -170,7 +172,7 @@ export function Finished({ answer, entries, day, isToday, onToday, sharePath = '
       <p className="font-display text-[clamp(26px,5vw,34px)] font-extrabold leading-tight text-white">
         {won ? t(entries.length === 1 ? 'guess.won.first' : 'guess.won.title', { count: entries.length }) : t('guess.lost.title')}
       </p>
-      <p className="mt-1 text-[14px] text-white/60">{won ? t('guess.won.text', { count: entries.length, max: MAX_TRIES }) : t('guess.lost.text')}</p>
+      <p className="mt-1 text-[14px] text-white/60">{won ? t('guess.won.text', { count: entries.length, max: MAX_TRIES }) : t(person ? 'guessActor.lost.text' : 'guess.lost.text')}</p>
 
       <div className="relative mt-5 flex items-center gap-4">
         {won && !reduceMotion && <div className="absolute start-14 top-1/2"><Burst /></div>}
@@ -180,17 +182,25 @@ export function Finished({ answer, entries, day, isToday, onToday, sharePath = '
           transition={{ ...spring.pop, opacity: { duration: 0.2 } }}
           className="relative aspect-[2/3] w-[104px] shrink-0 overflow-hidden rounded-poster bg-white/[0.06] shadow-[0_24px_60px_-20px_rgb(0_0_0/0.9)] ring-1 ring-white/15 sm:w-[120px]"
         >
-          <TmdbImage kind="poster" path={answer.poster_path} name={answer.title} alt={answer.title} fill sizes="120px" className="object-cover" />
+          <TmdbImage kind={person ? 'profile' : 'poster'} path={answer.poster_path} name={answer.title} alt={answer.title} fill sizes="120px" className="object-cover" />
         </m.div>
         <div className="min-w-0">
           <p className="text-balance font-display text-[24px] font-bold leading-tight text-white sm:text-[28px]"><bdi dir="auto">{answer.title}</bdi></p>
           <p className="mt-1 flex flex-wrap gap-x-3 text-[14px] text-white/60">
-            {answer.year && <span>{answer.year}</span>}
+            {answer.year && <span>{person ? t('guessActor.born', { year: answer.year }) : answer.year}</span>}
             {original && <bdi dir="auto">{original}</bdi>}
           </p>
         </div>
       </div>
 
+      {person ? (
+        <div className="mt-6 grid gap-2.5 sm:grid-cols-2">
+          <Button asChild>
+            <Link href={`/person/${answer.id}`}><Clapperboard aria-hidden className="h-4 w-4" />{t('guessActor.theirFilms')}</Link>
+          </Button>
+          <Button type="button" variant="secondary" onClick={share}><Share2 aria-hidden className="h-4 w-4" />{t('guess.share.button')}</Button>
+        </div>
+      ) : (
       <div className="mt-6 grid gap-2.5 sm:grid-cols-3">
         <Button asChild>
           <Link href={`/movie/${answer.id}#streamSection`}><Play aria-hidden className="h-4 w-4 fill-current" />{t('hero.watchNow')}</Link>
@@ -200,7 +210,8 @@ export function Finished({ answer, entries, day, isToday, onToday, sharePath = '
         </Button>
         <Button type="button" variant="secondary" onClick={share}><Share2 aria-hidden className="h-4 w-4" />{t('guess.share.button')}</Button>
       </div>
-      {isToday && <div className="mt-4"><NextFilm onReady={onToday} /></div>}
+      )}
+      {isToday && <div className="mt-4"><NextFilm onReady={onToday} person={person} /></div>}
     </section>
   )
 }

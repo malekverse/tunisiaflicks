@@ -60,6 +60,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry('/decide', 0.5, 'monthly'),
     entry('/guess', 0.6, 'daily'),
     entry('/guess/music', 0.6, 'daily'),
+    entry('/guess/actor', 0.6, 'daily'),
     entry('/blind-date', 0.5, 'monthly'),
     entry('/app', 0.4, 'monthly'),
     entry('/desktop', 0.5, 'monthly'),

@@ -1,21 +1,24 @@
 "use client"
 // The guess box: type a film's name, pick it from the list (arrow keys and Enter work), or skip to
 // the next clue. Live results 250ms after the last key; a film already tried can't be picked again.
+// Guess the actor uses it for people (`people`): their faces, and what they're known for.
 import React, { useEffect, useId, useRef, useState } from 'react'
 import { Command } from 'cmdk'
 import { Search, SkipForward } from 'lucide-react'
 import TmdbImage from '@/src/components/TmdbImage'
 import { Button } from '@/src/components/ui/button'
 import { useT } from '@/src/components/I18nProvider'
-import { searchGuessFilms } from '@/src/app/guess/actions'
+import { searchGuessFilms, searchGuessPeople } from '@/src/app/guess/actions'
 import type { Candidate } from '@/src/lib/guess'
 import { cn } from '@/src/lib/utils'
 
-export default function GuessInput({ tried, triesLeft, onGuess, onSkip }: {
+export default function GuessInput({ tried, triesLeft, onGuess, onSkip, people = false }: {
   tried: number[]
   triesLeft: number
   onGuess: (film: Candidate) => void
   onSkip: () => void
+  /** Search people instead of films (Guess the actor). */
+  people?: boolean
 }) {
   const t = useT()
   const id = useId()
@@ -36,7 +39,7 @@ export default function GuessInput({ tried, triesLeft, onGuess, onSkip }: {
     let cancelled = false
     setLoading(true)
     const timer = setTimeout(() => {
-      searchGuessFilms(trimmed)
+      (people ? searchGuessPeople : searchGuessFilms)(trimmed)
         .then((found) => { if (!cancelled) setResults(found) })
         .catch(() => { if (!cancelled) setResults([]) })
         .finally(() => { if (!cancelled) setLoading(false) })
@@ -45,7 +48,7 @@ export default function GuessInput({ tried, triesLeft, onGuess, onSkip }: {
       cancelled = true
       clearTimeout(timer)
     }
-  }, [trimmed])
+  }, [trimmed, people])
 
   // Close the list when the focus or a tap goes elsewhere.
   useEffect(() => {
@@ -91,7 +94,7 @@ export default function GuessInput({ tried, triesLeft, onGuess, onSkip }: {
               onValueChange={(value) => { setQuery(value); setOpen(true) }}
               onFocus={onFocus}
               onKeyDown={(event) => { if (event.key === 'Escape') setOpen(false) }}
-              placeholder={t('guess.input.placeholder')}
+              placeholder={t(people ? 'guessActor.input.placeholder' : 'guess.input.placeholder')}
               autoComplete="off"
               enterKeyHint="search"
               className="h-[52px] w-full rounded-full bg-white/[0.07] pe-4 ps-11 text-[16px] text-white outline-none ring-1 ring-inset ring-white/10 transition-shadow placeholder:text-white/45 focus:ring-2 focus:ring-red-500"
@@ -106,7 +109,7 @@ export default function GuessInput({ tried, triesLeft, onGuess, onSkip }: {
         {showList && (
           <Command.List className="glass-strong absolute inset-x-0 top-full z-30 mt-2 max-h-[min(360px,50dvh)] overflow-y-auto overscroll-contain rounded-[20px] p-1.5 shadow-[0_30px_80px_-20px_rgb(0_0_0/0.95)]">
             {loading && results.length === 0 && <Command.Loading><p className="px-3 py-3 text-[14px] text-white/60">{t('common.loading')}</p></Command.Loading>}
-            {!loading && <Command.Empty><p className="px-3 py-3 text-[14px] text-white/60">{t('guess.input.empty')}</p></Command.Empty>}
+            {!loading && <Command.Empty><p className="px-3 py-3 text-[14px] text-white/60">{t(people ? 'guessActor.input.empty' : 'guess.input.empty')}</p></Command.Empty>}
             {results.map((film) => {
               const done = tried.includes(film.id)
               return (
@@ -117,13 +120,14 @@ export default function GuessInput({ tried, triesLeft, onGuess, onSkip }: {
                   onSelect={() => choose(film)}
                   className={cn('flex cursor-pointer items-center gap-3 rounded-[14px] p-2 outline-none data-[selected=true]:bg-white/[0.1]', done && 'cursor-default opacity-50')}
                 >
-                  <span className="relative aspect-[2/3] w-9 shrink-0 overflow-hidden rounded-[6px] bg-white/[0.06]">
-                    <TmdbImage kind="poster" path={film.poster_path} alt="" name={film.title} fill sizes="36px" className="object-cover" />
+                  <span className={cn('relative shrink-0 overflow-hidden bg-white/[0.06]', people ? 'h-10 w-10 rounded-full' : 'aspect-[2/3] w-9 rounded-[6px]')}>
+                    <TmdbImage kind={people ? 'profile' : 'poster'} path={film.poster_path} alt="" name={film.title} fill sizes="40px" className="object-cover" />
                   </span>
                   <span className="min-w-0 flex-1">
                     <bdi dir="auto" className="block truncate text-[15px] font-medium text-white">{film.title}</bdi>
                     <span className="flex gap-x-3 text-[12.5px] text-white/55">
                       {film.year && <span>{film.year}</span>}
+                      {film.note && <bdi dir="auto" className="truncate">{film.note}</bdi>}
                       {done && <span>{t('guess.input.tried')}</span>}
                     </span>
                   </span>

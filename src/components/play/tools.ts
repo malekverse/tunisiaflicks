@@ -1,7 +1,7 @@
 // The ways to pick a film, in one list: the menu's "Pick a film" group, the home page's shelf, the
 // search palette and the "More ways to pick" strip at the bottom of each of these pages all read
 // from here, so a new one shows up everywhere at once.
-import { Gift, HeartHandshake, Music, Puzzle, ShipWheel, type LucideIcon } from 'lucide-react'
+import { Drama, Gift, HeartHandshake, Music, Puzzle, ShipWheel, type LucideIcon } from 'lucide-react'
 import type { TKey } from '@/src/lib/i18n'
 
 export type PlayTool = {
@@ -22,6 +22,7 @@ export const PLAY_TOOLS: PlayTool[] = [
   { href: '/blind-date', icon: Gift, label: 'blindDate.chip', text: 'play.blindDate.text', keywords: 'play.blindDate.keywords', newUntil: '2027-01-10' },
   { href: '/guess', icon: Puzzle, label: 'guess.title', text: 'play.guess.text', keywords: 'play.guess.keywords', newUntil: '2027-01-10' },
   { href: '/guess/music', icon: Music, label: 'guessMusic.title', text: 'play.guessMusic.text', keywords: 'play.guessMusic.keywords', newUntil: '2027-02-01' },
+  { href: '/guess/actor', icon: Drama, label: 'guessActor.title', text: 'play.guessActor.text', keywords: 'play.guessActor.keywords', newUntil: '2027-02-15' },
 ]
 
 export const isNewTool = (tool: Pick<PlayTool, 'newUntil'>, now = Date.now()) => !!tool.newUntil && now < Date.parse(`${tool.newUntil}T00:00:00Z`)
