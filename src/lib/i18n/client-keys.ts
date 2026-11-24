@@ -3,7 +3,7 @@
 // Which strings go to the browser (see clientMessages in ./index.ts): the root layout sends every
 // key that is in neither list below (the shell), a <ClientMessages scope> adds its scope's keys to
 // the pages under it, and the server-only keys never leave the server.
-// 670 of 3618 keys on every page, 2337 in 40 scopes, 611 server-only.
+// 671 of 3627 keys on every page, 2345 in 41 scopes, 611 server-only.
 
 export type MessageScope =
   | 'about/layout'
@@ -23,6 +23,7 @@ export type MessageScope =
   | 'dramas/layout'
   | 'family/layout'
   | 'favorites/layout'
+  | 'filmed-in-tunisia/layout'
   | 'friends/layout'
   | 'gift/layout'
   | 'guess/layout'
@@ -1713,6 +1714,16 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'lists.savedOn',
     'lists.sortBy',
     'lists.watchedOn',
+  ],
+  'filmed-in-tunisia/layout': [
+    'filmed.directions',
+    'filmed.mapAria',
+    'filmed.mapHint',
+    'filmed.mistake',
+    'filmed.onMap',
+    'filmed.subtitle',
+    'filmed.tellUs',
+    'filmed.title',
   ],
   'friends/layout': [
     'hero.removeSaved',

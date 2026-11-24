@@ -1,11 +1,7 @@
 // Every destination of the app, in one place: the desktop rail, the mobile tab bar and the mobile
 // menu sheet all read from here, so they can never disagree. Tracks add their own item to the
 // group the IA gives them; Kids filtering and "which item is lit" are decided here too.
-import {
-  Drama,
-  Bookmark, CalendarClock, CalendarHeart, Clapperboard, Compass, Dices, Flag, Heart, HeartHandshake, History, House,
-  Gamepad2, Library, ListVideo, Map as MapIcon, MonitorPlay, MoonStar, Popcorn, Search, Swords, Target, Trophy, Tv, UsersRound, type LucideIcon,
-} from 'lucide-react'
+import { Drama, Bookmark, CalendarClock, CalendarHeart, Clapperboard, Compass, Dices, Flag, Heart, HeartHandshake, History, House, Gamepad2, Library, ListVideo, Map as MapIcon, MonitorPlay, MoonStar, Popcorn, Search, Swords, Target, Trophy, Tv, UsersRound, type LucideIcon, MapPinned } from 'lucide-react'
 import TunisiaMark from '@/src/components/tunisian/TunisiaMark'
 import { PLAY_TOOLS, isNewTool } from '@/src/components/play/tools'
 import type { TKey } from '@/src/lib/i18n'
@@ -54,6 +50,8 @@ export const WORLD: NavItem[] = [
   { href: '/anime', label: 'anime.nav', icon: Swords },
   // Kids get a dimmed, filtered map (no grownUp).
   { href: '/arab-cinema', label: 'arabMap.nav', icon: MapIcon },
+  // The real places films were shot in Tunisia (lib/filmed-in-tunisia).
+  { href: '/filmed-in-tunisia', label: 'filmed.nav', icon: MapPinned },
 ]
 
 /** Saved first: the Library landing page is the first tab (LibraryTabs and the menu sheet follow this order). */

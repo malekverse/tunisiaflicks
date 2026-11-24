@@ -40,8 +40,9 @@ import { guessActor } from './guess-actor'
 import { sleep } from './sleep'
 import { screenTime } from './screen-time'
 import { tvSend } from './tv-send'
+import { filmed } from './filmed'
 
-const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop, halal, mail, anime, landing, welcome, decide, guess, taste, shows, blindDate, play, rail, calendarFeed, plus, plusGift, plusFamily, guessMusic, challenges, party, franchise, guessActor, sleep, screenTime, tvSend]
+const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop, halal, mail, anime, landing, welcome, decide, guess, taste, shows, blindDate, play, rail, calendarFeed, plus, plusGift, plusFamily, guessMusic, challenges, party, franchise, guessActor, sleep, screenTime, tvSend, filmed]
 
 export type FeatureKey =
   | keyof typeof aiSearch.en
@@ -84,6 +85,7 @@ export type FeatureKey =
   | keyof typeof sleep.en
   | keyof typeof screenTime.en
   | keyof typeof tvSend.en
+  | keyof typeof filmed.en
 
 type Language = 'en' | 'ar' | 'tn' | 'fr'
 

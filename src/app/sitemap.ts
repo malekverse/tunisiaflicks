@@ -51,6 +51,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // The hub and its channels, once they have something to show.
     ...tunisianTv.map((page) => entry(page.path, page.priority, 'daily')),
     entry('/arab-cinema', 0.8, 'daily'),
+    entry('/filmed-in-tunisia', 0.6, 'monthly'),
     // Tunisia's own page is /tunisian/cinema.
     ...ARAB_COUNTRY_CODES.filter((code) => code !== 'tn').map((code) => entry(`/arab-cinema/${code}`, 0.6, 'weekly')),
     entry('/discover', 0.8, 'daily'),

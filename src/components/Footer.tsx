@@ -31,6 +31,7 @@ const COLUMNS: { heading: TKey, links: FooterLink[] }[] = [
       { href: '/tunisian/cinema', label: 'tnCinema.title' },
       { href: '/tunisian/tv', label: 'ttv.title', grownUp: true },
       { href: '/arab-cinema', label: 'arabMap.nav' },
+      { href: '/filmed-in-tunisia', label: 'filmed.nav' },
       { href: '/dramas', label: 'dramas.nav', grownUp: true },
       { href: '/ramadan', label: 'ramadan.title' },
     ],
