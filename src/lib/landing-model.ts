@@ -6,7 +6,7 @@ import { tmdbImageUrl } from '@/src/lib/tmdb-image'
 /** A picture: a TMDB poster path, or a full URL (Tunisian titles, anime covers, TV thumbnails). */
 export type Pic = { title: string, tmdb?: string, src?: string }
 
-export type ReelId = 'movies' | 'series' | 'anime' | 'turkish' | 'korean' | 'arab' | 'ramadan' | 'tunisian'
+export type ReelId = 'movies' | 'series' | 'classics' | 'anime' | 'turkish' | 'korean' | 'arab' | 'tunisian'
 
 export type Countdown = { phase: 'before', days: number, year: number } | { phase: 'during', day: number, year: number }
 
@@ -23,9 +23,9 @@ export type LandingData = {
     cinema: Pic[]
     ramadan: Pic[]
     countdown: Countdown
-    /** The Arab cinema map's tiles: grid place, name, how lit (0 to 1). */
-    countries: { code: string, x: number, y: number, name: string, glow: number }[]
   }
+  /** From every country: a country (ISO code, name in the viewer's language) and its most popular film right now. */
+  world: { code: string, name: string, film: { id: number, title: string, year: string, poster: string } }[]
   halal: { row: (Pic & { hidden: boolean })[], viewerOn: boolean }
   swipe: Pic[]
   ask: { query: TKey, pics: Pic[] }[]
@@ -48,10 +48,10 @@ export function picUrl(pic: Pic, width: number): string {
 export const REELS: Record<ReelId, { href: string, light: string }> = {
   movies: { href: '/', light: '255 36 20' },
   series: { href: '/tv', light: '168 85 247' },
+  classics: { href: '/top-rated', light: '226 232 240' },
   anime: { href: '/anime', light: '236 72 153' },
   turkish: { href: '/dramas/turkish', light: '40 196 184' },
   korean: { href: '/dramas/korean', light: '104 124 255' },
   arab: { href: '/arab-cinema', light: '200 162 122' },
-  ramadan: { href: '/ramadan', light: '245 190 80' },
   tunisian: { href: '/tunisian', light: '30 110 255' },
 }

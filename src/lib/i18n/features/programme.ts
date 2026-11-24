@@ -22,7 +22,7 @@ export const programme = defineStrings({
     'programme.at.home': 'On the home page',
 
     'programme.group.find': 'Find something to watch',
-    'programme.group.world': 'From Tunis to Tokyo',
+    'programme.group.world': 'From Tokyo to Tunis',
     'programme.group.pick': 'Pick a film, play a game',
     'programme.group.together': 'With friends',
     'programme.group.yours': 'Kept for you',
@@ -171,7 +171,7 @@ export const programme = defineStrings({
     'programme.at.home': 'في الصفحة الرئيسية',
 
     'programme.group.find': 'جِد ما تشاهده',
-    'programme.group.world': 'من تونس إلى طوكيو',
+    'programme.group.world': 'من طوكيو إلى تونس',
     'programme.group.pick': 'اختر فيلمًا، والعب',
     'programme.group.together': 'مع الأصدقاء',
     'programme.group.yours': 'محفوظ لك',
@@ -342,7 +342,7 @@ export const programme = defineStrings({
     'programme.at.home': 'Sur l’accueil',
 
     'programme.group.find': 'Trouver quoi regarder',
-    'programme.group.world': 'De Tunis à Tokyo',
+    'programme.group.world': 'De Tokyo à Tunis',
     'programme.group.pick': 'Choisir un film, jouer',
     'programme.group.together': 'Entre amis',
     'programme.group.yours': 'Gardé pour vous',

@@ -54,14 +54,15 @@ export const PROGRAMME: ProgrammeGroup[] = [
     id: 'world',
     light: '30 110 255',
     items: [
+      // The world first, then the home ground.
+      { id: 'anime', href: '/anime' },
+      { id: 'dramas', href: '/dramas', grownUp: true },
+      { id: 'arabMap', href: '/arab-cinema' },
       { id: 'tunisian', href: '/tunisian', grownUp: true },
       { id: 'tunisianTv', href: '/tunisian/tv', grownUp: true },
       { id: 'tunisianCinema', href: '/tunisian/cinema' },
       { id: 'ramadan', href: '/ramadan' },
       { id: 'filmed', href: '/filmed-in-tunisia', newUntil: RECENT },
-      { id: 'dramas', href: '/dramas', grownUp: true },
-      { id: 'anime', href: '/anime' },
-      { id: 'arabMap', href: '/arab-cinema' },
       { id: 'moments', at: 'home' },
     ],
   },

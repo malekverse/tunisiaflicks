@@ -5,19 +5,19 @@
 // The lists go through the viewer's filters (Kids profiles, Halal mode) like any page's.
 import 'server-only'
 import { tmdbFetchSafe, tmdbLanguage } from '@/src/lib/tmdb'
-import { fetchList } from '@/src/lib/kids'
+import { fetchList, kidsDiscoverParams } from '@/src/lib/kids'
 import { getTunisianTitles } from '@/src/lib/tunisian'
 import { arabRamadanSeries, ramadanSeasons, ramadanStatus, tunisianRamadanSeries } from '@/src/lib/ramadan'
 import { getShelf } from '@/src/lib/dramas'
 import { getArabMapIndex } from '@/src/lib/arab-cinema'
 import { getAnimeRow, animeViewer } from '@/src/lib/anime/server'
-import { MAP_CELLS, intensity } from '@/src/lib/arab-map'
 import { hiddenTitles } from '@/src/lib/halal'
 import { titleRef } from '@/src/lib/halal-rules'
 import { getTvHub } from '@/src/lib/tunisian-tv/read'
 import { youtubeThumb } from '@/src/lib/youtube'
 import { withTimeout } from '@/src/lib/with-timeout'
 import type { Locale } from '@/src/lib/i18n/locales'
+import { regionName } from '@/src/lib/i18n/format'
 import type { LandingData, Pic, ReelId } from '@/src/lib/landing-model'
 
 const BUDGET_MS = 2500
@@ -40,6 +40,12 @@ function pics(items: Item[] | null | undefined, count: number): Pic[] {
 }
 
 const results = (json: { results?: Item[] } | null | undefined) => json?.results ?? []
+
+/**
+ * From every country's board, in its order: the continents take turns, so any six rows in a row
+ * span the world (Hollywood next to Bollywood, Lagos next to Tokyo).
+ */
+export const WORLD_COUNTRIES = ['US', 'IN', 'JP', 'FR', 'KR', 'NG', 'GB', 'EG', 'ES', 'MX', 'TR', 'CN', 'IT', 'BR', 'DE', 'IR'] as const
 
 /**
  * Halal mode's demo: a row of this week's titles, and which of them it hides (what's stored and
@@ -78,7 +84,7 @@ export async function getLandingData({ locale, kids, halal }: { locale: Locale, 
   const [
     trendingMovies, trendingShows, trendingWeekMovies, trendingWeekShows, popular2,
     tunisian, cinema, ramadanTn, ramadanArab, turkish, korean, arabIndex, anime, tvHub,
-    inception, feelGood, halalRowDone,
+    inception, feelGood, topRated, worldLists, halalRowDone,
   ] = await Promise.all([
     bounded(fetchList('movie', 'trending', kids, 'trending/movie/day', language).then(results), [] as Item[]),
     bounded(fetchList('tv', 'trending', kids, 'trending/tv/day', language).then(results), [] as Item[]),
@@ -99,6 +105,12 @@ export async function getLandingData({ locale, kids, halal }: { locale: Locale, 
       with_genres: '35', without_genres: '27,53,80,10752', 'vote_count.gte': 3000, sort_by: 'vote_average.desc', language,
       ...(kids ? { certification_country: 'US', 'certification.lte': 'PG' } : {}),
     }, 86400).then(results), [] as Item[]),
+    bounded(fetchList('movie', 'top_rated', kids, 'movie/top_rated', language).then(results), [] as Item[]),
+    // Each country's most popular films right now (a day's cache; Kids rules where needed).
+    Promise.all(WORLD_COUNTRIES.map((code) => {
+      const params = { with_origin_country: code, sort_by: 'popularity.desc', 'vote_count.gte': 25, include_adult: false, language }
+      return bounded(tmdbFetchSafe<{ results: Item[] }>('discover/movie', kids ? kidsDiscoverParams('movie', params) : params, 86400).then(results), [] as Item[])
+    })),
     halalRow,
   ])
 
@@ -118,16 +130,30 @@ export async function getLandingData({ locale, kids, halal }: { locale: Locale, 
 
   const animePics: Pic[] = (anime ?? []).flatMap((card) => (card.cover ? [{ title: card.title, src: card.cover }] : [])).slice(0, 12)
 
+  // The world first; Tunisian last (Made in Tunisia has its own chapter further down).
   const reels: { id: ReelId, pics: Pic[] }[] = [
     { id: 'movies' as const, pics: pics(trendingWeekMovies, 12) },
     { id: 'series' as const, pics: pics(trendingWeekShows, 12) },
+    { id: 'classics' as const, pics: pics(topRated, 12) },
     { id: 'anime' as const, pics: animePics },
-    { id: 'turkish' as const, pics: pics(turkish, 12) },
     { id: 'korean' as const, pics: pics(korean, 12) },
+    { id: 'turkish' as const, pics: pics(turkish, 12) },
     { id: 'arab' as const, pics: arabPics },
-    { id: 'ramadan' as const, pics: ramadanPics },
     { id: 'tunisian' as const, pics: tunisianPics.slice(0, 12) },
   ].filter((reel) => reel.pics.length >= 4)
+
+  // One film per country, never the same film twice (co-productions count for several countries).
+  const used = new Set<number>()
+  const world: LandingData['world'] = WORLD_COUNTRIES.flatMap((code, index) => {
+    const film = worldLists[index].find((item) => item.poster_path && !used.has(item.id))
+    if (!film) return []
+    used.add(film.id)
+    return [{
+      code,
+      name: regionName(code, locale) ?? code,
+      film: { id: film.id, title: titleOf(film), year: typeof film.release_date === 'string' ? film.release_date.slice(0, 4) : '', poster: film.poster_path },
+    }]
+  })
 
   const tvShows = (tvHub?.onAir?.length ? tvHub.onAir : tvHub?.complete ?? [])
     .flatMap((series) => {
@@ -136,11 +162,6 @@ export async function getLandingData({ locale, kids, halal }: { locale: Locale, 
     })
     .slice(0, 6)
   const live = (tvHub?.live?.length ?? 0) > 0
-
-  const countries = MAP_CELLS.map((cell) => {
-    const country = arabCountries.find((item) => item.code === cell.code)
-    return { code: cell.code, x: cell.x, y: cell.y, name: country?.name ?? cell.code.toUpperCase(), glow: intensity(country?.n) }
-  })
 
   return {
     wall,
@@ -154,8 +175,8 @@ export async function getLandingData({ locale, kids, halal }: { locale: Locale, 
       countdown: status.phase === 'before'
         ? { phase: 'before', days: status.daysUntil, year: status.year }
         : { phase: 'during', day: status.day, year: status.year },
-      countries,
     },
+    world,
     halal: { row: halalRowDone, viewerOn: halal },
     swipe: pics(popular2.length ? popular2 : trendingWeekMovies, 8),
     ask: [

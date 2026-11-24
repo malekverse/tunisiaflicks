@@ -16,14 +16,15 @@ import { LOOKS, useStageLook } from './Stage'
 import styles from './landing.module.css'
 
 type Tunisia = LandingData['tunisia']
-type PanelId = 'intro' | 'series' | 'tv' | 'cinema' | 'filmed' | 'ramadan' | 'arab'
+type PanelId = 'intro' | 'series' | 'tv' | 'cinema' | 'filmed' | 'ramadan'
 
 const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect
 
 /**
  * Made in Tunisia: the page turns Sidi Bou Said blue and scrolls sideways through what only
- * TunisiaFlicks has (Tunisian series, TV and cinema, the places films were shot, Ramadan, the Arab
- * cinema map). Vertical scrolling drives the track; inside each panel the pictures and the drawings
+ * TunisiaFlicks has (Tunisian series, TV and cinema, the places films were shot, Ramadan). It comes
+ * after the world and the features: the site is for every film, this is its home ground. Vertical
+ * scrolling drives the track; inside each panel the pictures and the drawings
  * move at their own pace. Ramadan lights the room lantern gold, the filming places desert orange.
  */
 export default function TunisiaTrack({ data }: { data: Tunisia }) {
@@ -40,7 +41,6 @@ export default function TunisiaTrack({ data }: { data: Tunisia }) {
     ...(data.cinema.length >= 3 ? ['cinema' as const] : []),
     'filmed',
     'ramadan',
-    'arab',
   ]
 
   const { scrollYProgress } = useScroll({ target: section, offset: ['start start', 'end end'] })
@@ -145,12 +145,6 @@ function Panel({ id, data, index, count, progress, still }: { id: PanelId, data:
       )
     case 'ramadan':
       return <RamadanPanel data={data} artX={artX} picX={picX} />
-    case 'arab':
-      return (
-        <PanelFrame title="landing.tn.arab.title" text="landing.tn.arab.text" cta="landing.tn.arab.cta" href="/arab-cinema" art="crescent" artX={artX} tint="from-[#2a1d10]/80">
-          <TileMap countries={data.countries} />
-        </PanelFrame>
-      )
   }
 }
 
@@ -378,40 +372,5 @@ function FilmedMap({ still, drift }: { still: boolean, drift: MotionValue<string
         </span>
       </div>
     </m.div>
-  )
-}
-
-/** The Arab cinema map's tile grid in miniature, lit like the real one; Tunisia first. */
-function TileMap({ countries }: { countries: Tunisia['countries'] }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const seen = useInView(ref, { once: true, amount: 0.4 })
-  const columns = Math.max(...countries.map((country) => country.x)) + 1
-  const rows = Math.max(...countries.map((country) => country.y)) + 1
-  const tunisia = countries.find((country) => country.code === 'tn')
-  return (
-    <div ref={ref} className="grid w-full max-w-[640px] gap-1.5 sm:gap-2" dir="ltr" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${rows}, auto)` }}>
-      {countries.map((country) => {
-        const distance = tunisia ? Math.hypot(country.x - tunisia.x, country.y - tunisia.y) : 0
-        const glow = 0.12 + country.glow * 0.7
-        return (
-          <span
-            key={country.code}
-            title={country.name}
-            className="flex aspect-square items-center justify-center rounded-[8px] text-[10px] font-semibold text-black/70 transition-[opacity,transform] duration-500 ease-out sm:text-[11px]"
-            style={{
-              gridColumnStart: country.x + 1,
-              gridRowStart: country.y + 1,
-              backgroundColor: country.code === 'tn' ? 'rgb(255 36 20)' : `rgb(200 162 122 / ${glow})`,
-              color: country.code === 'tn' ? '#fff' : undefined,
-              opacity: seen ? 1 : 0,
-              transform: seen ? 'none' : 'scale(0.6)',
-              transitionDelay: `${Math.round(distance * 70)}ms`,
-            }}
-          >
-            {country.code.toUpperCase()}
-          </span>
-        )
-      })}
-    </div>
   )
 }

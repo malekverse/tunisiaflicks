@@ -52,6 +52,8 @@ export const LOOKS = {
   quiet: { base: '#000000', light: null },
   tunisia: { base: '#020b1f', light: '30 110 255' },
   ramadan: { base: '#120b02', light: '245 190 80' },
+  // From every country: a departures hall's teal.
+  world: { base: '#000000', light: '20 184 166' },
   // The south's sand, for the places films were shot (Tatooine is in the desert).
   desert: { base: '#140903', light: '234 140 60' },
 } satisfies Record<string, Look>

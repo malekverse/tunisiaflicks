@@ -7,6 +7,7 @@ import { getLandingData } from '@/src/lib/landing'
 import { LandingStage } from '@/src/components/landing/Stage'
 import Hero from '@/src/components/landing/Hero'
 import Catalogue from '@/src/components/landing/Catalogue'
+import World from '@/src/components/landing/World'
 import TunisiaTrack from '@/src/components/landing/Tunisia'
 import Tools from '@/src/components/landing/Tools'
 import Programme from '@/src/components/landing/Programme'
@@ -21,10 +22,11 @@ export function generateMetadata(): Metadata {
 /**
  * What TunisiaFlicks is, for someone who just arrived (a link in a bio, a post, a search): the
  * landing page, played like a film. The opening shot (the glass A before a wall of today's posters),
- * everything the site has one word at a time, Made in Tunisia sideways, the little things as live
- * demos, the whole programme (every feature, grouped and searchable), every screen in the house,
- * and the end credits (where the information comes from, what is
- * and isn't stored). The pictures are today's, through the viewer's own filters (Kids, Halal mode).
+ * everything the site has one word at a time, every country's cinema on a departures board, the
+ * little things as live demos, then Made in Tunisia sideways (the home ground, after the world),
+ * the whole programme (every feature, grouped and searchable), every screen in the house, and the
+ * end credits (where the information comes from, what is and isn't stored). The pictures are
+ * today's, through the viewer's own filters (Kids, Halal mode).
  */
 export default async function AboutPage() {
   const locale = getLocale()
@@ -34,8 +36,9 @@ export default async function AboutPage() {
     <LandingStage>
       <Hero wall={data.wall} />
       <Catalogue reels={data.reels} />
-      <TunisiaTrack data={data.tunisia} />
+      <World rows={data.world} />
       <Tools data={data} ask={aiSearchEnabled() && !kids} kids={kids} />
+      <TunisiaTrack data={data.tunisia} />
       <Programme kids={kids} />
       <Screens />
       <Credits />

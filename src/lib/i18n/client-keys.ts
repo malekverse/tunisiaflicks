@@ -3,7 +3,7 @@
 // Which strings go to the browser (see clientMessages in ./index.ts): the root layout sends every
 // key that is in neither list below (the shell), a <ClientMessages scope> adds its scope's keys to
 // the pages under it, and the server-only keys never leave the server.
-// 671 of 3802 keys on every page, 2520 in 41 scopes, 611 server-only.
+// 671 of 3808 keys on every page, 2526 in 41 scopes, 611 server-only.
 
 export type MessageScope =
   | 'about/layout'
@@ -740,14 +740,14 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'landing.reel.anime.text',
     'landing.reel.arab',
     'landing.reel.arab.text',
+    'landing.reel.classics',
+    'landing.reel.classics.text',
     'landing.reel.heading',
     'landing.reel.korean',
     'landing.reel.korean.text',
     'landing.reel.movies',
     'landing.reel.movies.text',
     'landing.reel.open',
-    'landing.reel.ramadan',
-    'landing.reel.ramadan.text',
     'landing.reel.series',
     'landing.reel.series.text',
     'landing.reel.tunisian',
@@ -778,9 +778,6 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'landing.swipe.start',
     'landing.swipe.text',
     'landing.swipe.title',
-    'landing.tn.arab.cta',
-    'landing.tn.arab.text',
-    'landing.tn.arab.title',
     'landing.tn.cinema.cta',
     'landing.tn.cinema.text',
     'landing.tn.cinema.title',
@@ -811,6 +808,15 @@ export const SCOPE_KEYS: Record<MessageScope, readonly string[]> = {
     'landing.tv.send',
     'landing.tv.text',
     'landing.tv.title',
+    'landing.world.board',
+    'landing.world.countries',
+    'landing.world.country',
+    'landing.world.discover',
+    'landing.world.film',
+    'landing.world.heading',
+    'landing.world.next',
+    'landing.world.text',
+    'landing.world.year',
     'landing.wrapped.example',
     'landing.wrapped.genre',
     'landing.wrapped.genreLabel',
