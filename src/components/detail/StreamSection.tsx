@@ -24,6 +24,8 @@ import { BrandLoader } from '@/src/components/brand/BrandMark'
 import AdFreeTip from '@/src/components/detail/AdFreeTip'
 import { SleepButton, SleepDim, SleepScreen } from '@/src/components/detail/SleepTimer'
 import { useSleepTimer } from '@/src/hooks/use-sleep-timer'
+import { useScreenTime } from '@/src/hooks/use-screen-time'
+import { ScreenTimeSoon, ScreenTimeUp } from '@/src/components/profiles/ScreenTime'
 import { clock } from '@/src/lib/sleep-timer'
 
 /** TV mode: after this many briefings on a device, the briefing shrinks to a short hint. */
@@ -65,7 +67,8 @@ const PLAYER_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-presen
  * passes its player's plays, pauses and jumps to the party, and the party's to its player.
  *
  * The sleep timer (components/detail/SleepTimer) stops the player after a while, or when this
- * episode ends: the picture dims in the last minute, then the frame is taken away.
+ * episode ends: the picture dims in the last minute, then the frame is taken away. A Kids profile's
+ * screen time (lib/screen-time) does the same once its day's time is used up, or at bedtime.
  */
 export default function StreamSection({ services: providerServices, media, downloadSlot, enabled = true, placeholder, backdrop, onNext, nextLabel, runtime, className }: {
     services: StreamProvider[]
@@ -351,6 +354,13 @@ export default function StreamSection({ services: providerServices, media, downl
     })
     const partyRef = useRef(party)
     partyRef.current = party
+
+    // --- A Kids profile's screen time ---
+    const screenTime = useScreenTime(!!activeProfile?.kids, enabled && !!url && !sleep.asleep)
+    const stopped = sleep.asleep || !!screenTime.stop
+    useEffect(() => {
+        if (screenTime.stop) releaseScreen()
+    }, [screenTime.stop])
     // Back on a party this page hosts (a reload): host it again straight away.
     useEffect(() => {
         if (urlParty && playerParty && !party.role && party.status === 'idle') {
@@ -479,13 +489,14 @@ export default function StreamSection({ services: providerServices, media, downl
                         </div>
                     ) : (
                         <>
-                            {sleep.asleep && <SleepScreen onWake={wake} />}
-                            {isLoading && !sleep.asleep && (
+                            {screenTime.stop && <ScreenTimeUp stop={screenTime.stop} wake={screenTime.wake} />}
+                            {sleep.asleep && !screenTime.stop && <SleepScreen onWake={wake} />}
+                            {isLoading && !stopped && (
                                 <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-black">
                                     <BrandLoader tone="brand" className="h-11 w-11" />
                                 </div>
                             )}
-                            {url && !sleep.asleep && (
+                            {url && !stopped && (
                                 <iframe
                                     ref={iframeRef}
                                     key={url}
@@ -501,7 +512,8 @@ export default function StreamSection({ services: providerServices, media, downl
                                 />
                             )}
                             {party.role && <PartyOverlay events={party.events} />}
-                            {!sleep.asleep && <SleepDim sleep={sleep} />}
+                            {!stopped && <SleepDim sleep={sleep} />}
+                            {!stopped && <ScreenTimeSoon state={screenTime} />}
                             {playerOn && slow && isLoading && !menu && (
                                 <div role="status" className="glass-strong absolute inset-x-[4%] top-[5%] z-20 mx-auto flex max-w-[40rem] flex-wrap items-center gap-x-5 gap-y-3 rounded-[20px] p-[1.1em]">
                                     <div className="min-w-0 flex-1">

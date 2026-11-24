@@ -12,6 +12,8 @@ import { onProfileRemovedFromLists } from '@/src/lib/shared-lists/account'
 import { forgetProfileInNights } from '@/src/lib/movie-night'
 import { deleteBadgeData } from '@/src/lib/badges/view'
 import { revokeTvSessionsForProfile } from '@/src/lib/tv-sessions'
+import { cleanScreenTime } from '@/src/lib/screen-time'
+import { deleteScreenTime } from '@/src/lib/screen-time-db'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,6 +67,12 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (typeof body.halal !== 'boolean') return NextResponse.json({ error: 'Invalid Halal mode setting' }, { status: 400 })
     set['profiles.$.halal'] = body.halal
   }
+  // Screen time: a daily limit and a bedtime, for a Kids profile (set from a grown-up one).
+  if (body?.screenTime !== undefined) {
+    const kidsAfter = body?.kids !== undefined ? body.kids === true : target.kids
+    if (!kidsAfter) return NextResponse.json({ error: 'Screen time is for Kids profiles' }, { status: 400 })
+    set['profiles.$.screenTime'] = cleanScreenTime(body.screenTime)
+  }
   if (Object.keys(set).length === 0) {
     return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
   }
@@ -108,6 +116,7 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
   await deleteDigestPrefs(target.id)
   await deleteBadgeData(userId, target.id)
   await revokeTvSessionsForProfile(userId, target.id)
+  await deleteScreenTime(userId, target.id)
 
   const response = NextResponse.json({ success: true })
   if (active.profile?.id === target.id) response.cookies.delete(PROFILE_COOKIE)

@@ -13,7 +13,7 @@ const SECRET_FIELDS = { password: 0, resetToken: 0, resetTokenExpiry: 0, verifyT
 
 // Collections holding per-user documents keyed by the user id (as a string). Lists are not here:
 // a shared list is handed over to another member first (see deleteUserData).
-const USER_COLLECTIONS = ['userContent', 'follows', 'notifications', 'wrappedShares', 'pushSubscriptions'] as const
+const USER_COLLECTIONS = ['userContent', 'follows', 'notifications', 'wrappedShares', 'pushSubscriptions', 'screenTime'] as const
 
 /** Everything stored about a user, as one JSON-friendly object (the "download my data" file). */
 export async function exportUserData(userId: string) {

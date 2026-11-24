@@ -1,6 +1,7 @@
 // Viewer profiles ("Who's watching?"). One account holds up to MAX_PROFILES of them in its user
 // document (`users.profiles`); every userContent list carries the `profileId` it belongs to.
 // Shared by server and client code, so nothing here may import server-only modules.
+import type { ScreenTime } from '@/src/lib/screen-time'
 
 export interface Profile {
   id: string        // 24-hex id, unique within the account
@@ -8,6 +9,8 @@ export interface Profile {
   color: string     // one of PROFILE_COLORS
   kids: boolean     // Kids profile: catalogue limited to G/PG and kids TV, switching away needs the password
   halal?: boolean   // Halal mode: no titles with sex scenes, nudity or an intimate romance at the centre (lib/halal)
+  /** Kids profiles only: a daily limit and a bedtime, set by a grown-up (lib/screen-time). */
+  screenTime?: ScreenTime | null
 }
 
 export const MAX_PROFILES = 5

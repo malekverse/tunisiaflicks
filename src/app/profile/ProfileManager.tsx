@@ -15,6 +15,7 @@ import { MAX_PROFILES, MAX_PROFILE_NAME, PROFILE_COLORS, type Profile } from '@/
 import { useT } from '@/src/components/I18nProvider'
 import { cn } from '@/src/lib/utils'
 import type { TKey, Translate } from '@/src/lib/i18n'
+import { ScreenTimeSettings } from '@/src/components/profiles/ScreenTime'
 
 // The profiles API answers in English; these are the messages a user can trigger from this page.
 const API_ERRORS: Record<string, TKey> = {
@@ -147,6 +148,7 @@ function ProfileCard({ profile, isActive, isOwner, onlyGrownUp, onChanged, onDel
             disabled={saving || (!profile.kids && onlyGrownUp)}
             onChange={(kids) => update({ kids })}
           />
+          {profile.kids && <ScreenTimeSettings profileId={profile.id} profileName={profile.name} initial={profile.screenTime} />}
         </div>
         <Button
           type="button"

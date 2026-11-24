@@ -38,8 +38,9 @@ import { party } from './party'
 import { franchise } from './franchise'
 import { guessActor } from './guess-actor'
 import { sleep } from './sleep'
+import { screenTime } from './screen-time'
 
-const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop, halal, mail, anime, landing, welcome, decide, guess, taste, shows, blindDate, play, rail, calendarFeed, plus, plusGift, plusFamily, guessMusic, challenges, party, franchise, guessActor, sleep]
+const FEATURES = [aiSearch, social, movieNight, sharedLists, badges, dramaHubs, arabMap, tunisianTv, seasons, tvMode, detailExtras, digest, languages, accountSecurity, apps, desktop, halal, mail, anime, landing, welcome, decide, guess, taste, shows, blindDate, play, rail, calendarFeed, plus, plusGift, plusFamily, guessMusic, challenges, party, franchise, guessActor, sleep, screenTime]
 
 export type FeatureKey =
   | keyof typeof aiSearch.en
@@ -80,6 +81,7 @@ export type FeatureKey =
   | keyof typeof franchise.en
   | keyof typeof guessActor.en
   | keyof typeof sleep.en
+  | keyof typeof screenTime.en
 
 type Language = 'en' | 'ar' | 'tn' | 'fr'
 

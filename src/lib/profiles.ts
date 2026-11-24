@@ -9,6 +9,7 @@ import { ObjectId } from 'mongodb'
 import { authOptions } from '@/src/lib/auth'
 import clientPromise from '@/src/lib/mongodb'
 import { PROFILE_COLORS, PROFILE_COOKIE, cleanProfileName, type Profile, type ProfilesResponse } from '@/src/lib/models/Profile'
+import { cleanScreenTime } from '@/src/lib/screen-time'
 
 /** Right after signing in (password just typed) a grown-up profile can be picked without re-entering it. */
 const FRESH_LOGIN_MS = 10 * 60 * 1000
@@ -19,6 +20,7 @@ const toProfile = (raw: any): Profile => ({
   color: PROFILE_COLORS.includes(raw.color) ? raw.color : PROFILE_COLORS[0],
   kids: raw.kids === true,
   halal: raw.halal === true,
+  ...(raw.kids === true && raw.screenTime ? { screenTime: cleanScreenTime(raw.screenTime) } : {}),
 })
 
 export function newProfile(name: string, color: string = PROFILE_COLORS[0], kids = false) {
