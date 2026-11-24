@@ -31,8 +31,12 @@ export type LandingData = {
   ask: { query: TKey, pics: Pic[] }[]
   night: Pic[]
   wrapped: Pic[]
-  /** A series to show in Continue Watching. */
+  /** A series to show in Continue Watching (and behind the sleep timer). */
   resume: { title: string, backdrop: string } | null
+  /** The daily game's demo: a film's still, to zoom out of. */
+  guess: { title: string, backdrop: string } | null
+  /** Decide together's wheel: six films. */
+  wheel: Pic[]
 }
 
 /** The picture's address at about `width` CSS pixels. */

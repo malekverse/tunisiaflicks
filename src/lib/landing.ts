@@ -169,5 +169,11 @@ export async function getLandingData({ locale, kids, halal }: { locale: Locale, 
       const show = trendingShows.find((item) => item.backdrop_path)
       return show ? { title: titleOf(show), backdrop: show.backdrop_path as string } : null
     })(),
+    // Not this week's very first film (the reel opens on it): a still from a little further down.
+    guess: (() => {
+      const film = trendingWeekMovies.slice(2).find((item) => item.backdrop_path) ?? trendingWeekMovies.find((item) => item.backdrop_path)
+      return film ? { title: titleOf(film), backdrop: film.backdrop_path as string } : null
+    })(),
+    wheel: pics(trendingWeekMovies.slice(6), 6),
   }
 }

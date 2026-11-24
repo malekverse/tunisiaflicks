@@ -9,20 +9,22 @@ import { isArabicScript } from '@/src/lib/i18n/locales'
 import type { LandingData, Pic } from '@/src/lib/landing-model'
 import type { TKey } from '@/src/lib/i18n'
 import { cn } from '@/src/lib/utils'
+import { DJERBA, MAP_HEIGHT, MAP_WIDTH, OUTLINE, PLACES, pathOf, project, textIn } from '@/src/lib/filmed-in-tunisia'
 import LiveDot from '@/src/components/ui/live-dot'
 import { Art, PicImg, type ArtName, useCalm, PicturesWhenNear } from './parts'
 import { LOOKS, useStageLook } from './Stage'
+import styles from './landing.module.css'
 
 type Tunisia = LandingData['tunisia']
-type PanelId = 'intro' | 'series' | 'tv' | 'cinema' | 'ramadan' | 'arab'
+type PanelId = 'intro' | 'series' | 'tv' | 'cinema' | 'filmed' | 'ramadan' | 'arab'
 
 const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect
 
 /**
  * Made in Tunisia: the page turns Sidi Bou Said blue and scrolls sideways through what only
- * TunisiaFlicks has (Tunisian series, TV and cinema, Ramadan, the Arab cinema map). Vertical
- * scrolling drives the track; inside each panel the pictures and the drawings move at their own
- * pace. Ramadan lights the room lantern gold.
+ * TunisiaFlicks has (Tunisian series, TV and cinema, the places films were shot, Ramadan, the Arab
+ * cinema map). Vertical scrolling drives the track; inside each panel the pictures and the drawings
+ * move at their own pace. Ramadan lights the room lantern gold, the filming places desert orange.
  */
 export default function TunisiaTrack({ data }: { data: Tunisia }) {
   const reduced = useCalm()
@@ -36,6 +38,7 @@ export default function TunisiaTrack({ data }: { data: Tunisia }) {
     ...(data.series.length >= 3 ? ['series' as const] : []),
     ...(data.tv.length >= 2 ? ['tv' as const] : []),
     ...(data.cinema.length >= 3 ? ['cinema' as const] : []),
+    'filmed',
     'ramadan',
     'arab',
   ]
@@ -61,7 +64,7 @@ export default function TunisiaTrack({ data }: { data: Tunisia }) {
     const index = Math.round(value * (panels.length - 1))
     setActive(panels[Math.max(0, Math.min(panels.length - 1, index))])
   })
-  useStageLook(section, active === 'ramadan' ? LOOKS.ramadan : LOOKS.tunisia)
+  useStageLook(section, active === 'ramadan' ? LOOKS.ramadan : active === 'filmed' ? LOOKS.desert : LOOKS.tunisia)
 
   const content = (
     <PicturesWhenNear section={section}>
@@ -136,6 +139,10 @@ function Panel({ id, data, index, count, progress, still }: { id: PanelId, data:
           <FilmStrip pics={data.cinema} x={picX} />
         </PanelFrame>
       )
+    case 'filmed':
+      return (
+        <PanelFrame title="landing.tn.filmed.title" text="landing.tn.filmed.text" cta="landing.tn.filmed.cta" href="/filmed-in-tunisia" artX={artX} tint="from-[#4a2509]/75" aside={<FilmedMap still={still} drift={picX} />} />
+      )
     case 'ramadan':
       return <RamadanPanel data={data} artX={artX} picX={picX} />
     case 'arab':
@@ -166,22 +173,28 @@ function IntroPanel({ artX }: { artX: MotionValue<string> }) {
   )
 }
 
-function PanelFrame({ title, text, cta, href, art, artX, tint, children }: {
+function PanelFrame({ title, text, cta, href, art, artX, tint, children, aside }: {
   title: TKey
   text: TKey
   cta: TKey
   href: string
-  art: ArtName
+  /** The drawing in the top corner (a panel with an `aside` goes without). */
+  art?: ArtName
   artX: MotionValue<string>
   tint: string
-  children: React.ReactNode
+  children?: React.ReactNode
+  /** A picture that takes the top corner itself, sized by the panel's height (the filming map). */
+  aside?: React.ReactNode
 }) {
   const { t } = useI18n()
   return (
     <article className={cn(PANEL, 'bg-gradient-to-b to-white/[0.02] ring-1 ring-inset ring-white/[0.08]', tint)}>
-      <m.div aria-hidden className="pointer-events-none absolute end-[4%] top-[5%] text-white/[0.13]" style={{ x: artX }}>
-        <Art name={art} className="h-[30svh] lg:h-[44svh]" />
-      </m.div>
+      {art && (
+        <m.div aria-hidden className="pointer-events-none absolute end-[4%] top-[5%] text-white/[0.13]" style={{ x: artX }}>
+          <Art name={art} className="h-[30svh] lg:h-[44svh]" />
+        </m.div>
+      )}
+      {aside}
       <div className="relative z-10 order-2 mt-8 max-w-[38ch] lg:order-1 lg:mt-0">
         <h3 className="font-display text-[clamp(34px,4.4vw,64px)] font-extrabold leading-[0.95] text-white">{t(title)}</h3>
         <p className="mt-4 text-pretty text-[15px] leading-relaxed text-white/75 sm:text-[17px]">{t(text)}</p>
@@ -190,7 +203,7 @@ function PanelFrame({ title, text, cta, href, art, artX, tint, children }: {
           <ChevronRight aria-hidden className="h-4 w-4 rtl:rotate-180" />
         </Link>
       </div>
-      <div className="relative z-10 order-1 flex flex-1 items-center justify-center lg:order-2 lg:self-center">{children}</div>
+      {children && <div className="relative z-10 order-1 flex flex-1 items-center justify-center lg:order-2 lg:self-center">{children}</div>}
     </article>
   )
 }
@@ -302,6 +315,69 @@ function RamadanPanel({ data, artX, picX }: { data: Tunisia, artX: MotionValue<s
         </m.div>
       )}
     </article>
+  )
+}
+
+/**
+ * Tunisia as Filmed in Tunisia draws it: the pins drop in from the north as the panel arrives, then
+ * one place after another lights up with its name. Maps don't mirror (it stays left to right).
+ */
+function FilmedMap({ still, drift }: { still: boolean, drift: MotionValue<string> }) {
+  const { locale } = useI18n()
+  const ref = useRef<HTMLDivElement>(null)
+  const seen = useInView(ref, { once: true, amount: 0.4 })
+  const near = useInView(ref, { amount: 0.4 })
+  const [lit, setLit] = useState(0)
+  // Down the country, north to south: the order the pins drop in.
+  const places = [...PLACES].sort((a, b) => b.lat - a.lat)
+  useEffect(() => {
+    if (still || !near) return
+    const timer = window.setInterval(() => setLit((value) => (value + 1) % places.length), 1700)
+    return () => window.clearInterval(timer)
+  }, [still, near, places.length])
+  const current = places[lit]
+  const [cx, cy] = project(current.lat, current.lon)
+  // The label sits on the side of the pin with room for it.
+  const left = cx > MAP_WIDTH * 0.55
+  return (
+    // The panel's top corner, on the side away from the text; the map itself never mirrors.
+    <m.div aria-hidden className="pointer-events-none absolute end-[7%] top-[6%] h-[42%] lg:end-[6%] lg:top-[8%] lg:h-[62%]" style={{ x: drift }}>
+      <div ref={ref} dir="ltr" className="relative h-full" style={{ aspectRatio: `${MAP_WIDTH} / ${MAP_HEIGHT}` }}>
+        <svg viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`} className="h-full w-full overflow-visible">
+          <path d={pathOf(OUTLINE)} fill="rgb(234 140 60 / 0.12)" stroke="rgb(255 255 255 / 0.4)" strokeWidth={1.5} strokeLinejoin="round" />
+          <path d={pathOf(DJERBA)} fill="rgb(234 140 60 / 0.12)" stroke="rgb(255 255 255 / 0.4)" strokeWidth={1.5} strokeLinejoin="round" />
+          {places.map((place, index) => {
+            const [x, y] = project(place.lat, place.lon)
+            const on = place.id === current.id
+            return (
+              <g
+                key={place.id}
+                className="transition-[opacity,transform] duration-500 ease-out [transform-box:fill-box] [transform-origin:center]"
+                style={{ opacity: seen || still ? 1 : 0, transform: seen || still ? 'none' : 'translateY(-14px)', transitionDelay: `${index * 70}ms` }}
+              >
+                {on && !still && <circle cx={x} cy={y} r={13} fill="rgb(239 68 68 / 0.28)" className="motion-safe:animate-ping [transform-box:fill-box] [transform-origin:center]" />}
+                <circle cx={x} cy={y} r={on ? 6.5 : 4.5} fill={on ? 'rgb(239 68 68)' : 'rgb(255 255 255 / 0.9)'} stroke="rgb(0 0 0 / 0.6)" strokeWidth={2} className="transition-all duration-300" />
+              </g>
+            )
+          })}
+        </svg>
+        {/* Placed on the pin; the inner span does the entrance (its animation owns `transform`). */}
+        <span
+          className="pointer-events-none absolute -translate-y-1/2"
+          style={{
+            top: `${(cy / MAP_HEIGHT) * 100}%`,
+            ...(left ? { right: `${(1 - cx / MAP_WIDTH) * 100 + 4}%` } : { left: `${(cx / MAP_WIDTH) * 100 + 4}%` }),
+          }}
+        >
+          <span
+            key={current.id}
+            className={cn('block whitespace-nowrap rounded-full bg-black/75 px-2.5 py-1 text-[12px] font-semibold text-white ring-1 ring-white/10 backdrop-blur', !still && styles['fade-up'])}
+          >
+            <bdi>{textIn(current.name, locale)}</bdi>
+          </span>
+        </span>
+      </div>
+    </m.div>
   )
 }
 

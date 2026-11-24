@@ -17,6 +17,7 @@ type Credit = { role: TKey, name?: TKey, names?: { text: string, lang: string }[
 
 const CREDITS: Credit[] = [
   { role: 'landing.credits.dataRole', name: 'landing.credits.dataName', href: 'https://www.themoviedb.org' },
+  { role: 'landing.credits.offersRole', name: 'landing.credits.offersName', href: 'https://www.justwatch.com' },
   { role: 'landing.credits.videoRole', names: [{ text: 'YouTube', lang: 'en' }] },
   { role: 'landing.credits.musicRole', names: [{ text: 'Deezer', lang: 'en' }] },
   { role: 'landing.credits.animeRole', names: [{ text: 'AniList', lang: 'en' }] },

@@ -246,6 +246,9 @@ export default function Hero({ wall }: { wall: Pic[] }) {
                 <Button asChild size="lg" variant="secondary" className="h-[52px] px-7 text-[16px]">
                   <a href="#tour">{t('landing.hero.tour')}</a>
                 </Button>
+                <a href="#programme" className="inline-flex h-[52px] items-center px-2 text-[15px] font-medium text-white/80 underline decoration-white/30 underline-offset-[6px] transition-colors hover:text-white hover:decoration-white">
+                  {t('landing.hero.all')}
+                </a>
               </div>
         </m.div>
 

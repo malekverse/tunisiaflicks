@@ -1,8 +1,7 @@
 "use client"
 import { useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
 import NumberFlow from '@number-flow/react'
-import { Bell, ChevronRight, Heart, Play, Sparkles, X } from 'lucide-react'
+import { Bell, Heart, Play, Sparkles, X } from 'lucide-react'
 import {
   AnimatePresence, animate, m, useInView, useMotionValue, useSpring, useTransform,
 } from 'framer-motion'
@@ -11,14 +10,15 @@ import { Switch } from '@/src/components/ui/switch'
 import TmdbImage from '@/src/components/TmdbImage'
 import { haptic, spring } from '@/src/lib/motion'
 import type { LandingData, Pic } from '@/src/lib/landing-model'
-import type { TKey } from '@/src/lib/i18n'
 import { cn } from '@/src/lib/utils'
-import { PicImg, useFinePointer, useSpotlight, useCalm } from './parts'
+import { PicImg, useFinePointer, useCalm } from './parts'
+import { Tile, TileLink } from './tile'
+import { DecideTile, GuessTile, SleepTile, TvTile } from './MoreTiles'
 import { LOOKS, useStageLook } from './Stage'
 import styles from './landing.module.css'
 
 type Props = {
-  data: Pick<LandingData, 'ask' | 'halal' | 'swipe' | 'night' | 'wrapped' | 'resume'>
+  data: Pick<LandingData, 'ask' | 'halal' | 'swipe' | 'night' | 'wrapped' | 'resume' | 'guess' | 'wheel'>
   /** Ask (AI search) is offered to this viewer. */
   ask: boolean
   /** A Kids profile: no movie night (grown-up only), Halal mode can't be changed there. */
@@ -47,6 +47,10 @@ export default function Tools({ data, ask, kids }: Props) {
     { key: 'alerts', className: 'lg:col-span-2', node: <AlertsTile pic={data.swipe[0] ?? null} /> },
     { key: 'profiles', className: 'lg:col-span-2', node: <ProfilesTile /> },
     ...(data.resume ? [{ key: 'resume', className: 'lg:col-span-2', node: <ResumeTile resume={data.resume} /> }] : []),
+    ...(data.guess ? [{ key: 'guess', className: 'lg:col-span-3', node: <GuessTile still={data.guess} /> }] : []),
+    ...(data.wheel.length === 6 ? [{ key: 'decide', className: 'lg:col-span-3', node: <DecideTile pics={data.wheel} /> }] : []),
+    ...(!kids && data.swipe.length >= 5 ? [{ key: 'tv', className: 'md:col-span-2 lg:col-span-4', node: <TvTile pics={data.swipe.slice(3)} /> }] : []),
+    { key: 'sleep', className: 'lg:col-span-2', node: <SleepTile still={data.resume?.backdrop ?? null} /> },
   ]
 
   return (
@@ -71,39 +75,6 @@ export default function Tools({ data, ask, kids }: Props) {
         ))}
       </ul>
     </section>
-  )
-}
-
-/** The glass tile every demo sits in: a specular edge follows the pointer. */
-function Tile({ title, text, children, className, footer, art }: {
-  title: TKey
-  text: TKey
-  children?: React.ReactNode
-  className?: string
-  footer?: React.ReactNode
-  art?: React.ReactNode
-}) {
-  const { t } = useI18n()
-  const ref = useSpotlight<HTMLDivElement>()
-  return (
-    <div ref={ref} className={cn(styles['glass-tile'], 'flex h-full flex-col overflow-hidden rounded-[22px] p-5 sm:p-6', className)}>
-      {art}
-      <div className="relative z-[1] flex-1">{children}</div>
-      <div className="relative z-[1] mt-5">
-        <h3 className="font-display text-[22px] font-bold leading-tight text-white sm:text-[26px]">{t(title)}</h3>
-        <p className="mt-1.5 max-w-[46ch] text-pretty text-[14px] leading-relaxed text-white/65 sm:text-[15px]">{t(text)}</p>
-        {footer && <div className="mt-4">{footer}</div>}
-      </div>
-    </div>
-  )
-}
-
-function TileLink({ href, children }: { href: string, children: React.ReactNode }) {
-  return (
-    <Link href={href} className="inline-flex h-10 items-center gap-1 rounded-full bg-white/[0.1] pe-3.5 ps-4 text-[13px] font-medium text-white transition-colors hover:bg-white/[0.18] active:scale-[0.97]">
-      {children}
-      <ChevronRight aria-hidden className="h-4 w-4 rtl:rotate-180" />
-    </Link>
   )
 }
 
